@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080b14">
+<title>Jon2 AI — Imagine. Create. Innovate.</title>
+<style>
+:root {
+  --bg: #080b14;
+  --panel: #111624;
+  --panel2: #171e30;
+  --text: #f4f7ff;
+  --muted: #929db5;
+  --blue: #6385ff;
+  --cyan: #52e2db;
+  --border: rgba(255,255,255,.09);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+.layout { min-height: 100vh; display: flex; }
+.sidebar {
+  width: 245px;
+  background: #0c101c;
+  border-right: 1px solid var(--border);
+  padding: 25px 16px;
+  flex-shrink: 0;
+}
+.brand { display:flex; align-items:center; gap:10px; margin-bottom:35px; }
+.logo {
+  width:42px; height:42px; border-radius:14px;
+  display:grid; place-items:center;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  color:#08101d; font-size:20px; font-weight:900;
+}
+.brand-name { font-size:21px; font-weight:800; letter-spacing:-.7px; }
+.brand-name span { color:var(--cyan); }
+.nav-label {
+  color:#69748c; font-size:11px; font-weight:800;
+  letter-spacing:1.5px; margin:24px 10px 10px;
+}
+.nav-btn {
+  width:100%; border:0; background:transparent; color:#aab4ca;
+  padding:12px; margin:3px 0; border-radius:10px;
+  text-align:left; display:flex; gap:12px; align-items:center;
+}
+.nav-btn:hover,.nav-btn.active { background:#1a2440; color:white; }
+.nav-btn.active { box-shadow:inset 3px 0 var(--cyan); }
+.nav-icon { width:22px; text-align:center; font-size:18px; }
+.side-bottom {
+  margin-top:35px; padding:15px; border:1px solid var(--border);
+  background:var(--panel); border-radius:14px;
+}
+.side-bottom p { font-size:12px; color:var(--muted); line-height:1.6; }
+.main { min-width:0; flex:1; padding:28px 34px 50px; }
+.topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.eyebrow { color:var(--cyan); font-size:11px; font-weight:800; letter-spacing:2px; }
+h1 { font-size:clamp(28px,4vw,42px); letter-spacing:-1.5px; margin:10px 0; }
+.subtitle { color:var(--muted); line-height:1.7; max-width:650px; }
+.status {
+  padding:9px 12px; border:1px solid var(--border); border-radius:30px;
+  font-size:12px; color:#c7d1e7; white-space:nowrap;
+}
+.status i { display:inline-block; width:7px; height:7px; background:#e8b45d; border-radius:50%; margin-right:7px; }
+.hero {
+  margin:28px 0; padding:28px; border-radius:20px;
+  border:1px solid rgba(99,133,255,.25);
+  background:radial-gradient(ellipse at 90% 0%,rgba(82,226,219,.12),transparent 42%),
+             linear-gradient(120deg,#151e37,#101524);
+}
+.hero h2 { font-size:25px; margin:0 0 10px; }
+.hero p { color:#aab6d0; line-height:1.7; max-width:600px; }
+.hero-badge {
+  display:inline-block; padding:7px 10px; border-radius:7px;
+  background:rgba(82,226,219,.1); color:var(--cyan);
+  font-size:11px; font-weight:800; margin-bottom:15px;
+}
+.section-head { display:flex; justify-content:space-between; align-items:center; margin:30px 0 16px; }
+.section-head h2 { font-size:20px; margin:0; }
+.section-head span { color:var(--muted); font-size:12px; }
+.grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:15px; }
+.card {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:16px; padding:20px; min-width:0;
+  transition:transform .2s,border-color .2s;
+}
+.card:hover { transform:translateY(-3px); border-color:rgba(99,133,255,.55); }
+.card-icon {
+  width:44px; height:44px; border-radius:13px;
+  display:grid; place-items:center; font-size:22px;
+  background:#202b48; margin-bottom:17px;
+}
+.card h3 { font-size:16px; margin:0 0 8px; }
+.card p { font-size:13px; line-height:1.7; color:var(--muted); min-height:44px; }
+.tag {
+  display:inline-block; color:#d3dcf1; font-size:10px;
+  border:1px solid var(--border); padding:5px 8px; border-radius:20px;
+}
+.card button,.primary {
+  width:100%; border:1px solid var(--border); color:white;
+  background:var(--panel2); padding:11px; border-radius:9px; margin-top:14px;
+}
+.card button:hover { background:#253456; }
+.primary {
+  background:linear-gradient(110deg,var(--blue),#5269e9);
+  border:0; font-weight:700;
+}
+.primary:hover { filter:brightness(1.12); }
+.workspace {
+  margin-top:28px; padding:22px; background:var(--panel);
+  border:1px solid var(--border); border-radius:16px;
+}
+.workspace h2 { margin-top:0; }
+textarea {
+  width:100%; min-height:110px; resize:vertical;
+  background:#090d17; color:white; border:1px solid var(--border);
+  border-radius:11px; padding:14px; outline:none; line-height:1.6;
+}
+textarea:focus { border-color:var(--blue); }
+.workspace-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.workspace-actions button { width:auto; padding:11px 16px; }
+#notice { color:var(--cyan); font-size:13px; min-height:20px; }
+.page { display:none; }
+.page.active { display:block; }
+.footer { margin-top:40px; padding-top:20px; border-top:1px solid var(--border); color:#75819a; font-size:12px; line-height:1.8; }
+.mobile-brand { display:none; }
+@media(max-width:900px) {
+  .sidebar { width:205px; }
+  .main { padding:24px 20px; }
+  .grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:600px) {
+  .layout { display:block; }
+  .sidebar { width:100%; padding:14px; border-right:0; border-bottom:1px solid var(--border); }
+  .brand { margin-bottom:12px; }
+  .nav-label,.side-bottom { display:none; }
+  .nav-list { display:flex; overflow-x:auto; gap:5px; padding-bottom:3px; }
+  .nav-btn { width:auto; white-space:nowrap; padding:10px; margin:0; font-size:12px; }
+  .nav-icon { width:auto; }
+  .main { padding:22px 15px 35px; }
+  .topbar { align-items:flex-start; }
+  .status { font-size:10px; padding:8px; }
+  .hero { padding:22px 18px; }
+  .grid { grid-template-columns:1fr; }
+  .card p { min-height:0; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">J2</div>
+      <div class="brand-name">Jon2 <span>AI</span></div>
+    </div>
+    <div class="nav-label">WORKSPACE</div>
+    <nav class="nav-list">
+      <button class="nav-btn active" data-page="home"><span class="nav-icon">⌂</span> Overview</button>
+      <button class="nav-btn" data-page="chat"><span class="nav-icon">◈</span> Jon2 Chat</button>
+      <button class="nav-btn" data-page="image"><span class="nav-icon">▧</span> Image Studio</button>
+      <button class="nav-btn" data-page="video"><span class="nav-icon">▷</span> Video Studio</button>
+      <button class="nav-btn" data-page="voice"><span class="nav-icon">♫</span> Voice Studio</button>
+      <button class="nav-btn" data-page="automation"><span class="nav-icon">⟳</span> Automation</button>
+      <button class="nav-btn" data-page="lab"><span class="nav-icon">⌘</span> AI Lab</button>
+    </nav>
+    <div class="side-bottom">
+      <strong>Jon2 AI Lab</strong>
+      <p>Your independent AI journey starts here. Build, test, and improve one step at a time.</p>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">YOUR CREATIVE AI WORKSPACE</div>
+        <h1 id="pageTitle">Imagine. Create. Innovate.</h1>
+      </div>
+      <div class="status"><i></i> Early Preview</div>
+    </div>
+    <section id="home" class="page active">
+      <p class="subtitle">Welcome to Jon2 AI — an independent platform vision for intelligent tools, creative workflows, and future AI models.</p>
+      <div class="hero">
+        <div class="hero-badge">✦ THE FUTURE STARTS HERE</div>
+        <h2>One workspace. Limitless ideas.</h2>
+        <p>Explore your creative tools, prepare prompts, and shape the future of your own AI platform. This is the first foundation of Jon2 AI.</p>
+        <button class="primary" style="max-width:190px" onclick="showPage('chat')">Explore Jon2 AI →</button>
+      </div>
+      <div class="section-head"><h2>Your AI tools</h2><span>Platform modules</span></div>
+      <div class="grid">
+        <article class="card"><div class="card-icon">◈</div><h3>Jon2 Chat</h3><p>Prepare questions, ideas, and intelligent conversations.</p><span class="tag">Interface preview</span><button onclick="showPage('chat')">Open Chat →</button></article>
+        <article class="card"><div class="card-icon">▧</div><h3>Image Studio</h3><p>Plan original artwork and turn creative ideas into prompts.</p><span class="tag">Interface preview</span><button onclick="showPage('image')">Open Studio →</button></article>
+        <article class="card"><div class="card-icon">▷</div><h3>Video Studio</h3><p>Develop video concepts, scenes, and production prompts.</p><span class="tag">Interface preview</span><button onclick="showPage('video')">Open Studio →</button></article>
+        <article class="card"><div class="card-icon">♫</div><h3>Voice Studio</h3><p>Plan voice, narration, and audio experiences.</p><span class="tag">Coming soon</span><button onclick="showPage('voice')">Explore Voice →</button></article>
+        <article class="card"><div class="card-icon">⟳</div><h3>Automation</h3><p>Design repeatable workflows for future AI-powered tasks.</p><span class="tag">Coming soon</span><button onclick="showPage('automation')">Explore Tools →</button></article>
+        <article class="card"><div class="card-icon">⌘</div><h3>Jon2 AI Lab</h3><p>Organize experiments and plan the development of your own models.</p><span class="tag">Development lab</span><button onclick="showPage('lab')">Enter Lab →</button></article>
+      </div>
+      <div class="workspace">
+        <h2>✧ Prompt Workspace</h2>
+        <p class="subtitle">Write and save your ideas on this device. Your prompts stay in this browser.</p>
+        <textarea id="prompt" placeholder="Describe your idea here... What do you want to create?"></textarea>
+        <div class="workspace-actions">
+          <button class="primary" onclick="savePrompt()">Save idea</button>
+          <button onclick="copyPrompt()">Copy text</button>
+          <button onclick="clearPrompt()">Clear</button>
+        </div>
+        <p id="notice" aria-live="polite"></p>
+      </div>
+    </section>
+    <section id="chat" class="page">
+      <p class="subtitle">Your future intelligent assistant workspace.</p>
+      <div class="workspace"><h2>◈ Jon2 Chat</h2><p class="subtitle">This is the first interface only. A real AI model has not been connected yet.</p><textarea id="chatPrompt" placeholder="Write a question or an idea to prepare..."></textarea><button class="primary" onclick="copyField('chatPrompt')">Copy question</button><p id="chatNotice"></p></div>
+    </section>
+    <section id="image" class="page">
+      <p class="subtitle">Plan your next image and prepare a reusable generation prompt.</p>
+      <div class="workspace"><h2>▧ Image Studio</h2><p class="subtitle">Image generation is not connected yet. You can prepare your prompt here.</p><textarea id="imagePrompt" placeholder="Example: A cinematic 3D fantasy forest at sunrise, highly detailed, wide composition..."></textarea><button class="primary" onclick="copyField('imagePrompt')">Copy image prompt</button><p id="imageNotice"></p></div>
+    </section>
+    <section id="video" class="page">
+      <p class="subtitle">Build a concept for your next film or video.</p>
+      <div class="workspace"><h2>▷ Video Studio</h2><p class="subtitle">Video generation is not connected yet. Use this space to prepare scene instructions.</p><textarea id="videoPrompt" placeholder="Describe the scene, characters, camera movement, style, and sound..."></textarea><button class="primary" onclick="copyField('videoPrompt')">Copy video prompt</button><p id="videoNotice"></p></div>
+    </section>
+    <section id="voice" class="page">
+      <div class="workspace"><h2>♫ Voice Studio</h2><p class="subtitle">Voice generation and audio tools are planned for a future version. No audio engine is connected yet.</p></div>
+    </section>
+    <section id="automation" class="page">
+      <div class="workspace"><h2>⟳ Automation Center</h2><p class="subtitle">Plan workflows and repetitive tasks. Automated execution has not been connected yet.</p><textarea id="automationPrompt" placeholder="Describe a workflow you want to automate..."></textarea><button class="primary" onclick="copyField('automationPrompt')">Copy workflow idea</button><p id="automationNotice"></p></div>
+    </section>
+    <section id="lab" class="page">
+      <div class="workspace"><h2>⌘ Jon2 AI Lab</h2><p class="subtitle">The development area for planning experiments, testing ideas, and eventually connecting your own models.</p><h3>Development roadmap</h3><p>01 — Build the website interface</p><p>02 — Connect a secure backend</p><p>03 — Integrate AI services or open models</p><p>04 — Experiment with training and evaluation</p><p>Note: Training and running powerful models requires computing resources. This page does not train models yet.</p></div>
+    </section>
+    <footer class="footer">JON2 AI · INDEPENDENT PROJECT<br>Early development preview. AI generation features are not connected yet.<br>© 2026 Jon2 AI</footer>
+  </main>
+</div>
+<script>
+const titles = {
+  home:"Imagine. Create. Innovate.",
+  chat:"Jon2 Chat",
+  image:"Image Studio",
+  video:"Video Studio",
+  voice:"Voice Studio",
+  automation:"Automation Center",
+  lab:"Jon2 AI Lab"
+};
+function showPage(id) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b.dataset.page === id));
+  document.getElementById("pageTitle").textContent = titles[id] || "Jon2 AI";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelectorAll(".nav-btn").forEach(btn => {
+  btn.addEventListener("click", () => showPage(btn.dataset.page));
+});
+function savePrompt() {
+  const value = document.getElementById("prompt").value;
+  if (!value.trim()) { document.getElementById("notice").textContent = "Write an idea first."; return; }
+  try {
+    localStorage.setItem("jon2_saved_prompt", value);
+    document.getElementById("notice").textContent = "Idea saved on this device.";
+  } catch(e) {
+    document.getElementById("notice").textContent = "Could not save in this browser.";
+  }
+}
+function copyPrompt() { copyField("prompt"); }
+function clearPrompt() {
+  document.getElementById("prompt").value = "";
+  document.getElementById("notice").textContent = "";
+}
+function copyField(id) {
+  const field = document.getElementById(id);
+  const output = document.getElementById(id === "prompt" ? "notice" : id.replace("Prompt","Notice"));
+  if (!field.value.trim()) { if(output) output.textContent = "Write something first."; return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(field.value).then(() => {
+      if(output) output.textContent = "Copied successfully.";
+    }).catch(() => fallbackCopy(field, output));
+  } else fallbackCopy(field, output);
+}
+function fallbackCopy(field, output) {
+  field.select();
+  const ok = document.execCommand("copy");
+  if(output) output.textContent = ok ? "Copied successfully." : "Select and copy the text manually.";
+}
+try {
+  const saved = localStorage.getItem("jon2_saved_prompt");
+  if (saved) document.getElementById("prompt").value = saved;
+} catch(e) {}
+</script>
+</body>
+</html>
