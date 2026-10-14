@@ -1,295 +1,570 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#080b14">
-<title>Jon2 AI — Imagine. Create. Innovate.</title>
+<title>Jon2 AI — تخيّل وابتكر</title>
+
 <style>
 :root {
-  --bg: #080b14;
-  --panel: #111624;
-  --panel2: #171e30;
-  --text: #f4f7ff;
-  --muted: #929db5;
-  --blue: #6385ff;
-  --cyan: #52e2db;
-  --border: rgba(255,255,255,.09);
+  --bg:#080b14;
+  --panel:#111624;
+  --panel2:#171e30;
+  --text:#f4f7ff;
+  --muted:#929db5;
+  --blue:#6385ff;
+  --cyan:#52e2db;
+  --border:rgba(255,255,255,.1);
 }
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 }
-button, input, textarea { font: inherit; }
-button { cursor: pointer; }
-.layout { min-height: 100vh; display: flex; }
-.sidebar {
-  width: 245px;
-  background: #0c101c;
-  border-right: 1px solid var(--border);
-  padding: 25px 16px;
-  flex-shrink: 0;
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+.layout{min-height:100vh;display:flex}
+.sidebar{
+  width:240px;background:#0c101c;padding:20px 14px;
+  border-left:1px solid var(--border);flex-shrink:0;
 }
-.brand { display:flex; align-items:center; gap:10px; margin-bottom:35px; }
-.logo {
-  width:42px; height:42px; border-radius:14px;
-  display:grid; place-items:center;
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:25px}
+.logo{
+  width:44px;height:44px;border-radius:14px;
+  display:grid;place-items:center;
   background:linear-gradient(135deg,var(--blue),var(--cyan));
-  color:#08101d; font-size:20px; font-weight:900;
+  color:#08101d;font-size:20px;font-weight:900;
 }
-.brand-name { font-size:21px; font-weight:800; letter-spacing:-.7px; }
-.brand-name span { color:var(--cyan); }
-.nav-label {
-  color:#69748c; font-size:11px; font-weight:800;
-  letter-spacing:1.5px; margin:24px 10px 10px;
+.brand-name{font-size:22px;font-weight:800}
+.brand-name span{color:var(--cyan)}
+.nav-label{
+  color:#69748c;font-size:11px;font-weight:800;
+  margin:20px 8px 10px;letter-spacing:1px
 }
-.nav-btn {
-  width:100%; border:0; background:transparent; color:#aab4ca;
-  padding:12px; margin:3px 0; border-radius:10px;
-  text-align:left; display:flex; gap:12px; align-items:center;
+.nav-btn{
+  width:100%;border:0;background:transparent;color:#aab4ca;
+  padding:12px;margin:3px 0;border-radius:10px;
+  text-align:right;display:flex;gap:10px;align-items:center
 }
-.nav-btn:hover,.nav-btn.active { background:#1a2440; color:white; }
-.nav-btn.active { box-shadow:inset 3px 0 var(--cyan); }
-.nav-icon { width:22px; text-align:center; font-size:18px; }
-.side-bottom {
-  margin-top:35px; padding:15px; border:1px solid var(--border);
-  background:var(--panel); border-radius:14px;
+.nav-btn:hover,.nav-btn.active{background:#1a2440;color:white}
+.nav-btn.active{box-shadow:inset -3px 0 var(--cyan)}
+.main{min-width:0;flex:1;padding:25px;max-width:1500px}
+.topbar{
+  display:flex;justify-content:space-between;align-items:center;
+  gap:12px;flex-wrap:wrap
 }
-.side-bottom p { font-size:12px; color:var(--muted); line-height:1.6; }
-.main { min-width:0; flex:1; padding:28px 34px 50px; }
-.topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; }
-.eyebrow { color:var(--cyan); font-size:11px; font-weight:800; letter-spacing:2px; }
-h1 { font-size:clamp(28px,4vw,42px); letter-spacing:-1.5px; margin:10px 0; }
-.subtitle { color:var(--muted); line-height:1.7; max-width:650px; }
-.status {
-  padding:9px 12px; border:1px solid var(--border); border-radius:30px;
-  font-size:12px; color:#c7d1e7; white-space:nowrap;
+.eyebrow{color:var(--cyan);font-size:11px;font-weight:800;letter-spacing:1px}
+h1{font-size:clamp(27px,4vw,40px);margin:10px 0}
+h2{margin-top:0}
+.subtitle{color:var(--muted);line-height:1.8}
+.status,.tag{
+  padding:7px 10px;border:1px solid var(--border);
+  border-radius:30px;font-size:12px;color:#c7d1e7
 }
-.status i { display:inline-block; width:7px; height:7px; background:#e8b45d; border-radius:50%; margin-right:7px; }
-.hero {
-  margin:28px 0; padding:28px; border-radius:20px;
-  border:1px solid rgba(99,133,255,.25);
-  background:radial-gradient(ellipse at 90% 0%,rgba(82,226,219,.12),transparent 42%),
-             linear-gradient(120deg,#151e37,#101524);
+.hero{
+  margin:25px 0;padding:26px;border-radius:20px;
+  border:1px solid rgba(99,133,255,.3);
+  background:radial-gradient(ellipse at 10% 0%,rgba(82,226,219,.13),transparent 45%),
+  linear-gradient(120deg,#151e37,#101524)
 }
-.hero h2 { font-size:25px; margin:0 0 10px; }
-.hero p { color:#aab6d0; line-height:1.7; max-width:600px; }
-.hero-badge {
-  display:inline-block; padding:7px 10px; border-radius:7px;
-  background:rgba(82,226,219,.1); color:var(--cyan);
-  font-size:11px; font-weight:800; margin-bottom:15px;
+.hero h2{font-size:25px}
+.hero p{color:#aab6d0;line-height:1.9}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.card,.workspace{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:16px;padding:19px;min-width:0
 }
-.section-head { display:flex; justify-content:space-between; align-items:center; margin:30px 0 16px; }
-.section-head h2 { font-size:20px; margin:0; }
-.section-head span { color:var(--muted); font-size:12px; }
-.grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:15px; }
-.card {
-  background:var(--panel); border:1px solid var(--border);
-  border-radius:16px; padding:20px; min-width:0;
-  transition:transform .2s,border-color .2s;
+.card{transition:.2s}
+.card:hover{border-color:var(--blue);transform:translateY(-2px)}
+.card-icon{font-size:25px;margin-bottom:12px}
+.card h3{margin:0 0 8px}
+.card p{color:var(--muted);font-size:13px;line-height:1.8}
+button.primary,.secondary,.danger{
+  border:0;border-radius:10px;padding:12px 15px;
+  color:white;background:linear-gradient(110deg,var(--blue),#5269e9);
+  font-weight:700
 }
-.card:hover { transform:translateY(-3px); border-color:rgba(99,133,255,.55); }
-.card-icon {
-  width:44px; height:44px; border-radius:13px;
-  display:grid; place-items:center; font-size:22px;
-  background:#202b48; margin-bottom:17px;
+.secondary{background:var(--panel2);border:1px solid var(--border)}
+.danger{background:#702d42}
+.card button{width:100%;margin-top:10px}
+.workspace{margin-top:20px}
+.page{display:none}
+.page.active{display:block}
+label{display:block;margin:15px 0 7px;font-size:14px;color:#d8e0f3}
+input,textarea,select{
+  width:100%;padding:12px;border-radius:10px;
+  border:1px solid var(--border);background:#090d17;
+  color:white;outline:none
 }
-.card h3 { font-size:16px; margin:0 0 8px; }
-.card p { font-size:13px; line-height:1.7; color:var(--muted); min-height:44px; }
-.tag {
-  display:inline-block; color:#d3dcf1; font-size:10px;
-  border:1px solid var(--border); padding:5px 8px; border-radius:20px;
+textarea{min-height:120px;resize:vertical;line-height:1.8}
+input:focus,textarea:focus,select:focus{border-color:var(--blue)}
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
+.actions button{width:auto}
+.notice{color:var(--cyan);font-size:13px;min-height:22px;line-height:1.8}
+.result{
+  white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.9;
+  background:#090d17;border:1px solid var(--border);
+  border-radius:10px;padding:14px;margin-top:14px
 }
-.card button,.primary {
-  width:100%; border:1px solid var(--border); color:white;
-  background:var(--panel2); padding:11px; border-radius:9px; margin-top:14px;
-}
-.card button:hover { background:#253456; }
-.primary {
-  background:linear-gradient(110deg,var(--blue),#5269e9);
-  border:0; font-weight:700;
-}
-.primary:hover { filter:brightness(1.12); }
-.workspace {
-  margin-top:28px; padding:22px; background:var(--panel);
-  border:1px solid var(--border); border-radius:16px;
-}
-.workspace h2 { margin-top:0; }
-textarea {
-  width:100%; min-height:110px; resize:vertical;
-  background:#090d17; color:white; border:1px solid var(--border);
-  border-radius:11px; padding:14px; outline:none; line-height:1.6;
-}
-textarea:focus { border-color:var(--blue); }
-.workspace-actions { display:flex; gap:10px; flex-wrap:wrap; }
-.workspace-actions button { width:auto; padding:11px 16px; }
-#notice { color:var(--cyan); font-size:13px; min-height:20px; }
-.page { display:none; }
-.page.active { display:block; }
-.footer { margin-top:40px; padding-top:20px; border-top:1px solid var(--border); color:#75819a; font-size:12px; line-height:1.8; }
-.mobile-brand { display:none; }
-@media(max-width:900px) {
-  .sidebar { width:205px; }
-  .main { padding:24px 20px; }
-  .grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
-}
-@media(max-width:600px) {
-  .layout { display:block; }
-  .sidebar { width:100%; padding:14px; border-right:0; border-bottom:1px solid var(--border); }
-  .brand { margin-bottom:12px; }
-  .nav-label,.side-bottom { display:none; }
-  .nav-list { display:flex; overflow-x:auto; gap:5px; padding-bottom:3px; }
-  .nav-btn { width:auto; white-space:nowrap; padding:10px; margin:0; font-size:12px; }
-  .nav-icon { width:auto; }
-  .main { padding:22px 15px 35px; }
-  .topbar { align-items:flex-start; }
-  .status { font-size:10px; padding:8px; }
-  .hero { padding:22px 18px; }
-  .grid { grid-template-columns:1fr; }
-  .card p { min-height:0; }
+.saved-item{padding:14px 0;border-bottom:1px solid var(--border)}
+.footer{margin-top:35px;padding-top:18px;border-top:1px solid var(--border);color:#75819a;font-size:12px;line-height:1.9}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){
+ .layout{display:block}
+ .sidebar{width:100%;padding:12px;border-left:0;border-bottom:1px solid var(--border)}
+ .brand{margin-bottom:12px}
+ .nav-label{display:none}
+ .nav-list{display:flex;overflow-x:auto;gap:5px}
+ .nav-btn{width:auto;white-space:nowrap;padding:10px;margin:0;font-size:12px}
+ .main{padding:18px 13px 30px}
+ .grid{grid-template-columns:1fr}
+ .hero{padding:20px}
 }
 </style>
 </head>
+
 <body>
 <div class="layout">
-  <aside class="sidebar">
-    <div class="brand">
-      <div class="logo">J2</div>
-      <div class="brand-name">Jon2 <span>AI</span></div>
+<aside class="sidebar">
+  <div class="brand">
+    <div class="logo">J2</div>
+    <div class="brand-name">Jon2 <span>AI</span></div>
+  </div>
+
+  <div class="nav-label" data-ar="مساحة العمل" data-en="WORKSPACE">مساحة العمل</div>
+
+  <nav class="nav-list">
+    <button class="nav-btn active" data-page="home">⌂ <span data-ar="الرئيسية" data-en="Home">الرئيسية</span></button>
+    <button class="nav-btn" data-page="chat">◈ <span data-ar="المساعد" data-en="Chat">المساعد</span></button>
+    <button class="nav-btn" data-page="image">▧ <span data-ar="الصور" data-en="Images">الصور</span></button>
+    <button class="nav-btn" data-page="video">▷ <span data-ar="الفيديو" data-en="Video">الفيديو</span></button>
+    <button class="nav-btn" data-page="voice">♫ <span data-ar="الصوت" data-en="Voice">الصوت</span></button>
+    <button class="nav-btn" data-page="story">📖 <span data-ar="القصص" data-en="Stories">القصص</span></button>
+    <button class="nav-btn" data-page="saved">▤ <span data-ar="محفوظاتي" data-en="Saved">محفوظاتي</span></button>
+    <button class="nav-btn" data-page="lab">⌘ <span data-ar="مختبر AI" data-en="AI Lab">مختبر AI</span></button>
+  </nav>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">JON2 AI WORKSPACE</div>
+      <h1 id="pageTitle">تخيّل. ابتكر. جدّد.</h1>
     </div>
-    <div class="nav-label">WORKSPACE</div>
-    <nav class="nav-list">
-      <button class="nav-btn active" data-page="home"><span class="nav-icon">⌂</span> Overview</button>
-      <button class="nav-btn" data-page="chat"><span class="nav-icon">◈</span> Jon2 Chat</button>
-      <button class="nav-btn" data-page="image"><span class="nav-icon">▧</span> Image Studio</button>
-      <button class="nav-btn" data-page="video"><span class="nav-icon">▷</span> Video Studio</button>
-      <button class="nav-btn" data-page="voice"><span class="nav-icon">♫</span> Voice Studio</button>
-      <button class="nav-btn" data-page="automation"><span class="nav-icon">⟳</span> Automation</button>
-      <button class="nav-btn" data-page="lab"><span class="nav-icon">⌘</span> AI Lab</button>
-    </nav>
-    <div class="side-bottom">
-      <strong>Jon2 AI Lab</strong>
-      <p>Your independent AI journey starts here. Build, test, and improve one step at a time.</p>
+    <div class="actions" style="margin:0">
+      <button class="secondary" id="languageBtn" onclick="toggleLanguage()">English</button>
+      <span class="status" data-ar="نسخة تجريبية" data-en="Early Preview">نسخة تجريبية</span>
     </div>
-  </aside>
-  <main class="main">
-    <div class="topbar">
-      <div>
-        <div class="eyebrow">YOUR CREATIVE AI WORKSPACE</div>
-        <h1 id="pageTitle">Imagine. Create. Innovate.</h1>
-      </div>
-      <div class="status"><i></i> Early Preview</div>
+  </div>
+
+  <section class="page active" id="home">
+    <p class="subtitle" data-ar="مساحتك لتنظيم الأفكار وإنشاء البرومبتات وتجهيز مشاريعك الإبداعية." data-en="Your workspace for ideas, prompts, and creative projects.">مساحتك لتنظيم الأفكار وإنشاء البرومبتات وتجهيز مشاريعك الإبداعية.</p>
+
+    <div class="hero">
+      <h2 data-ar="كل أفكارك في مكان واحد ✨" data-en="All your ideas in one place ✨">كل أفكارك في مكان واحد ✨</h2>
+      <p data-ar="ابدأ بفكرتك، جهّز النصوص والبرومبتات، واحفظ شغلك على جهازك. سنضيف خدمات الذكاء الاصطناعي الفعلية عندما نجد خيارات مناسبة." data-en="Start with an idea, prepare prompts, and save your work on this device. Real AI services can be added when suitable options are available.">ابدأ بفكرتك، جهّز النصوص والبرومبتات، واحفظ شغلك على جهازك. سنضيف خدمات الذكاء الاصطناعي الفعلية عندما نجد خيارات مناسبة.</p>
+      <button class="primary" onclick="showPage('story')" data-ar="ابدأ قصة جديدة ←" data-en="Start a story →">ابدأ قصة جديدة ←</button>
     </div>
-    <section id="home" class="page active">
-      <p class="subtitle">Welcome to Jon2 AI — an independent platform vision for intelligent tools, creative workflows, and future AI models.</p>
-      <div class="hero">
-        <div class="hero-badge">✦ THE FUTURE STARTS HERE</div>
-        <h2>One workspace. Limitless ideas.</h2>
-        <p>Explore your creative tools, prepare prompts, and shape the future of your own AI platform. This is the first foundation of Jon2 AI.</p>
-        <button class="primary" style="max-width:190px" onclick="showPage('chat')">Explore Jon2 AI →</button>
+
+    <h2 data-ar="أدواتك" data-en="Your tools">أدواتك</h2>
+    <div class="grid">
+      <article class="card"><div class="card-icon">◈</div><h3 data-ar="مساعد النصوص" data-en="Text Assistant">مساعد النصوص</h3><p data-ar="اكتب ونظّم أسئلتك وأفكارك." data-en="Write and organize your questions and ideas.">اكتب ونظّم أسئلتك وأفكارك.</p><button class="secondary" onclick="showPage('chat')" data-ar="افتح الأداة" data-en="Open tool">افتح الأداة</button></article>
+      <article class="card"><div class="card-icon">🖼️</div><h3 data-ar="استوديو الصور" data-en="Image Studio">استوديو الصور</h3><p data-ar="جهّز برومبتات الصور الفنية." data-en="Prepare image-generation prompts.">جهّز برومبتات الصور الفنية.</p><button class="secondary" onclick="showPage('image')" data-ar="ابدأ" data-en="Start">ابدأ</button></article>
+      <article class="card"><div class="card-icon">🎬</div><h3 data-ar="استوديو الفيديو" data-en="Video Studio">استوديو الفيديو</h3><p data-ar="جهّز وصف المشاهد والكاميرا." data-en="Prepare scene and camera instructions.">جهّز وصف المشاهد والكاميرا.</p><button class="secondary" onclick="showPage('video')" data-ar="ابدأ" data-en="Start">ابدأ</button></article>
+      <article class="card"><div class="card-icon">📖</div><h3 data-ar="منشئ القصص" data-en="Story Creator">منشئ القصص</h3><p data-ar="حوّل فكرتك إلى مشاهد مرتبة." data-en="Turn an idea into organized scenes.">حوّل فكرتك إلى مشاهد مرتبة.</p><button class="secondary" onclick="showPage('story')" data-ar="أنشئ قصة" data-en="Create story">أنشئ قصة</button></article>
+      <article class="card"><div class="card-icon">🎙️</div><h3 data-ar="استوديو الصوت" data-en="Voice Studio">استوديو الصوت</h3><p data-ar="اكتب نص التعليق الصوتي." data-en="Prepare narration text.">اكتب نص التعليق الصوتي.</p><button class="secondary" onclick="showPage('voice')" data-ar="ابدأ" data-en="Start">ابدأ</button></article>
+      <article class="card"><div class="card-icon">▤</div><h3 data-ar="محفوظاتي" data-en="My Library">محفوظاتي</h3><p data-ar="احتفظ بأفكارك ومشروعاتك على جهازك." data-en="Keep your ideas and projects on this device.">احتفظ بأفكارك ومشروعاتك على جهازك.</p><button class="secondary" onclick="showPage('saved')" data-ar="افتح المحفوظات" data-en="Open library">افتح المحفوظات</button></article>
+    </div>
+
+    <div class="workspace">
+      <h2 data-ar="مساحة الأفكار ✧" data-en="Idea Workspace ✧">مساحة الأفكار ✧</h2>
+      <textarea id="idea" placeholder="اكتب فكرتك هنا..."></textarea>
+      <div class="actions">
+        <button class="primary" onclick="saveText('idea','فكرة') " data-ar="حفظ الفكرة" data-en="Save idea">حفظ الفكرة</button>
+        <button class="secondary" onclick="copyText('idea')" data-ar="نسخ" data-en="Copy">نسخ</button>
+        <button class="secondary" onclick="downloadText('idea','jon2-idea.txt')" data-ar="تنزيل ملف" data-en="Download">تنزيل ملف</button>
       </div>
-      <div class="section-head"><h2>Your AI tools</h2><span>Platform modules</span></div>
-      <div class="grid">
-        <article class="card"><div class="card-icon">◈</div><h3>Jon2 Chat</h3><p>Prepare questions, ideas, and intelligent conversations.</p><span class="tag">Interface preview</span><button onclick="showPage('chat')">Open Chat →</button></article>
-        <article class="card"><div class="card-icon">▧</div><h3>Image Studio</h3><p>Plan original artwork and turn creative ideas into prompts.</p><span class="tag">Interface preview</span><button onclick="showPage('image')">Open Studio →</button></article>
-        <article class="card"><div class="card-icon">▷</div><h3>Video Studio</h3><p>Develop video concepts, scenes, and production prompts.</p><span class="tag">Interface preview</span><button onclick="showPage('video')">Open Studio →</button></article>
-        <article class="card"><div class="card-icon">♫</div><h3>Voice Studio</h3><p>Plan voice, narration, and audio experiences.</p><span class="tag">Coming soon</span><button onclick="showPage('voice')">Explore Voice →</button></article>
-        <article class="card"><div class="card-icon">⟳</div><h3>Automation</h3><p>Design repeatable workflows for future AI-powered tasks.</p><span class="tag">Coming soon</span><button onclick="showPage('automation')">Explore Tools →</button></article>
-        <article class="card"><div class="card-icon">⌘</div><h3>Jon2 AI Lab</h3><p>Organize experiments and plan the development of your own models.</p><span class="tag">Development lab</span><button onclick="showPage('lab')">Enter Lab →</button></article>
+      <p class="notice" id="ideaNotice"></p>
+    </div>
+  </section>
+
+  <section class="page" id="chat">
+    <div class="workspace">
+      <h2 data-ar="◈ مساعد Jon2" data-en="◈ Jon2 Assistant">◈ مساعد Jon2</h2>
+      <p class="subtitle" data-ar="هذه أداة لتنظيم السؤال ونسخه. لم يتم توصيل نموذج ذكاء اصطناعي حقيقي بهذه الصفحة بعد." data-en="This tool organizes your question. A real AI model is not connected to this page yet.">هذه أداة لتنظيم السؤال ونسخه. لم يتم توصيل نموذج ذكاء اصطناعي حقيقي بهذه الصفحة بعد.</p>
+      <textarea id="chatText" placeholder="اكتب سؤالك هنا..."></textarea>
+      <div class="actions">
+        <button class="primary" onclick="copyText('chatText')" data-ar="نسخ السؤال" data-en="Copy question">نسخ السؤال</button>
+        <button class="secondary" onclick="saveText('chatText','سؤال')" data-ar="حفظ السؤال" data-en="Save question">حفظ السؤال</button>
       </div>
-      <div class="workspace">
-        <h2>✧ Prompt Workspace</h2>
-        <p class="subtitle">Write and save your ideas on this device. Your prompts stay in this browser.</p>
-        <textarea id="prompt" placeholder="Describe your idea here... What do you want to create?"></textarea>
-        <div class="workspace-actions">
-          <button class="primary" onclick="savePrompt()">Save idea</button>
-          <button onclick="copyPrompt()">Copy text</button>
-          <button onclick="clearPrompt()">Clear</button>
-        </div>
-        <p id="notice" aria-live="polite"></p>
+      <p class="notice" id="chatTextNotice"></p>
+    </div>
+  </section>
+
+  <section class="page" id="image">
+    <div class="workspace">
+      <h2 data-ar="🖼️ منشئ برومبت الصور" data-en="🖼️ Image Prompt Builder">🖼️ منشئ برومبت الصور</h2>
+      <p class="subtitle" data-ar="اكتب وصفك، وسنرتّب لك برومبت جاهزًا للنسخ إلى أداة توليد صور." data-en="Describe your idea and prepare a prompt to copy into an image-generation tool.">اكتب وصفك، وسنرتّب لك برومبت جاهزًا للنسخ إلى أداة توليد صور.</p>
+      <label data-ar="وصف الصورة" data-en="Image description">وصف الصورة</label>
+      <textarea id="imageDesc" placeholder="مثال: أرنب أبيض في غابة سحرية..."></textarea>
+      <label data-ar="الأسلوب" data-en="Style">الأسلوب</label>
+      <select id="imageStyle">
+        <option value="cinematic 3D animated film style">3D Cartoon / كرتون ثلاثي الأبعاد</option>
+        <option value="photorealistic, natural lighting">واقعي / Photorealistic</option>
+        <option value="watercolor illustration">ألوان مائية / Watercolor</option>
+        <option value="anime illustration">أنمي / Anime</option>
+        <option value="fantasy concept art">خيال / Fantasy</option>
+      </select>
+      <label data-ar="مقاس الصورة" data-en="Aspect ratio">مقاس الصورة</label>
+      <select id="imageRatio"><option>16:9</option><option>1:1</option><option>9:16</option></select>
+      <div class="actions"><button class="primary" onclick="buildImage()" data-ar="إنشاء البرومبت" data-en="Build prompt">إنشاء البرومبت</button></div>
+      <div id="imageResult" class="result" hidden></div>
+      <div class="actions" id="imageActions" hidden>
+        <button class="secondary" onclick="copyResult('imageResult')" data-ar="نسخ البرومبت" data-en="Copy prompt">نسخ البرومبت</button>
+        <button class="secondary" onclick="saveResult('imageResult','برومبت صورة')" data-ar="حفظ" data-en="Save">حفظ</button>
+        <button class="secondary" onclick="downloadResult('imageResult','jon2-image-prompt.txt')" data-ar="تنزيل" data-en="Download">تنزيل</button>
       </div>
-    </section>
-    <section id="chat" class="page">
-      <p class="subtitle">Your future intelligent assistant workspace.</p>
-      <div class="workspace"><h2>◈ Jon2 Chat</h2><p class="subtitle">This is the first interface only. A real AI model has not been connected yet.</p><textarea id="chatPrompt" placeholder="Write a question or an idea to prepare..."></textarea><button class="primary" onclick="copyField('chatPrompt')">Copy question</button><p id="chatNotice"></p></div>
-    </section>
-    <section id="image" class="page">
-      <p class="subtitle">Plan your next image and prepare a reusable generation prompt.</p>
-      <div class="workspace"><h2>▧ Image Studio</h2><p class="subtitle">Image generation is not connected yet. You can prepare your prompt here.</p><textarea id="imagePrompt" placeholder="Example: A cinematic 3D fantasy forest at sunrise, highly detailed, wide composition..."></textarea><button class="primary" onclick="copyField('imagePrompt')">Copy image prompt</button><p id="imageNotice"></p></div>
-    </section>
-    <section id="video" class="page">
-      <p class="subtitle">Build a concept for your next film or video.</p>
-      <div class="workspace"><h2>▷ Video Studio</h2><p class="subtitle">Video generation is not connected yet. Use this space to prepare scene instructions.</p><textarea id="videoPrompt" placeholder="Describe the scene, characters, camera movement, style, and sound..."></textarea><button class="primary" onclick="copyField('videoPrompt')">Copy video prompt</button><p id="videoNotice"></p></div>
-    </section>
-    <section id="voice" class="page">
-      <div class="workspace"><h2>♫ Voice Studio</h2><p class="subtitle">Voice generation and audio tools are planned for a future version. No audio engine is connected yet.</p></div>
-    </section>
-    <section id="automation" class="page">
-      <div class="workspace"><h2>⟳ Automation Center</h2><p class="subtitle">Plan workflows and repetitive tasks. Automated execution has not been connected yet.</p><textarea id="automationPrompt" placeholder="Describe a workflow you want to automate..."></textarea><button class="primary" onclick="copyField('automationPrompt')">Copy workflow idea</button><p id="automationNotice"></p></div>
-    </section>
-    <section id="lab" class="page">
-      <div class="workspace"><h2>⌘ Jon2 AI Lab</h2><p class="subtitle">The development area for planning experiments, testing ideas, and eventually connecting your own models.</p><h3>Development roadmap</h3><p>01 — Build the website interface</p><p>02 — Connect a secure backend</p><p>03 — Integrate AI services or open models</p><p>04 — Experiment with training and evaluation</p><p>Note: Training and running powerful models requires computing resources. This page does not train models yet.</p></div>
-    </section>
-    <footer class="footer">JON2 AI · INDEPENDENT PROJECT<br>Early development preview. AI generation features are not connected yet.<br>© 2026 Jon2 AI</footer>
-  </main>
+      <p class="notice" id="imageNotice"></p>
+    </div>
+  </section>
+
+  <section class="page" id="video">
+    <div class="workspace">
+      <h2 data-ar="🎬 منشئ برومبت الفيديو" data-en="🎬 Video Prompt Builder">🎬 منشئ برومبت الفيديو</h2>
+      <p class="subtitle" data-ar="جهّز وصف المشهد وحركة الكاميرا والإضاءة." data-en="Prepare scene descriptions, camera movement, and lighting.">جهّز وصف المشهد وحركة الكاميرا والإضاءة.</p>
+      <label data-ar="وصف المشهد" data-en="Scene description">وصف المشهد</label>
+      <textarea id="videoDesc" placeholder="اكتب ما الذي يحدث في المشهد..."></textarea>
+      <label data-ar="حركة الكاميرا" data-en="Camera movement">حركة الكاميرا</label>
+      <select id="cameraMove">
+        <option value="slow cinematic tracking shot">حركة تتبع سينمائية</option>
+        <option value="slow zoom in">تقريب بطيء</option>
+        <option value="wide establishing shot">لقطة واسعة</option>
+        <option value="smooth orbiting camera">دوران سلس حول الشخصيات</option>
+      </select>
+      <label data-ar="الأسلوب" data-en="Style">الأسلوب</label>
+      <select id="videoStyle">
+        <option value="high quality cinematic 3D animation">كرتون 3D سينمائي</option>
+        <option value="cinematic photorealism">واقعي سينمائي</option>
+        <option value="anime cinematic style">أنمي سينمائي</option>
+      </select>
+      <div class="actions"><button class="primary" onclick="buildVideo()" data-ar="إنشاء البرومبت" data-en="Build prompt">إنشاء البرومبت</button></div>
+      <div id="videoResult" class="result" hidden></div>
+      <div class="actions" id="videoActions" hidden>
+        <button class="secondary" onclick="copyResult('videoResult')" data-ar="نسخ" data-en="Copy">نسخ</button>
+        <button class="secondary" onclick="saveResult('videoResult','برومبت فيديو')" data-ar="حفظ" data-en="Save">حفظ</button>
+        <button class="secondary" onclick="downloadResult('videoResult','jon2-video-prompt.txt')" data-ar="تنزيل" data-en="Download">تنزيل</button>
+      </div>
+      <p class="notice" id="videoNotice"></p>
+    </div>
+  </section>
+
+  <section class="page" id="voice">
+    <div class="workspace">
+      <h2 data-ar="🎙️ تجهيز التعليق الصوتي" data-en="🎙️ Narration Prep">🎙️ تجهيز التعليق الصوتي</h2>
+      <p class="subtitle" data-ar="اكتب نص التعليق الصوتي واحفظه أو نزّله. هذه الصفحة لا تنشئ ملفًا صوتيًا حقيقيًا بعد." data-en="Write, save, or download narration text. This page does not generate an audio file yet.">اكتب نص التعليق الصوتي واحفظه أو نزّله. هذه الصفحة لا تنشئ ملفًا صوتيًا حقيقيًا بعد.</p>
+      <textarea id="voiceText" placeholder="اكتب نص الراوي أو الحوار..."></textarea>
+      <div class="actions">
+        <button class="primary" onclick="copyText('voiceText')" data-ar="نسخ النص" data-en="Copy text">نسخ النص</button>
+        <button class="secondary" onclick="saveText('voiceText','نص صوتي')" data-ar="حفظ" data-en="Save">حفظ</button>
+        <button class="secondary" onclick="downloadText('voiceText','jon2-narration.txt')" data-ar="تنزيل النص" data-en="Download text">تنزيل النص</button>
+      </div>
+      <p class="notice" id="voiceTextNotice"></p>
+    </div>
+  </section>
+
+  <section class="page" id="story">
+    <div class="workspace">
+      <h2 data-ar="📖 منشئ القصص والمشاهد" data-en="📖 Story and Scene Builder">📖 منشئ القصص والمشاهد</h2>
+      <p class="subtitle" data-ar="جهّز خطة قصة مقسمة إلى مشاهد. هذا المنشئ ينظم مدخلاتك ولا يستخدم نموذجًا لتأليف القصة تلقائيًا." data-en="Organize a story plan into scenes. This builder structures your input; it does not use an AI model to write a story automatically.">جهّز خطة قصة مقسمة إلى مشاهد. هذا المنشئ ينظم مدخلاتك ولا يستخدم نموذجًا لتأليف القصة تلقائيًا.</p>
+      <label data-ar="عنوان القصة" data-en="Story title">عنوان القصة</label>
+      <input id="storyTitle" placeholder="سر النبع الزمردي">
+      <label data-ar="الفكرة الأساسية" data-en="Main idea">الفكرة الأساسية</label>
+      <textarea id="storyIdea" placeholder="اكتب فكرة القصة والشخصيات والهدف..."></textarea>
+      <label data-ar="عدد المشاهد" data-en="Number of scenes">عدد المشاهد</label>
+      <select id="sceneCount"><option value="3">3</option><option value="5" selected>5</option><option value="8">8</option><option value="10">10</option></select>
+      <div class="actions"><button class="primary" onclick="buildStory()" data-ar="تجهيز خطة المشاهد" data-en="Build scene plan">تجهيز خطة المشاهد</button></div>
+      <div id="storyResult" class="result" hidden></div>
+      <div class="actions" id="storyActions" hidden>
+        <button class="secondary" onclick="copyResult('storyResult')" data-ar="نسخ الخطة" data-en="Copy plan">نسخ الخطة</button>
+        <button class="secondary" onclick="saveResult('storyResult','خطة قصة')" data-ar="حفظ الخطة" data-en="Save plan">حفظ الخطة</button>
+        <button class="secondary" onclick="downloadResult('storyResult','jon2-story-plan.txt')" data-ar="تنزيل الخطة" data-en="Download plan">تنزيل الخطة</button>
+      </div>
+      <p class="notice" id="storyNotice"></p>
+    </div>
+  </section>
+
+  <section class="page" id="saved">
+    <div class="workspace">
+      <h2 data-ar="▤ محفوظاتي" data-en="▤ My Library">▤ محفوظاتي</h2>
+      <p class="subtitle" data-ar="العناصر المحفوظة في هذا المتصفح على هذا الجهاز." data-en="Items saved in this browser on this device.">العناصر المحفوظة في هذا المتصفح على هذا الجهاز.</p>
+      <div id="savedList"></div>
+      <div class="actions"><button class="secondary" onclick="exportLibrary()" data-ar="تصدير كل المحفوظات" data-en="Export library">تصدير كل المحفوظات</button></div>
+      <p class="notice" id="savedNotice"></p>
+    </div>
+  </section>
+
+  <section class="page" id="lab">
+    <div class="workspace">
+      <h2 data-ar="⌘ مختبر Jon2 AI" data-en="⌘ Jon2 AI Lab">⌘ مختبر Jon2 AI</h2>
+      <p class="subtitle" data-ar="مكان لتخطيط التطوير وتجربة الأدوات. هذه الصفحة لا تدرب نماذج ذكاء اصطناعي." data-en="A place to plan development and test tools. This page does not train AI models.">مكان لتخطيط التطوير وتجربة الأدوات. هذه الصفحة لا تدرب نماذج ذكاء اصطناعي.</p>
+      <h3 data-ar="خارطة التطوير" data-en="Development roadmap">خارطة التطوير</h3>
+      <p>01 — <span data-ar="تحسين واجهة الموقع" data-en="Improve the website interface">تحسين واجهة الموقع</span></p>
+      <p>02 — <span data-ar="اختبار أدوات مجانية حقيقية" data-en="Test real free tools">اختبار أدوات مجانية حقيقية</span></p>
+      <p>03 — <span data-ar="ربط خدمات الذكاء الاصطناعي بأمان" data-en="Connect AI services securely">ربط خدمات الذكاء الاصطناعي بأمان</span></p>
+      <p>04 — <span data-ar="اختبار الميزات قبل إعلان أنها تعمل" data-en="Test features before claiming they work">اختبار الميزات قبل إعلان أنها تعمل</span></p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    JON2 AI · INDEPENDENT PROJECT<br>
+    <span data-ar="نسخة تطويرية. ميزات توليد الصور والفيديو والصوت والشات الحقيقي تحتاج خدمات فعلية متصلة." data-en="Development preview. Real chat, image, video, and audio generation require connected services.">نسخة تطويرية. ميزات توليد الصور والفيديو والصوت والشات الحقيقي تحتاج خدمات فعلية متصلة.</span>
+  </footer>
+</main>
 </div>
+
 <script>
-const titles = {
-  home:"Imagine. Create. Innovate.",
-  chat:"Jon2 Chat",
-  image:"Image Studio",
-  video:"Video Studio",
-  voice:"Voice Studio",
-  automation:"Automation Center",
-  lab:"Jon2 AI Lab"
+let language = "ar";
+let currentPage = "home";
+
+const pageTitles = {
+  ar:{
+    home:"تخيّل. ابتكر. جدّد.",
+    chat:"مساعد Jon2",
+    image:"استوديو الصور",
+    video:"استوديو الفيديو",
+    voice:"استوديو الصوت",
+    story:"منشئ القصص",
+    saved:"محفوظاتي",
+    lab:"مختبر Jon2 AI"
+  },
+  en:{
+    home:"Imagine. Create. Innovate.",
+    chat:"Jon2 Assistant",
+    image:"Image Studio",
+    video:"Video Studio",
+    voice:"Voice Studio",
+    story:"Story Creator",
+    saved:"My Library",
+    lab:"Jon2 AI Lab"
+  }
 };
-function showPage(id) {
-  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+
+function showPage(id){
+  currentPage = id;
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
   document.getElementById(id).classList.add("active");
-  document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b.dataset.page === id));
-  document.getElementById("pageTitle").textContent = titles[id] || "Jon2 AI";
+  document.querySelectorAll(".nav-btn").forEach(b=>{
+    b.classList.toggle("active",b.dataset.page===id);
+  });
+  document.getElementById("pageTitle").textContent=pageTitles[language][id];
+  if(id==="saved") renderSaved();
   window.scrollTo({top:0,behavior:"smooth"});
 }
-document.querySelectorAll(".nav-btn").forEach(btn => {
-  btn.addEventListener("click", () => showPage(btn.dataset.page));
+
+document.querySelectorAll(".nav-btn").forEach(btn=>{
+  btn.addEventListener("click",()=>showPage(btn.dataset.page));
 });
-function savePrompt() {
-  const value = document.getElementById("prompt").value;
-  if (!value.trim()) { document.getElementById("notice").textContent = "Write an idea first."; return; }
-  try {
-    localStorage.setItem("jon2_saved_prompt", value);
-    document.getElementById("notice").textContent = "Idea saved on this device.";
-  } catch(e) {
-    document.getElementById("notice").textContent = "Could not save in this browser.";
+
+function toggleLanguage(){
+  language = language==="ar" ? "en" : "ar";
+  document.documentElement.lang=language;
+  document.documentElement.dir=language==="ar" ? "rtl" : "ltr";
+  document.getElementById("languageBtn").textContent=language==="ar" ? "English" : "العربية";
+  document.querySelectorAll("[data-ar][data-en]").forEach(el=>{
+    el.textContent=el.dataset[language];
+  });
+  document.querySelectorAll("textarea,input").forEach(el=>{
+    el.placeholder = language==="ar"
+      ? (el.dataset.arPlaceholder || el.getAttribute("placeholder"))
+      : (el.dataset.enPlaceholder || el.getAttribute("placeholder"));
+  });
+  document.getElementById("pageTitle").textContent=pageTitles[language][currentPage];
+}
+
+function readLibrary(){
+  try{return JSON.parse(localStorage.getItem("jon2_library")||"[]")}
+  catch(e){return []}
+}
+function writeLibrary(items){
+  try{
+    localStorage.setItem("jon2_library",JSON.stringify(items));
+    return true;
+  }catch(e){return false}
+}
+function saveItem(title,text){
+  if(!text.trim()) return false;
+  const items=readLibrary();
+  items.unshift({
+    id:Date.now()+Math.random(),
+    title:title,
+    text:text,
+    date:new Date().toLocaleString()
+  });
+  return writeLibrary(items.slice(0,100));
+}
+function saveText(id,title){
+  const field=document.getElementById(id);
+  const notice=document.getElementById(id+"Notice");
+  if(!field.value.trim()){
+    if(notice) notice.textContent=language==="ar"?"اكتب شيئًا أولًا.":"Write something first.";
+    return;
+  }
+  const ok=saveItem(title,field.value);
+  if(notice) notice.textContent=ok
+    ? (language==="ar"?"تم الحفظ على هذا الجهاز.":"Saved on this device.")
+    : (language==="ar"?"تعذر الحفظ. قد تكون مساحة المتصفح ممتلئة.":"Could not save. Browser storage may be full.");
+}
+async function copyText(id){
+  const field=document.getElementById(id);
+  const notice=document.getElementById(id+"Notice");
+  if(!field.value.trim()){
+    if(notice) notice.textContent=language==="ar"?"اكتب شيئًا أولًا.":"Write something first.";
+    return;
+  }
+  try{
+    await navigator.clipboard.writeText(field.value);
+    if(notice) notice.textContent=language==="ar"?"تم النسخ.":"Copied.";
+  }catch(e){
+    field.focus();field.select();
+    const ok=document.execCommand("copy");
+    if(notice) notice.textContent=ok
+      ? (language==="ar"?"تم النسخ.":"Copied.")
+      : (language==="ar"?"حدد النص وانسخه يدويًا.":"Select and copy the text manually.");
   }
 }
-function copyPrompt() { copyField("prompt"); }
-function clearPrompt() {
-  document.getElementById("prompt").value = "";
-  document.getElementById("notice").textContent = "";
+function downloadString(text,name){
+  const blob=new Blob([text],{type:"text/plain;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download=name;a.click();
+  URL.revokeObjectURL(url);
 }
-function copyField(id) {
-  const field = document.getElementById(id);
-  const output = document.getElementById(id === "prompt" ? "notice" : id.replace("Prompt","Notice"));
-  if (!field.value.trim()) { if(output) output.textContent = "Write something first."; return; }
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(field.value).then(() => {
-      if(output) output.textContent = "Copied successfully.";
-    }).catch(() => fallbackCopy(field, output));
-  } else fallbackCopy(field, output);
+function downloadText(id,name){
+  const text=document.getElementById(id).value;
+  const notice=document.getElementById(id+"Notice");
+  if(!text.trim()){
+    if(notice) notice.textContent=language==="ar"?"اكتب شيئًا أولًا.":"Write something first.";
+    return;
+  }
+  downloadString(text,name);
 }
-function fallbackCopy(field, output) {
-  field.select();
-  const ok = document.execCommand("copy");
-  if(output) output.textContent = ok ? "Copied successfully." : "Select and copy the text manually.";
+function buildImage(){
+  const desc=document.getElementById("imageDesc").value.trim();
+  const notice=document.getElementById("imageNotice");
+  if(!desc){notice.textContent=language==="ar"?"اكتب وصف الصورة أولًا.":"Enter an image description first.";return}
+  const style=document.getElementById("imageStyle").value;
+  const ratio=document.getElementById("imageRatio").value;
+  const prompt=`${desc}\nStyle: ${style}\nComposition: ${ratio} aspect ratio, clear subject, detailed environment, balanced composition, high quality.`;
+  document.getElementById("imageResult").textContent=prompt;
+  document.getElementById("imageResult").hidden=false;
+  document.getElementById("imageActions").hidden=false;
+  notice.textContent=language==="ar"?"تم تجهيز البرومبت. لم يتم إنشاء صورة فعلية.":"Prompt prepared. No actual image was generated.";
 }
-try {
-  const saved = localStorage.getItem("jon2_saved_prompt");
-  if (saved) document.getElementById("prompt").value = saved;
-} catch(e) {}
+function buildVideo(){
+  const desc=document.getElementById("videoDesc").value.trim();
+  const notice=document.getElementById("videoNotice");
+  if(!desc){notice.textContent=language==="ar"?"اكتب وصف المشهد أولًا.":"Enter a scene description first.";return}
+  const prompt=`Scene: ${desc}\nVisual style: ${document.getElementById("videoStyle").value}\nCamera movement: ${document.getElementById("cameraMove").value}\nLighting: cinematic lighting, consistent characters, smooth motion, detailed environment.\nImportant: maintain character and visual continuity throughout the scene.`;
+  document.getElementById("videoResult").textContent=prompt;
+  document.getElementById("videoResult").hidden=false;
+  document.getElementById("videoActions").hidden=false;
+  notice.textContent=language==="ar"?"تم تجهيز البرومبت. لم يتم إنشاء فيديو فعلي.":"Prompt prepared. No actual video was generated.";
+}
+function buildStory(){
+  const title=document.getElementById("storyTitle").value.trim();
+  const idea=document.getElementById("storyIdea").value.trim();
+  const count=Number(document.getElementById("sceneCount").value);
+  const notice=document.getElementById("storyNotice");
+  if(!title||!idea){notice.textContent=language==="ar"?"اكتب عنوان القصة وفكرتها أولًا.":"Enter a story title and idea first.";return}
+  let text=`${title}\n\n${language==="ar"?"الفكرة الأساسية":"Main idea"}:\n${idea}\n\n`;
+  for(let i=1;i<=count;i++){
+    text+=`${language==="ar"?"المشهد":"Scene"} ${i}\n`;
+    text+=language==="ar"
+      ?"وصف الأحداث: [اكتب ما يحدث في هذا المشهد]\nالشخصيات: [حدد الشخصيات]\nبرومبت الصورة: [صف الشكل والإضاءة والمكان]\nالحركة والصوت: [حدد الحركة والمؤثرات]\n\n"
+      :"Action: [Describe what happens]\nCharacters: [List characters]\nImage prompt: [Describe visuals, lighting, and setting]\nMotion and sound: [Describe movement and sound effects]\n\n";
+  }
+  document.getElementById("storyResult").textContent=text;
+  document.getElementById("storyResult").hidden=false;
+  document.getElementById("storyActions").hidden=false;
+  notice.textContent=language==="ar"?"تم إنشاء قالب للمشاهد. املأ تفاصيل كل مشهد.":"Scene template created. Fill in each scene's details.";
+}
+async function copyResult(id){
+  try{
+    await navigator.clipboard.writeText(document.getElementById(id).textContent);
+    const notice=document.getElementById(id.replace("Result","Notice"));
+    if(notice) notice.textContent=language==="ar"?"تم النسخ.":"Copied.";
+  }catch(e){
+    const range=document.createRange();
+    range.selectNodeContents(document.getElementById(id));
+    const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+    const notice=document.getElementById(id.replace("Result","Notice"));
+    if(notice) notice.textContent=language==="ar"?"حدد النص وانسخه يدويًا.":"Select and copy the text manually.";
+  }
+}
+function saveResult(id,title){
+  const text=document.getElementById(id).textContent;
+  const ok=saveItem(title,text);
+  const notice=document.getElementById(id.replace("Result","Notice"));
+  if(notice) notice.textContent=ok
+    ? (language==="ar"?"تم الحفظ على جهازك.":"Saved on your device.")
+    : (language==="ar"?"تعذر الحفظ.":"Could not save.");
+}
+function downloadResult(id,name){
+  downloadString(document.getElementById(id).textContent,name);
+}
+function renderSaved(){
+  const list=document.getElementById("savedList");
+  const items=readLibrary();
+  if(!items.length){
+    list.textContent=language==="ar"?"لا توجد عناصر محفوظة حتى الآن.":"Nothing saved yet.";
+    return;
+  }
+  list.innerHTML="";
+  items.forEach(item=>{
+    const box=document.createElement("div");
+    box.className="saved-item";
+    const heading=document.createElement("strong");
+    heading.textContent=item.title;
+    const date=document.createElement("p");
+    date.className="subtitle";
+    date.textContent=item.date;
+    const preview=document.createElement("p");
+    preview.textContent=item.text.length>220?item.text.slice(0,220)+"…":item.text;
+    const actions=document.createElement("div");
+    actions.className="actions";
+    const copy=document.createElement("button");
+    copy.className="secondary";
+    copy.textContent=language==="ar"?"نسخ":"Copy";
+    copy.onclick=async()=>{
+      try{await navigator.clipboard.writeText(item.text);document.getElementById("savedNotice").textContent=language==="ar"?"تم النسخ.":"Copied."}
+      catch(e){downloadString(item.text,"jon2-saved.txt")}
+    };
+    const download=document.createElement("button");
+    download.className="secondary";
+    download.textContent=language==="ar"?"تنزيل":"Download";
+    download.onclick=()=>downloadString(item.text,"jon2-saved.txt");
+    const remove=document.createElement("button");
+    remove.className="danger";
+    remove.textContent=language==="ar"?"حذف":"Delete";
+    remove.onclick=()=>{
+      if(!confirm(language==="ar"?"هل تريد حذف هذا العنصر؟":"Delete this item?"))return;
+      writeLibrary(readLibrary().filter(x=>x.id!==item.id));
+      renderSaved();
+    };
+    actions.append(copy,download,remove);
+    box.append(heading,date,preview,actions);
+    list.appendChild(box);
+  });
+}
+function exportLibrary(){
+  const items=readLibrary();
+  if(!items.length){
+    document.getElementById("savedNotice").textContent=language==="ar"?"لا توجد محفوظات لتصديرها.":"Nothing to export.";
+    return;
+  }
+  downloadString(items.map(x=>`${x.title}\n${x.date}\n\n${x.text}\n\n----------------\n`).join("\n"),"jon2-library.txt");
+}
 </script>
 </body>
 </html>
