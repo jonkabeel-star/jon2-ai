@@ -565,6 +565,465 @@ function exportLibrary(){
   }
   downloadString(items.map(x=>`${x.title}\n${x.date}\n\n${x.text}\n\n----------------\n`).join("\n"),"jon2-library.txt");
 }
+</script> 
+  <!-- JON2 AI - AI TOOLS PANEL -->
+<script src="https://js.puter.com/v2/"></script>
+
+<style>
+#jon2-ai-panel {
+  direction: rtl;
+  font-family: Arial, sans-serif;
+  background: #080d1b;
+  color: #fff;
+  padding: 24px 14px;
+  border-radius: 20px;
+  max-width: 900px;
+  margin: 24px auto;
+  box-sizing: border-box;
+}
+
+#jon2-ai-panel * {
+  box-sizing: border-box;
+}
+
+#jon2-ai-panel h2 {
+  color: #65e6ff;
+  text-align: center;
+}
+
+#jon2-ai-panel .jon2-subtitle {
+  text-align: center;
+  color: #bdc9dc;
+  line-height: 1.8;
+}
+
+#jon2-ai-panel .jon2-card {
+  background: #111a2e;
+  border: 1px solid #273954;
+  border-radius: 15px;
+  padding: 17px;
+  margin-top: 16px;
+}
+
+#jon2-ai-panel label {
+  display: block;
+  margin: 12px 0 7px;
+  font-weight: bold;
+}
+
+#jon2-ai-panel textarea,
+#jon2-ai-panel select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #344b6c;
+  background: #080d1b;
+  color: #fff;
+  font-size: 15px;
+}
+
+#jon2-ai-panel textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+#jon2-ai-panel button {
+  border: 0;
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: bold;
+  width: 100%;
+}
+
+#jon2-ai-panel .jon2-test {
+  background: #1d3557;
+  color: #fff;
+}
+
+#jon2-ai-panel .jon2-real {
+  background: #31d5c8;
+  color: #06121c;
+}
+
+#jon2-ai-panel .jon2-status {
+  background: #080d1b;
+  color: #dbe8ff;
+  padding: 12px;
+  margin-top: 12px;
+  border-radius: 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+
+#jon2-ai-panel .jon2-result {
+  margin-top: 12px;
+  overflow-wrap: anywhere;
+}
+
+#jon2-ai-panel .jon2-result img,
+#jon2-ai-panel .jon2-result video {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border-radius: 12px;
+  margin-top: 12px;
+}
+
+#jon2-ai-panel .jon2-note {
+  color: #ffd78a;
+  font-size: 13px;
+  line-height: 1.8;
+}
+</style>
+
+<section id="jon2-ai-panel">
+  <h2>✨ Jon2 AI Studio</h2>
+
+  <p class="jon2-subtitle">
+    مساعدك الإبداعي للقصص والصور والصوت والفيديو.
+    <br>
+    Your AI creative studio.
+  </p>
+
+  <div class="jon2-card">
+    <h3>🧠 مساعد الذكاء الاصطناعي</h3>
+
+    <label for="jon2-chat-input">اكتب طلبك</label>
+
+    <textarea id="jon2-chat-input"
+      placeholder="مثال: اكتب قصة كرتونية مدتها دقيقة عن أرنب شجاع..."></textarea>
+
+    <button class="jon2-test"
+      onclick="jon2Chat(true)">
+      تجربة المساعد بدون توليد فعلي
+    </button>
+
+    <button class="jon2-real"
+      onclick="jon2Chat(false)">
+      تشغيل الذكاء الاصطناعي
+    </button>
+
+    <div id="jon2-chat-status" class="jon2-status">
+      جاهز لاستقبال طلبك.
+    </div>
+
+    <div id="jon2-chat-result" class="jon2-result"></div>
+  </div>
+
+  <div class="jon2-card">
+    <h3>🖼️ استوديو الصور</h3>
+
+    <label for="jon2-image-input">وصف الصورة</label>
+
+    <textarea id="jon2-image-input"
+      placeholder="A cute 3D cartoon rabbit in a magical forest..."></textarea>
+
+    <button class="jon2-test"
+      onclick="jon2Image(true)">
+      تجربة صورة نموذجية
+    </button>
+
+    <button class="jon2-real"
+      onclick="jon2Image(false)">
+      إنشاء صورة بالذكاء الاصطناعي
+    </button>
+
+    <div id="jon2-image-status" class="jon2-status">
+      اكتب وصف الصورة للبدء.
+    </div>
+
+    <div id="jon2-image-result" class="jon2-result"></div>
+  </div>
+
+  <div class="jon2-card">
+    <h3>🎙️ استوديو الصوت</h3>
+
+    <label for="jon2-voice-input">النص المراد تحويله إلى صوت</label>
+
+    <textarea id="jon2-voice-input"
+      placeholder="مرحبًا بكم في قصتنا الجديدة..."></textarea>
+
+    <button class="jon2-test"
+      onclick="jon2Voice(true)">
+      تجربة صوت نموذجي
+    </button>
+
+    <button class="jon2-real"
+      onclick="jon2Voice(false)">
+      إنشاء الصوت
+    </button>
+
+    <div id="jon2-voice-status" class="jon2-status">
+      اكتب النص أولًا.
+    </div>
+
+    <div id="jon2-voice-result" class="jon2-result"></div>
+  </div>
+
+  <div class="jon2-card">
+    <h3>🎬 استوديو الفيديو</h3>
+
+    <label for="jon2-video-input">وصف المشهد والحركة</label>
+
+    <textarea id="jon2-video-input"
+      placeholder="A white rabbit runs through a magical forest, cinematic tracking shot..."></textarea>
+
+    <button class="jon2-test"
+      onclick="jon2Video(true)">
+      تجربة فيديو نموذجي
+    </button>
+
+    <button class="jon2-real"
+      onclick="jon2Video(false)">
+      إنشاء مقطع فيديو
+    </button>
+
+    <div id="jon2-video-status" class="jon2-status">
+      اكتب وصف المشهد للبدء.
+    </div>
+
+    <div id="jon2-video-result" class="jon2-result"></div>
+  </div>
+
+  <p class="jon2-note">
+    تنبيه: وضع الاختبار يعرض نتائج تجريبية وليس المحتوى الذي طلبته.
+    التوليد الفعلي يعتمد على توفر الخدمة وشروط الاستخدام وتكلفتها.
+    لا تدخل كلمات مرورك أو مفاتيح API السرية هنا.
+  </p>
+</section>
+
+<script>
+(function () {
+  function getText(id) {
+    return document.getElementById(id).value.trim();
+  }
+
+  function setStatus(id, message) {
+    document.getElementById(id).textContent = message;
+  }
+
+  function setResult(id, content) {
+    const box = document.getElementById(id);
+    box.replaceChildren();
+
+    if (typeof content === "string") {
+      box.textContent = content;
+    } else if (content instanceof Node) {
+      box.appendChild(content);
+    }
+  }
+
+  function showMedia(id, result, type) {
+    const box = document.getElementById(id);
+    box.replaceChildren();
+
+    let media = result;
+
+    if (type === "image") {
+      if (result instanceof HTMLImageElement) {
+        media = result;
+      } else if (result && result.src) {
+        media = document.createElement("img");
+        media.src = result.src;
+        media.alt = "Jon2 AI generated image";
+      }
+
+      if (media instanceof HTMLImageElement) {
+        media.style.maxWidth = "100%";
+        media.style.height = "auto";
+        box.appendChild(media);
+      } else {
+        box.textContent = "وصلت نتيجة، لكن تعذر عرض الصورة تلقائيًا.";
+      }
+
+      return;
+    }
+
+    if (type === "video") {
+      if (result instanceof HTMLVideoElement) {
+        media = result;
+      } else if (result && result.src) {
+        media = document.createElement("video");
+        media.src = result.src;
+      }
+
+      if (media instanceof HTMLVideoElement) {
+        media.controls = true;
+        media.playsInline = true;
+        media.style.width = "100%";
+        box.appendChild(media);
+      } else {
+        box.textContent = "وصلت نتيجة، لكن تعذر عرض الفيديو تلقائيًا.";
+      }
+
+      return;
+    }
+
+    if (type === "audio") {
+      if (result instanceof HTMLAudioElement) {
+        media = result;
+      } else if (result && result.src) {
+        media = document.createElement("audio");
+        media.src = result.src;
+      }
+
+      if (media instanceof HTMLAudioElement) {
+        media.controls = true;
+        media.style.width = "100%";
+        box.appendChild(media);
+      } else {
+        box.textContent = "وصلت نتيجة، لكن تعذر عرض الصوت تلقائيًا.";
+      }
+    }
+  }
+
+  window.jon2Chat = async function (testMode) {
+    const prompt = getText("jon2-chat-input");
+
+    if (!prompt) {
+      setStatus("jon2-chat-status", "اكتب طلبك أولًا.");
+      return;
+    }
+
+    setStatus("jon2-chat-status", "جارٍ الاتصال بالخدمة...");
+    setResult("jon2-chat-result", "");
+
+    try {
+      const result = await puter.ai.chat(
+        prompt,
+        testMode
+      );
+
+      let answer = result;
+
+      if (result && result.message) {
+        answer = result.message.content;
+      }
+
+      if (Array.isArray(answer)) {
+        answer = answer.map(function (item) {
+          return item.text || "";
+        }).join("\n");
+      }
+
+      if (typeof answer !== "string") {
+        answer = JSON.stringify(answer, null, 2);
+      }
+
+      setResult("jon2-chat-result", answer);
+      setStatus("jon2-chat-status", "انتهى الطلب.");
+    } catch (error) {
+      setStatus(
+        "jon2-chat-status",
+        "تعذر إكمال الطلب: " + (error.message || error)
+      );
+    }
+  };
+
+  window.jon2Image = async function (testMode) {
+    const prompt = getText("jon2-image-input");
+
+    if (!prompt) {
+      setStatus("jon2-image-status", "اكتب وصف الصورة أولًا.");
+      return;
+    }
+
+    if (!testMode &&
+        !confirm("التوليد الفعلي قد يستهلك استخدامًا مدفوعًا. هل تريد المتابعة؟")) {
+      return;
+    }
+
+    setStatus("jon2-image-status", "جارٍ تجهيز الصورة...");
+    setResult("jon2-image-result", "");
+
+    try {
+      const image = await puter.ai.txt2img(
+        prompt,
+        testMode
+      );
+
+      showMedia("jon2-image-result", image, "image");
+      setStatus("jon2-image-status", "تم استلام نتيجة الصورة.");
+    } catch (error) {
+      setStatus(
+        "jon2-image-status",
+        "تعذر إنشاء الصورة: " + (error.message || error)
+      );
+    }
+  };
+
+  window.jon2Voice = async function (testMode) {
+    const text = getText("jon2-voice-input");
+
+    if (!text) {
+      setStatus("jon2-voice-status", "اكتب النص أولًا.");
+      return;
+    }
+
+    if (!testMode &&
+        !confirm("إنشاء الصوت الفعلي قد يستهلك استخدامًا مدفوعًا. هل تريد المتابعة؟")) {
+      return;
+    }
+
+    setStatus("jon2-voice-status", "جارٍ تجهيز الصوت...");
+    setResult("jon2-voice-result", "");
+
+    try {
+      const audio = await puter.ai.txt2speech(
+        text,
+        testMode
+      );
+
+      showMedia("jon2-voice-result", audio, "audio");
+      setStatus("jon2-voice-status", "تم استلام نتيجة الصوت.");
+    } catch (error) {
+      setStatus(
+        "jon2-voice-status",
+        "تعذر إنشاء الصوت: " + (error.message || error)
+      );
+    }
+  };
+
+  window.jon2Video = async function (testMode) {
+    const prompt = getText("jon2-video-input");
+
+    if (!prompt) {
+      setStatus("jon2-video-status", "اكتب وصف المشهد أولًا.");
+      return;
+    }
+
+    if (!testMode &&
+        !confirm("إنشاء الفيديو الفعلي قد يستهلك استخدامًا مدفوعًا. هل تريد المتابعة؟")) {
+      return;
+    }
+
+    setStatus(
+      "jon2-video-status",
+      "جارٍ تجهيز الفيديو. قد تستغرق العملية بعض الوقت..."
+    );
+
+    setResult("jon2-video-result", "");
+
+    try {
+      const video = await puter.ai.txt2vid(
+        prompt,
+        testMode
+      );
+
+      showMedia("jon2-video-result", video, "video");
+      setStatus("jon2-video-status", "تم استلام نتيجة الفيديو.");
+    } catch (error) {
+      setStatus(
+        "jon2-video-status",
+        "تعذر إنشاء الفيديو: " + (error.message || error)
+      );
+    }
+  };
+})();
 </script>
 </body>
 </html>
