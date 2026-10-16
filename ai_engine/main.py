@@ -1,8 +1,7 @@
-from image_engine import app
+import uvicorn
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(
-        app,
+        "image_engine:app",
         host="0.0.0.0",
         port=8000
     )
