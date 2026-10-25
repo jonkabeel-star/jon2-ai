@@ -1,297 +1,774 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0b0c0f">
-<meta name="description" content="Jon2 AI — automate ideas and creative workflows">
-<title>Jon2 AI — Automation Workspace</title>
+<meta name="theme-color" content="#0b0d12">
+<title>Jon2 AI — مساحة العمل الذكية</title>
+
 <style>
-:root{--bg:#0b0c0f;--panel:#13151a;--panel2:#1b1e25;--text:#f4f5f7;--muted:#9298a5;--line:#292d36;--accent:#d5f36a;--accentText:#15180b;--danger:#ff929b}
+:root {
+  --bg:#0b0d12;
+  --panel:#141821;
+  --panel2:#1b202b;
+  --line:#2b3240;
+  --text:#f4f6fb;
+  --muted:#9aa3b3;
+  --accent:#d8f477;
+}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-button,input,textarea,select{font:inherit}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:Arial,Tahoma,sans-serif;
+}
+button,textarea,select{font:inherit}
 button{cursor:pointer}
-button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:focus-visible,textarea:focus-visible,select:focus-visible{
+  outline:2px solid var(--accent);outline-offset:2px
+}
 .app{display:flex;min-height:100vh}
-.sidebar{width:240px;flex-shrink:0;background:#0e1014;border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column}
-.brand{display:flex;align-items:center;gap:11px;padding:2px 8px 26px}
-.logo{width:40px;height:40px;display:grid;place-items:center;border-radius:13px;background:var(--accent);color:#111;font-weight:950;font-size:18px}
-.brand-title{font-size:20px;font-weight:850}
-.brand-title span{color:var(--accent)}
-.label{font-size:10px;letter-spacing:1.7px;color:#777e8c;font-weight:800;padding:12px 10px}
-.nav{display:grid;gap:5px}
-.nav button{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid transparent;border-radius:11px;background:transparent;color:#a8adba;text-align:left;font-size:13px}
-.nav button .ico{width:20px;text-align:center;font-size:16px}
-.nav button:hover,.nav button.active{background:#1a1d23;color:#fff;border-color:#2b3038}
-.nav button.active .ico{color:var(--accent)}
-.sidebottom{margin-top:auto;padding:15px 8px 2px;color:#777e8c;font-size:11px;line-height:1.8}
-.main{min-width:0;flex:1;padding:26px clamp(15px,4vw,54px) 38px;max-width:1600px;margin:0 auto}
-.topbar{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:54px}
-.crumb{color:#8f95a2;font-size:12px}
-.pill,.ghost{font-size:11px;color:#b7bdc8;border:1px solid var(--line);padding:8px 11px;border-radius:30px;background:transparent}
-.hero{max-width:900px;margin:0 auto;text-align:center}
-.eyebrow{color:var(--accent);font-size:10px;font-weight:850;letter-spacing:2.2px;text-transform:uppercase}
-h1{font-size:clamp(32px,5vw,57px);line-height:1.1;letter-spacing:-2px;margin:18px 0 15px;font-weight:800}
-.lead{color:#9ba1ae;line-height:1.8;font-size:14px;max-width:570px;margin:0 auto}
-.composer{margin:32px auto 0;max-width:790px;background:#14161b;border:1px solid #353a44;border-radius:20px;padding:16px;text-align:left;box-shadow:0 18px 65px #0005}
-.composer:focus-within{border-color:#646d4b}
-.composer textarea{display:block;width:100%;min-height:108px;resize:vertical;background:transparent;color:var(--text);border:0;outline:0;padding:10px 9px;font-size:15px;line-height:1.7}
-.composer textarea::placeholder{color:#747b88}
-.composer-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid #292d35;padding:13px 3px 0}
-.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.select{background:#1b1e25;color:#c9ced7;border:1px solid #30343d;border-radius:9px;padding:8px 10px;font-size:11px;max-width:180px}
-.muted{color:#8c93a0;font-size:11px}
-.run{background:var(--accent);color:var(--accentText);border:0;border-radius:11px;padding:11px 16px;font-weight:850;font-size:12px}
-.run:disabled{opacity:.55}
-.examples{margin:18px auto 0;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-.example{background:transparent;border:1px solid #292d36;border-radius:30px;padding:9px 12px;color:#aeb4c0;font-size:11px}
-.example:hover{border-color:#5c6540;color:white}
-.section{max-width:970px;margin:58px auto 0}
-.section-head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:16px}
-.section h2{font-size:17px;margin:0}
-.section-sub{font-size:11px;color:#858c99;margin-top:6px}
-.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:17px;min-width:0}
-.card{text-align:left;transition:.18s}
-.card:hover{border-color:#4a505c;transform:translateY(-2px)}
-.card-icon{height:35px;width:35px;display:grid;place-items:center;border-radius:10px;background:#22252d;color:var(--accent);font-size:16px;margin-bottom:17px}
-.card h3{font-size:13px;margin:0 0 7px}
-.card p{color:#8f96a4;font-size:11px;line-height:1.7;margin:0 0 16px}
-.card button{background:transparent;color:#cbd0d9;border:0;padding:0;font-size:11px}
+.sidebar{
+  width:235px;flex-shrink:0;background:#0f1218;
+  border-left:1px solid var(--line);padding:18px 13px;
+  display:flex;flex-direction:column
+}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:25px}
+.logo{
+  width:42px;height:42px;border-radius:13px;
+  display:grid;place-items:center;background:var(--accent);
+  color:#111;font-weight:900;font-size:19px
+}
+.brand strong{font-size:20px}
+.brand span{color:var(--accent)}
+.caption{font-size:10px;color:#818b9b;margin:10px}
+.nav{display:grid;gap:6px}
+.nav button{
+  background:transparent;color:#adb5c4;border:1px solid transparent;
+  padding:12px;border-radius:10px;text-align:right;font-size:13px
+}
+.nav button:hover,.nav button.active{
+  background:var(--panel2);border-color:#303846;color:white
+}
+.sidebottom{
+  margin-top:auto;padding:15px 8px 0;
+  font-size:11px;line-height:1.9;color:#8992a2
+}
+main{flex:1;min-width:0;padding:24px clamp(13px,4vw,52px);max-width:1500px;margin:auto;width:100%}
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;margin-bottom:42px;color:var(--muted);font-size:12px
+}
+button.lang,.secondary{
+  border:1px solid var(--line);background:transparent;color:#e1e5ec;
+  padding:9px 12px;border-radius:9px;font-size:12px
+}
 .page{display:none}
 .page.active{display:block}
-.subpage{max-width:950px;margin:0 auto}
-.subpage h1{font-size:32px;letter-spacing:-1px}
-.subpage .lead{margin:0;text-align:left}
-.subpage .panel{margin:22px 0}
-.panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
-.panel-head h2{font-size:14px;margin:0}
-.task-list{display:grid;gap:9px}
-.empty{color:#818895;text-align:center;padding:25px 8px;font-size:12px;line-height:1.8}
-.task{display:flex;align-items:flex-start;gap:11px;background:#191c22;border:1px solid #2b3039;border-radius:12px;padding:13px}
-.task-symbol{width:30px;height:30px;flex-shrink:0;display:grid;place-items:center;border-radius:9px;background:#272b32;color:var(--accent)}
-.task-content{min-width:0;flex:1}
-.task-title{font-size:12px;font-weight:750;overflow-wrap:anywhere}
-.task-detail{font-size:11px;color:#8f96a4;line-height:1.7;margin-top:4px;white-space:pre-wrap;overflow-wrap:anywhere}
-.task-status{font-size:10px;border:1px solid #4b5634;border-radius:20px;padding:5px 8px;color:var(--accent);white-space:nowrap}
-.field-label{display:block;color:#c6ccd6;font-size:12px;margin:15px 0 7px}
-.field,.field-select{width:100%;padding:12px 13px;border-radius:10px;background:#0e1014;border:1px solid #30343d;color:#f4f5f7;outline:0}
-.field:focus,.field-select:focus{border-color:#8d9e4b}
-.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.primary,.secondary{border-radius:9px;padding:10px 14px;font-size:12px}
-.primary{background:var(--accent);color:#16190d;border:0;font-weight:800}
-.secondary{background:#20232a;color:#e0e4eb;border:1px solid #343943}
-.notice{color:var(--accent);font-size:11px;line-height:1.8;min-height:20px;margin:10px 0 0}
-.notice.error{color:var(--danger)}
-.chat-log{display:grid;gap:10px;margin:18px 0}
-.chat-message{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;padding:12px 14px;border-radius:12px;background:#1a1d24;font-size:13px}
-.chat-message.user{background:#26301a;border:1px solid #3e4a2a}
-.chat-message.error{border:1px solid #683842;color:var(--danger)}
-.output{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;font-size:12px;color:#d5d9e0;background:#0e1014;border:1px solid #2b3039;border-radius:11px;padding:14px;margin-top:13px}
-.saved-item{padding:12px 0;border-bottom:1px solid var(--line)}
-.footer{max-width:970px;margin:52px auto 0;padding-top:17px;border-top:1px solid var(--line);color:#737a87;font-size:10px;line-height:1.8}
-@media(max-width:900px){.sidebar{width:210px}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.topbar{margin-bottom:40px}}
-@media(max-width:650px){.app{display:block}.sidebar{width:100%;padding:12px;border-right:0;border-bottom:1px solid var(--line)}.brand{padding:0 4px 12px}.label,.sidebottom{display:none}.nav{display:flex;overflow-x:auto;gap:5px}.nav button{width:auto;white-space:nowrap;padding:9px 11px;font-size:11px}.main{padding:20px 13px 30px}.topbar{margin-bottom:32px}.pill{display:none}h1{letter-spacing:-1.2px}.composer{padding:12px}.composer textarea{min-height:100px}.cards{grid-template-columns:1fr}.section{margin-top:43px}.subpage h1{font-size:28px}.task-status{white-space:normal}}
+.hero{text-align:center;max-width:850px;margin:auto}
+.eyebrow{font-size:11px;color:var(--accent);letter-spacing:1px;font-weight:bold}
+h1{font-size:clamp(32px,5vw,53px);line-height:1.3;margin:17px 0}
+.lead{font-size:14px;color:var(--muted);line-height:1.9;max-width:620px;margin:auto}
+.composer{
+  margin:27px auto 0;padding:14px;background:var(--panel);
+  border:1px solid #343c49;border-radius:17px;text-align:start
+}
+textarea{
+  width:100%;min-height:105px;resize:vertical;padding:10px;
+  background:transparent;color:var(--text);border:0;outline:0;
+  font-size:15px;line-height:1.8
+}
+textarea::placeholder{color:#7f8999}
+.composer-bottom{
+  border-top:1px solid var(--line);padding-top:12px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;flex-wrap:wrap
+}
+.select{
+  background:var(--panel2);border:1px solid var(--line);
+  color:white;padding:9px;border-radius:8px;font-size:12px
+}
+.primary{
+  background:var(--accent);color:#171a0e;border:0;
+  border-radius:9px;padding:11px 15px;font-weight:bold;font-size:12px
+}
+.hint{font-size:11px;color:var(--muted)}
+.chips{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:15px}
+.chip{
+  background:transparent;border:1px solid var(--line);
+  color:#b7bfcd;padding:9px 12px;border-radius:25px;font-size:11px
+}
+.section{max-width:960px;margin:48px auto 0}
+.sectionhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:15px}
+h2{font-size:17px;margin:0}
+.muted{font-size:11px;color:var(--muted);line-height:1.8;margin-top:5px}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card{cursor:pointer}
+.card:hover{border-color:#687648}
+.cardicon{
+  width:36px;height:36px;border-radius:10px;background:#262d23;
+  color:var(--accent);display:grid;place-items:center;margin-bottom:15px
+}
+.card h3{font-size:13px;margin:0 0 8px}
+.card p{font-size:11px;color:var(--muted);line-height:1.8;min-height:50px}
+.card button{border:0;background:transparent;color:var(--accent);font-size:11px}
+.subpage{max-width:950px;margin:auto}
+.subpage h1{font-size:32px}
+.subpage .lead{margin:0;text-align:start}
+.panel{margin:20px 0}
+.list{display:grid;gap:10px}
+.empty{text-align:center;padding:25px 10px;color:var(--muted);font-size:12px;line-height:1.9}
+.item{
+  border:1px solid var(--line);background:#191e27;border-radius:11px;
+  padding:13px;display:flex;align-items:flex-start;gap:10px
+}
+.itembody{flex:1;min-width:0}
+.itemtitle{font-size:13px;font-weight:bold;overflow-wrap:anywhere}
+.itemdesc{font-size:11px;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;margin-top:5px}
+.badge{font-size:10px;color:var(--accent);border:1px solid #46532d;border-radius:20px;padding:5px 8px}
+.fieldlabel{display:block;font-size:12px;margin:14px 0 7px}
+.field{
+  width:100%;padding:12px;background:#0d1016;color:white;
+  border:1px solid #333b49;border-radius:9px;outline:0
+}
+.field:focus{border-color:var(--accent)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.notice{font-size:11px;line-height:1.8;color:var(--accent);margin-top:10px}
+.notice.error{color:#ff9ca5}
+.chatlog{display:grid;gap:10px;margin-bottom:16px}
+.message{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.9;background:#1c222d;border-radius:11px;padding:12px;font-size:13px}
+.message.user{border:1px solid #45502f}
+.output{white-space:pre-wrap;overflow-wrap:anywhere;background:#0d1016;border:1px solid var(--line);border-radius:10px;padding:13px;margin-top:12px;font-size:12px;line-height:1.9}
+footer{max-width:960px;margin:45px auto 0;padding-top:15px;border-top:1px solid var(--line);font-size:10px;line-height:1.9;color:#778191}
+@media(max-width:800px){.sidebar{width:200px}.cards{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){
+  .app{display:block}
+  .sidebar{width:100%;border-left:0;border-bottom:1px solid var(--line);padding:12px}
+  .brand{margin-bottom:12px}
+  .caption,.sidebottom{display:none}
+  .nav{display:flex;overflow-x:auto;gap:4px}
+  .nav button{white-space:nowrap;padding:10px;font-size:11px}
+  main{padding:18px 12px}
+  .topbar{margin-bottom:30px}
+  .cards{grid-template-columns:1fr}
+  .card p{min-height:0}
+  .composer{padding:10px}
+}
 </style>
 </head>
+
 <body>
 <div class="app">
+
 <aside class="sidebar">
-<div class="brand"><div class="logo">J2</div><div class="brand-title">Jon2 <span>AI</span></div></div>
-<div class="label">WORKSPACE</div>
-<nav class="nav">
-<button class="active" data-page="home"><span class="ico">⌂</span>Home</button>
-<button data-page="tasks"><span class="ico">◈</span>My automations</button>
-<button data-page="chat"><span class="ico">✳</span>AI assistant</button>
-<button data-page="creative"><span class="ico">▧</span>Creative studio</button>
-<button data-page="saved"><span class="ico">▤</span>Saved items</button>
-</nav>
-<div class="sidebottom">● <span id="sideStatus">Workspace ready</span><br>Jon2 AI · Independent project</div>
+  <div class="brand">
+    <div class="logo">J2</div>
+    <strong>Jon2 <span>AI</span></strong>
+  </div>
+
+  <div class="caption" id="navCaption">مساحة العمل</div>
+
+  <nav class="nav">
+    <button class="active" data-page="home">⌂　الرئيسية</button>
+    <button data-page="tasks">◈　مسارات العمل</button>
+    <button data-page="chat">✳　المساعد الذكي</button>
+    <button data-page="creative">▧　استوديو الإبداع</button>
+    <button data-page="saved">▤　المحفوظات</button>
+  </nav>
+
+  <div class="sidebottom" id="sidebottom">
+    ● مساحة العمل جاهزة<br>Jon2 AI · مشروع مستقل
+  </div>
 </aside>
-<main class="main">
-<header class="topbar"><div class="crumb">Jon2 AI / <span id="crumb">Home</span></div><div style="display:flex;gap:9px;align-items:center"><span class="pill">PERSONAL WORKSPACE</span><button class="ghost" id="languageBtn">العربية</button></div></header>
+
+<main>
+<header class="topbar">
+  <span id="breadcrumb">Jon2 AI / الرئيسية</span>
+  <button class="lang" id="langBtn">English</button>
+</header>
+
 <section class="page active" id="home">
-<div class="hero">
-<div class="eyebrow">YOUR AI WORKSPACE</div>
-<h1>What do you want<br>to automate?</h1>
-<p class="lead">Describe a task in plain language. Jon2 AI will help you turn your idea into a clear workflow.</p>
-<div class="composer">
-<textarea id="commandInput" placeholder="e.g. Create a weekly report, organize my ideas, or plan a YouTube story workflow..."></textarea>
-<div class="composer-footer"><div class="tools"><select class="select" id="taskType" aria-label="Workflow type"><option value="general">General workflow</option><option value="youtube">YouTube story workflow</option><option value="content">Content creation</option><option value="organize">Organize information</option></select><span class="muted">Nothing runs without your approval.</span></div><button class="run" id="createTaskBtn">✦ Create workflow ↗</button></div>
-</div>
-<div class="examples">
-<button class="example" data-example="Create a family-friendly 3D cartoon story for YouTube, split it into scenes, and prepare prompts for my review. Do not publish anything.">▶ YouTube story workflow</button>
-<button class="example" data-example="Plan seven days of social media content with hooks and draft captions.">✎ Content planner</button>
-<button class="example" data-example="Organize my tasks into a prioritized checklist with clear next steps.">☷ Task organizer</button>
-</div>
-</div>
-<div class="section">
-<div class="section-head"><div><h2>Start with a template</h2><div class="section-sub">Choose a starting point and customize it.</div></div></div>
-<div class="cards">
-<article class="card"><div class="card-icon">▶</div><h3>YouTube Story Studio</h3><p>Plan a family-friendly story, scenes, character details, and prompts. Everything stays a draft until you approve it.</p><button data-template="youtube">Use template ↗</button></article>
-<article class="card"><div class="card-icon">✎</div><h3>Content planner</h3><p>Organize content ideas into a simple weekly publishing plan with draft captions.</p><button data-template="content">Use template ↗</button></article>
-<article class="card"><div class="card-icon">☷</div><h3>Task organizer</h3><p>Turn unstructured notes into priorities, task lists, and clear next actions.</p><button data-template="organize">Use template ↗</button></article>
-</div>
-</div>
-<div class="section">
-<div class="section-head"><div><h2>Recent workflows</h2><div class="section-sub">Your locally saved drafts.</div></div><button class="ghost" data-open="tasks">View all ↗</button></div>
-<div class="task-list" id="recentTasks"><div class="empty">No workflows yet. Describe your first task above.</div></div>
-</div>
+  <div class="hero">
+    <div class="eyebrow" id="eyebrow">مساحة عملك بالذكاء الاصطناعي</div>
+    <h1 id="headline">ما الذي تريد<br>أتمتته؟</h1>
+    <p class="lead" id="lead">اكتب ما تريد إنجازه، وساعد نفسك على تحويل فكرتك إلى مسار عمل واضح.</p>
+
+    <div class="composer">
+      <textarea id="taskInput" placeholder="اكتب هنا ما تريد إنجازه..."></textarea>
+      <div class="composer-bottom">
+        <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
+          <select class="select" id="taskType">
+            <option value="general">مسار عمل عام</option>
+            <option value="youtube">قصة يوتيوب</option>
+            <option value="content">إنشاء محتوى</option>
+            <option value="organize">تنظيم المهام</option>
+          </select>
+          <span class="hint" id="approvalHint">لن يتم نشر أو تنفيذ شيء تلقائيًا.</span>
+        </div>
+        <button class="primary" id="createBtn">✦ إنشاء مسار عمل</button>
+      </div>
+    </div>
+
+    <div class="chips">
+      <button class="chip" data-example="youtube">▶ تخطيط قصة يوتيوب</button>
+      <button class="chip" data-example="content">✎ خطة محتوى أسبوعية</button>
+      <button class="chip" data-example="organize">☷ تنظيم المهام</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sectionhead">
+      <div><h2 id="templatesTitle">ابدأ بقالب جاهز</h2><div class="muted" id="templatesSub">اختر قالبًا ثم عدّله حسب احتياجك.</div></div>
+    </div>
+    <div class="cards">
+      <article class="card" data-card="youtube">
+        <div class="cardicon">▶</div><h3 id="ytTitle">استوديو قصص يوتيوب</h3>
+        <p id="ytDesc">خطط لقصة وشخصيات ومشاهد، واحتفظ بها للمراجعة قبل النشر.</p>
+        <button id="ytUse">استخدم القالب ←</button>
+      </article>
+      <article class="card" data-card="content">
+        <div class="cardicon">✎</div><h3 id="contentTitle">مخطط المحتوى</h3>
+        <p id="contentDesc">نظّم أفكارك في خطة أسبوعية مع نصوص أولية.</p>
+        <button id="contentUse">استخدم القالب ←</button>
+      </article>
+      <article class="card" data-card="organize">
+        <div class="cardicon">☷</div><h3 id="organizeTitle">منظّم المهام</h3>
+        <p id="organizeDesc">حوّل ملاحظاتك إلى قائمة مهام مرتبة حسب الأولوية.</p>
+        <button id="organizeUse">استخدم القالب ←</button>
+      </article>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sectionhead">
+      <div><h2 id="recentTitle">أحدث مسارات العمل</h2><div class="muted" id="recentSub">المسودات المحفوظة على هذا الجهاز.</div></div>
+      <button class="secondary" data-goto="tasks" id="viewAll">عرض الكل</button>
+    </div>
+    <div class="list" id="recentList"></div>
+  </div>
 </section>
 
 <section class="page" id="tasks">
-<div class="subpage"><div class="eyebrow">WORKSPACE</div><h1>My automations</h1><p class="lead">Review and manage the workflow drafts saved on this device.</p>
-<div class="panel"><div class="panel-head"><h2>Workflow drafts</h2><span class="muted" id="taskCount">0 saved</span></div><div class="task-list" id="allTasks"></div></div>
-<button class="primary" data-open="home">+ Create workflow</button>
-</div>
+  <div class="subpage">
+    <div class="eyebrow">WORKSPACE</div>
+    <h1 id="tasksTitle">مسارات العمل</h1>
+    <p class="lead" id="tasksLead">راجع المسودات التي حفظتها على هذا الجهاز.</p>
+    <div class="panel"><h2 id="draftsTitle">المسودات</h2><div class="list" id="allList"></div></div>
+    <button class="primary" data-goto="home" id="newTask">＋ مسار عمل جديد</button>
+  </div>
 </section>
 
 <section class="page" id="chat">
-<div class="subpage"><div class="eyebrow">AI ASSISTANT</div><h1>Chat with Jon2 AI</h1><p class="lead">Ask questions or get help planning your workflow. A live response requires a connected AI server.</p>
-<div class="panel"><div class="chat-log" id="chatMessages"><div class="chat-message assistant">Welcome to Jon2 AI. Describe what you want help with.</div></div>
-<label class="field-label" for="chatText">Your message</label><textarea class="field" id="chatText" rows="3" placeholder="Type your message here..."></textarea>
-<div class="btnrow"><button class="primary" id="sendChatBtn">Send message</button><button class="secondary" id="clearChatBtn">Clear chat</button></div><p class="notice" id="chatStatus" role="status"></p></div></div>
+  <div class="subpage">
+    <div class="eyebrow">AI ASSISTANT</div>
+    <h1 id="chatTitle">المساعد الذكي</h1>
+    <p class="lead" id="chatLead">الردود الحقيقية تحتاج إلى ربط خادم ذكاء اصطناعي بالموقع.</p>
+    <div class="panel">
+      <div class="chatlog" id="chatLog">
+        <div class="message" id="welcomeMsg">أهلًا بك في Jon2 AI. اكتب رسالتك هنا.</div>
+      </div>
+      <label class="fieldlabel" id="chatLabel" for="chatInput">رسالتك</label>
+      <textarea class="field" id="chatInput" rows="3" placeholder="اكتب رسالتك..."></textarea>
+      <div class="actions">
+        <button class="primary" id="sendBtn">إرسال</button>
+        <button class="secondary" id="clearBtn">مسح المحادثة</button>
+      </div>
+      <div class="notice" id="chatNotice"></div>
+    </div>
+  </div>
 </section>
 
 <section class="page" id="creative">
-<div class="subpage"><div class="eyebrow">CREATIVE TOOLS</div><h1>Creative studio</h1><p class="lead">Prepare and save prompts for your creative projects.</p>
-<div class="panel">
-<label class="field-label" for="creativeType">What are you creating?</label>
-<select class="field-select" id="creativeType"><option value="Image prompt">Image prompt</option><option value="Video scene prompt">Video scene prompt</option><option value="Story outline">Story outline</option><option value="Voice-over script">Voice-over script</option></select>
-<label class="field-label" for="creativeIdea">Describe your idea</label>
-<textarea class="field" id="creativeIdea" rows="5" placeholder="Describe your idea here..."></textarea>
-<div class="btnrow"><button class="primary" id="makeCreativeBtn">Prepare draft</button><button class="secondary" id="saveCreativeBtn">Save draft</button></div>
-<div class="output" id="creativeOutput" hidden></div><p class="notice" id="creativeNotice"></p>
-</div></div>
+  <div class="subpage">
+    <div class="eyebrow">CREATIVE STUDIO</div>
+    <h1 id="creativeTitle">استوديو الإبداع</h1>
+    <p class="lead" id="creativeLead">جهّز واحفظ مسودات لأفكار الصور والفيديو والقصص.</p>
+    <div class="panel">
+      <label class="fieldlabel" id="kindLabel" for="creativeType">نوع المحتوى</label>
+      <select class="field" id="creativeType">
+        <option value="وصف صورة">وصف صورة</option>
+        <option value="وصف مشهد فيديو">وصف مشهد فيديو</option>
+        <option value="مخطط قصة">مخطط قصة</option>
+        <option value="نص تعليق صوتي">نص تعليق صوتي</option>
+      </select>
+      <label class="fieldlabel" id="ideaLabel" for="ideaInput">اشرح فكرتك</label>
+      <textarea class="field" id="ideaInput" rows="5" placeholder="اكتب فكرتك هنا..."></textarea>
+      <div class="actions">
+        <button class="primary" id="prepareBtn">تجهيز المسودة</button>
+        <button class="secondary" id="saveBtn">حفظ المسودة</button>
+      </div>
+      <div class="output" id="creativeOutput" hidden></div>
+      <div class="notice" id="creativeNotice"></div>
+    </div>
+  </div>
 </section>
 
 <section class="page" id="saved">
-<div class="subpage"><div class="eyebrow">YOUR LIBRARY</div><h1>Saved items</h1><p class="lead">Saved drafts stay in this browser on this device.</p>
-<div class="panel"><div id="savedList"></div><div class="btnrow"><button class="secondary" id="exportBtn">Export library</button></div></div>
-</div>
+  <div class="subpage">
+    <div class="eyebrow">LIBRARY</div>
+    <h1 id="savedTitle">المحفوظات</h1>
+    <p class="lead" id="savedLead">العناصر المحفوظة في هذا المتصفح.</p>
+    <div class="panel">
+      <div id="savedList"></div>
+      <div class="actions"><button class="secondary" id="exportBtn">تصدير البيانات</button></div>
+    </div>
+  </div>
 </section>
 
-<footer class="footer">JON2 AI · INDEPENDENT PROJECT<br>Workflow drafts are saved locally. External actions are not executed automatically. Connect a compatible AI server to enable live AI replies.</footer>
+<footer id="footer">
+  تُحفظ المسودات محليًا على جهازك. تشغيل الذكاء الاصطناعي الحقيقي يحتاج إلى ربط خادم منفصل.
+</footer>
 </main>
 </div>
 
 <script>
 "use strict";
-const API_BASE = ""; // Add your deployed backend URL here when available.
+
 const $ = id => document.getElementById(id);
-const read = key => {try{return JSON.parse(localStorage.getItem(key)||"[]")}catch{return []}};
-const write = (key,value) => {try{localStorage.setItem(key,JSON.stringify(value));return true}catch{return false}};
-const titles={home:"Home",tasks:"My automations",chat:"AI assistant",creative:"Creative studio",saved:"Saved items"};
-
-function openPage(id){
-if(!$ (id))return;
-document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===id));
-document.querySelectorAll(".nav button[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===id));
-$("crumb").textContent=titles[id]||"Home";
-if(id==="tasks")renderTasks();
-if(id==="saved")renderSaved();
-window.scrollTo({top:0,behavior:"smooth"});
-}
-document.querySelectorAll(".nav button[data-page]").forEach(b=>b.addEventListener("click",()=>openPage(b.dataset.page)));
-document.querySelectorAll("[data-open]").forEach(b=>b.addEventListener("click",()=>openPage(b.dataset.open)));
-document.querySelectorAll(".example").forEach(b=>b.addEventListener("click",()=>{$("commandInput").value=b.dataset.example;$("commandInput").focus()}));
-
-const templates={
-youtube:"Create a family-friendly 3D cartoon adventure for YouTube. Develop a title, short story, consistent character list, scene-by-scene descriptions, and image/video prompts. Save everything as a draft for my approval. Do not publish anything.",
-content:"Create a 7-day content plan. For each day, include a topic, a short hook, the main points, and a draft caption. Save as a draft for review.",
-organize:"Turn my rough notes into a prioritized checklist. Group related items, identify the next action, and mark any missing information."
+const read = key => {
+  try { return JSON.parse(localStorage.getItem(key) || "[]"); }
+  catch (e) { return []; }
 };
-document.querySelectorAll("[data-template]").forEach(b=>b.addEventListener("click",()=>{$("taskType").value=b.dataset.template;$("commandInput").value=templates[b.dataset.template];$("commandInput").focus();window.scrollTo({top:0,behavior:"smooth"})}));
+const write = (key, value) => {
+  try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+  catch (e) { return false; }
+};
 
-function taskCard(t){
-const item=document.createElement("article");item.className="task";
-const icon=document.createElement("div");icon.className="task-symbol";icon.textContent=t.type==="youtube"?"▶":t.type==="content"?"✎":t.type==="organize"?"☷":"✦";
-const content=document.createElement("div");content.className="task-content";
-const title=document.createElement("div");title.className="task-title";title.textContent=t.title;
-const detail=document.createElement("div");detail.className="task-detail";detail.textContent=t.description;
-const status=document.createElement("span");status.className="task-status";status.textContent="Draft · Needs approval";
-content.append(title,detail);item.append(icon,content,status);return item;
-}
-function renderTasks(){
-const tasks=read("jon2_workflows");$("taskCount").textContent=tasks.length+" saved";
-const all=$("allTasks");all.replaceChildren();
-if(!tasks.length){all.innerHTML='<div class="empty">No workflows yet. Create one from the home page.</div>';return}
-tasks.forEach(t=>all.append(taskCard(t)));
-}
-function renderRecent(){
-const tasks=read("jon2_workflows").slice(0,3),box=$("recentTasks");box.replaceChildren();
-if(!tasks.length){box.innerHTML='<div class="empty">No workflows yet. Describe your first task above.</div>';return}
-tasks.forEach(t=>box.append(taskCard(t)));
-}
-function createWorkflow(){
-const description=$("commandInput").value.trim();
-if(!description){$("commandInput").focus();return}
-const type=$("taskType").value;
-const title=description.split(/\n/)[0].slice(0,72)||(type==="youtube"?"YouTube Story workflow":"New workflow");
-const task={id:Date.now(),title,description,type,createdAt:new Date().toISOString(),status:"draft"};
-const tasks=read("jon2_workflows");tasks.unshift(task);
-if(!write("jon2_workflows",tasks.slice(0,100))){alert("Could not save this draft. Check browser storage.");return}
-$("commandInput").value="";renderRecent();$("sideStatus").textContent="Draft saved locally";openPage("tasks");
-}
-$("createTaskBtn").addEventListener("click",createWorkflow);
-$("commandInput").addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key==="Enter")createWorkflow()});
+let language = localStorage.getItem("jon2_language") || "ar";
 
-function addChat(role,text,error=false){
-const el=document.createElement("div");el.className="chat-message "+role+(error?" error":"");el.textContent=text;
-$("chatMessages").append(el);el.scrollIntoView({block:"nearest"});
+const copy = {
+ar: {
+home:"الرئيسية",tasks:"مسارات العمل",chat:"المساعد الذكي",creative:"استوديو الإبداع",saved:"المحفوظات",
+empty:"لا توجد مسودات بعد.",draft:"مسودة · تحتاج إلى مراجعتك",
+needText:"اكتب وصف المهمة أولًا.",savedMsg:"تم حفظ المسودة على هذا الجهاز.",
+needIdea:"اكتب فكرتك أولًا.",prepared:"تم تجهيز مسودة نصية. لم يتم توليد محتوى بالذكاء الاصطناعي.",
+server:"خادم الذكاء الاصطناعي غير متصل. يلزم ربط خادم فعلي لتلقي ردود حقيقية.",
+sending:"جارٍ الإرسال…",noSaved:"لا توجد عناصر محفوظة بعد.",delete:"حذف",
+footer:"تُحفظ المسودات محليًا على جهازك. تشغيل الذكاء الاصطناعي الحقيقي يحتاج إلى ربط خادم منفصل."
+},
+en: {
+home:"Home",tasks:"My workflows",chat:"AI assistant",creative:"Creative studio",saved:"Saved items",
+empty:"No drafts yet.",draft:"Draft · Needs your review",
+needText:"Enter a task description first.",savedMsg:"Draft saved on this device.",
+needIdea:"Describe your idea first.",prepared:"Text draft prepared. No AI-generated content was created.",
+server:"The AI server is not connected. Connect a real backend to receive AI responses.",
+sending:"Sending…",noSaved:"No saved items yet.",delete:"Delete",
+footer:"Drafts are stored locally on your device. Real AI requires a connected backend."
 }
-async function sendChat(){
-const text=$("chatText").value.trim();
-if(!text){$("chatStatus").textContent="Please enter a message.";return}
-addChat("user",text);$("chatText").value="";$("sendChatBtn").disabled=true;$("sendChatBtn").textContent="Connecting…";$("chatStatus").textContent="Sending to Jon2 AI…";
-try{
-const response=await fetch(API_BASE.replace(/\/+$/,"")+"/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text}),signal:AbortSignal.timeout(120000)});
-const data=await response.json().catch(()=>({}));
-if(!response.ok)throw new Error(data.error||data.detail||"AI server is unavailable.");
-const reply=data.reply||data.response;
-if(typeof reply!=="string"||!reply.trim())throw new Error("The server returned no text reply.");
-addChat("assistant",reply.trim());$("chatStatus").textContent="Reply received.";
-}catch(e){
-const msg=location.hostname.endsWith("github.io")?"The AI server is not connected yet. GitHub Pages cannot run the model itself.":(e.message||"Could not connect to the AI server.");
-addChat("assistant",msg,true);$("chatStatus").textContent=msg;$("chatStatus").className="notice error";
-}finally{$("sendChatBtn").disabled=false;$("sendChatBtn").textContent="Send message"}
-}
-$("sendChatBtn").addEventListener("click",sendChat);
-$("chatText").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat()}});
-$("clearChatBtn").addEventListener("click",()=>{$("chatMessages").replaceChildren();$("chatStatus").textContent="";$("chatStatus").className="notice"});
+};
 
-let lastCreative="";
-$("makeCreativeBtn").addEventListener("click",()=>{
-const idea=$("creativeIdea").value.trim();
-if(!idea){$("creativeNotice").textContent="Describe your idea first.";return}
-lastCreative=$("creativeType").value+"\n\nIdea: "+idea+"\n\nDraft instructions: Develop this idea with clear structure, consistent details, and a polished result. This is a prepared draft, not AI-generated content.";
-const out=$("creativeOutput");out.textContent=lastCreative;out.hidden=false;$("creativeNotice").textContent="Draft prepared. You can save it locally.";
-});
-$("saveCreativeBtn").addEventListener("click",()=>{
-if(!lastCreative){$("creativeNotice").textContent="Prepare a draft first.";return}
-const items=read("jon2_library");items.unshift({id:Date.now(),title:$("creativeType").value,text:lastCreative,date:new Date().toLocaleString()});
-$("creativeNotice").textContent=write("jon2_library",items.slice(0,100))?"Draft saved on this device.":"Could not save draft.";
-});
-function renderSaved(){
-const box=$("savedList"),items=read("jon2_library");box.replaceChildren();
-if(!items.length){box.innerHTML='<div class="empty">No saved items yet.</div>';return}
-items.forEach(it=>{
-const el=document.createElement("article");el.className="saved-item";
-const h=document.createElement("h3");h.textContent=it.title;
-const d=document.createElement("p");d.className="muted";d.textContent=it.date||"";
-const body=document.createElement("div");body.className="output";body.textContent=it.text;
-const del=document.createElement("button");del.className="secondary";del.textContent="Delete";
-del.addEventListener("click",()=>{write("jon2_library",read("jon2_library").filter(x=>x.id!==it.id));renderSaved()});
-el.append(h,d,body,del);box.append(el);
-});
+const templates = {
+youtube:{
+ar:"أنشئ قصة مغامرات كرتونية ثلاثية الأبعاد مناسبة للعائلة على يوتيوب. جهّز العنوان والقصة والشخصيات والمشاهد وأوامر الصور والفيديو. احفظها كمسودة للمراجعة ولا تنشر شيئًا.",
+en:"Create a family-friendly 3D cartoon adventure for YouTube. Prepare the title, story, characters, scenes, and image/video prompts. Save it for review and do not publish anything."
+},
+content:{
+ar:"أنشئ خطة محتوى لمدة سبعة أيام. أضف لكل يوم موضوعًا وعنوانًا جذابًا ونقاطًا رئيسية ونصًا أوليًا للنشر.",
+en:"Create a seven-day content plan with a topic, hook, key points, and draft caption for each day."
+},
+organize:{
+ar:"حوّل ملاحظاتي إلى قائمة مهام مرتبة حسب الأولوية، واجمع المهام المتشابهة وحدد الخطوة التالية.",
+en:"Turn my notes into a prioritized task list, group similar tasks, and identify the next step."
 }
-$("exportBtn").addEventListener("click",()=>{
-const data=JSON.stringify({workflows:read("jon2_workflows"),saved:read("jon2_library")},null,2);
-const url=URL.createObjectURL(new Blob([data],{type:"application/json"}));
-const a=document.createElement("a");a.href=url;a.download="jon2-workspace.json";a.click();URL.revokeObjectURL(url);
+};
+
+function tr(key) {
+  return copy[language][key] || key;
+}
+
+function openPage(id) {
+  document.querySelectorAll(".page").forEach(p => p.classList.toggle("active", p.id === id));
+  document.querySelectorAll("[data-page]").forEach(b => b.classList.toggle("active", b.dataset.page === id));
+  $("breadcrumb").textContent = "Jon2 AI / " + tr(id);
+  if (id === "tasks") renderTasks();
+  if (id === "saved") renderSaved();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+document.querySelectorAll("[data-page]").forEach(button => {
+  button.addEventListener("click", () => openPage(button.dataset.page));
 });
-$("languageBtn").addEventListener("click",()=>alert("English interface is active. Arabic localization can be added in a later update."));
+document.querySelectorAll("[data-goto]").forEach(button => {
+  button.addEventListener("click", () => openPage(button.dataset.goto));
+});
+
+function createTask(type, description) {
+  description = description.trim();
+  if (!description) { alert(tr("needText")); return; }
+
+  const tasks = read("jon2_workflows");
+  tasks.unshift({
+    id:Date.now(),
+    type,
+    title:description.split("\n")[0].slice(0,75),
+    description,
+    date:new Date().toLocaleString()
+  });
+
+  if (!write("jon2_workflows", tasks.slice(0,100))) {
+    alert("تعذّر الحفظ. تحقق من مساحة التخزين في المتصفح.");
+    return;
+  }
+
+  $("taskInput").value = "";
+  renderRecent();
+  openPage("tasks");
+}
+
+$("createBtn").addEventListener("click", () => {
+  createTask($("taskType").value, $("taskInput").value);
+});
+
+document.querySelectorAll("[data-example]").forEach(button => {
+  button.addEventListener("click", () => {
+    const type = button.dataset.example;
+    $("taskType").value = type;
+    $("taskInput").value = templates[type][language];
+    $("taskInput").focus();
+  });
+});
+
+document.querySelectorAll("[data-card]").forEach(card => {
+  card.addEventListener("click", () => {
+    const type = card.dataset.card;
+    $("taskType").value = type;
+    $("taskInput").value = templates[type][language];
+    openPage("home");
+    $("taskInput").focus();
+  });
+});
+
+function makeTaskElement(task) {
+  const item = document.createElement("article");
+  item.className = "item";
+
+  const body = document.createElement("div");
+  body.className = "itembody";
+
+  const title = document.createElement("div");
+  title.className = "itemtitle";
+  title.textContent = task.title;
+
+  const description = document.createElement("div");
+  description.className = "itemdesc";
+  description.textContent = task.description;
+
+  const badge = document.createElement("span");
+  badge.className = "badge";
+  badge.textContent = tr("draft");
+
+  body.append(title, description);
+  item.append(body, badge);
+  return item;
+}
+
+function renderRecent() {
+  const list = $("recentList");
+  list.replaceChildren();
+
+  const tasks = read("jon2_workflows").slice(0,3);
+
+  if (!tasks.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = tr("empty");
+    list.append(empty);
+    return;
+  }
+
+  tasks.forEach(task => list.append(makeTaskElement(task)));
+}
+
+function renderTasks() {
+  const list = $("allList");
+  list.replaceChildren();
+
+  const tasks = read("jon2_workflows");
+
+  if (!tasks.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = tr("empty");
+    list.append(empty);
+    return;
+  }
+
+  tasks.forEach(task => {
+    const item = makeTaskElement(task);
+    const remove = document.createElement("button");
+    remove.className = "secondary";
+    remove.textContent = tr("delete");
+
+    remove.addEventListener("click", () => {
+      write("jon2_workflows", read("jon2_workflows").filter(x => x.id !== task.id));
+      renderTasks();
+      renderRecent();
+    });
+
+    item.append(remove);
+    list.append(item);
+  });
+}
+
+$("sendBtn").addEventListener("click", async () => {
+  const message = $("chatInput").value.trim();
+  if (!message) return;
+
+  const userMessage = document.createElement("div");
+  userMessage.className = "message user";
+  userMessage.textContent = message;
+  $("chatLog").append(userMessage);
+  $("chatInput").value = "";
+  $("chatNotice").textContent = tr("sending");
+
+  try {
+    const response = await fetch("/api/chat", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({message})
+    });
+
+    const data = await response.json();
+    const reply = data.reply || data.response;
+
+    if (!response.ok || !reply) throw new Error("No reply");
+
+    const answer = document.createElement("div");
+    answer.className = "message";
+    answer.textContent = reply;
+    $("chatLog").append(answer);
+    $("chatNotice").textContent = "";
+  } catch (error) {
+    const answer = document.createElement("div");
+    answer.className = "message";
+    answer.textContent = tr("server");
+    $("chatLog").append(answer);
+    $("chatNotice").textContent = tr("server");
+  }
+});
+
+$("clearBtn").addEventListener("click", () => {
+  $("chatLog").replaceChildren();
+  const welcome = document.createElement("div");
+  welcome.className = "message";
+  welcome.textContent = language === "ar"
+    ? "أهلًا بك في Jon2 AI. اكتب رسالتك هنا."
+    : "Welcome to Jon2 AI. Type your message here.";
+  $("chatLog").append(welcome);
+  $("chatNotice").textContent = "";
+});
+
+let currentDraft = "";
+
+$("prepareBtn").addEventListener("click", () => {
+  const idea = $("ideaInput").value.trim();
+
+  if (!idea) {
+    $("creativeNotice").textContent = tr("needIdea");
+    return;
+  }
+
+  currentDraft = $("creativeType").value + "\n\n" + idea +
+    (language === "ar"
+      ? "\n\nمسودة أولية تحتاج إلى المراجعة."
+      : "\n\nDraft prepared for review.");
+
+  $("creativeOutput").hidden = false;
+  $("creativeOutput").textContent = currentDraft;
+  $("creativeNotice").textContent = tr("prepared");
+});
+
+$("saveBtn").addEventListener("click", () => {
+  if (!currentDraft) {
+    $("creativeNotice").textContent = tr("needIdea");
+    return;
+  }
+
+  const items = read("jon2_library");
+  items.unshift({
+    id:Date.now(),
+    title:$("creativeType").value,
+    text:currentDraft,
+    date:new Date().toLocaleString()
+  });
+
+  $("creativeNotice").textContent = write("jon2_library", items.slice(0,100))
+    ? tr("savedMsg")
+    : "تعذّر الحفظ.";
+});
+
+function renderSaved() {
+  const box = $("savedList");
+  box.replaceChildren();
+
+  const items = read("jon2_library");
+
+  if (!items.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = tr("noSaved");
+    box.append(empty);
+    return;
+  }
+
+  items.forEach(saved => {
+    const item = document.createElement("article");
+    item.className = "item";
+
+    const body = document.createElement("div");
+    body.className = "itembody";
+
+    const title = document.createElement("div");
+    title.className = "itemtitle";
+    title.textContent = saved.title;
+
+    const description = document.createElement("div");
+    description.className = "itemdesc";
+    description.textContent = saved.text;
+
+    const remove = document.createElement("button");
+    remove.className = "secondary";
+    remove.textContent = tr("delete");
+
+    remove.addEventListener("click", () => {
+      write("jon2_library", read("jon2_library").filter(x => x.id !== saved.id));
+      renderSaved();
+    });
+
+    body.append(title, description);
+    item.append(body, remove);
+    box.append(item);
+  });
+}
+
+$("exportBtn").addEventListener("click", () => {
+  const data = JSON.stringify({
+    workflows:read("jon2_workflows"),
+    saved:read("jon2_library")
+  }, null, 2);
+
+  const blob = new Blob([data], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "jon2-data.json";
+  link.click();
+  URL.revokeObjectURL(url);
+});
+
+function applyLanguage() {
+  const arabic = language === "ar";
+
+  document.documentElement.lang = language;
+  document.documentElement.dir = arabic ? "rtl" : "ltr";
+  $("langBtn").textContent = arabic ? "English" : "العربية";
+
+  const navNames = {
+    home:arabic ? "⌂　الرئيسية" : "⌂　Home",
+    tasks:arabic ? "◈　مسارات العمل" : "◈　My workflows",
+    chat:arabic ? "✳　المساعد الذكي" : "✳　AI assistant",
+    creative:arabic ? "▧　استوديو الإبداع" : "▧　Creative studio",
+    saved:arabic ? "▤　المحفوظات" : "▤　Saved items"
+  };
+
+  document.querySelectorAll("[data-page]").forEach(button => {
+    button.textContent = navNames[button.dataset.page];
+  });
+
+  $("navCaption").textContent = arabic ? "مساحة العمل" : "WORKSPACE";
+  $("sidebottom").innerHTML = arabic
+    ? "● مساحة العمل جاهزة<br>Jon2 AI · مشروع مستقل"
+    : "● Workspace ready<br>Jon2 AI · Independent project";
+
+  $("eyebrow").textContent = arabic ? "مساحة عملك بالذكاء الاصطناعي" : "YOUR AI WORKSPACE";
+  $("headline").innerHTML = arabic ? "ما الذي تريد<br>أتمتته؟" : "What do you want<br>to automate?";
+  $("lead").textContent = arabic
+    ? "اكتب ما تريد إنجازه، وحوّل فكرتك إلى مسار عمل واضح."
+    : "Describe what you want to accomplish and turn it into a clear workflow.";
+  $("taskInput").placeholder = arabic
+    ? "اكتب هنا ما تريد إنجازه..."
+    : "Describe what you want to automate...";
+  $("createBtn").textContent = arabic ? "✦ إنشاء مسار عمل" : "✦ Create workflow";
+  $("approvalHint").textContent = arabic
+    ? "لن يتم نشر أو تنفيذ شيء تلقائيًا."
+    : "Nothing is published or run automatically.";
+
+  const options = $("taskType").options;
+  [
+    arabic ? "مسار عمل عام" : "General workflow",
+    arabic ? "قصة يوتيوب" : "YouTube story",
+    arabic ? "إنشاء محتوى" : "Content creation",
+    arabic ? "تنظيم المهام" : "Task organization"
+  ].forEach((text,index) => options[index].textContent = text);
+
+  $("templatesTitle").textContent = arabic ? "ابدأ بقالب جاهز" : "Start with a template";
+  $("templatesSub").textContent = arabic ? "اختر قالبًا ثم عدّله حسب احتياجك." : "Choose a template and customize it.";
+  $("recentTitle").textContent = arabic ? "أحدث مسارات العمل" : "Recent workflows";
+  $("recentSub").textContent = arabic ? "المسودات المحفوظة على هذا الجهاز." : "Drafts saved on this device.";
+  $("viewAll").textContent = arabic ? "عرض الكل" : "View all";
+
+  $("ytTitle").textContent = arabic ? "استوديو قصص يوتيوب" : "YouTube Story Studio";
+  $("ytDesc").textContent = arabic
+    ? "خطط لقصة وشخصيات ومشاهد، واحتفظ بها للمراجعة قبل النشر."
+    : "Plan a story, characters, and scenes for review before publishing.";
+  $("contentTitle").textContent = arabic ? "مخطط المحتوى" : "Content planner";
+  $("contentDesc").textContent = arabic
+    ? "نظّم أفكارك في خطة أسبوعية مع نصوص أولية."
+    : "Organize ideas into a weekly plan with draft captions.";
+  $("organizeTitle").textContent = arabic ? "منظّم المهام" : "Task organizer";
+  $("organizeDesc").textContent = arabic
+    ? "حوّل ملاحظاتك إلى قائمة مهام مرتبة حسب الأولوية."
+    : "Turn notes into a prioritized task list.";
+
+  ["ytUse","contentUse","organizeUse"].forEach(id => {
+    $(id).textContent = arabic ? "استخدم القالب ←" : "Use template ←";
+  });
+
+  $("tasksTitle").textContent = arabic ? "مسارات العمل" : "My workflows";
+  $("tasksLead").textContent = arabic
+    ? "راجع المسودات التي حفظتها على هذا الجهاز."
+    : "Review drafts saved on this device.";
+  $("draftsTitle").textContent = arabic ? "المسودات" : "Drafts";
+  $("newTask").textContent = arabic ? "＋ مسار عمل جديد" : "＋ New workflow";
+
+  $("chatTitle").textContent = arabic ? "المساعد الذكي" : "AI assistant";
+  $("chatLead").textContent = arabic
+    ? "الردود الحقيقية تحتاج إلى ربط خادم ذكاء اصطناعي بالموقع."
+    : "Real AI replies require a connected AI server.";
+  $("chatLabel").textContent = arabic ? "رسالتك" : "Your message";
+  $("chatInput").placeholder = arabic ? "اكتب رسالتك..." : "Type your message...";
+  $("sendBtn").textContent = arabic ? "إرسال" : "Send";
+  $("clearBtn").textContent = arabic ? "مسح المحادثة" : "Clear chat";
+
+  $("creativeTitle").textContent = arabic ? "استوديو الإبداع" : "Creative studio";
+  $("creativeLead").textContent = arabic
+    ? "جهّز واحفظ مسودات لأفكار الصور والفيديو والقصص."
+    : "Prepare and save drafts for image, video, and story ideas.";
+  $("kindLabel").textContent = arabic ? "نوع المحتوى" : "Content type";
+  $("ideaLabel").textContent = arabic ? "اشرح فكرتك" : "Describe your idea";
+  $("ideaInput").placeholder = arabic ? "اكتب فكرتك هنا..." : "Describe your idea...";
+  $("prepareBtn").textContent = arabic ? "تجهيز المسودة" : "Prepare draft";
+  $("saveBtn").textContent = arabic ? "حفظ المسودة" : "Save draft";
+
+  $("savedTitle").textContent = arabic ? "المحفوظات" : "Saved items";
+  $("savedLead").textContent = arabic
+    ? "العناصر المحفوظة في هذا المتصفح."
+    : "Items saved in this browser.";
+  $("exportBtn").textContent = arabic ? "تصدير البيانات" : "Export data";
+  $("footer").textContent = tr("footer");
+
+  renderRecent();
+  if ($("tasks").classList.contains("active")) renderTasks();
+  if ($("saved").classList.contains("active")) renderSaved();
+}
+
+$("langBtn").addEventListener("click", () => {
+  language = language === "ar" ? "en" : "ar";
+  localStorage.setItem("jon2_language", language);
+  applyLanguage();
+});
+
+applyLanguage();
 renderRecent();
 </script>
 </body>
