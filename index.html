@@ -1,720 +1,298 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#080b14">
-  <meta name="description" content="Jon2 AI - منصة مستقلة للمحادثة والأفكار والمشروعات الإبداعية">
-  <title>Jon2 AI — تخيّل وابتكر</title>
-  <style>
-    :root {
-      --bg: #080b14;
-      --panel: #111624;
-      --panel2: #171e30;
-      --text: #f4f7ff;
-      --muted: #929db5;
-      --blue: #6385ff;
-      --cyan: #52e2db;
-      --border: rgba(255,255,255,.1);
-      --danger: #ff8493;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    button, input, textarea, select { font: inherit; }
-    button { cursor: pointer; }
-    .layout { min-height: 100vh; display: flex; }
-    .sidebar {
-      width: 235px;
-      background: #0c101c;
-      padding: 20px 14px;
-      border-left: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 25px;
-    }
-    .logo {
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(135deg,var(--blue),var(--cyan));
-      color: #08101d;
-      font-size: 20px;
-      font-weight: 900;
-    }
-    .brand-name { font-size: 22px; font-weight: 800; }
-    .brand-name span { color: var(--cyan); }
-    .nav-label {
-      color: #69748c;
-      font-size: 11px;
-      font-weight: 800;
-      margin: 20px 8px 10px;
-    }
-    .nav-list { display: grid; gap: 4px; }
-    .nav-btn {
-      width: 100%;
-      border: 0;
-      background: transparent;
-      color: #aab4ca;
-      padding: 12px;
-      border-radius: 10px;
-      text-align: right;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    .nav-btn:hover, .nav-btn.active {
-      background: #1a2440;
-      color: white;
-    }
-    .nav-btn.active { box-shadow: inset -3px 0 var(--cyan); }
-    .main {
-      min-width: 0;
-      flex: 1;
-      padding: 25px;
-      max-width: 1500px;
-    }
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    .eyebrow { color: var(--cyan); font-size: 11px; font-weight: 800; }
-    h1 { font-size: clamp(27px,4vw,40px); margin: 10px 0; }
-    h2 { margin-top: 0; }
-    .subtitle { color: var(--muted); line-height: 1.8; }
-    .status, .tag {
-      padding: 7px 10px;
-      border: 1px solid var(--border);
-      border-radius: 30px;
-      font-size: 12px;
-      color: #c7d1e7;
-    }
-    .hero {
-      margin: 25px 0;
-      padding: 26px;
-      border-radius: 20px;
-      border: 1px solid rgba(99,133,255,.3);
-      background:
-        radial-gradient(ellipse at 10% 0%,rgba(82,226,219,.13),transparent 45%),
-        linear-gradient(120deg,#151e37,#101524);
-    }
-    .hero p { color: #aab6d0; line-height: 1.9; }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(3,minmax(0,1fr));
-      gap: 14px;
-    }
-    .card, .workspace {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 19px;
-      min-width: 0;
-    }
-    .card { transition: .2s; }
-    .card:hover { border-color: var(--blue); transform: translateY(-2px); }
-    .card-icon { font-size: 25px; margin-bottom: 12px; }
-    .card h3 { margin: 0 0 8px; }
-    .card p { color: var(--muted); font-size: 13px; line-height: 1.8; }
-    button.primary, button.secondary, button.danger {
-      border: 0;
-      border-radius: 10px;
-      padding: 12px 15px;
-      color: white;
-      font-weight: 700;
-    }
-    button.primary { background: linear-gradient(110deg,var(--blue),#5269e9); }
-    button.secondary { background: var(--panel2); border: 1px solid var(--border); }
-    button.danger { background: #702d42; }
-    .card button { width: 100%; margin-top: 10px; }
-    .workspace { margin-top: 20px; }
-    .page { display: none; }
-    .page.active { display: block; }
-    label { display: block; margin: 15px 0 7px; font-size: 14px; color: #d8e0f3; }
-    input, textarea, select {
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: #090d17;
-      color: white;
-      outline: none;
-    }
-    textarea { min-height: 120px; resize: vertical; line-height: 1.8; }
-    input:focus, textarea:focus, select:focus { border-color: var(--blue); }
-    .actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 12px; }
-    .notice { color: var(--cyan); font-size: 13px; min-height: 22px; line-height: 1.8; }
-    .error { color: var(--danger); }
-    .result {
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-      line-height: 1.9;
-      background: #090d17;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px;
-      margin-top: 14px;
-    }
-    .chat-log {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin: 18px 0;
-    }
-    .chat-message {
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-      line-height: 1.9;
-      padding: 13px 15px;
-      border-radius: 12px;
-      max-width: 95%;
-    }
-    .chat-message.user { background: #1b2a4b; align-self: flex-start; }
-    .chat-message.assistant { background: #171e30; align-self: stretch; }
-    .chat-message.error { color: var(--danger); border: 1px solid #703746; }
-    .saved-item { padding: 14px 0; border-bottom: 1px solid var(--border); }
-    .footer {
-      margin-top: 35px;
-      padding-top: 18px;
-      border-top: 1px solid var(--border);
-      color: #75819a;
-      font-size: 12px;
-      line-height: 1.9;
-    }
-    @media(max-width:900px) {
-      .grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
-    }
-    @media(max-width:600px) {
-      .layout { display: block; }
-      .sidebar {
-        width: 100%;
-        padding: 12px;
-        border-left: 0;
-        border-bottom: 1px solid var(--border);
-      }
-      .brand { margin-bottom: 12px; }
-      .nav-label { display: none; }
-      .nav-list { display: flex; overflow-x: auto; gap: 5px; }
-      .nav-btn { width: auto; white-space: nowrap; padding: 10px; font-size: 12px; }
-      .main { padding: 18px 13px 30px; }
-      .grid { grid-template-columns: 1fr; }
-      .hero { padding: 20px; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b0c0f">
+<meta name="description" content="Jon2 AI — automate ideas and creative workflows">
+<title>Jon2 AI — Automation Workspace</title>
+<style>
+:root{--bg:#0b0c0f;--panel:#13151a;--panel2:#1b1e25;--text:#f4f5f7;--muted:#9298a5;--line:#292d36;--accent:#d5f36a;--accentText:#15180b;--danger:#ff929b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{display:flex;min-height:100vh}
+.sidebar{width:240px;flex-shrink:0;background:#0e1014;border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column}
+.brand{display:flex;align-items:center;gap:11px;padding:2px 8px 26px}
+.logo{width:40px;height:40px;display:grid;place-items:center;border-radius:13px;background:var(--accent);color:#111;font-weight:950;font-size:18px}
+.brand-title{font-size:20px;font-weight:850}
+.brand-title span{color:var(--accent)}
+.label{font-size:10px;letter-spacing:1.7px;color:#777e8c;font-weight:800;padding:12px 10px}
+.nav{display:grid;gap:5px}
+.nav button{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid transparent;border-radius:11px;background:transparent;color:#a8adba;text-align:left;font-size:13px}
+.nav button .ico{width:20px;text-align:center;font-size:16px}
+.nav button:hover,.nav button.active{background:#1a1d23;color:#fff;border-color:#2b3038}
+.nav button.active .ico{color:var(--accent)}
+.sidebottom{margin-top:auto;padding:15px 8px 2px;color:#777e8c;font-size:11px;line-height:1.8}
+.main{min-width:0;flex:1;padding:26px clamp(15px,4vw,54px) 38px;max-width:1600px;margin:0 auto}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:54px}
+.crumb{color:#8f95a2;font-size:12px}
+.pill,.ghost{font-size:11px;color:#b7bdc8;border:1px solid var(--line);padding:8px 11px;border-radius:30px;background:transparent}
+.hero{max-width:900px;margin:0 auto;text-align:center}
+.eyebrow{color:var(--accent);font-size:10px;font-weight:850;letter-spacing:2.2px;text-transform:uppercase}
+h1{font-size:clamp(32px,5vw,57px);line-height:1.1;letter-spacing:-2px;margin:18px 0 15px;font-weight:800}
+.lead{color:#9ba1ae;line-height:1.8;font-size:14px;max-width:570px;margin:0 auto}
+.composer{margin:32px auto 0;max-width:790px;background:#14161b;border:1px solid #353a44;border-radius:20px;padding:16px;text-align:left;box-shadow:0 18px 65px #0005}
+.composer:focus-within{border-color:#646d4b}
+.composer textarea{display:block;width:100%;min-height:108px;resize:vertical;background:transparent;color:var(--text);border:0;outline:0;padding:10px 9px;font-size:15px;line-height:1.7}
+.composer textarea::placeholder{color:#747b88}
+.composer-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid #292d35;padding:13px 3px 0}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.select{background:#1b1e25;color:#c9ced7;border:1px solid #30343d;border-radius:9px;padding:8px 10px;font-size:11px;max-width:180px}
+.muted{color:#8c93a0;font-size:11px}
+.run{background:var(--accent);color:var(--accentText);border:0;border-radius:11px;padding:11px 16px;font-weight:850;font-size:12px}
+.run:disabled{opacity:.55}
+.examples{margin:18px auto 0;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.example{background:transparent;border:1px solid #292d36;border-radius:30px;padding:9px 12px;color:#aeb4c0;font-size:11px}
+.example:hover{border-color:#5c6540;color:white}
+.section{max-width:970px;margin:58px auto 0}
+.section-head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:16px}
+.section h2{font-size:17px;margin:0}
+.section-sub{font-size:11px;color:#858c99;margin-top:6px}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:17px;min-width:0}
+.card{text-align:left;transition:.18s}
+.card:hover{border-color:#4a505c;transform:translateY(-2px)}
+.card-icon{height:35px;width:35px;display:grid;place-items:center;border-radius:10px;background:#22252d;color:var(--accent);font-size:16px;margin-bottom:17px}
+.card h3{font-size:13px;margin:0 0 7px}
+.card p{color:#8f96a4;font-size:11px;line-height:1.7;margin:0 0 16px}
+.card button{background:transparent;color:#cbd0d9;border:0;padding:0;font-size:11px}
+.page{display:none}
+.page.active{display:block}
+.subpage{max-width:950px;margin:0 auto}
+.subpage h1{font-size:32px;letter-spacing:-1px}
+.subpage .lead{margin:0;text-align:left}
+.subpage .panel{margin:22px 0}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.panel-head h2{font-size:14px;margin:0}
+.task-list{display:grid;gap:9px}
+.empty{color:#818895;text-align:center;padding:25px 8px;font-size:12px;line-height:1.8}
+.task{display:flex;align-items:flex-start;gap:11px;background:#191c22;border:1px solid #2b3039;border-radius:12px;padding:13px}
+.task-symbol{width:30px;height:30px;flex-shrink:0;display:grid;place-items:center;border-radius:9px;background:#272b32;color:var(--accent)}
+.task-content{min-width:0;flex:1}
+.task-title{font-size:12px;font-weight:750;overflow-wrap:anywhere}
+.task-detail{font-size:11px;color:#8f96a4;line-height:1.7;margin-top:4px;white-space:pre-wrap;overflow-wrap:anywhere}
+.task-status{font-size:10px;border:1px solid #4b5634;border-radius:20px;padding:5px 8px;color:var(--accent);white-space:nowrap}
+.field-label{display:block;color:#c6ccd6;font-size:12px;margin:15px 0 7px}
+.field,.field-select{width:100%;padding:12px 13px;border-radius:10px;background:#0e1014;border:1px solid #30343d;color:#f4f5f7;outline:0}
+.field:focus,.field-select:focus{border-color:#8d9e4b}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.primary,.secondary{border-radius:9px;padding:10px 14px;font-size:12px}
+.primary{background:var(--accent);color:#16190d;border:0;font-weight:800}
+.secondary{background:#20232a;color:#e0e4eb;border:1px solid #343943}
+.notice{color:var(--accent);font-size:11px;line-height:1.8;min-height:20px;margin:10px 0 0}
+.notice.error{color:var(--danger)}
+.chat-log{display:grid;gap:10px;margin:18px 0}
+.chat-message{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;padding:12px 14px;border-radius:12px;background:#1a1d24;font-size:13px}
+.chat-message.user{background:#26301a;border:1px solid #3e4a2a}
+.chat-message.error{border:1px solid #683842;color:var(--danger)}
+.output{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;font-size:12px;color:#d5d9e0;background:#0e1014;border:1px solid #2b3039;border-radius:11px;padding:14px;margin-top:13px}
+.saved-item{padding:12px 0;border-bottom:1px solid var(--line)}
+.footer{max-width:970px;margin:52px auto 0;padding-top:17px;border-top:1px solid var(--line);color:#737a87;font-size:10px;line-height:1.8}
+@media(max-width:900px){.sidebar{width:210px}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.topbar{margin-bottom:40px}}
+@media(max-width:650px){.app{display:block}.sidebar{width:100%;padding:12px;border-right:0;border-bottom:1px solid var(--line)}.brand{padding:0 4px 12px}.label,.sidebottom{display:none}.nav{display:flex;overflow-x:auto;gap:5px}.nav button{width:auto;white-space:nowrap;padding:9px 11px;font-size:11px}.main{padding:20px 13px 30px}.topbar{margin-bottom:32px}.pill{display:none}h1{letter-spacing:-1.2px}.composer{padding:12px}.composer textarea{min-height:100px}.cards{grid-template-columns:1fr}.section{margin-top:43px}.subpage h1{font-size:28px}.task-status{white-space:normal}}
+</style>
 </head>
 <body>
-<div class="layout">
-  <aside class="sidebar">
-    <div class="brand">
-      <div class="logo">J2</div>
-      <div class="brand-name">Jon2 <span>AI</span></div>
-    </div>
-    <div class="nav-label" data-ar="مساحة العمل" data-en="WORKSPACE">مساحة العمل</div>
-    <nav class="nav-list">
-      <button class="nav-btn active" data-page="home">⌂ <span data-ar="الرئيسية" data-en="Home">الرئيسية</span></button>
-      <button class="nav-btn" data-page="chat">◈ <span data-ar="المساعد الذكي" data-en="AI Chat">المساعد الذكي</span></button>
-      <button class="nav-btn" data-page="image">▧ <span data-ar="الصور" data-en="Images">الصور</span></button>
-      <button class="nav-btn" data-page="video">▷ <span data-ar="الفيديو" data-en="Video">الفيديو</span></button>
-      <button class="nav-btn" data-page="voice">♫ <span data-ar="الصوت" data-en="Voice">الصوت</span></button>
-      <button class="nav-btn" data-page="story">📖 <span data-ar="القصص" data-en="Stories">القصص</span></button>
-      <button class="nav-btn" data-page="saved">▤ <span data-ar="محفوظاتي" data-en="Saved">محفوظاتي</span></button>
-      <button class="nav-btn" data-page="lab">⌘ <span data-ar="مختبر AI" data-en="AI Lab">مختبر AI</span></button>
-    </nav>
-  </aside>
-  <main class="main">
-    <div class="topbar">
-      <div>
-        <div class="eyebrow">JON2 AI WORKSPACE</div>
-        <h1 id="pageTitle">تخيّل. ابتكر. جدّد.</h1>
-      </div>
-      <div class="actions" style="margin:0">
-        <button class="secondary" id="languageBtn">English</button>
-        <span class="status" id="connectionStatus">جاري فحص الاتصال...</span>
-      </div>
-    </div>
-    <section class="page active" id="home">
-      <p class="subtitle">منصتك لتنظيم الأفكار والعمل على مشروعاتك الإبداعية.</p>
-      <div class="hero">
-        <h2>كل أفكارك في مكان واحد ✨</h2>
-        <p>ابدأ بفكرتك، استخدم أدوات إعداد المحتوى، واختبر اتصال المساعد الذكي عندما يكون خادم النموذج متاحًا.</p>
-        <button class="primary" onclick="showPage('chat')">افتح المساعد ←</button>
-      </div>
-      <h2>أدواتك</h2>
-      <div class="grid">
-        <article class="card"><div class="card-icon">◈</div><h3>المساعد الذكي</h3><p>إرسال الأسئلة إلى خادم النموذج المتصل.</p><button class="secondary" onclick="showPage('chat')">افتح الأداة</button></article>
-        <article class="card"><div class="card-icon">🖼️</div><h3>استوديو الصور</h3><p>جهّز وصفًا فنيًا لتوليد الصور.</p><button class="secondary" onclick="showPage('image')">ابدأ</button></article>
-        <article class="card"><div class="card-icon">🎬</div><h3>استوديو الفيديو</h3><p>جهّز وصف المشاهد وحركة الكاميرا.</p><button class="secondary" onclick="showPage('video')">ابدأ</button></article>
-        <article class="card"><div class="card-icon">📖</div><h3>منشئ القصص</h3><p>نظّم فكرتك إلى مشاهد.</p><button class="secondary" onclick="showPage('story')">ابدأ</button></article>
-        <article class="card"><div class="card-icon">🎙️</div><h3>استوديو الصوت</h3><p>جهّز نص التعليق الصوتي.</p><button class="secondary" onclick="showPage('voice')">ابدأ</button></article>
-        <article class="card"><div class="card-icon">▤</div><h3>محفوظاتي</h3><p>احفظ أفكارك على هذا الجهاز.</p><button class="secondary" onclick="showPage('saved')">افتح المحفوظات</button></article>
-      </div>
-      <div class="workspace">
-        <h2>مساحة الأفكار ✧</h2>
-        <textarea id="idea" placeholder="اكتب فكرتك هنا..."></textarea>
-        <div class="actions">
-          <button class="primary" onclick="saveText('idea','فكرة','ideaNotice')">حفظ الفكرة</button>
-          <button class="secondary" onclick="copyField('idea','ideaNotice')">نسخ</button>
-          <button class="secondary" onclick="downloadField('idea','jon2-idea.txt')">تنزيل</button>
-        </div>
-        <p class="notice" id="ideaNotice"></p>
-      </div>
-    </section>
-    <section class="page" id="chat">
-      <div class="workspace">
-        <h2>◈ مساعد Jon2 AI</h2>
-        <p class="subtitle">اكتب رسالتك. ستظهر الإجابة عند نجاح الاتصال بخادم الذكاء الاصطناعي.</p>
-        <div class="chat-log" id="chatMessages" aria-live="polite"></div>
-        <label for="chatText">رسالتك</label>
-        <textarea id="chatText" placeholder="اكتب سؤالك هنا..." rows="4"></textarea>
-        <div class="actions">
-          <button class="primary" id="sendChatBtn">إرسال الرسالة</button>
-          <button class="secondary" onclick="clearChat()">مسح المحادثة</button>
-          <button class="secondary" onclick="saveChat()">حفظ المحادثة</button>
-        </div>
-        <p class="notice" id="chatStatus" role="status"></p>
-      </div>
-    </section>
-    <section class="page" id="image">
-      <div class="workspace">
-        <h2>🖼️ منشئ برومبت الصور</h2>
-        <p class="subtitle">هذه الأداة تجهّز وصفًا للنسخ إلى مولّد صور؛ ولا تنشئ صورة بنفسها.</p>
-        <label for="imageDesc">وصف الصورة</label>
-        <textarea id="imageDesc" placeholder="مثال: أرنب أبيض في غابة سحرية..."></textarea>
-        <label for="imageStyle">الأسلوب</label>
-        <select id="imageStyle">
-          <option value="high quality cinematic 3D cartoon">كرتون ثلاثي الأبعاد</option>
-          <option value="photorealistic, natural lighting">واقعي</option>
-          <option value="watercolor illustration">ألوان مائية</option>
-          <option value="anime illustration">أنمي</option>
-          <option value="fantasy concept art">خيال</option>
-        </select>
-        <label for="imageRatio">مقاس الصورة</label>
-        <select id="imageRatio"><option>16:9</option><option>1:1</option><option>9:16</option></select>
-        <div class="actions"><button class="primary" onclick="buildPrompt('image')">إنشاء البرومبت</button></div>
-        <div id="imageResult" class="result" hidden></div>
-        <div class="actions" id="imageActions" hidden>
-          <button class="secondary" onclick="copyResult('imageResult')">نسخ</button>
-          <button class="secondary" onclick="saveResult('imageResult','برومبت صورة')">حفظ</button>
-          <button class="secondary" onclick="downloadResult('imageResult','jon2-image-prompt.txt')">تنزيل</button>
-        </div>
-      </div>
-    </section>
-    <section class="page" id="video">
-      <div class="workspace">
-        <h2>🎬 منشئ برومبت الفيديو</h2>
-        <p class="subtitle">جهّز وصف المشهد وحركة الكاميرا.</p>
-        <label for="videoDesc">وصف المشهد</label>
-        <textarea id="videoDesc" placeholder="اكتب ما الذي يحدث في المشهد..."></textarea>
-        <label for="cameraMove">حركة الكاميرا</label>
-        <select id="cameraMove">
-          <option value="slow cinematic tracking shot">حركة تتبع سينمائية</option>
-          <option value="slow zoom in">تقريب بطيء</option>
-          <option value="wide establishing shot">لقطة واسعة</option>
-          <option value="smooth orbiting camera">دوران حول الشخصيات</option>
-        </select>
-        <label for="videoStyle">الأسلوب</label>
-        <select id="videoStyle">
-          <option value="high quality cinematic 3D animation">كرتون 3D سينمائي</option>
-          <option value="cinematic photorealism">واقعي سينمائي</option>
-          <option value="anime cinematic style">أنمي سينمائي</option>
-        </select>
-        <div class="actions"><button class="primary" onclick="buildPrompt('video')">إنشاء البرومبت</button></div>
-        <div id="videoResult" class="result" hidden></div>
-        <div class="actions" id="videoActions" hidden>
-          <button class="secondary" onclick="copyResult('videoResult')">نسخ</button>
-          <button class="secondary" onclick="saveResult('videoResult','برومبت فيديو')">حفظ</button>
-          <button class="secondary" onclick="downloadResult('videoResult','jon2-video-prompt.txt')">تنزيل</button>
-        </div>
-      </div>
-    </section>
-    <section class="page" id="voice">
-      <div class="workspace">
-        <h2>🎙️ تجهيز التعليق الصوتي</h2>
-        <p class="subtitle">يمكنك كتابة نص التعليق وحفظه. توليد ملف صوتي يحتاج خدمة صوت متصلة.</p>
-        <label for="voiceText">نص الراوي أو الحوار</label>
-        <textarea id="voiceText" placeholder="اكتب نص الراوي أو الحوار..."></textarea>
-        <div class="actions">
-          <button class="primary" onclick="saveText('voiceText','نص صوتي','voiceNotice')">حفظ النص</button>
-          <button class="secondary" onclick="copyField('voiceText','voiceNotice')">نسخ</button>
-          <button class="secondary" onclick="downloadField('voiceText','jon2-narration.txt')">تنزيل</button>
-        </div>
-        <p class="notice" id="voiceNotice"></p>
-      </div>
-    </section>
-    <section class="page" id="story">
-      <div class="workspace">
-        <h2>📖 منشئ القصص والمشاهد</h2>
-        <p class="subtitle">ينظّم فكرتك إلى خطة مشاهد. لا يدّعي أنه يؤلف قصة باستخدام نموذج ذكاء اصطناعي.</p>
-        <label for="storyTitle">عنوان القصة</label>
-        <input id="storyTitle" placeholder="سر النبع الزمردي">
-        <label for="storyIdea">الفكرة الأساسية</label>
-        <textarea id="storyIdea" placeholder="اكتب فكرة القصة والشخصيات والهدف..."></textarea>
-        <label for="sceneCount">عدد المشاهد</label>
-        <select id="sceneCount"><option>3</option><option selected>5</option><option>8</option><option>10</option></select>
-        <div class="actions"><button class="primary" onclick="buildStory()">تجهيز خطة المشاهد</button></div>
-        <div id="storyResult" class="result" hidden></div>
-        <div class="actions" id="storyActions" hidden>
-          <button class="secondary" onclick="copyResult('storyResult')">نسخ</button>
-          <button class="secondary" onclick="saveResult('storyResult','خطة قصة')">حفظ</button>
-          <button class="secondary" onclick="downloadResult('storyResult','jon2-story-plan.txt')">تنزيل</button>
-        </div>
-      </div>
-    </section>
-    <section class="page" id="saved">
-      <div class="workspace">
-        <h2>▤ محفوظاتي</h2>
-        <p class="subtitle">العناصر محفوظة في متصفح هذا الجهاز فقط.</p>
-        <div id="savedList"></div>
-        <div class="actions"><button class="secondary" onclick="exportLibrary()">تصدير المحفوظات</button></div>
-        <p class="notice" id="savedNotice"></p>
-      </div>
-    </section>
-    <section class="page" id="lab">
-      <div class="workspace">
-        <h2>⌘ مختبر Jon2 AI</h2>
-        <p class="subtitle">حالة المشروع وأدوات الاختبار.</p>
-        <p id="healthResult">جاري فحص خادم المحادثة...</p>
-        <button class="secondary" onclick="checkHealth()">إعادة فحص الاتصال</button>
-        <h3>خارطة التطوير</h3>
-        <p>01 — تطوير واجهة الموقع.</p>
-        <p>02 — ربط نموذج لغوي حقيقي.</p>
-        <p>03 — اختبار الاتصال والردود.</p>
-        <p>04 — إضافة خدمات الصور والصوت والفيديو بعد ربطها فعليًا.</p>
-      </div>
-    </section>
-    <footer class="footer">
-      JON2 AI · INDEPENDENT PROJECT<br>
-      واجهة التطوير لا تعني أن نموذج الذكاء الاصطناعي متصل. حالة الاتصال تُعرض بعد الفحص.
-    </footer>
-  </main>
+<div class="app">
+<aside class="sidebar">
+<div class="brand"><div class="logo">J2</div><div class="brand-title">Jon2 <span>AI</span></div></div>
+<div class="label">WORKSPACE</div>
+<nav class="nav">
+<button class="active" data-page="home"><span class="ico">⌂</span>Home</button>
+<button data-page="tasks"><span class="ico">◈</span>My automations</button>
+<button data-page="chat"><span class="ico">✳</span>AI assistant</button>
+<button data-page="creative"><span class="ico">▧</span>Creative studio</button>
+<button data-page="saved"><span class="ico">▤</span>Saved items</button>
+</nav>
+<div class="sidebottom">● <span id="sideStatus">Workspace ready</span><br>Jon2 AI · Independent project</div>
+</aside>
+<main class="main">
+<header class="topbar"><div class="crumb">Jon2 AI / <span id="crumb">Home</span></div><div style="display:flex;gap:9px;align-items:center"><span class="pill">PERSONAL WORKSPACE</span><button class="ghost" id="languageBtn">العربية</button></div></header>
+<section class="page active" id="home">
+<div class="hero">
+<div class="eyebrow">YOUR AI WORKSPACE</div>
+<h1>What do you want<br>to automate?</h1>
+<p class="lead">Describe a task in plain language. Jon2 AI will help you turn your idea into a clear workflow.</p>
+<div class="composer">
+<textarea id="commandInput" placeholder="e.g. Create a weekly report, organize my ideas, or plan a YouTube story workflow..."></textarea>
+<div class="composer-footer"><div class="tools"><select class="select" id="taskType" aria-label="Workflow type"><option value="general">General workflow</option><option value="youtube">YouTube story workflow</option><option value="content">Content creation</option><option value="organize">Organize information</option></select><span class="muted">Nothing runs without your approval.</span></div><button class="run" id="createTaskBtn">✦ Create workflow ↗</button></div>
 </div>
+<div class="examples">
+<button class="example" data-example="Create a family-friendly 3D cartoon story for YouTube, split it into scenes, and prepare prompts for my review. Do not publish anything.">▶ YouTube story workflow</button>
+<button class="example" data-example="Plan seven days of social media content with hooks and draft captions.">✎ Content planner</button>
+<button class="example" data-example="Organize my tasks into a prioritized checklist with clear next steps.">☷ Task organizer</button>
+</div>
+</div>
+<div class="section">
+<div class="section-head"><div><h2>Start with a template</h2><div class="section-sub">Choose a starting point and customize it.</div></div></div>
+<div class="cards">
+<article class="card"><div class="card-icon">▶</div><h3>YouTube Story Studio</h3><p>Plan a family-friendly story, scenes, character details, and prompts. Everything stays a draft until you approve it.</p><button data-template="youtube">Use template ↗</button></article>
+<article class="card"><div class="card-icon">✎</div><h3>Content planner</h3><p>Organize content ideas into a simple weekly publishing plan with draft captions.</p><button data-template="content">Use template ↗</button></article>
+<article class="card"><div class="card-icon">☷</div><h3>Task organizer</h3><p>Turn unstructured notes into priorities, task lists, and clear next actions.</p><button data-template="organize">Use template ↗</button></article>
+</div>
+</div>
+<div class="section">
+<div class="section-head"><div><h2>Recent workflows</h2><div class="section-sub">Your locally saved drafts.</div></div><button class="ghost" data-open="tasks">View all ↗</button></div>
+<div class="task-list" id="recentTasks"><div class="empty">No workflows yet. Describe your first task above.</div></div>
+</div>
+</section>
+
+<section class="page" id="tasks">
+<div class="subpage"><div class="eyebrow">WORKSPACE</div><h1>My automations</h1><p class="lead">Review and manage the workflow drafts saved on this device.</p>
+<div class="panel"><div class="panel-head"><h2>Workflow drafts</h2><span class="muted" id="taskCount">0 saved</span></div><div class="task-list" id="allTasks"></div></div>
+<button class="primary" data-open="home">+ Create workflow</button>
+</div>
+</section>
+
+<section class="page" id="chat">
+<div class="subpage"><div class="eyebrow">AI ASSISTANT</div><h1>Chat with Jon2 AI</h1><p class="lead">Ask questions or get help planning your workflow. A live response requires a connected AI server.</p>
+<div class="panel"><div class="chat-log" id="chatMessages"><div class="chat-message assistant">Welcome to Jon2 AI. Describe what you want help with.</div></div>
+<label class="field-label" for="chatText">Your message</label><textarea class="field" id="chatText" rows="3" placeholder="Type your message here..."></textarea>
+<div class="btnrow"><button class="primary" id="sendChatBtn">Send message</button><button class="secondary" id="clearChatBtn">Clear chat</button></div><p class="notice" id="chatStatus" role="status"></p></div></div>
+</section>
+
+<section class="page" id="creative">
+<div class="subpage"><div class="eyebrow">CREATIVE TOOLS</div><h1>Creative studio</h1><p class="lead">Prepare and save prompts for your creative projects.</p>
+<div class="panel">
+<label class="field-label" for="creativeType">What are you creating?</label>
+<select class="field-select" id="creativeType"><option value="Image prompt">Image prompt</option><option value="Video scene prompt">Video scene prompt</option><option value="Story outline">Story outline</option><option value="Voice-over script">Voice-over script</option></select>
+<label class="field-label" for="creativeIdea">Describe your idea</label>
+<textarea class="field" id="creativeIdea" rows="5" placeholder="Describe your idea here..."></textarea>
+<div class="btnrow"><button class="primary" id="makeCreativeBtn">Prepare draft</button><button class="secondary" id="saveCreativeBtn">Save draft</button></div>
+<div class="output" id="creativeOutput" hidden></div><p class="notice" id="creativeNotice"></p>
+</div></div>
+</section>
+
+<section class="page" id="saved">
+<div class="subpage"><div class="eyebrow">YOUR LIBRARY</div><h1>Saved items</h1><p class="lead">Saved drafts stay in this browser on this device.</p>
+<div class="panel"><div id="savedList"></div><div class="btnrow"><button class="secondary" id="exportBtn">Export library</button></div></div>
+</div>
+</section>
+
+<footer class="footer">JON2 AI · INDEPENDENT PROJECT<br>Workflow drafts are saved locally. External actions are not executed automatically. Connect a compatible AI server to enable live AI replies.</footer>
+</main>
+</div>
+
 <script>
 "use strict";
-/*
-  إعداد الاتصال:
-  - اتركه فارغًا إذا كان الخادم على نفس النطاق.
-  - إذا كان الخادم منفصلًا، ضع عنوانه الأساسي بعد نشره.
-  - لا تضع مفاتيح API سرية داخل هذا الملف.
-*/
-const JON2_API_BASE = "";
-let currentPage = "home";
-const pageTitles = {
-  home: "تخيّل. ابتكر. جدّد.",
-  chat: "مساعد Jon2 AI",
-  image: "استوديو الصور",
-  video: "استوديو الفيديو",
-  voice: "استوديو الصوت",
-  story: "منشئ القصص",
-  saved: "محفوظاتي",
-  lab: "مختبر Jon2 AI"
+const API_BASE = ""; // Add your deployed backend URL here when available.
+const $ = id => document.getElementById(id);
+const read = key => {try{return JSON.parse(localStorage.getItem(key)||"[]")}catch{return []}};
+const write = (key,value) => {try{localStorage.setItem(key,JSON.stringify(value));return true}catch{return false}};
+const titles={home:"Home",tasks:"My automations",chat:"AI assistant",creative:"Creative studio",saved:"Saved items"};
+
+function openPage(id){
+if(!$ (id))return;
+document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===id));
+document.querySelectorAll(".nav button[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===id));
+$("crumb").textContent=titles[id]||"Home";
+if(id==="tasks")renderTasks();
+if(id==="saved")renderSaved();
+window.scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelectorAll(".nav button[data-page]").forEach(b=>b.addEventListener("click",()=>openPage(b.dataset.page)));
+document.querySelectorAll("[data-open]").forEach(b=>b.addEventListener("click",()=>openPage(b.dataset.open)));
+document.querySelectorAll(".example").forEach(b=>b.addEventListener("click",()=>{$("commandInput").value=b.dataset.example;$("commandInput").focus()}));
+
+const templates={
+youtube:"Create a family-friendly 3D cartoon adventure for YouTube. Develop a title, short story, consistent character list, scene-by-scene descriptions, and image/video prompts. Save everything as a draft for my approval. Do not publish anything.",
+content:"Create a 7-day content plan. For each day, include a topic, a short hook, the main points, and a draft caption. Save as a draft for review.",
+organize:"Turn my rough notes into a prioritized checklist. Group related items, identify the next action, and mark any missing information."
 };
-function apiUrl(path) {
-  return JON2_API_BASE.replace(/\/+$/, "") + path;
+document.querySelectorAll("[data-template]").forEach(b=>b.addEventListener("click",()=>{$("taskType").value=b.dataset.template;$("commandInput").value=templates[b.dataset.template];$("commandInput").focus();window.scrollTo({top:0,behavior:"smooth"})}));
+
+function taskCard(t){
+const item=document.createElement("article");item.className="task";
+const icon=document.createElement("div");icon.className="task-symbol";icon.textContent=t.type==="youtube"?"▶":t.type==="content"?"✎":t.type==="organize"?"☷":"✦";
+const content=document.createElement("div");content.className="task-content";
+const title=document.createElement("div");title.className="task-title";title.textContent=t.title;
+const detail=document.createElement("div");detail.className="task-detail";detail.textContent=t.description;
+const status=document.createElement("span");status.className="task-status";status.textContent="Draft · Needs approval";
+content.append(title,detail);item.append(icon,content,status);return item;
 }
-function showPage(id) {
-  const page = document.getElementById(id);
-  if (!page) return;
-  currentPage = id;
-  document.querySelectorAll(".page").forEach(el => el.classList.remove("active"));
-  page.classList.add("active");
-  document.querySelectorAll(".nav-btn").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.page === id);
-  });
-  document.getElementById("pageTitle").textContent = pageTitles[id] || "Jon2 AI";
-  if (id === "saved") renderSaved();
-  if (id === "lab") checkHealth();
-  window.scrollTo({ top: 0, behavior: "smooth" });
+function renderTasks(){
+const tasks=read("jon2_workflows");$("taskCount").textContent=tasks.length+" saved";
+const all=$("allTasks");all.replaceChildren();
+if(!tasks.length){all.innerHTML='<div class="empty">No workflows yet. Create one from the home page.</div>';return}
+tasks.forEach(t=>all.append(taskCard(t)));
 }
-document.querySelectorAll(".nav-btn").forEach(btn => {
-  btn.addEventListener("click", () => showPage(btn.dataset.page));
+function renderRecent(){
+const tasks=read("jon2_workflows").slice(0,3),box=$("recentTasks");box.replaceChildren();
+if(!tasks.length){box.innerHTML='<div class="empty">No workflows yet. Describe your first task above.</div>';return}
+tasks.forEach(t=>box.append(taskCard(t)));
+}
+function createWorkflow(){
+const description=$("commandInput").value.trim();
+if(!description){$("commandInput").focus();return}
+const type=$("taskType").value;
+const title=description.split(/\n/)[0].slice(0,72)||(type==="youtube"?"YouTube Story workflow":"New workflow");
+const task={id:Date.now(),title,description,type,createdAt:new Date().toISOString(),status:"draft"};
+const tasks=read("jon2_workflows");tasks.unshift(task);
+if(!write("jon2_workflows",tasks.slice(0,100))){alert("Could not save this draft. Check browser storage.");return}
+$("commandInput").value="";renderRecent();$("sideStatus").textContent="Draft saved locally";openPage("tasks");
+}
+$("createTaskBtn").addEventListener("click",createWorkflow);
+$("commandInput").addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key==="Enter")createWorkflow()});
+
+function addChat(role,text,error=false){
+const el=document.createElement("div");el.className="chat-message "+role+(error?" error":"");el.textContent=text;
+$("chatMessages").append(el);el.scrollIntoView({block:"nearest"});
+}
+async function sendChat(){
+const text=$("chatText").value.trim();
+if(!text){$("chatStatus").textContent="Please enter a message.";return}
+addChat("user",text);$("chatText").value="";$("sendChatBtn").disabled=true;$("sendChatBtn").textContent="Connecting…";$("chatStatus").textContent="Sending to Jon2 AI…";
+try{
+const response=await fetch(API_BASE.replace(/\/+$/,"")+"/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text}),signal:AbortSignal.timeout(120000)});
+const data=await response.json().catch(()=>({}));
+if(!response.ok)throw new Error(data.error||data.detail||"AI server is unavailable.");
+const reply=data.reply||data.response;
+if(typeof reply!=="string"||!reply.trim())throw new Error("The server returned no text reply.");
+addChat("assistant",reply.trim());$("chatStatus").textContent="Reply received.";
+}catch(e){
+const msg=location.hostname.endsWith("github.io")?"The AI server is not connected yet. GitHub Pages cannot run the model itself.":(e.message||"Could not connect to the AI server.");
+addChat("assistant",msg,true);$("chatStatus").textContent=msg;$("chatStatus").className="notice error";
+}finally{$("sendChatBtn").disabled=false;$("sendChatBtn").textContent="Send message"}
+}
+$("sendChatBtn").addEventListener("click",sendChat);
+$("chatText").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat()}});
+$("clearChatBtn").addEventListener("click",()=>{$("chatMessages").replaceChildren();$("chatStatus").textContent="";$("chatStatus").className="notice"});
+
+let lastCreative="";
+$("makeCreativeBtn").addEventListener("click",()=>{
+const idea=$("creativeIdea").value.trim();
+if(!idea){$("creativeNotice").textContent="Describe your idea first.";return}
+lastCreative=$("creativeType").value+"\n\nIdea: "+idea+"\n\nDraft instructions: Develop this idea with clear structure, consistent details, and a polished result. This is a prepared draft, not AI-generated content.";
+const out=$("creativeOutput");out.textContent=lastCreative;out.hidden=false;$("creativeNotice").textContent="Draft prepared. You can save it locally.";
 });
-document.getElementById("languageBtn").addEventListener("click", () => {
-  alert("دعم الواجهة الإنجليزية الكامل سيضاف في تحديث لاحق.");
+$("saveCreativeBtn").addEventListener("click",()=>{
+if(!lastCreative){$("creativeNotice").textContent="Prepare a draft first.";return}
+const items=read("jon2_library");items.unshift({id:Date.now(),title:$("creativeType").value,text:lastCreative,date:new Date().toLocaleString()});
+$("creativeNotice").textContent=write("jon2_library",items.slice(0,100))?"Draft saved on this device.":"Could not save draft.";
 });
-function readLibrary() {
-  try {
-    return JSON.parse(localStorage.getItem("jon2_library") || "[]");
-  } catch {
-    return [];
-  }
-}
-function writeLibrary(items) {
-  try {
-    localStorage.setItem("jon2_library", JSON.stringify(items));
-    return true;
-  } catch {
-    return false;
-  }
-}
-function saveItem(title, text) {
-  if (!String(text || "").trim()) return false;
-  const items = readLibrary();
-  items.unshift({
-    id: Date.now() + Math.random(),
-    title,
-    text,
-    date: new Date().toLocaleString()
-  });
-  return writeLibrary(items.slice(0, 100));
-}
-function saveText(fieldId, title, noticeId) {
-  const field = document.getElementById(fieldId);
-  const notice = document.getElementById(noticeId);
-  const ok = saveItem(title, field.value);
-  if (notice) {
-    notice.textContent = ok
-      ? "تم الحفظ على هذا الجهاز."
-      : "اكتب شيئًا أولًا أو تحقق من مساحة التخزين.";
-  }
-}
-async function copyField(fieldId, noticeId) {
-  const text = document.getElementById(fieldId).value;
-  const notice = document.getElementById(noticeId);
-  if (!text.trim()) {
-    if (notice) notice.textContent = "لا يوجد نص لنسخه.";
-    return;
-  }
-  try {
-    await navigator.clipboard.writeText(text);
-    if (notice) notice.textContent = "تم النسخ.";
-  } catch {
-    if (notice) notice.textContent = "تعذر النسخ تلقائيًا؛ حدد النص وانسخه يدويًا.";
-  }
-}
-function downloadText(text, filename) {
-  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-function downloadField(fieldId, filename) {
-  const text = document.getElementById(fieldId).value;
-  if (!text.trim()) {
-    alert("اكتب نصًا أولًا.");
-    return;
-  }
-  downloadText(text, filename);
-}
-function buildPrompt(type) {
-  let prompt = "";
-  if (type === "image") {
-    const description = document.getElementById("imageDesc").value.trim();
-    if (!description) return alert("اكتب وصف الصورة أولًا.");
-    prompt =
-      "Create an image based on this description: " + description +
-      "\nStyle: " + document.getElementById("imageStyle").value +
-      "\nAspect ratio: " + document.getElementById("imageRatio").value +
-      "\nHigh quality, clear composition, consistent details.";
-  } else {
-    const description = document.getElementById("videoDesc").value.trim();
-    if (!description) return alert("اكتب وصف المشهد أولًا.");
-    prompt =
-      "Create a video scene: " + description +
-      "\nCamera movement: " + document.getElementById("cameraMove").value +
-      "\nVisual style: " + document.getElementById("videoStyle").value +
-      "\nSmooth motion, coherent scene, consistent characters.";
-  }
-  const result = document.getElementById(type + "Result");
-  result.textContent = prompt;
-  result.hidden = false;
-  document.getElementById(type + "Actions").hidden = false;
-}
-function buildStory() {
-  const title = document.getElementById("storyTitle").value.trim() || "قصة جديدة";
-  const idea = document.getElementById("storyIdea").value.trim();
-  if (!idea) return alert("اكتب فكرة القصة أولًا.");
-  const count = Number(document.getElementById("sceneCount").value);
-  const lines = [
-    "عنوان القصة: " + title,
-    "الفكرة الأساسية: " + idea,
-    "",
-    "خطة مبدئية للمشاهد:"
-  ];
-  for (let i = 1; i <= count; i++) {
-    lines.push(
-      "",
-      "المشهد " + i,
-      "الهدف: حدّد الحدث الرئيسي الذي يطوّر القصة.",
-      "الوصف: " + idea,
-      "الحركة والحوار: أضف التفاصيل المناسبة لهذا المشهد."
-    );
-  }
-  lines.push("", "ملاحظة: هذه خطة منظمة وليست قصة مولّدة تلقائيًا بواسطة نموذج AI.");
-  const result = document.getElementById("storyResult");
-  result.textContent = lines.join("\n");
-  result.hidden = false;
-  document.getElementById("storyActions").hidden = false;
-}
-async function copyResult(id) {
-  const text = document.getElementById(id).textContent;
-  try {
-    await navigator.clipboard.writeText(text);
-    alert("تم النسخ.");
-  } catch {
-    alert("تعذر النسخ تلقائيًا. حدد النص وانسخه.");
-  }
-}
-function saveResult(id, title) {
-  const text = document.getElementById(id).textContent;
-  alert(saveItem(title, text) ? "تم الحفظ." : "تعذر الحفظ.");
-}
-function downloadResult(id, filename) {
-  downloadText(document.getElementById(id).textContent, filename);
-}
-function renderSaved() {
-  const container = document.getElementById("savedList");
-  const items = readLibrary();
-  if (!items.length) {
-    container.textContent = "لا توجد عناصر محفوظة حتى الآن.";
-    return;
-  }
-  container.replaceChildren();
-  items.forEach(item => {
-    const article = document.createElement("article");
-    article.className = "saved-item";
-    const heading = document.createElement("h3");
-    heading.textContent = item.title;
-    const date = document.createElement("small");
-    date.textContent = item.date;
-    const body = document.createElement("p");
-    body.className = "result";
-    body.textContent = item.text;
-    const button = document.createElement("button");
-    button.className = "secondary";
-    button.textContent = "حذف";
-    button.addEventListener("click", () => {
-      writeLibrary(readLibrary().filter(entry => entry.id !== item.id));
-      renderSaved();
-    });
-    article.append(heading, date, body, button);
-    container.append(article);
-  });
-}
-function exportLibrary() {
-  downloadText(JSON.stringify(readLibrary(), null, 2), "jon2-library.json");
-}
-function addChatMessage(role, text, isError = false) {
-  const log = document.getElementById("chatMessages");
-  const message = document.createElement("div");
-  message.className = "chat-message " + role + (isError ? " error" : "");
-  message.textContent = text;
-  log.append(message);
-  log.scrollTop = log.scrollHeight;
-  return message;
-}
-async function sendJon2Message() {
-  const input = document.getElementById("chatText");
-  const button = document.getElementById("sendChatBtn");
-  const status = document.getElementById("chatStatus");
-  const message = input.value.trim();
-  if (!message) {
-    status.textContent = "اكتب رسالتك أولًا.";
-    status.className = "notice error";
-    return;
-  }
-  addChatMessage("user", message);
-  input.value = "";
-  button.disabled = true;
-  button.textContent = "جاري الاتصال...";
-  status.textContent = "جارٍ إرسال الرسالة إلى الخادم...";
-  status.className = "notice";
-  try {
-    const response = await fetch(apiUrl("/api/chat"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
-      signal: AbortSignal.timeout(120000)
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(data.error || "خادم الذكاء الاصطناعي غير متاح.");
-    }
-    const reply = data.reply || data.response;
-    if (typeof reply !== "string" || !reply.trim()) {
-      throw new Error("الخادم لم يُرجع ردًا نصيًا صالحًا.");
-    }
-    addChatMessage("assistant", reply.trim());
-    status.textContent = "وصل الرد من الخادم.";
-    status.className = "notice";
-  } catch (error) {
-    let messageText = error.message || "تعذر الاتصال بالخادم.";
-    if (error.name === "TimeoutError" || error.name === "AbortError") {
-      messageText = "انتهت مهلة الانتظار. حاول مرة أخرى.";
-    } else if (location.hostname.endsWith("github.io")) {
-      messageText =
-        "الموقع مستضاف على GitHub Pages، وهو لا يشغّل واجهة /api/chat بنفسه. " +
-        "يلزم نشر خادم النموذج وإعداد عنوانه في JON2_API_BASE.";
-    }
-    addChatMessage("assistant", messageText, true);
-    status.textContent = messageText;
-    status.className = "notice error";
-  } finally {
-    button.disabled = false;
-    button.textContent = "إرسال الرسالة";
-  }
-}
-document.getElementById("sendChatBtn").addEventListener("click", sendJon2Message);
-document.getElementById("chatText").addEventListener("keydown", event => {
-  if (event.key === "Enter" && !event.shiftKey) {
-    event.preventDefault();
-    sendJon2Message();
-  }
+function renderSaved(){
+const box=$("savedList"),items=read("jon2_library");box.replaceChildren();
+if(!items.length){box.innerHTML='<div class="empty">No saved items yet.</div>';return}
+items.forEach(it=>{
+const el=document.createElement("article");el.className="saved-item";
+const h=document.createElement("h3");h.textContent=it.title;
+const d=document.createElement("p");d.className="muted";d.textContent=it.date||"";
+const body=document.createElement("div");body.className="output";body.textContent=it.text;
+const del=document.createElement("button");del.className="secondary";del.textContent="Delete";
+del.addEventListener("click",()=>{write("jon2_library",read("jon2_library").filter(x=>x.id!==it.id));renderSaved()});
+el.append(h,d,body,del);box.append(el);
 });
-function clearChat() {
-  document.getElementById("chatMessages").replaceChildren();
-  document.getElementById("chatStatus").textContent = "";
 }
-function saveChat() {
-  const log = document.getElementById("chatMessages");
-  const text = Array.from(log.children)
-    .map(node => node.classList.contains("user") ? "أنت: " + node.textContent : "Jon2 AI: " + node.textContent)
-    .join("\n\n");
-  alert(saveItem("محادثة Jon2 AI", text) ? "تم حفظ المحادثة." : "لا توجد محادثة لحفظها.");
-}
-async function checkHealth() {
-  const status = document.getElementById("connectionStatus");
-  const result = document.getElementById("healthResult");
-  status.textContent = "جاري الفحص...";
-  if (result) result.textContent = "جاري فحص خادم المحادثة...";
-  try {
-    const response = await fetch(apiUrl("/api/health"), {
-      method: "GET",
-      signal: AbortSignal.timeout(10000)
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error("تعذر فحص الخادم.");
-    if (data.aiEngine === "configured") {
-      status.textContent = "الخادم متصل — يلزم اختبار النموذج";
-      if (result) result.textContent = "الخادم متصل ومهيأ. أرسل رسالة للتأكد من أن النموذج يجيب فعلًا.";
-    } else {
-      status.textContent = "النموذج غير متصل";
-      if (result) result.textContent = "الخادم يجيب، لكن نموذج الذكاء الاصطناعي غير مهيأ بعد.";
-    }
-  } catch {
-    status.textContent = "الخادم غير متاح";
-    if (result) {
-      result.textContent =
-        "لم يمكن الوصول إلى /api/health. GitHub Pages لا يشغّل خادم Node.js؛ يجب نشر الخادم وتحديد عنوانه.";
-    }
-  }
-}
-checkHealth();
+$("exportBtn").addEventListener("click",()=>{
+const data=JSON.stringify({workflows:read("jon2_workflows"),saved:read("jon2_library")},null,2);
+const url=URL.createObjectURL(new Blob([data],{type:"application/json"}));
+const a=document.createElement("a");a.href=url;a.download="jon2-workspace.json";a.click();URL.revokeObjectURL(url);
+});
+$("languageBtn").addEventListener("click",()=>alert("English interface is active. Arabic localization can be added in a later update."));
+renderRecent();
 </script>
 </body>
 </html>
