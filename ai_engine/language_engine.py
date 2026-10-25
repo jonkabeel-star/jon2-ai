@@ -1,65 +1,93 @@
-import random
-import re
-from collections import Counter, defaultdict
+import os
+import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM
 class Jon2LanguageEngine:
     def __init__(self):
-        self.transitions = defaultdict(Counter)
+        self.model_name = os.getenv(
+            "JON2_MODEL_NAME",
+            "Qwen/Qwen2.5-0.5B-Instruct"
+        )
+        self.tokenizer = None
+        self.model = None
         self.ready = False
-        self.training_data = [
-            "Jon2 AI is an intelligent assistant.",
-            "Jon2 AI helps people create new ideas.",
-            "Artificial intelligence can understand language patterns.",
-            "A good story has a beginning, middle, and ending.",
-            "الذكاء الاصطناعي يساعد الإنسان على التعلم والإبداع.",
-            "يمكن كتابة قصة ممتعة عن المغامرة والصداقة.",
-            "يتعلم Jon2 AI الأنماط اللغوية من النصوص.",
-            "التعاون والصداقة يساعدان على حل المشكلات.",
-        ]
-        self.train(self.training_data)
-    def train(self, texts):
-        self.transitions.clear()
-        for text in texts:
-            words = re.findall(r"\w+|[^\w\s]", text.lower())
-            words = ["<START>"] + words + ["<END>"]
-            for current_word, next_word in zip(
-                words, words[1:]
-            ):
-                self.transitions[current_word][next_word] += 1
-        self.ready = bool(self.transitions)
-        return self.ready
-    def generate(self, prompt="", max_words=40):
-        if not self.ready:
-            return "Jon2 AI language engine is not ready."
-        prompt = prompt.strip()
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+    def load_model(self):
+        """Load the open-source language model."""
+        try:
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_name
+            )
+            self.model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                torch_dtype=(
+                    torch.float16
+                    if self.device == "cuda"
+                    else torch.float32
+                )
+            )
+            self.model.to(self.device)
+            self.model.eval()
+            self.ready = True
+            return True
+        except Exception as error:
+            self.ready = False
+            print(f"Jon2 model loading failed: {error}")
+            return False
+    def generate(self, prompt="", max_words=300):
+        """Generate a response using the real language model."""
+        prompt = str(prompt).strip()
         if not prompt:
             return "من فضلك اكتب سؤالك أولًا."
-        words = re.findall(r"\w+|[^\w\s]", prompt.lower())
-        current = words[-1] if words else "<START>"
-        result = []
-        for _ in range(max_words):
-            choices = self.transitions.get(current)
-            if not choices:
-                current = "<START>"
-                choices = self.transitions.get(current)
-            if not choices:
-                break
-            next_word = random.choices(
-                list(choices.keys()),
-                weights=list(choices.values()),
-                k=1
-            )[0]
-            if next_word == "<END>":
-                break
-            result.append(next_word)
-            current = next_word
-        if not result:
-            return (
-                "أنا Jon2 AI. المحرك اللغوي التجريبي يعمل، "
-                "لكن قدراتي الحالية محدودة. "
-                "أحتاج إلى نموذج لغوي أقوى لفهم الأسئلة والإجابة عنها."
-            )
-        return " ".join(result)
+        if not self.ready:
+            if not self.load_model():
+                return (
+                    "محرك Jon2 AI غير جاهز حاليًا. "
+                    "تأكد من تثبيت المتطلبات وتوفر اتصال "
+                    "بالإنترنت وذاكرة كافية."
+                )
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "أنت Jon2 AI، مساعد ذكي يتحدث العربية "
+                    "الفصحى الواضحة والطبيعية. أجب عن السؤال "
+                    "مباشرة، وكن دقيقًا ومفيدًا. استخدم لغة "
+                    "السؤال عندما تكون مناسبة. لا تخترع معلومات."
+                ),
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ]
+        try:
+            input_ids = self.tokenizer.apply_chat_template(
+                messages,
+                add_generation_prompt=True,
+                tokenize=True,
+                return_tensors="pt",
+            ).to(self.device)
+            with torch.inference_mode():
+                output_ids = self.model.generate(
+                    input_ids,
+                    max_new_tokens=max(64, min(max_words, 500)),
+                    do_sample=False,
+                    repetition_penalty=1.08,
+                    pad_token_id=self.tokenizer.eos_token_id,
+                )
+            new_tokens = output_ids[0][input_ids.shape[-1]:]
+            answer = self.tokenizer.decode(
+                new_tokens,
+                skip_special_tokens=True,
+            ).strip()
+            return answer or "لم أتمكن من إنشاء إجابة. حاول مرة أخرى."
+        except Exception as error:
+            print(f"Jon2 generation failed: {error}")
+            return "حدث خطأ أثناء توليد الإجابة. حاول مرة أخرى."
 if __name__ == "__main__":
     engine = Jon2LanguageEngine()
-    print("Jon2 AI Language Engine")
-    print(engine.generate("hello"))
+    if engine.load_model():
+        print("Jon2 AI is ready!")
+        print(engine.generate("اكتب قصة قصيرة عن الصداقة."))
+    else:
+        print("تعذر تحميل النموذج.")
