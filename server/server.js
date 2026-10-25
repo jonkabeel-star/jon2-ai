@@ -1,9 +1,15 @@
+"use strict";
 const http = require("http");
-const crypto = require("crypto");
-const PORT = process.env.PORT || 3000;
-const apiKeys = new Map();
+const PORT = Number(process.env.PORT) || 3000;
+// عنوان خادم نموذج Jon2 AI الحقيقي
+const AI_MODEL_URL = process.env.AI_MODEL_URL || "";
 function send(res, status, data) {
-  res.writeHead(status);
+  res.writeHead(status, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type"
+  });
   res.end(JSON.stringify(data));
 }
 function readBody(req) {
@@ -12,7 +18,7 @@ function readBody(req) {
     req.on("data", chunk => {
       body += chunk;
       if (body.length > 100000) {
-        reject(new Error("Request body too large"));
+        reject(new Error("حجم الرسالة كبير جدًا."));
         req.destroy();
       }
     });
@@ -20,14 +26,55 @@ function readBody(req) {
       try {
         resolve(JSON.parse(body || "{}"));
       } catch {
-        reject(new Error("Invalid JSON"));
+        reject(new Error("بيانات الطلب غير صالحة."));
       }
     });
     req.on("error", reject);
   });
 }
+async function askModel(message) {
+  if (!AI_MODEL_URL) {
+    const error = new Error(
+      "نموذج الذكاء الاصطناعي غير متصل. يجب إعداد عنوان خادم النموذج أولًا."
+    );
+    error.status = 503;
+    throw error;
+  }
+  const response = await fetch(AI_MODEL_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      message,
+      prompt: message
+    }),
+    signal: AbortSignal.timeout(120000)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(
+      data.error || "خادم نموذج الذكاء الاصطناعي لم يستطع الإجابة."
+    );
+    error.status = 502;
+    throw error;
+  }
+  const reply =
+    data.reply ??
+    data.response ??
+    data.generated_text ??
+    data.text ??
+    data.choices?.[0]?.message?.content;
+  if (typeof reply !== "string" || !reply.trim()) {
+    const error = new Error(
+      "الخادم لم يُرجع إجابة نصية مفهومة."
+    );
+    error.status = 502;
+    throw error;
+  }
+  return reply.trim();
+}
 const server = http.createServer(async (req, res) => {
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader(
@@ -38,75 +85,50 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(204);
     return res.end();
   }
-  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  const url = new URL(
+    req.url,
+    `http://${req.headers.host || "localhost"}`
+  );
   if (url.pathname === "/api/health" && req.method === "GET") {
     return send(res, 200, {
       project: "Jon2 AI",
       status: "online",
-      aiEngine: "not_connected",
+      aiEngine: AI_MODEL_URL ? "configured" : "not_connected",
       chatEndpoint: "/api/chat"
     });
   }
-  // واجهة المحادثة
   if (url.pathname === "/api/chat" && req.method === "POST") {
     let body;
     try {
       body = await readBody(req);
     } catch (error) {
-      return send(res, 400, { error: error.message });
-    }
-    if (typeof body.message !== "string" || !body.message.trim()) {
       return send(res, 400, {
-        error: "Please provide a message."
+        error: error.message || "تعذر قراءة الرسالة."
       });
     }
-    // لا نُرجع إجابة وهمية قبل ربط نموذج فعلي.
-    return send(res, 503, {
-      project: "Jon2 AI",
-      error: "AI_MODEL_NOT_CONNECTED",
-      message:
-        "Jon2 AI chat endpoint is ready, but the language model has not been connected yet."
-    });
-  }
-  if (url.pathname === "/api/keys" && req.method === "POST") {
-    let body;
+    if (
+      typeof body.message !== "string" ||
+      !body.message.trim()
+    ) {
+      return send(res, 400, {
+        error: "اكتب رسالتك أولًا."
+      });
+    }
     try {
-      body = await readBody(req);
+      const reply = await askModel(body.message.trim());
+      return send(res, 200, {
+        project: "Jon2 AI",
+        reply
+      });
     } catch (error) {
-      return send(res, 400, { error: error.message });
-    }
-    const adminSecret = process.env.JON2_ADMIN_SECRET;
-    if (!adminSecret || body.adminSecret !== adminSecret) {
-      return send(res, 403, {
-        error: "Not authorized to create API keys"
+      console.error("Jon2 AI model error:", error.message);
+      return send(res, error.status || 502, {
+        error: error.message || "تعذر الاتصال بنموذج الذكاء الاصطناعي."
       });
     }
-    const key = "jon2_sk_" + crypto.randomBytes(32).toString("hex");
-    const hash = crypto.createHash("sha256").update(key).digest("hex");
-    apiKeys.set(hash, {
-      createdAt: new Date().toISOString()
-    });
-    return send(res, 201, {
-      project: "Jon2 AI",
-      apiKey: key,
-      warning: "Save this key securely. It will not be shown again."
-    });
-  }
-  if (url.pathname === "/api/keys/verify" && req.method === "POST") {
-    const auth = req.headers.authorization || "";
-    const key = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-    if (!key.startsWith("jon2_sk_")) {
-      return send(res, 401, {
-        valid: false,
-        error: "Missing or invalid API key"
-      });
-    }
-    const hash = crypto.createHash("sha256").update(key).digest("hex");
-    const valid = apiKeys.has(hash);
-    return send(res, valid ? 200 : 401, { valid });
   }
   return send(res, 404, {
-    error: "Endpoint not found"
+    error: "المسار المطلوب غير موجود."
   });
 });
 server.listen(PORT, "0.0.0.0", () => {
