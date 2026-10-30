@@ -1,78 +1,54 @@
+"""Runtime for the original Jon2 language model.
+
+This module intentionally does not load Qwen, GPT, or any hosted AI API.
+A trained Jon2 checkpoint must exist before chat can be used.
+"""
 import os
-import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from pathlib import Path
 
-MODEL_NAME = os.getenv(
-    "JON2_CHAT_MODEL",
-    "Qwen/Qwen2.5-0.5B-Instruct"
+from jon2_core import generate, load_model
+
+CHECKPOINT_PATH = Path(
+    os.getenv(
+        "JON2_CHECKPOINT",
+        str(Path(__file__).resolve().parent / "checkpoints" / "jon2-small.pt"),
+    )
 )
-MAX_NEW_TOKENS = int(os.getenv("JON2_MAX_NEW_TOKENS", "160"))
 
-tokenizer = None
-model = None
-device = "cuda" if torch.cuda.is_available() else "cpu"
-
-
-def model_is_ready():
-    return model is not None and tokenizer is not None
+_model = None
+_tokenizer = None
+_device = None
 
 
-def load_model():
-    global tokenizer, model
+def model_is_ready() -> bool:
+    return _model is not None and _tokenizer is not None
+
+
+def load_runtime() -> None:
+    global _model, _tokenizer, _device
     if model_is_ready():
         return
-
-    print(f"Loading Jon2 AI model: {MODEL_NAME} on {device}")
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-    model = AutoModelForCausalLM.from_pretrained(
-        MODEL_NAME,
-        torch_dtype=torch.float16 if device == "cuda" else torch.float32,
-        low_cpu_mem_usage=True,
-    )
-    model.to(device)
-    model.eval()
-    print("Jon2 AI language model loaded successfully.")
-
-
-def generate_reply(message):
-    if not message or not message.strip():
-        raise ValueError("Please enter a message.")
-
-    if not model_is_ready():
-        load_model()
-
-    messages = [
-        {
-            "role": "system",
-            "content": (
-                "أنت Jon2 AI، مساعد ذكي مستقل. أجب بالعربية الفصحى "
-                "الواضحة والطبيعية عندما يكتب المستخدم بالعربية. "
-                "أجب مباشرة وبدقة، ولا تخترع معلومات أو أسماء أو أحداثًا. "
-                "نظّم الإجابة في نقاط عند الحاجة."
-            ),
-        },
-        {"role": "user", "content": message.strip()},
-    ]
-
-    inputs = tokenizer.apply_chat_template(
-        messages,
-        add_generation_prompt=True,
-        tokenize=True,
-        return_tensors="pt",
-    ).to(device)
-
-    with torch.inference_mode():
-        outputs = model.generate(
-            inputs,
-            max_new_tokens=MAX_NEW_TOKENS,
-            do_sample=False,
-            repetition_penalty=1.10,
-            no_repeat_ngram_size=3,
-            pad_token_id=tokenizer.eos_token_id,
+    if not CHECKPOINT_PATH.is_file():
+        raise FileNotFoundError(
+            "لم يتم تدريب نموذج Jon2 الأصلي بعد. ملف الأوزان المطلوب غير موجود: "
+            f"{CHECKPOINT_PATH}"
         )
+    _model, _tokenizer, _device = load_model(str(CHECKPOINT_PATH))
 
-    generated = outputs[0][inputs.shape[-1]:]
-    answer = tokenizer.decode(generated, skip_special_tokens=True).strip()
+
+def generate_reply(message: str) -> str:
+    if not message or not message.strip():
+        raise ValueError("اكتب رسالتك أولًا.")
+    load_runtime()
+    full_text = generate(
+        _model,
+        _tokenizer,
+        message.strip(),
+        _device,
+        max_new_chars=int(os.getenv("JON2_MAX_NEW_CHARS", "400")),
+        temperature=float(os.getenv("JON2_TEMPERATURE", "0.8")),
+    )
+    answer = full_text[len(message.strip()):].strip()
     if not answer:
-        raise RuntimeError("The model returned an empty response.")
+        raise RuntimeError("لم ينتج نموذج Jon2 إجابة.")
     return answer
