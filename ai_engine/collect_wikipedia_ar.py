@@ -17,7 +17,7 @@ from pathlib import Path
 API_URL = "https://ar.wikipedia.org/w/api.php"
 LICENSE_NAME = "CC BY-SA 4.0 (verify each article page for exceptions)"
 LICENSE_URL = "https://creativecommons.org/licenses/by-sa/4.0/"
-USER_AGENT = "Jon2AI-TrainingCorpusCollector/1.0 (educational research; contact: repository owner)"
+USER_AGENT = "Jon2AI/1.0 (https://github.com/jonkabeel-star/jon2-ai; Arabic corpus collection)"
 
 
 def clean_article_text(value: str) -> str:
