@@ -26,6 +26,20 @@ uvicorn main:app --app-dir ai_engine --host 0.0.0.0 --port 8000
 The default checkpoint location is `ai_engine/checkpoints/jon2-small.pt`.
 You can override it with the `JON2_CHECKPOINT` environment variable.
 
+## Audit the training text first
+
+Run the dependency-free data audit before training:
+
+```bash
+python ai_engine/audit_data.py
+```
+
+The audit reports file sizes, checks the alternating user/assistant format in
+the original dialogue draft, and reports exact duplicate lines. A small corpus
+is reported as a warning rather than silently padded with repeated text.
+Passing this structural audit does **not** approve copyright, privacy, or
+commercial-use rights; review `DATASET_REGISTER.md` separately.
+
 ## Train the original model
 
 Training is deliberately separate from serving. Add enough high-quality,
