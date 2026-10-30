@@ -156,10 +156,35 @@ async function register(emailInput, password) {
   try {
     await sendVerification(email, token);
   } catch (error) {
-    await pool.query("DELETE FROM email_verification_tokens WHERE user_id = $1", [userId]);
-    throw publicError(503, "تعذر إرسال رسالة التأكيد الآن. لم يتم تفعيل الحساب؛ حاول لاحقًا.");
+    await pool.query("DELETE FROM users WHERE id = $1 AND status = 'pending' AND email_verified_at IS NULL", [userId]);
+    throw publicError(503, "تعذر إرسال رسالة التأكيد الآن. لم يتم إنشاء الحساب؛ حاول لاحقًا.");
   }
   return { message: "تم إنشاء طلب الحساب. افتح رسالة البريد الإلكتروني لتأكيد الحساب." };
+}
+
+async function resendVerification(emailInput) {
+  if (!configured()) throw publicError(503, "خدمة البريد وقاعدة البيانات غير مهيأتين.");
+  if (!validEmail(emailInput)) throw publicError(400, "أدخل بريدًا إلكترونيًا صحيحًا.");
+  const normalized = emailInput.trim().toLowerCase();
+  const user = await pool.query(
+    "SELECT id, email FROM users WHERE email_normalized = $1 AND status = 'pending' AND email_verified_at IS NULL LIMIT 1",
+    [normalized]
+  );
+  if (!user.rowCount) return { message: "إذا كان الحساب ينتظر التأكيد، ستصلك رسالة جديدة." };
+  const token = randomToken();
+  await pool.query("DELETE FROM email_verification_tokens WHERE user_id = $1 AND consumed_at IS NULL", [user.rows[0].id]);
+  await pool.query(
+    `INSERT INTO email_verification_tokens (user_id, token_hash, expires_at)
+     VALUES ($1, $2, now() + interval '24 hours')`,
+    [user.rows[0].id, sha256(token)]
+  );
+  try {
+    await sendVerification(user.rows[0].email, token);
+  } catch {
+    await pool.query("DELETE FROM email_verification_tokens WHERE user_id = $1 AND token_hash = $2", [user.rows[0].id, sha256(token)]);
+    throw publicError(503, "تعذر إرسال رسالة التأكيد الآن.");
+  }
+  return { message: "إذا كان الحساب ينتظر التأكيد، ستصلك رسالة جديدة." };
 }
 
 async function verifyEmail(token) {
@@ -293,6 +318,7 @@ async function logout(req, res) {
 module.exports = {
   configured,
   register,
+  resendVerification,
   verifyEmail,
   login,
   currentSession,
