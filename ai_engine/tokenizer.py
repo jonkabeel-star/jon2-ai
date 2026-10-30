@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Iterable
 
 # Keep word, whitespace, and punctuation boundaries during BPE training.
-_PRETOKENIZE = re.compile(r"\\s+|[\\w]+|[^\\w\\s]", flags=re.UNICODE)
+_PRETOKENIZE = re.compile(r"\s+|[\w]+|[^\w\s]", flags=re.UNICODE)
 
 
 class ByteBPETokenizer:
