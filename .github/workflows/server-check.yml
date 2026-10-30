@@ -1,0 +1,32 @@
+name: Jon2 AI Server Checks
+
+on:
+  push:
+    paths:
+      - "server/**"
+      - ".github/workflows/server-check.yml"
+  pull_request:
+    paths:
+      - "server/**"
+      - ".github/workflows/server-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate JavaScript syntax
+        run: |
+          node --check server/server.js
+          node --check server/auth.js
+          node --check server/migrate.js
+      - name: Validate package manifest
+        run: node -e "JSON.parse(require('fs').readFileSync('server/package.json', 'utf8')); console.log('package.json is valid')"
