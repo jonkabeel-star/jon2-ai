@@ -55,11 +55,11 @@ def train(args):
     corpus = read_corpus(Path(args.data))
     tokenizer = ByteBPETokenizer.train(corpus, vocab_size=args.tokenizer_vocab_size, min_frequency=args.tokenizer_min_frequency)
     encoded = torch.tensor(tokenizer.encode(corpus), dtype=torch.long)
-    args.corpus_characters = len(encoded)
+    args.corpus_characters = len(corpus)
 
-    if len(encoded) < args.minimum_chars:
+    if len(corpus) < args.minimum_chars:
         raise ValueError(
-            f"Training corpus has {len(encoded):,} characters; this run requires "
+            f"Training corpus has {len(corpus):,} characters; this run requires "
             f"at least {args.minimum_chars:,}. Add reviewed, project-owned or "
             "properly licensed data. Do not duplicate text to pass this check."
         )
