@@ -94,4 +94,4 @@ Do not call Jon2 AI a public production AI service until all are complete:
 
 ## Current implementation note
 
-The Node API gateway has been hardened with an explicit CORS allowlist, bounded request body, message length cap, and a temporary per-process rate limit. It still has **no account system, persistent database, production-grade shared rate limiting, or YouTube integration**. GitHub Pages remains a static frontend and cannot host the Python model or secure account database.
+The Node API gateway has been hardened with an explicit CORS allowlist, bounded request body, message length cap, and a temporary per-process rate limit. A PostgreSQL schema foundation is in `server/db/schema.sql`, but it has not yet been applied to a live database and no authentication routes are connected to it. There is still **no working account system, persistent production database, production-grade shared rate limiting, or YouTube integration**. GitHub Pages remains a static frontend and cannot host the Python model or secure account database.
