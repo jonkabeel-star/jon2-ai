@@ -49,7 +49,7 @@ def fetch_batch(params: dict) -> dict:
 def collect_corpus(
     output_dir: Path,
     target_chars: int = 130_000,
-    max_pages: int = 1200,
+    max_pages: int = 3000,
     pause_seconds: float = 0.25,
 ) -> tuple[int, int]:
     if target_chars < 100_000:
@@ -162,13 +162,8 @@ def collect_corpus(
         if total_chars < target_chars:
             time.sleep(pause_seconds)
 
-    if total_chars < target_chars:
-        raise RuntimeError(
-            f"Only collected {total_chars:,} characters from "
-            f"{len(records):,} usable articles after {requests_made:,} "
-            "API requests. Increase max_pages and run again."
-        )
-
+    # Always save collected material, even when the requested target was
+    # not reached. This prevents a long collection run from losing its work.
     corpus_path.write_text("\n\n".join(articles) + "\n", encoding="utf-8")
     manifest = {
         "dataset": "Jon2 Arabic Wikipedia starter corpus",
@@ -205,6 +200,12 @@ def collect_corpus(
         flush=True,
     )
     print("Files: wikipedia_ar_cc_by_sa.txt and wikipedia_ar_sources.json", flush=True)
+    if total_chars < target_chars:
+        raise RuntimeError(
+            f"Saved a partial corpus of {total_chars:,} characters from "
+            f"{len(records):,} articles after {requests_made:,} API requests. "
+            f"Target is {target_chars:,}; increase --max-pages and rerun."
+        )
     return total_chars, len(records)
 
 
@@ -212,7 +213,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", default="training_data")
     parser.add_argument("--target-chars", type=int, default=130_000)
-    parser.add_argument("--max-pages", type=int, default=1200)
+    parser.add_argument("--max-pages", type=int, default=3000)
     args = parser.parse_args()
     collect_corpus(Path(args.output_dir), args.target_chars, args.max_pages)
 
