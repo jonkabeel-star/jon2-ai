@@ -1,63 +1,103 @@
 "use strict";
+
+// Jon2 AI API gateway.
+// Security defaults: explicit CORS allowlist, bounded request bodies,
+// simple per-process rate limiting, and server-side model URL configuration.
+// Production authentication and shared rate limiting must be added before public launch.
+
 const http = require("http");
+const crypto = require("crypto");
+
 const PORT = Number(process.env.PORT) || 3000;
-// عنوان خادم نموذج Jon2 AI الحقيقي
-const AI_MODEL_URL = process.env.AI_MODEL_URL || "";
+const AI_MODEL_URL = (process.env.AI_MODEL_URL || "").trim();
+const DEFAULT_ORIGIN = "https://jonkabeel-star.github.io";
+const ALLOWED_ORIGINS = new Set(
+  (process.env.JON2_ALLOWED_ORIGINS || DEFAULT_ORIGIN)
+    .split(",")
+    .map(value => value.trim())
+    .filter(Boolean)
+);
+const MAX_BODY_BYTES = 16 * 1024;
+const RATE_WINDOW_MS = 60 * 1000;
+const RATE_MAX_REQUESTS = 12;
+const requestBuckets = new Map();
+
 function send(res, status, data) {
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type"
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer"
   });
   res.end(JSON.stringify(data));
 }
+
+function applyCors(req, res) {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  }
+  return !origin || ALLOWED_ORIGINS.has(origin);
+}
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let body = "";
+    let bytes = 0;
     req.on("data", chunk => {
-      body += chunk;
-      if (body.length > 100000) {
-        reject(new Error("حجم الرسالة كبير جدًا."));
+      bytes += chunk.length;
+      if (bytes > MAX_BODY_BYTES) {
+        reject(Object.assign(new Error("حجم الطلب أكبر من الحد المسموح."), { status: 413 }));
         req.destroy();
+        return;
       }
+      body += chunk.toString("utf8");
     });
     req.on("end", () => {
       try {
         resolve(JSON.parse(body || "{}"));
       } catch {
-        reject(new Error("بيانات الطلب غير صالحة."));
+        reject(Object.assign(new Error("بيانات الطلب غير صالحة."), { status: 400 }));
       }
     });
     req.on("error", reject);
   });
 }
+
+function allowRequest(req) {
+  const forwarded = req.headers["x-forwarded-for"];
+  const ip = (typeof forwarded === "string" ? forwarded.split(",")[0].trim() : req.socket.remoteAddress) || "unknown";
+  const now = Date.now();
+  const current = requestBuckets.get(ip);
+  if (!current || now - current.startedAt >= RATE_WINDOW_MS) {
+    requestBuckets.set(ip, { startedAt: now, count: 1 });
+    return true;
+  }
+  if (current.count >= RATE_MAX_REQUESTS) return false;
+  current.count += 1;
+  return true;
+}
+
 async function askModel(message) {
   if (!AI_MODEL_URL) {
-    const error = new Error(
-      "نموذج الذكاء الاصطناعي غير متصل. يجب إعداد عنوان خادم النموذج أولًا."
+    throw Object.assign(
+      new Error("نموذج الذكاء الاصطناعي غير متصل. لم يتم إعداد AI_MODEL_URL."),
+      { status: 503 }
     );
-    error.status = 503;
-    throw error;
   }
+
   const response = await fetch(AI_MODEL_URL, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      message,
-      prompt: message
-    }),
-    signal: AbortSignal.timeout(120000)
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, prompt: message }),
+    signal: AbortSignal.timeout(90000)
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(
-      data.error || "خادم نموذج الذكاء الاصطناعي لم يستطع الإجابة."
-    );
-    error.status = 502;
-    throw error;
+    throw Object.assign(new Error("تعذر على خادم النموذج معالجة الطلب."), { status: 502 });
   }
   const reply =
     data.reply ??
@@ -66,71 +106,67 @@ async function askModel(message) {
     data.text ??
     data.choices?.[0]?.message?.content;
   if (typeof reply !== "string" || !reply.trim()) {
-    const error = new Error(
-      "الخادم لم يُرجع إجابة نصية مفهومة."
-    );
-    error.status = 502;
-    throw error;
+    throw Object.assign(new Error("لم يُرجع نموذج الذكاء الاصطناعي إجابة صالحة."), { status: 502 });
   }
   return reply.trim();
 }
+
 const server = http.createServer(async (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization"
-  );
+  const corsAllowed = applyCors(req, res);
+  if (!corsAllowed) return send(res, 403, { error: "هذا المصدر غير مسموح له بالاتصال." });
   if (req.method === "OPTIONS") {
     res.writeHead(204);
     return res.end();
   }
-  const url = new URL(
-    req.url,
-    `http://${req.headers.host || "localhost"}`
-  );
+
+  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+
   if (url.pathname === "/api/health" && req.method === "GET") {
     return send(res, 200, {
       project: "Jon2 AI",
       status: "online",
       aiEngine: AI_MODEL_URL ? "configured" : "not_connected",
-      chatEndpoint: "/api/chat"
+      authentication: "not_enabled",
+      publicLaunchReady: false
     });
   }
+
   if (url.pathname === "/api/chat" && req.method === "POST") {
+    if (!allowRequest(req)) {
+      return send(res, 429, { error: "طلبات كثيرة خلال وقت قصير. حاول بعد دقيقة." });
+    }
+
     let body;
     try {
       body = await readBody(req);
     } catch (error) {
-      return send(res, 400, {
-        error: error.message || "تعذر قراءة الرسالة."
-      });
+      return send(res, error.status || 400, { error: error.message || "تعذر قراءة الطلب." });
     }
-    if (
-      typeof body.message !== "string" ||
-      !body.message.trim()
-    ) {
-      return send(res, 400, {
-        error: "اكتب رسالتك أولًا."
-      });
+
+    if (typeof body.message !== "string" || !body.message.trim()) {
+      return send(res, 400, { error: "اكتب رسالتك أولًا." });
     }
+    if (body.message.length > 4000) {
+      return send(res, 413, { error: "الرسالة طويلة جدًا؛ الحد الأقصى 4000 حرف." });
+    }
+
     try {
       const reply = await askModel(body.message.trim());
-      return send(res, 200, {
-        project: "Jon2 AI",
-        reply
-      });
+      return send(res, 200, { project: "Jon2 AI", reply });
     } catch (error) {
-      console.error("Jon2 AI model error:", error.message);
-      return send(res, error.status || 502, {
-        error: error.message || "تعذر الاتصال بنموذج الذكاء الاصطناعي."
+      const status = error.status || 502;
+      const reference = crypto.randomUUID();
+      console.error("Jon2 AI model failure", { reference, message: error.message });
+      return send(res, status, {
+        error: status === 503 ? error.message : "تعذر إكمال الطلب الآن.",
+        reference
       });
     }
   }
-  return send(res, 404, {
-    error: "المسار المطلوب غير موجود."
-  });
+
+  return send(res, 404, { error: "المسار المطلوب غير موجود." });
 });
+
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Jon2 AI server listening on port ${PORT}`);
+  console.log(`Jon2 AI API gateway listening on port ${PORT}`);
 });
