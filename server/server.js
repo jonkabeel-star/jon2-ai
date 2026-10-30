@@ -7,6 +7,7 @@
 
 const http = require("http");
 const crypto = require("crypto");
+const auth = require("./auth");
 
 const PORT = Number(process.env.PORT) || 3000;
 const AI_MODEL_URL = (process.env.AI_MODEL_URL || "").trim();
@@ -38,7 +39,8 @@ function applyCors(req, res) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
   }
   return !origin || ALLOWED_ORIGINS.has(origin);
 }
@@ -126,9 +128,60 @@ const server = http.createServer(async (req, res) => {
       project: "Jon2 AI",
       status: "online",
       aiEngine: AI_MODEL_URL ? "configured" : "not_connected",
-      authentication: "not_enabled",
+      authentication: auth.configured() ? "configured_not_yet_security_reviewed" : "not_configured",
       publicLaunchReady: false
     });
+  }
+
+  if (url.pathname === "/api/auth/verify" && req.method === "GET") {
+    try {
+      await auth.verifyEmail(url.searchParams.get("token") || "");
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+      return res.end("<!doctype html><html lang='ar' dir='rtl'><meta charset='utf-8'><meta name='viewport' content='width=device-width'><title>Jon2 AI</title><body style='font-family:Arial;padding:32px'><h2>تم تأكيد بريدك الإلكتروني</h2><p>يمكنك الآن العودة إلى موقع Jon2 AI وتسجيل الدخول.</p><a href='https://jonkabeel-star.github.io/jon2-ai/'>فتح Jon2 AI</a></body></html>");
+    } catch (error) {
+      res.writeHead(error.status || 400, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+      return res.end("<!doctype html><html lang='ar' dir='rtl'><meta charset='utf-8'><body style='font-family:Arial;padding:32px'><h2>رابط التأكيد غير صالح أو منتهي</h2><p>ارجع إلى Jon2 AI واطلب المساعدة.</p></body></html>");
+    }
+  }
+
+  if (url.pathname === "/api/auth/register" && req.method === "POST") {
+    if (!allowRequest(req)) return send(res, 429, { error: "طلبات كثيرة. حاول بعد دقيقة." });
+    try {
+      const body = await readBody(req);
+      const result = await auth.register(body.email, body.password);
+      return send(res, 202, result);
+    } catch (error) {
+      return send(res, error.status || 503, { error: error.status ? error.message : "تعذر إنشاء الحساب الآن." });
+    }
+  }
+
+  if (url.pathname === "/api/auth/login" && req.method === "POST") {
+    if (!allowRequest(req)) return send(res, 429, { error: "طلبات كثيرة. حاول بعد دقيقة." });
+    try {
+      const body = await readBody(req);
+      const result = await auth.login(body.email, body.password, res);
+      return send(res, 200, result);
+    } catch (error) {
+      return send(res, error.status || 503, { error: error.status ? error.message : "تعذر تسجيل الدخول الآن." });
+    }
+  }
+
+  if (url.pathname === "/api/auth/me" && req.method === "GET") {
+    try {
+      const result = await auth.rotateCsrf(req);
+      return send(res, 200, result);
+    } catch (error) {
+      return send(res, error.status || 503, { error: error.message || "تعذر قراءة الجلسة." });
+    }
+  }
+
+  if (url.pathname === "/api/auth/logout" && req.method === "POST") {
+    try {
+      const result = await auth.logout(req, res);
+      return send(res, 200, result);
+    } catch (error) {
+      return send(res, error.status || 503, { error: error.message || "تعذر إنهاء الجلسة." });
+    }
   }
 
   if (url.pathname === "/api/chat" && req.method === "POST") {
