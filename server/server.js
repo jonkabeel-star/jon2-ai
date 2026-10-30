@@ -21,6 +21,7 @@ const ALLOWED_ORIGINS = new Set(
 const MAX_BODY_BYTES = 16 * 1024;
 const RATE_WINDOW_MS = 60 * 1000;
 const RATE_MAX_REQUESTS = 12;
+const TRUST_PROXY = process.env.TRUST_PROXY === "true";
 const requestBuckets = new Map();
 
 function send(res, status, data) {
@@ -82,9 +83,15 @@ function readBody(req) {
 }
 
 function allowRequest(req) {
-  const forwarded = req.headers["x-forwarded-for"];
+  const forwarded = TRUST_PROXY ? req.headers["x-forwarded-for"] : null;
   const ip = (typeof forwarded === "string" ? forwarded.split(",")[0].trim() : req.socket.remoteAddress) || "unknown";
   const now = Date.now();
+  if (!requestBuckets.has(ip) && requestBuckets.size >= 5000) {
+    for (const [key, value] of requestBuckets) {
+      if (now - value.startedAt >= RATE_WINDOW_MS) requestBuckets.delete(key);
+    }
+    if (requestBuckets.size >= 5000) return false;
+  }
   const current = requestBuckets.get(ip);
   if (!current || now - current.startedAt >= RATE_WINDOW_MS) {
     requestBuckets.set(ip, { startedAt: now, count: 1 });
