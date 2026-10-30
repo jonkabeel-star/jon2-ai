@@ -1,17 +1,16 @@
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from chat_engine import generate_reply, model_is_ready, load_model
+from chat_engine import generate_reply, model_is_ready, load_runtime
 
 app = FastAPI(
     title="Jon2 AI API",
-    description="Independent Jon2 AI chat API powered by an open-source language model.",
-    version="1.0.0",
+    description="API for the original, project-owned Jon2 language model.",
+    version="1.1.0",
 )
 
-# GitHub Pages frontend + local development.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -26,15 +25,15 @@ app.add_middleware(
 
 
 class ChatRequest(BaseModel):
-    message: str
+    message: str = Field(min_length=1, max_length=2000)
 
 
 @app.get("/")
 def home():
     return {
         "project": "Jon2 AI",
-        "status": "online",
-        "docs": "/docs",
+        "status": "api_online",
+        "model": "Jon2 Original Transformer",
         "health": "/api/health",
     }
 
@@ -44,28 +43,33 @@ def health():
     return {
         "project": "Jon2 AI",
         "status": "online",
-        "model": os.getenv("JON2_CHAT_MODEL", "Qwen/Qwen2.5-0.5B-Instruct"),
+        "model": "Jon2 Original Transformer",
         "model_loaded": model_is_ready(),
+        "checkpoint_configured": os.path.isfile(
+            os.getenv(
+                "JON2_CHECKPOINT",
+                os.path.join(os.path.dirname(__file__), "checkpoints", "jon2-small.pt"),
+            )
+        ),
     }
 
 
 @app.post("/api/chat")
 def chat(request: ChatRequest):
-    if not request.message or not request.message.strip():
+    message = request.message.strip()
+    if not message:
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
-
     try:
-        # Load lazily on the first chat request, not during deployment startup.
-        load_model()
-        reply = generate_reply(request.message.strip())
-        if not reply:
-            raise RuntimeError("The model returned an empty response.")
+        load_runtime()
+        reply = generate_reply(message)
         return {"project": "Jon2 AI", "reply": reply}
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=503, detail=str(error))
     except Exception as error:
         print(f"Jon2 AI chat error: {error}")
         raise HTTPException(
             status_code=503,
-            detail="تعذر تشغيل نموذج Jon2 AI. راجع سجلات الخادم وذاكرة التشغيل.",
+            detail="تعذر تشغيل نموذج Jon2 الأصلي. راجع سجلات الخادم.",
         )
