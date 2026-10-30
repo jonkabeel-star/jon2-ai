@@ -48,3 +48,13 @@ Do not change a candidate to APPROVED until all fields below are filled and revi
 - ArabicText-Large: **NOT APPROVED**.
 - HPLT web-crawl text: **NOT APPROVED** for this project on the basis of the published terms alone. HPLT states it does not own the extracted text and licenses only the packaging under CC0; it places responsibility for legal compliance on the user.
 - Jon2 original seed: **PIPELINE TEST ONLY** until owner review and a much larger original corpus is prepared.
+
+## Candidate 3: Jon2 AI Original Arabic Dialogue Draft
+
+- File: `ai_engine/training_data/original_dialogue_ar.txt`
+- Source: original Arabic question-and-answer examples drafted specifically for the Jon2 AI project in this development session; no external corpus or private user conversations were used.
+- Intended use: initial pipeline and dialogue-format experiments.
+- Rights status: original project-specific draft, subject to the repository owner's review and acceptance; this entry is not legal advice or a guarantee of commercial-use rights.
+- Size: small starter set; not sufficient for a capable general-purpose assistant.
+- Status: **DRAFT / OWNER REVIEW REQUIRED / NOT A PRODUCTION DATASET**.
+- Handling: review accuracy and wording, expand with additional original or explicitly licensed material, and document each new source before training or public/commercial deployment.
