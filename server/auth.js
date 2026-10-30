@@ -17,13 +17,13 @@ const pool = process.env.DATABASE_URL
 
 const SESSION_COOKIE = "__Host-jon2_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
-const VERIFY_TTL_HOURS = 24;
-const FRONTEND_URL = (process.env.JON2_FRONTEND_URL || "https://jonkabeel-star.github.io/jon2-ai/").replace(/\/$/, "");
 const EMAIL_FROM = process.env.EMAIL_FROM || "";
 const SMTP_HOST = process.env.SMTP_HOST || "";
 const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 const SMTP_USER = process.env.SMTP_USER || "";
 const SMTP_PASS = process.env.SMTP_PASS || "";
+
+const dummyPasswordHash = argon2.hash(crypto.randomBytes(32).toString("hex"), { type: argon2.argon2id, memoryCost: 19456, timeCost: 2, parallelism: 1 });
 
 const mailer = SMTP_HOST && SMTP_USER && SMTP_PASS && EMAIL_FROM
   ? nodemailer.createTransport({
@@ -209,7 +209,11 @@ async function login(emailInput, password, res) {
     "SELECT id, email, password_hash, status, email_verified_at FROM users WHERE email_normalized = $1 LIMIT 1",
     [normalized]
   );
-  if (!found.rowCount) throw publicError(401, "البريد الإلكتروني أو كلمة المرور غير صحيحة.");
+  if (!found.rowCount) {
+    const dummyHash = await dummyPasswordHash;
+    await argon2.verify(dummyHash, password).catch(() => false);
+    throw publicError(401, "البريد الإلكتروني أو كلمة المرور غير صحيحة.");
+  }
   const user = found.rows[0];
   const matches = await argon2.verify(user.password_hash, password).catch(() => false);
   if (!matches) throw publicError(401, "البريد الإلكتروني أو كلمة المرور غير صحيحة.");
