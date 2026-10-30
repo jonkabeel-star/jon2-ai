@@ -40,6 +40,8 @@ is reported as a warning rather than silently padded with repeated text.
 Passing this structural audit does **not** approve copyright, privacy, or
 commercial-use rights; review `DATASET_REGISTER.md` separately.
 
+Before adding data, follow `training_data/CONTRIBUTING.md`. It explains ownership, permission, privacy, quality, and formatting requirements.
+
 ## Train the original model
 
 Training is deliberately separate from serving. Add enough high-quality,
@@ -69,7 +71,8 @@ story coherence, clarification, time-sensitive claims, and basic concepts. It
 prints the answers and can save a JSON review report. A human must judge each
 answer for correctness, relevance, Arabic fluency, repetition, and whether the
 model admits uncertainty. Passing this smoke test does not certify safety or
-production quality.
+production quality. Use `EVALUATION_RUBRIC.md` to score each answer and apply
+its release-blocking checks before considering deployment.
 
 ## API endpoints
 
