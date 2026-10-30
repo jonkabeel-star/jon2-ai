@@ -23,20 +23,17 @@ def clean_lines(path: Path) -> list[str]:
 def audit_dialogue(path: Path) -> list[str]:
     lines = clean_lines(path)
     errors: list[str] = []
-    expected = "المستخدم:"
-    for number, line in enumerate(lines, start=1):
-        if not line.startswith(expected):
-            errors.append(
-                f"{path}:{number}: expected a user turn beginning with 'المستخدم:'"
-            )
-        if number < len(lines):
-            answer = lines[number]
-            if not answer.startswith("Jon2:"):
-                errors.append(
-                    f"{path}:{number + 1}: expected an answer beginning with 'Jon2:'"
-                )
     if len(lines) % 2:
         errors.append(f"{path}: dialogue has an unmatched final turn")
+    for index in range(0, len(lines) - 1, 2):
+        if not lines[index].startswith("المستخدم:"):
+            errors.append(
+                f"{path}: meaningful line {index + 1} should begin with 'المستخدم:'"
+            )
+        if not lines[index + 1].startswith("Jon2:"):
+            errors.append(
+                f"{path}: meaningful line {index + 2} should begin with 'Jon2:'"
+            )
     return errors
 
 
