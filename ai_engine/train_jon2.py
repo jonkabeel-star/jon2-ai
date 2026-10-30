@@ -118,7 +118,7 @@ def train(args):
     scaler = torch.cuda.amp.GradScaler(enabled=amp_enabled)
     print(
         f"Jon2 original training | device={device} | AMP={amp_enabled} | "
-        f"characters={len(encoded):,} | vocab={tokenizer.vocab_size}"
+        f"tokens={len(encoded):,} | vocab={tokenizer.vocab_size}"
     )
     if len(encoded) < 500_000:
         print("CAUTION: corpus remains small for a general-purpose assistant.")
@@ -173,7 +173,7 @@ def train(args):
                 torch.save(
                     {
                         "model_state": model.state_dict(),
-                        "vocabulary": tokenizer.vocabulary,
+                        "tokenizer": tokenizer.to_dict(),
                         "config": config,
                         "training_steps": completed_step,
                         "best_validation_loss": best_val,
