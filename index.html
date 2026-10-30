@@ -89,15 +89,54 @@ note:"This interface needs to connect to an AI model server to provide real resp
 error:"Could not reach the server. Tap “Connect server” and enter your Render URL.",
 empty:"Please type a message first."
 }};
-let lang=localStorage.getItem("jon2_language")||"ar";\nlet apiBase=(localStorage.getItem("jon2_api_url")||"").replace(/\\/$/,"");
+let lang=localStorage.getItem("jon2_language")||"ar";
+let apiBase=(localStorage.getItem("jon2_api_url")||"").replace(/\/$/,"");
+
 function setLang(l){
-lang=l;localStorage.setItem("jon2_language",l);
-document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr";
-document.querySelectorAll("[data-t]").forEach(e=>e.textContent=text[l][e.dataset.t]);
-document.querySelectorAll("[data-ph]").forEach(e=>e.placeholder=text[l][e.dataset.ph]);
-document.getElementById("language").textContent=l==="ar"?"English 🌐":"العربية 🌐";
+  lang=l;
+  localStorage.setItem("jon2_language",l);
+  document.documentElement.lang=l;
+  document.documentElement.dir=l==="ar"?"rtl":"ltr";
+  document.querySelectorAll("[data-t]").forEach(e=>e.textContent=text[l][e.dataset.t]);
+  document.querySelectorAll("[data-ph]").forEach(e=>e.placeholder=text[l][e.dataset.ph]);
+  document.getElementById("language").textContent=l==="ar"?"English 🌐":"العربية 🌐";
 }
-document.getElementById("language").addEventListener("click",()=>setLang(lang==="ar"?"en":"ar"));\ndocument.getElementById("connect").addEventListener("click",()=>{\n const entered=prompt(lang==="ar"?"الصق رابط خادم Render، مثال: https://jon2-ai-api.onrender.com":"Paste your Render server URL, e.g. https://jon2-ai-api.onrender.com",apiBase);\n if(entered===null)return;\n try{const u=new URL(entered.trim());if(u.protocol!=="https:")throw new Error("https required");apiBase=u.origin;localStorage.setItem("jon2_api_url",apiBase);checkServer();}\n catch{alert(lang==="ar"?"الرابط غير صحيح. استخدم رابط HTTPS الخاص بخدمة Render.":"Invalid URL. Use your Render service HTTPS URL.");}\n});\nasync function checkServer(){\n const status=document.getElementById("status");\n if(!apiBase){status.textContent=lang==="ar"?"الخادم غير مربوط":"Server not connected";return;}\n try{const r=await fetch(apiBase+"/api/health");if(!r.ok)throw new Error("health");const d=await r.json();status.textContent=d.model_loaded?(lang==="ar"?"النموذج جاهز":"Model ready"):(lang==="ar"?"الخادم متصل — النموذج لم يُحمّل":"Server online — model not loaded");}\n catch{status.textContent=lang==="ar"?"تعذر الوصول للخادم":"Server unreachable";}\n}
+document.getElementById("language").addEventListener("click",()=>setLang(lang==="ar"?"en":"ar"));
+
+document.getElementById("connect").addEventListener("click",()=>{
+  const entered=prompt(
+    lang==="ar"?"الصق رابط خادم Render، مثال: https://your-service.onrender.com":"Paste your Render server URL, e.g. https://your-service.onrender.com",
+    apiBase
+  );
+  if(entered===null)return;
+  try{
+    const u=new URL(entered.trim());
+    if(u.protocol!=="https:")throw new Error("HTTPS required");
+    apiBase=u.origin;
+    localStorage.setItem("jon2_api_url",apiBase);
+    checkServer();
+  }catch{
+    alert(lang==="ar"?"الرابط غير صحيح. استخدم رابط HTTPS الخاص بخدمة Render.":"Invalid URL. Use your Render service HTTPS URL.");
+  }
+});
+
+async function checkServer(){
+  const status=document.getElementById("status");
+  if(!apiBase){
+    status.textContent=lang==="ar"?"الخادم غير مربوط":"Server not connected";
+    return;
+  }
+  try{
+    const r=await fetch(apiBase+"/api/health");
+    if(!r.ok)throw new Error("Health check failed");
+    const d=await r.json();
+    status.textContent=d.model_loaded
+      ?(lang==="ar"?"النموذج جاهز":"Model ready")
+      :(lang==="ar"?"الخادم متصل — النموذج لم يُحمّل":"Server online — model not loaded");
+  }catch{
+    status.textContent=lang==="ar"?"تعذر الوصول للخادم":"Server unreachable";
+  }
+}
 function addMessage(value,kind){
 const el=document.createElement("div");el.className="msg "+kind;el.textContent=value;
 document.getElementById("messages").appendChild(el);
@@ -108,22 +147,35 @@ document.getElementById("messages").replaceChildren();
 addMessage(text[lang].welcome,"bot");
 });
 document.getElementById("form").addEventListener("submit",async e=>{
-e.preventDefault();
-const input=document.getElementById("input");
-const message=input.value.trim();if(!message)return;
-addMessage(message,"user");input.value="";
-const send=document.getElementById("send");send.disabled=true;
-try{
-const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,language:lang})});
-if(!r.ok)throw new Error("Not connected");
-const data=await r.json();
-const reply=data.reply||data.response||data.message;
-if(typeof reply!=="string"||!reply.trim())throw new Error("No reply");
-addMessage(reply,"bot");
-}catch(err){addMessage(err.message&&err.message!=="No server URL"?err.message:text[lang].error,"bot");}
-finally{send.disabled=false;input.focus();}
+  e.preventDefault();
+  const input=document.getElementById("input");
+  const message=input.value.trim();
+  if(!message)return;
+  addMessage(message,"user");
+  input.value="";
+  const send=document.getElementById("send");
+  send.disabled=true;
+  try{
+    if(!apiBase)throw new Error("No server URL");
+    const r=await fetch(apiBase+"/api/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({message})
+    });
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.detail||data.error||"Server request failed");
+    const reply=data.reply||data.response||data.message;
+    if(typeof reply!=="string"||!reply.trim())throw new Error("No reply");
+    addMessage(reply,"bot");
+  }catch(err){
+    addMessage(err.message==="No server URL"?text[lang].error:err.message,"bot");
+  }finally{
+    send.disabled=false;
+    input.focus();
+  }
 });
 setLang(lang);
+checkServer();
 </script>
 </body>
 </html>
