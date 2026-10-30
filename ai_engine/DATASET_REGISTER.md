@@ -58,3 +58,15 @@ Do not change a candidate to APPROVED until all fields below are filled and revi
 - Size: small starter set; not sufficient for a capable general-purpose assistant.
 - Status: **DRAFT / OWNER REVIEW REQUIRED / NOT A PRODUCTION DATASET**.
 - Handling: review accuracy and wording, expand with additional original or explicitly licensed material, and document each new source before training or public/commercial deployment.
+
+
+## Candidate 4 — Arabic Wikipedia starter corpus (generated in Colab)
+
+- Source: Arabic Wikipedia through the official MediaWiki API (https://ar.wikipedia.org/).
+- Expected collection target: 130,000 characters; this is a target, not yet a collected or verified count.
+- License: Wikipedia text is generally available under CC BY-SA 4.0; verify each page's footer and any source-specific notices.
+- Attribution: wikipedia_ar_sources.json records each article title and URL; article histories provide contributor attribution.
+- Transformations: plain-text extraction, whitespace cleanup, removal of short/noisy lines, exact duplicate-page/text filtering, and possible truncation of the final article.
+- Files generated locally by the Colab notebook: wikipedia_ar_cc_by_sa.txt and wikipedia_ar_sources.json.
+- Status: NOT YET COLLECTED. Run the new collection cell in Colab, then inspect the generated count and manifest before training.
+- Important: CC BY-SA requires attribution and share-alike for adapted material. Do not assume model-weight licensing or commercial redistribution is automatically cleared; review the intended use before public/commercial release.
