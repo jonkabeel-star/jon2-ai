@@ -10,7 +10,7 @@ This repository contains the website interface, an early model prototype, and th
 
 - [Public platform blueprint](PUBLIC_PLATFORM_BLUEPRINT.md) — architecture, secure accounts, AI tools, video workflow, YouTube approvals, and AdSense readiness.
 - [Build plan](JON2_AI_BUILD_PLAN.md) — staged implementation plan.
-- [Original data policy](ai_engine/ORIGINAL_DATA_POLICY.md) — requirements for training text and asset permissions.
+- [Authentication setup](server/AUTH_SETUP.md) — account API endpoints, required secrets, database migration, and deployment gates.\n- [Original data policy](ai_engine/ORIGINAL_DATA_POLICY.md) — requirements for training text and asset permissions.
 - [Dataset register](ai_engine/DATASET_REGISTER.md) — current dataset approval decisions.
 
 ## Hosting boundaries
@@ -23,4 +23,4 @@ The project avoids web-scraped training corpora and unverified media rights. Use
 
 ## Current backend
 
-The Node.js API gateway is in `server/server.js`. Initial account routes and Argon2id/session handling are in `server/auth.js`; dependencies are listed in `server/package.json`, and required environment settings are documented in `server/.env.example`. The PostgreSQL schema is in `server/db/schema.sql`. These are implementation files only: no live database, SMTP provider, deployment, or end-to-end security test has been configured. Do not expose it as a public multi-user service until the launch gates in the blueprint are complete.
+The Node.js API gateway is in `server/server.js`. Initial account routes and Argon2id/session handling are in `server/auth.js`; dependencies are listed in `server/package.json`, and required environment settings are documented in `server/.env.example`. The PostgreSQL schema and migration command are in `server/db/schema.sql` and `server/migrate.js`. These are implementation files only: no live database, SMTP provider, backend deployment, same-site custom domain, or end-to-end security test has been configured. The static website is not yet connected to the account API. Do not expose it as a public multi-user service until the launch gates in the blueprint are complete.
