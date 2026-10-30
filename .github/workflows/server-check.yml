@@ -29,6 +29,8 @@ jobs:
           python-version: "3.11"
       - name: Check Python syntax
         run: python -m compileall -q ai_engine
+      - name: Audit training text structure
+        run: python ai_engine/audit_data.py
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
