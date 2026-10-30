@@ -176,6 +176,40 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  if (url.pathname === "/api/auth/reset" && req.method === "GET") {
+    const token = url.searchParams.get("token") || "";
+    if (token.length < 30 || token.length > 100) return send(res, 400, { error: "رابط إعادة التعيين غير صالح." });
+    res.writeHead(200, {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+      "Referrer-Policy": "no-referrer",
+      "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'"
+    });
+    return res.end(`<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>إعادة تعيين Jon2 AI</title><body style="font-family:Arial,sans-serif;padding:32px;max-width:520px;margin:auto"><h2>إعادة تعيين كلمة المرور</h2><p>اكتب كلمة مرور جديدة من 12 حرفًا على الأقل.</p><input id="password" type="password" minlength="12" maxlength="128" autocomplete="new-password" style="display:block;width:100%;padding:12px;margin:16px 0"><button id="reset" style="padding:12px 20px;background:#6385ff;color:white;border:0;border-radius:10px">حفظ كلمة المرور</button><p id="result" role="status"></p><script>const token=${JSON.stringify(token)};document.getElementById("reset").addEventListener("click",async()=>{const b=document.getElementById("reset"),o=document.getElementById("result"),p=document.getElementById("password").value;b.disabled=true;try{const r=await fetch("/api/auth/password-reset/confirm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token,newPassword:p})});const d=await r.json();o.textContent=r.ok?d.message:(d.error||"تعذر تغيير كلمة المرور.");}catch{o.textContent="تعذر الاتصال. حاول مرة أخرى.";}finally{b.disabled=false;}});</script></body></html>`);
+  }
+
+  if (url.pathname === "/api/auth/password-reset/request" && req.method === "POST") {
+    if (!allowRequest(req)) return send(res, 429, { error: "طلبات كثيرة. حاول بعد دقيقة." });
+    try {
+      const body = await readBody(req);
+      const result = await auth.requestPasswordReset(body.email);
+      return send(res, 202, result);
+    } catch (error) {
+      return send(res, error.status || 503, { error: error.status ? error.message : "تعذر تنفيذ الطلب." });
+    }
+  }
+
+  if (url.pathname === "/api/auth/password-reset/confirm" && req.method === "POST") {
+    if (!allowRequest(req)) return send(res, 429, { error: "طلبات كثيرة. حاول بعد دقيقة." });
+    try {
+      const body = await readBody(req);
+      const result = await auth.completePasswordReset(body.token, body.newPassword);
+      return send(res, 200, result);
+    } catch (error) {
+      return send(res, error.status || 503, { error: error.status ? error.message : "تعذر تغيير كلمة المرور." });
+    }
+  }
+
   if (url.pathname === "/api/auth/register" && req.method === "POST") {
     if (!allowRequest(req)) return send(res, 429, { error: "طلبات كثيرة. حاول بعد دقيقة." });
     try {
