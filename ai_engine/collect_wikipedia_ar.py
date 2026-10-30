@@ -25,19 +25,19 @@ def clean_article_text(value: str) -> str:
     value = value.replace("\r", "\n").replace("\u00a0", " ")
     lines = []
     for raw in value.splitlines():
-        line = re.sub(r"\\s+", " ", raw).strip()
+        line = re.sub(r"\s+", " ", raw).strip()
         if not line:
             continue
         if len(line) < 3:
             continue
-        if re.fullmatch(r"[\\W_\\d]+", line, flags=re.UNICODE):
+        if re.fullmatch(r"[\W_\d]+", line, flags=re.UNICODE):
             continue
         lines.append(line)
     return "\n".join(lines).strip()
 
 
 def normalize_for_dedup(value: str) -> str:
-    value = re.sub(r"\\s+", " ", value).strip().casefold()
+    value = re.sub(r"\s+", " ", value).strip().casefold()
     return value
 
 
