@@ -90,3 +90,8 @@ Example request:
 
 Never put private keys, credentials, or private training data in the public
 repository. GitHub Pages hosts only the frontend; it cannot run this model.
+
+
+## Collecting an attributed Arabic starter corpus
+
+The Colab notebook now includes a collection step that calls the official Arabic Wikipedia MediaWiki API and aims to collect 130,000 Arabic characters. It writes `training_data/wikipedia_ar_cc_by_sa.txt` plus `training_data/wikipedia_ar_sources.json` with article titles and URLs for attribution. This collection runs in the user's Colab session; it is not downloaded or committed by GitHub Actions. Verify the final character count, page-specific notices, and source manifest before training. Wikipedia text is generally CC BY-SA 4.0; attribution and share-alike requirements apply, and commercial/model-weight distribution questions need separate review.
