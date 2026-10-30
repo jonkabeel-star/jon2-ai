@@ -56,6 +56,21 @@ The default training settings are only a prototype. A small run on the current
 seed corpus will not create a capable assistant. Training quality must be
 measured on held-out Arabic questions before the checkpoint is deployed.
 
+## Evaluate a trained checkpoint
+
+After training, run the Arabic smoke evaluation:
+
+```bash
+python ai_engine/evaluate_model.py --checkpoint ai_engine/checkpoints/jon2-small.pt --output ai_engine/evaluation/first-review.json
+```
+
+The script tests a fixed set of Arabic prompts covering explanation, arithmetic,
+story coherence, clarification, time-sensitive claims, and basic concepts. It
+prints the answers and can save a JSON review report. A human must judge each
+answer for correctness, relevance, Arabic fluency, repetition, and whether the
+model admits uncertainty. Passing this smoke test does not certify safety or
+production quality.
+
 ## API endpoints
 
 - `GET /` — API identity and status
