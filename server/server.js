@@ -187,6 +187,17 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  if (url.pathname === "/api/auth/resend-verification" && req.method === "POST") {
+    if (!allowRequest(req)) return send(res, 429, { error: "طلبات كثيرة. حاول بعد دقيقة." });
+    try {
+      const body = await readBody(req);
+      const result = await auth.resendVerification(body.email);
+      return send(res, 202, result);
+    } catch (error) {
+      return send(res, error.status || 503, { error: error.status ? error.message : "تعذر إرسال رسالة التأكيد." });
+    }
+  }
+
   if (url.pathname === "/api/auth/login" && req.method === "POST") {
     if (!allowRequest(req)) return send(res, 429, { error: "طلبات كثيرة. حاول بعد دقيقة." });
     try {
