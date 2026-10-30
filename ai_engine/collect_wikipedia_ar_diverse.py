@@ -52,20 +52,20 @@ def fetch_api(params: dict) -> dict:
 
 
 def clean_article_text(value: str) -> str:
-    value = value.replace("\\r", "\\n").replace("\\u00a0", " ")
+    value = value.replace("\r", "\n").replace("\u00a0", " ")
     lines = []
     for raw in value.splitlines():
-        line = re.sub(r"\\s+", " ", raw).strip()
+        line = re.sub(r"\s+", " ", raw).strip()
         if not line or len(line) < 3:
             continue
-        if re.fullmatch(r"[\\W_\\d]+", line, flags=re.UNICODE):
+        if re.fullmatch(r"[\W_\d]+", line, flags=re.UNICODE):
             continue
         lines.append(line)
-    return "\\n".join(lines).strip()
+    return "\n".join(lines).strip()
 
 
 def normalize_for_dedup(value: str) -> str:
-    return re.sub(r"\\s+", " ", value).strip().casefold()
+    return re.sub(r"\s+", " ", value).strip().casefold()
 
 
 def collect_candidates(per_category_limit: int) -> dict[int, dict]:
@@ -226,7 +226,7 @@ def collect_corpus(
         time.sleep(pause_seconds)
 
     # Save partial results too; a failed/incomplete run must not discard progress.
-    corpus_path.write_text("\\n\\n".join(articles) + ("\\n" if articles else ""), encoding="utf-8")
+    corpus_path.write_text("\n\n".join(articles) + ("\n" if articles else ""), encoding="utf-8")
     manifest = {
         "dataset": "Jon2 diverse Arabic Wikipedia starter corpus",
         "language": "Arabic (Modern Standard Arabic and mixed article registers)",
@@ -244,7 +244,7 @@ def collect_corpus(
         "warning": "Verify article-specific notices and applicable rights before commercial distribution. CC BY-SA requires attribution and share-alike for adapted material; this script does not provide legal advice.",
         "articles": records,
     }
-    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     print(f"Saved {total_chars:,} characters from {len(records)} articles.", flush=True)
     print(f"Corpus: {corpus_path}", flush=True)
