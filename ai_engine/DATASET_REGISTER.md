@@ -31,3 +31,20 @@ Do not change a candidate to APPROVED until all fields below are filled and revi
 - Decision and rationale:
 
 **Current decision:** NOT APPROVED. Keep `RIGHTS_REVIEWED = False` in the Colab notebook. Do not run the downloader for this candidate.
+
+
+## Candidate 2: Jon2 AI Original Arabic Seed
+
+- File: `ai_engine/training_data/original_seed_ar.txt`
+- Source: a small original starter text drafted specifically for the Jon2 AI project; it is not intentionally copied from external books, articles, websites, or datasets.
+- Intended use: verify the local data-reading pipeline only.
+- Rights status: project-originated draft; owner review and acceptance still required before training or public/commercial deployment.
+- Size: small starter sample, not a useful general-purpose training corpus.
+- Status: **REVIEW REQUIRED / PIPELINE TEST ONLY**.
+- Handling: do not add third-party text to this file. Keep future training corpora private and out of the public GitHub repository.
+
+## Current source decision
+
+- ArabicText-Large: **NOT APPROVED**.
+- HPLT web-crawl text: **NOT APPROVED** for this project on the basis of the published terms alone. HPLT states it does not own the extracted text and licenses only the packaging under CC0; it places responsibility for legal compliance on the user.
+- Jon2 original seed: **PIPELINE TEST ONLY** until owner review and a much larger original corpus is prepared.
