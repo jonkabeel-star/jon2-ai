@@ -75,7 +75,7 @@ def main() -> int:
         if path.name == "original_dialogue_ar.txt":
             errors.extend(audit_dialogue(path))
 
-    normalized = [re.sub(r"\\s+", " ", line).casefold() for line in all_lines]
+    normalized = [re.sub(r"\s+", " ", line).casefold() for line in all_lines]
     duplicates = [line for line, count in Counter(normalized).items() if count > 1]
     print(f"TOTAL: {total_chars:,} characters across {len(files)} files")
     print(f"EXACT NORMALIZED DUPLICATE LINES: {len(duplicates)}")
