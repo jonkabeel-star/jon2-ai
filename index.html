@@ -33,7 +33,13 @@ h1{font-size:21px;margin:0}
 textarea{resize:vertical;min-height:52px;max-height:160px;flex:1;min-width:0;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:13px;outline:none}
 textarea:focus{border-color:var(--blue)}
 .send{border:0;border-radius:12px;padding:0 20px;background:linear-gradient(135deg,var(--blue),#7b67ff);color:white;font-weight:700}
-.note{font-size:12px;color:var(--muted);line-height:1.8;margin:15px 2px}\n.account{margin:18px 0;border:1px solid var(--line);border-radius:18px;background:var(--panel);padding:18px}\n.account h2{font-size:19px;margin:0 0 8px}.account p{color:var(--muted);font-size:13px;line-height:1.8}\n.account-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.account-card{border:1px solid var(--line);border-radius:13px;padding:14px}\n.account-card h3{font-size:15px;margin:0 0 12px}.account-card input{display:block;width:100%;margin:8px 0;padding:12px;border:1px solid var(--line);border-radius:10px;background:#080b14;color:var(--text)}\n.account-card button{width:100%;padding:11px;border:0;border-radius:10px;background:#29344b;color:#a8b3ca}\n@media(max-width:560px){.account-grid{grid-template-columns:1fr}}
+.note{font-size:12px;color:var(--muted);line-height:1.8;margin:15px 2px}
+.account{margin:18px 0;border:1px solid var(--line);border-radius:18px;background:var(--panel);padding:18px}
+.account h2{font-size:19px;margin:0 0 8px}.account p{color:var(--muted);font-size:13px;line-height:1.8}
+.account-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.account-card{border:1px solid var(--line);border-radius:13px;padding:14px}
+.account-card h3{font-size:15px;margin:0 0 12px}.account-card input{display:block;width:100%;margin:8px 0;padding:12px;border:1px solid var(--line);border-radius:10px;background:#080b14;color:var(--text)}
+.account-card button{width:100%;padding:11px;border:0;border-radius:10px;background:#29344b;color:#a8b3ca}
+@media(max-width:560px){.account-grid{grid-template-columns:1fr}}
 footer{color:var(--muted);font-size:12px;text-align:center;padding:25px 0}
 button:disabled{opacity:.55;cursor:wait}
 @media(max-width:560px){.app{padding:13px}.hero{padding-top:24px}.composer{flex-direction:column}.send{min-height:48px}.messages{height:48vh}}
@@ -111,7 +117,10 @@ function setLang(l){
 }
 document.getElementById("language").addEventListener("click",()=>setLang(lang==="ar"?"en":"ar"));
 
-function checkServer(){\n  document.getElementById("status").textContent=lang==="ar"?"الخادم غير منشور بعد":"Backend not deployed";\n}\nfunction addMessage(value,kind){
+function checkServer(){
+  document.getElementById("status").textContent=lang==="ar"?"الخادم غير منشور بعد":"Backend not deployed";
+}
+function addMessage(value,kind){
 const el=document.createElement("div");el.className="msg "+kind;el.textContent=value;
 document.getElementById("messages").appendChild(el);
 document.getElementById("messages").scrollTop=document.getElementById("messages").scrollHeight;
