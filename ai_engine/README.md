@@ -5,7 +5,8 @@ GPT, another pretrained model, or a hosted AI API.
 
 ## Current model status
 
-- The model architecture and training code are in `jon2_core.py`.
+- The original Transformer architecture and backward-compatible checkpoint loader are in `jon2_core.py`.
+- New training runs use the project-trained byte-level BPE tokenizer in `tokenizer.py`. It has UTF-8 byte fallback for unseen Arabic, English, punctuation, and emoji; it does not provide pretrained knowledge.
 - The chat runtime loads only a trained Jon2 checkpoint.
 - The repository's small original seed text is for pipeline checks only. It is
   not enough to train a useful general-purpose assistant.
@@ -51,10 +52,10 @@ training. Record every source and license in `DATASET_REGISTER.md`.
 From the repository root:
 
 ```bash
-python ai_engine/jon2_core.py --data ai_engine/training_data --output ai_engine/checkpoints/jon2-small.pt
+python ai_engine/train_jon2.py --data ai_engine/training_data --output ai_engine/checkpoints/jon2-small.pt --keep-last
 ```
 
-The default training settings are only a prototype. A small run on the current
+The tokenizer is learned only from the supplied project-owned/licensed corpus. The default BPE vocabulary size is 512 and can be changed with `--tokenizer-vocab-size`. Byte-level fallback keeps unseen characters representable. Existing character-tokenizer checkpoints remain loadable, but new BPE checkpoints use a different vocabulary and must be trained from scratch.\n\nThe default training settings are only a prototype. A small run on the current
 seed corpus will not create a capable assistant. Training quality must be
 measured on held-out Arabic questions before the checkpoint is deployed.
 
