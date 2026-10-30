@@ -9,7 +9,7 @@
 :root{color-scheme:dark;--bg:#080b14;--panel:#111827;--line:#29344b;--blue:#6385ff;--cyan:#52e2db;--text:#f4f7ff;--muted:#a8b3ca}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;min-height:100vh}
-button,textarea{font:inherit}
+button,textarea,input{font:inherit}
 button{cursor:pointer}
 .app{max-width:1000px;margin:auto;padding:18px}
 header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0 22px;border-bottom:1px solid var(--line)}
@@ -33,7 +33,7 @@ h1{font-size:21px;margin:0}
 textarea{resize:vertical;min-height:52px;max-height:160px;flex:1;min-width:0;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:13px;outline:none}
 textarea:focus{border-color:var(--blue)}
 .send{border:0;border-radius:12px;padding:0 20px;background:linear-gradient(135deg,var(--blue),#7b67ff);color:white;font-weight:700}
-.note{font-size:12px;color:var(--muted);line-height:1.8;margin:15px 2px}
+.note{font-size:12px;color:var(--muted);line-height:1.8;margin:15px 2px}\n.account{margin:18px 0;border:1px solid var(--line);border-radius:18px;background:var(--panel);padding:18px}\n.account h2{font-size:19px;margin:0 0 8px}.account p{color:var(--muted);font-size:13px;line-height:1.8}\n.account-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.account-card{border:1px solid var(--line);border-radius:13px;padding:14px}\n.account-card h3{font-size:15px;margin:0 0 12px}.account-card input{display:block;width:100%;margin:8px 0;padding:12px;border:1px solid var(--line);border-radius:10px;background:#080b14;color:var(--text)}\n.account-card button{width:100%;padding:11px;border:0;border-radius:10px;background:#29344b;color:#a8b3ca}\n@media(max-width:560px){.account-grid{grid-template-columns:1fr}}
 footer{color:var(--muted);font-size:12px;text-align:center;padding:25px 0}
 button:disabled{opacity:.55;cursor:wait}
 @media(max-width:560px){.app{padding:13px}.hero{padding-top:24px}.composer{flex-direction:column}.send{min-height:48px}.messages{height:48vh}}
@@ -46,7 +46,7 @@ button:disabled{opacity:.55;cursor:wait}
     <div class="logo">J2</div>
     <div><h1>Jon2 AI</h1><div class="sub" data-t="tagline">مساعدك الذكي المستقل</div></div>
   </div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="connect" id="connect" data-t="connect">ربط الخادم</button><button class="lang" id="language">English 🌐</button></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="lang" id="language">English 🌐</button></div>
 </header>
 <section class="hero">
   <span class="status" id="status" data-t="status">واجهة Jon2 AI</span>
@@ -74,19 +74,19 @@ const text={
 ar:{
 tagline:"مساعدك الذكي المستقل",status:"واجهة Jon2 AI",headline:"أهلًا بك في Jon2 AI",
 intro:"اكتب سؤالك أو فكرتك في المحادثة بالأسفل.",assistant:"🤖 المساعد الذكي",
-clear:"مسح المحادثة",connect:"ربط الخادم",welcome:"مرحبًا! أنا واجهة Jon2 AI. بعد ربط نموذج الذكاء الاصطناعي، ستظهر ردوده هنا.",
+clear:"مسح المحادثة",connect:"الخادم غير منشور بعد",welcome:"مرحبًا! أنا واجهة Jon2 AI. بعد ربط نموذج الذكاء الاصطناعي، ستظهر ردوده هنا.",
 placeholder:"اكتب رسالتك هنا...",send:"إرسال ↑",
 note:"هذه الواجهة تحتاج إلى ربط بخادم نموذج ذكاء اصطناعي لتقديم ردود حقيقية.",
-error:"تعذر الاتصال بالخادم. اضغط «ربط الخادم» وأدخل رابط Render الصحيح.",
+error:"خادم Jon2 AI لم يُنشر بعد. المحادثة بالذكاء الاصطناعي ستعمل بعد تشغيل الخادم وربطه بالموقع.",
 empty:"اكتب رسالة أولًا."
 },
 en:{
 tagline:"Your independent AI assistant",status:"Jon2 AI interface",headline:"Welcome to Jon2 AI",
 intro:"Type your question or idea in the chat below.",assistant:"🤖 AI Assistant",
-clear:"Clear chat",connect:"Connect server",welcome:"Welcome! This is the Jon2 AI interface. AI responses will appear here after a model is connected.",
+clear:"Clear chat",connect:"Server not deployed",welcome:"Welcome! This is the Jon2 AI interface. AI responses will appear here after a model is connected.",
 placeholder:"Type your message here...",send:"Send ↑",
 note:"This interface needs to connect to an AI model server to provide real responses.",
-error:"Could not reach the server. Tap “Connect server” and enter your Render URL.",
+error:"The Jon2 AI server has not been deployed yet. Chat will be available after the backend is deployed and connected.",
 empty:"Please type a message first."
 }};
 let lang=localStorage.getItem("jon2_language")||"ar";
@@ -103,41 +103,7 @@ function setLang(l){
 }
 document.getElementById("language").addEventListener("click",()=>setLang(lang==="ar"?"en":"ar"));
 
-document.getElementById("connect").addEventListener("click",()=>{
-  const entered=prompt(
-    lang==="ar"?"الصق رابط خادم Render، مثال: https://your-service.onrender.com":"Paste your Render server URL, e.g. https://your-service.onrender.com",
-    apiBase
-  );
-  if(entered===null)return;
-  try{
-    const u=new URL(entered.trim());
-    if(u.protocol!=="https:")throw new Error("HTTPS required");
-    apiBase=u.origin;
-    localStorage.setItem("jon2_api_url",apiBase);
-    checkServer();
-  }catch{
-    alert(lang==="ar"?"الرابط غير صحيح. استخدم رابط HTTPS الخاص بخدمة Render.":"Invalid URL. Use your Render service HTTPS URL.");
-  }
-});
-
-async function checkServer(){
-  const status=document.getElementById("status");
-  if(!apiBase){
-    status.textContent=lang==="ar"?"الخادم غير مربوط":"Server not connected";
-    return;
-  }
-  try{
-    const r=await fetch(apiBase+"/api/health");
-    if(!r.ok)throw new Error("Health check failed");
-    const d=await r.json();
-    status.textContent=d.model_loaded
-      ?(lang==="ar"?"النموذج جاهز":"Model ready")
-      :(lang==="ar"?"الخادم متصل — النموذج لم يُحمّل":"Server online — model not loaded");
-  }catch{
-    status.textContent=lang==="ar"?"تعذر الوصول للخادم":"Server unreachable";
-  }
-}
-function addMessage(value,kind){
+function checkServer(){\n  document.getElementById("status").textContent=lang==="ar"?"الخادم غير منشور بعد":"Backend not deployed";\n}\nfunction addMessage(value,kind){
 const el=document.createElement("div");el.className="msg "+kind;el.textContent=value;
 document.getElementById("messages").appendChild(el);
 document.getElementById("messages").scrollTop=document.getElementById("messages").scrollHeight;
@@ -156,7 +122,7 @@ document.getElementById("form").addEventListener("submit",async e=>{
   const send=document.getElementById("send");
   send.disabled=true;
   try{
-    if(!apiBase)throw new Error("No server URL");
+    if(!apiBase)throw new Error("BACKEND_NOT_DEPLOYED");
     const r=await fetch(apiBase+"/api/chat",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -168,7 +134,7 @@ document.getElementById("form").addEventListener("submit",async e=>{
     if(typeof reply!=="string"||!reply.trim())throw new Error("No reply");
     addMessage(reply,"bot");
   }catch(err){
-    addMessage(err.message==="No server URL"?text[lang].error:err.message,"bot");
+    addMessage(err.message==="BACKEND_NOT_DEPLOYED"?text[lang].error:err.message,"bot");
   }finally{
     send.disabled=false;
     input.focus();
