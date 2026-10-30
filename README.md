@@ -23,4 +23,4 @@ The project avoids web-scraped training corpora and unverified media rights. Use
 
 ## Current backend
 
-The Node.js API gateway is in `server/server.js`. It has a restrictive CORS default, request-size and message-length limits, and a temporary in-process rate limit. It does not yet provide production authentication or persistent rate limiting. Do not expose it as a public multi-user service until the launch gates in the blueprint are complete.
+The Node.js API gateway is in `server/server.js`. Initial account routes and Argon2id/session handling are in `server/auth.js`; dependencies are listed in `server/package.json`, and required environment settings are documented in `server/.env.example`. The PostgreSQL schema is in `server/db/schema.sql`. These are implementation files only: no live database, SMTP provider, deployment, or end-to-end security test has been configured. Do not expose it as a public multi-user service until the launch gates in the blueprint are complete.
