@@ -162,6 +162,84 @@ async function register(emailInput, password) {
   return { message: "تم إنشاء طلب الحساب. افتح رسالة البريد الإلكتروني لتأكيد الحساب." };
 }
 
+async function sendPasswordReset(email, token) {
+  if (!process.env.JON2_API_PUBLIC_URL) throw new Error("JON2_API_PUBLIC_URL is required.");
+  const link = `${process.env.JON2_API_PUBLIC_URL.replace(/\\/$/, "")}/api/auth/reset?token=${encodeURIComponent(token)}`;
+  await mailer.sendMail({
+    from: EMAIL_FROM,
+    to: email,
+    subject: "إعادة تعيين كلمة مرور Jon2 AI",
+    text: `لإعادة تعيين كلمة المرور خلال ساعة واحدة افتح الرابط:\n\n${link}\n\nإذا لم تطلب ذلك فتجاهل الرسالة.`,
+    html: `<div dir="rtl" style="font-family:Arial,sans-serif;line-height:1.8"><h2>إعادة تعيين كلمة المرور</h2><p>هذا الرابط صالح لمدة ساعة واحدة.</p><p><a href="${link}">إعادة تعيين كلمة المرور</a></p><p>إذا لم تطلب ذلك فتجاهل الرسالة.</p></div>`
+  });
+}
+
+async function requestPasswordReset(emailInput) {
+  if (!configured()) throw publicError(503, "خدمة الحسابات غير مهيأة.");
+  if (!validEmail(emailInput)) throw publicError(400, "أدخل بريدًا إلكترونيًا صحيحًا.");
+  const result = await pool.query(
+    "SELECT id, email FROM users WHERE email_normalized = $1 AND status = 'active' AND email_verified_at IS NOT NULL LIMIT 1",
+    [emailInput.trim().toLowerCase()]
+  );
+  if (!result.rowCount) return { message: "إذا كان البريد مرتبطًا بحساب مؤكد، ستصلك تعليمات إعادة التعيين." };
+  const user = result.rows[0];
+  const token = randomToken();
+  await pool.query("DELETE FROM password_reset_tokens WHERE user_id = $1 AND consumed_at IS NULL", [user.id]);
+  await pool.query(
+    `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+     VALUES ($1, $2, now() + interval '1 hour')`,
+    [user.id, sha256(token)]
+  );
+  try {
+    await sendPasswordReset(user.email, token);
+  } catch {
+    await pool.query("DELETE FROM password_reset_tokens WHERE user_id = $1 AND token_hash = $2", [user.id, sha256(token)]);
+    // Keep the same public response to avoid revealing whether the email exists.
+  }
+  return { message: "إذا كان البريد مرتبطًا بحساب مؤكد، ستصلك تعليمات إعادة التعيين." };
+}
+
+async function completePasswordReset(token, newPassword) {
+  if (!pool) throw publicError(503, "قاعدة البيانات غير مهيأة.");
+  if (typeof token !== "string" || token.length < 30 || token.length > 100 || !passwordValid(newPassword)) {
+    throw publicError(400, "الرابط غير صالح أو منتهي، أو كلمة المرور لا تحقق الشروط.");
+  }
+  const passwordHash = await argon2.hash(newPassword, {
+    type: argon2.argon2id,
+    memoryCost: 19456,
+    timeCost: 2,
+    parallelism: 1
+  });
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const found = await client.query(
+      `SELECT id, user_id FROM password_reset_tokens
+       WHERE token_hash = $1 AND consumed_at IS NULL AND expires_at > now()
+       FOR UPDATE`,
+      [sha256(token)]
+    );
+    if (!found.rowCount) {
+      await client.query("ROLLBACK");
+      throw publicError(400, "الرابط غير صالح أو منتهي.");
+    }
+    const row = found.rows[0];
+    await client.query(
+      "UPDATE users SET password_hash = $1, updated_at = now() WHERE id = $2 AND status = 'active'",
+      [passwordHash, row.user_id]
+    );
+    await client.query("UPDATE password_reset_tokens SET consumed_at = now() WHERE id = $1", [row.id]);
+    await client.query("UPDATE user_sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL", [row.user_id]);
+    await client.query("COMMIT");
+    return { reset: true, message: "تم تغيير كلمة المرور. سجّل الدخول بكلمة المرور الجديدة." };
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function resendVerification(emailInput) {
   if (!configured()) throw publicError(503, "خدمة البريد وقاعدة البيانات غير مهيأتين.");
   if (!validEmail(emailInput)) throw publicError(400, "أدخل بريدًا إلكترونيًا صحيحًا.");
@@ -319,6 +397,8 @@ module.exports = {
   configured,
   register,
   resendVerification,
+  requestPasswordReset,
+  completePasswordReset,
   verifyEmail,
   login,
   currentSession,
