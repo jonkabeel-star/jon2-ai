@@ -35,14 +35,26 @@ function send(res, status, data) {
 
 function applyCors(req, res) {
   const origin = req.headers.origin;
-  if (origin && ALLOWED_ORIGINS.has(origin)) {
+  if (!origin) return true;
+  const forwardedProto = req.headers["x-forwarded-proto"];
+  const requestProtocol = typeof forwardedProto === "string"
+    ? forwardedProto.split(",")[0].trim()
+    : (req.socket.encrypted ? "https" : "http");
+  let sameOrigin = false;
+  try {
+    const parsedOrigin = new URL(origin);
+    sameOrigin = parsedOrigin.host === req.headers.host && parsedOrigin.protocol === `${requestProtocol}:`;
+  } catch {}
+  if (sameOrigin) return true;
+  if (ALLOWED_ORIGINS.has(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token");
     res.setHeader("Access-Control-Allow-Credentials", "true");
+    return true;
   }
-  return !origin || ALLOWED_ORIGINS.has(origin);
+  return false;
 }
 
 function readBody(req) {
@@ -134,13 +146,26 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.pathname === "/api/auth/verify" && req.method === "GET") {
+    const token = url.searchParams.get("token") || "";
+    if (token.length < 30 || token.length > 100) {
+      return send(res, 400, { error: "رابط التأكيد غير صالح أو منتهي." });
+    }
+    res.writeHead(200, {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+      "Referrer-Policy": "no-referrer",
+      "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'"
+    });
+    return res.end(`<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>تأكيد Jon2 AI</title><body style="font-family:Arial,sans-serif;padding:32px;max-width:520px;margin:auto"><h2>تأكيد بريدك الإلكتروني</h2><p>اضغط الزر لتأكيد حساب Jon2 AI.</p><button id="verify" style="padding:12px 20px;background:#6385ff;color:white;border:0;border-radius:10px">تأكيد البريد</button><p id="result" role="status"></p><script>const token=${JSON.stringify(token)};document.getElementById("verify").addEventListener("click",async()=>{const b=document.getElementById("verify"),o=document.getElementById("result");b.disabled=true;try{const r=await fetch("/api/auth/verify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token})});const d=await r.json();o.textContent=r.ok?"تم تأكيد بريدك الإلكتروني. يمكنك الآن العودة إلى موقع Jon2 AI وتسجيل الدخول.":(d.error||"تعذر تأكيد البريد.");}catch{o.textContent="تعذر الاتصال. حاول مرة أخرى.";}finally{b.disabled=false;}});</script></body></html>`);
+  }
+
+  if (url.pathname === "/api/auth/verify" && req.method === "POST") {
     try {
-      await auth.verifyEmail(url.searchParams.get("token") || "");
-      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
-      return res.end("<!doctype html><html lang='ar' dir='rtl'><meta charset='utf-8'><meta name='viewport' content='width=device-width'><title>Jon2 AI</title><body style='font-family:Arial;padding:32px'><h2>تم تأكيد بريدك الإلكتروني</h2><p>يمكنك الآن العودة إلى موقع Jon2 AI وتسجيل الدخول.</p><a href='https://jonkabeel-star.github.io/jon2-ai/'>فتح Jon2 AI</a></body></html>");
+      const body = await readBody(req);
+      await auth.verifyEmail(body.token || "");
+      return send(res, 200, { verified: true, message: "تم تأكيد البريد الإلكتروني." });
     } catch (error) {
-      res.writeHead(error.status || 400, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
-      return res.end("<!doctype html><html lang='ar' dir='rtl'><meta charset='utf-8'><body style='font-family:Arial;padding:32px'><h2>رابط التأكيد غير صالح أو منتهي</h2><p>ارجع إلى Jon2 AI واطلب المساعدة.</p></body></html>");
+      return send(res, error.status || 503, { error: error.message || "تعذر تأكيد البريد." });
     }
   }
 
