@@ -13,6 +13,8 @@ from pathlib import Path
 import torch
 from torch import nn
 
+from tokenizer import ByteBPETokenizer
+
 SPECIAL_UNK = "�"
 
 
@@ -215,9 +217,14 @@ def load_model(checkpoint_path: str, device: str | None = None):
     checkpoint = torch.load(
         checkpoint_path, map_location=target, weights_only=False
     )
-    tokenizer = CharacterTokenizer(checkpoint["vocabulary"])
+    if "tokenizer" in checkpoint:
+        tokenizer = ByteBPETokenizer.from_dict(checkpoint["tokenizer"])
+        vocab_size = tokenizer.vocab_size
+    else:
+        tokenizer = CharacterTokenizer(checkpoint["vocabulary"])
+        vocab_size = len(tokenizer.vocabulary)
     model = Jon2Transformer(
-        vocab_size=len(tokenizer.vocabulary),
+        vocab_size=vocab_size,
         **checkpoint["config"],
     ).to(target)
     model.load_state_dict(checkpoint["model_state"])
