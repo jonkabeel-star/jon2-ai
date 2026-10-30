@@ -15,12 +15,12 @@ import torch
 from torch import nn
 
 from jon2_core import (
-    CharacterTokenizer,
     Jon2Transformer,
     _batch,
     _estimate_loss,
     read_corpus,
 )
+from tokenizer import ByteBPETokenizer
 
 
 def save_checkpoint(path: Path, model, tokenizer, args, step, best_val, config):
@@ -29,7 +29,7 @@ def save_checkpoint(path: Path, model, tokenizer, args, step, best_val, config):
     torch.save(
         {
             "model_state": model.state_dict(),
-            "vocabulary": tokenizer.vocabulary,
+            "tokenizer": tokenizer.to_dict(),
             "config": config,
             "training_steps": step,
             "best_validation_loss": best_val,
@@ -53,7 +53,7 @@ def train(args):
     amp_enabled = device.type == "cuda" and not args.no_amp
 
     corpus = read_corpus(Path(args.data))
-    tokenizer = CharacterTokenizer.from_text(corpus)
+    tokenizer = ByteBPETokenizer.train(corpus, vocab_size=args.tokenizer_vocab_size, min_frequency=args.tokenizer_min_frequency)
     encoded = torch.tensor(tokenizer.encode(corpus), dtype=torch.long)
     args.corpus_characters = len(encoded)
 
@@ -78,7 +78,7 @@ def train(args):
         "context": args.context,
         "dropout": args.dropout,
     }
-    model = Jon2Transformer(vocab_size=len(tokenizer.vocabulary), **config).to(device)
+    model = Jon2Transformer(vocab_size=tokenizer.vocab_size, **config).to(device)
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay
     )
@@ -91,7 +91,7 @@ def train(args):
         if not resume_path.is_file():
             raise FileNotFoundError(f"Resume checkpoint not found: {resume_path}")
         saved = torch.load(resume_path, map_location=device, weights_only=False)
-        if saved.get("vocabulary") != tokenizer.vocabulary or saved.get("config") != config:
+        if saved.get("tokenizer") != tokenizer.to_dict() or saved.get("config") != config:
             raise ValueError("Resume checkpoint vocabulary/config does not match this run.")
         model.load_state_dict(saved["model_state"])
         if "optimizer_state" in saved:
@@ -118,7 +118,7 @@ def train(args):
     scaler = torch.cuda.amp.GradScaler(enabled=amp_enabled)
     print(
         f"Jon2 original training | device={device} | AMP={amp_enabled} | "
-        f"characters={len(encoded):,} | vocab={len(tokenizer.vocabulary)}"
+        f"characters={len(encoded):,} | vocab={tokenizer.vocab_size}"
     )
     if len(encoded) < 500_000:
         print("CAUTION: corpus remains small for a general-purpose assistant.")
@@ -214,6 +214,8 @@ def main():
     parser.add_argument("--min-delta", type=float, default=0.001)
     parser.add_argument("--grad-clip", type=float, default=1.0)
     parser.add_argument("--minimum-chars", type=int, default=100_000)
+    parser.add_argument("--tokenizer-vocab-size", type=int, default=512)
+    parser.add_argument("--tokenizer-min-frequency", type=int, default=2)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--no-amp", action="store_true")
     parser.add_argument("--keep-last", action="store_true")
@@ -222,7 +224,7 @@ def main():
     positive = [
         args.steps, args.batch_size, args.context, args.width, args.heads,
         args.layers, args.eval_steps, args.eval_every, args.patience,
-        args.minimum_chars,
+        args.minimum_chars, args.tokenizer_vocab_size, args.tokenizer_min_frequency,
     ]
     if min(positive) <= 0:
         parser.error("training sizes, intervals, and patience must be positive")
