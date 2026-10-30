@@ -1,25 +1,35 @@
-name: Jon2 AI Server Checks
+name: Jon2 AI Code Checks
 
 on:
   push:
     paths:
       - "server/**"
+      - "ai_engine/**"
+      - "requirements.txt"
       - ".github/workflows/server-check.yml"
   pull_request:
     paths:
       - "server/**"
+      - "ai_engine/**"
+      - "requirements.txt"
       - ".github/workflows/server-check.yml"
 
 permissions:
   contents: read
 
 jobs:
-  syntax:
+  python-and-node:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-      - name: Set up Node.js 22
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check Python syntax
+        run: python -m compileall -q ai_engine
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
