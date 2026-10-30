@@ -8,7 +8,7 @@
 - `POST /api/auth/verify`: consumes the one-time token and activates the account.
 - `POST /api/auth/login`: checks the password and verified status, then creates a server-side session.
 - `GET /api/auth/me`: validates the session and returns a fresh CSRF token.
-- `POST /api/auth/logout`: validates CSRF and revokes the server-side session.
+- `POST /api/auth/logout`: validates CSRF and revokes the server-side session.\n- `POST /api/auth/password-reset/request`: sends a one-time reset link without revealing whether an email is registered.\n- `GET /api/auth/reset`: displays the password reset form without consuming the token.\n- `POST /api/auth/password-reset/confirm`: changes the password and revokes all active sessions.
 
 Passwords use Argon2id. Raw session and verification tokens are not stored in PostgreSQL; only SHA-256 token hashes are stored. The browser session cookie is Secure, HttpOnly, and SameSite=None for the current cross-origin hosting arrangement.
 
@@ -30,7 +30,7 @@ Passwords use Argon2id. Raw session and verification tokens are not stored in Po
 - This repository change does not create a database, email account, backend hosting service, or custom domain.
 - The account endpoints are not live until deployment and secret configuration are completed.
 - The current rate limiter is process-local and is not suitable as the only production abuse defense.
-- There is no password-reset endpoint yet.
+- Password-reset endpoints are implemented, but they have not been deployed or tested against a live mail provider and database.
 - The current static frontend has not yet been connected to these account endpoints.
 - Do not ask users to enter database passwords, SMTP credentials, OAuth secrets, or other server secrets into the website or chat.
 
