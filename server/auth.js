@@ -164,7 +164,7 @@ async function register(emailInput, password) {
 
 async function sendPasswordReset(email, token) {
   if (!process.env.JON2_API_PUBLIC_URL) throw new Error("JON2_API_PUBLIC_URL is required.");
-  const link = `${process.env.JON2_API_PUBLIC_URL.replace(/\\/$/, "")}/api/auth/reset?token=${encodeURIComponent(token)}`;
+  const link = `${process.env.JON2_API_PUBLIC_URL.replace(/\/$/, "")}/api/auth/reset?token=${encodeURIComponent(token)}`;
   await mailer.sendMail({
     from: EMAIL_FROM,
     to: email,
