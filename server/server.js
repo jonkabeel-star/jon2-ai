@@ -228,6 +228,13 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.pathname === "/api/chat" && req.method === "POST") {
+    try {
+      const session = await auth.currentSession(req);
+      if (!session) return send(res, 401, { error: "سجّل الدخول لاستخدام أدوات Jon2 AI." });
+      await auth.requireCsrf(req, session);
+    } catch (error) {
+      return send(res, error.status || 503, { error: error.message || "تعذر التحقق من الجلسة." });
+    }
     if (!allowRequest(req)) {
       return send(res, 429, { error: "طلبات كثيرة خلال وقت قصير. حاول بعد دقيقة." });
     }
