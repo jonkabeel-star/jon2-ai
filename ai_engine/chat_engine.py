@@ -6,79 +6,73 @@ MODEL_NAME = os.getenv(
     "JON2_CHAT_MODEL",
     "Qwen/Qwen2.5-0.5B-Instruct"
 )
+MAX_NEW_TOKENS = int(os.getenv("JON2_MAX_NEW_TOKENS", "160"))
 
 tokenizer = None
 model = None
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
+def model_is_ready():
+    return model is not None and tokenizer is not None
+
+
 def load_model():
     global tokenizer, model
-
-    if model is not None:
+    if model_is_ready():
         return
 
-    print("Loading Jon2 AI Chat Model...")
-
+    print(f"Loading Jon2 AI model: {MODEL_NAME} on {device}")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_NAME,
-        torch_dtype=torch.float16 if device == "cuda" else torch.float32
+        torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+        low_cpu_mem_usage=True,
     )
-
     model.to(device)
     model.eval()
-
-    print("Jon2 AI Chat Model is ready!")
+    print("Jon2 AI language model loaded successfully.")
 
 
 def generate_reply(message):
     if not message or not message.strip():
         raise ValueError("Please enter a message.")
 
-    load_model()
+    if not model_is_ready():
+        load_model()
 
     messages = [
         {
             "role": "system",
             "content": (
-                "You are Jon2 AI, an intelligent assistant. "
-                "Reply clearly and naturally in the same language "
-                "used by the user. For Arabic, use natural Arabic."
-            )
+                "أنت Jon2 AI، مساعد ذكي مستقل. أجب بالعربية الفصحى "
+                "الواضحة والطبيعية عندما يكتب المستخدم بالعربية. "
+                "أجب مباشرة وبدقة، ولا تخترع معلومات أو أسماء أو أحداثًا. "
+                "نظّم الإجابة في نقاط عند الحاجة."
+            ),
         },
-        {
-            "role": "user",
-            "content": message.strip()
-        }
+        {"role": "user", "content": message.strip()},
     ]
 
-    prompt = tokenizer.apply_chat_template(
+    inputs = tokenizer.apply_chat_template(
         messages,
-        tokenize=False,
-        add_generation_prompt=True
-    )
-
-    inputs = tokenizer(
-        prompt,
-        return_tensors="pt"
+        add_generation_prompt=True,
+        tokenize=True,
+        return_tensors="pt",
     ).to(device)
 
     with torch.inference_mode():
         outputs = model.generate(
-            **inputs,
-            max_new_tokens=256,
-            do_sample=True,
-            temperature=0.7,
-            top_p=0.9,
-            repetition_penalty=1.1,
-            pad_token_id=tokenizer.eos_token_id
+            inputs,
+            max_new_tokens=MAX_NEW_TOKENS,
+            do_sample=False,
+            repetition_penalty=1.10,
+            no_repeat_ngram_size=3,
+            pad_token_id=tokenizer.eos_token_id,
         )
 
-    new_tokens = outputs[0][inputs["input_ids"].shape[1]:]
-
-    return tokenizer.decode(
-        new_tokens,
-        skip_special_tokens=True
-    ).strip()
+    generated = outputs[0][inputs.shape[-1]:]
+    answer = tokenizer.decode(generated, skip_special_tokens=True).strip()
+    if not answer:
+        raise RuntimeError("The model returned an empty response.")
+    return answer
