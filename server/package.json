@@ -1,12 +1,19 @@
 {
   "name": "jon2-ai-server",
-  "version": "1.0.0",
-  "description": "Jon2 AI backend server",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Jon2 AI API and account service",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "check": "node --check server.js && node --check auth.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
+  },
+  "dependencies": {
+    "argon2": "0.45.1",
+    "nodemailer": "7.0.10",
+    "pg": "8.16.3"
   }
 }
