@@ -63,11 +63,14 @@ def collect_corpus(
     corpus_path = output_dir / "wikipedia_ar_cc_by_sa.txt"
     manifest_path = output_dir / "wikipedia_ar_sources.json"
 
+    # Use the all-pages continuation API rather than random pages.
+    # Random generation was returning too few useful long-form extracts.
     base_params = {
         "action": "query",
-        "generator": "random",
-        "grnnamespace": 0,
-        "grnlimit": 50,
+        "generator": "allpages",
+        "gapnamespace": 0,
+        "gapfilterredir": "nonredirects",
+        "gaplimit": 50,
         "prop": "extracts|info",
         "explaintext": 1,
         "inprop": "url",
@@ -81,17 +84,23 @@ def collect_corpus(
     articles = []
     total_chars = 0
     attempts = 0
+    network_errors = 0
 
     while total_chars < target_chars and attempts < max_pages:
         params = {**base_params, **continuation}
+        params["gaplimit"] = min(50, max_pages - attempts)
         try:
             payload = fetch_batch(params)
+            network_errors = 0
         except Exception as exc:
-            print(f"Network/API issue: {exc}. Retrying after 5 seconds...")
+            network_errors += 1
+            print(f"Network/API issue ({network_errors}/5): {exc}")
+            if network_errors >= 5:
+                raise RuntimeError("Stopped after 5 consecutive network/API errors.") from exc
             time.sleep(5)
             continue
-        attempts += 50
         pages = payload.get("query", {}).get("pages", [])
+        attempts += len(pages)
         for page in pages:
             page_id = page.get("pageid")
             if not page_id or page_id in seen_pages:
@@ -124,16 +133,16 @@ def collect_corpus(
             total_chars += len(selected) + 2
             if total_chars >= target_chars:
                 break
-        continuation = payload.get("continue", {})
+        continuation = payload.get("continue")
         if not continuation and total_chars < target_chars:
-            continuation = {}
+            break
         if total_chars < target_chars:
             time.sleep(pause_seconds)
 
     if total_chars < target_chars:
         raise RuntimeError(
             f"Only collected {total_chars:,} characters after {attempts:,} "
-            f"random-page slots. Increase max_pages and run again."
+            f"article pages. Increase max_pages and run again."
         )
 
     corpus_path.write_text(
