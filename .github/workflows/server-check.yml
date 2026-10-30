@@ -31,6 +31,8 @@ jobs:
         run: python -m compileall -q ai_engine
       - name: Audit training text structure
         run: python ai_engine/audit_data.py
+      - name: Test data audit helpers
+        run: python -m unittest discover -s ai_engine -p 'test_*.py'
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
