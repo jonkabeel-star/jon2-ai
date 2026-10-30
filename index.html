@@ -17,7 +17,7 @@ header{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
 .logo{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#07101c;font-weight:900;font-size:20px}
 h1{font-size:21px;margin:0}
 .sub{font-size:12px;color:var(--muted);margin-top:4px}
-.lang,.secondary{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:11px;padding:10px 13px}
+.lang,.secondary,.connect{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:11px;padding:10px 13px}
 .hero{padding:30px 0 20px}
 .hero h2{font-size:clamp(28px,5vw,42px);margin:8px 0}
 .hero p{color:var(--muted);line-height:1.8}
@@ -46,10 +46,10 @@ button:disabled{opacity:.55;cursor:wait}
     <div class="logo">J2</div>
     <div><h1>Jon2 AI</h1><div class="sub" data-t="tagline">مساعدك الذكي المستقل</div></div>
   </div>
-  <button class="lang" id="language">English 🌐</button>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="connect" id="connect" data-t="connect">ربط الخادم</button><button class="lang" id="language">English 🌐</button></div>
 </header>
 <section class="hero">
-  <span class="status" data-t="status">واجهة Jon2 AI</span>
+  <span class="status" id="status" data-t="status">واجهة Jon2 AI</span>
   <h2 data-t="headline">أهلًا بك في Jon2 AI</h2>
   <p data-t="intro">اكتب سؤالك أو فكرتك في المحادثة بالأسفل.</p>
 </section>
@@ -74,22 +74,22 @@ const text={
 ar:{
 tagline:"مساعدك الذكي المستقل",status:"واجهة Jon2 AI",headline:"أهلًا بك في Jon2 AI",
 intro:"اكتب سؤالك أو فكرتك في المحادثة بالأسفل.",assistant:"🤖 المساعد الذكي",
-clear:"مسح المحادثة",welcome:"مرحبًا! أنا واجهة Jon2 AI. بعد ربط نموذج الذكاء الاصطناعي، ستظهر ردوده هنا.",
+clear:"مسح المحادثة",connect:"ربط الخادم",welcome:"مرحبًا! أنا واجهة Jon2 AI. بعد ربط نموذج الذكاء الاصطناعي، ستظهر ردوده هنا.",
 placeholder:"اكتب رسالتك هنا...",send:"إرسال ↑",
 note:"هذه الواجهة تحتاج إلى ربط بخادم نموذج ذكاء اصطناعي لتقديم ردود حقيقية.",
-error:"تعذر الاتصال بخادم الذكاء الاصطناعي. لم يتم ربط الخادم بعد.",
+error:"تعذر الاتصال بالخادم. اضغط «ربط الخادم» وأدخل رابط Render الصحيح.",
 empty:"اكتب رسالة أولًا."
 },
 en:{
 tagline:"Your independent AI assistant",status:"Jon2 AI interface",headline:"Welcome to Jon2 AI",
 intro:"Type your question or idea in the chat below.",assistant:"🤖 AI Assistant",
-clear:"Clear chat",welcome:"Welcome! This is the Jon2 AI interface. AI responses will appear here after a model is connected.",
+clear:"Clear chat",connect:"Connect server",welcome:"Welcome! This is the Jon2 AI interface. AI responses will appear here after a model is connected.",
 placeholder:"Type your message here...",send:"Send ↑",
 note:"This interface needs to connect to an AI model server to provide real responses.",
-error:"Could not connect to the AI server. The server has not been connected yet.",
+error:"Could not reach the server. Tap “Connect server” and enter your Render URL.",
 empty:"Please type a message first."
 }};
-let lang=localStorage.getItem("jon2_language")||"ar";
+let lang=localStorage.getItem("jon2_language")||"ar";\nlet apiBase=(localStorage.getItem("jon2_api_url")||"").replace(/\\/$/,"");
 function setLang(l){
 lang=l;localStorage.setItem("jon2_language",l);
 document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr";
@@ -97,7 +97,7 @@ document.querySelectorAll("[data-t]").forEach(e=>e.textContent=text[l][e.dataset
 document.querySelectorAll("[data-ph]").forEach(e=>e.placeholder=text[l][e.dataset.ph]);
 document.getElementById("language").textContent=l==="ar"?"English 🌐":"العربية 🌐";
 }
-document.getElementById("language").addEventListener("click",()=>setLang(lang==="ar"?"en":"ar"));
+document.getElementById("language").addEventListener("click",()=>setLang(lang==="ar"?"en":"ar"));\ndocument.getElementById("connect").addEventListener("click",()=>{\n const entered=prompt(lang==="ar"?"الصق رابط خادم Render، مثال: https://jon2-ai-api.onrender.com":"Paste your Render server URL, e.g. https://jon2-ai-api.onrender.com",apiBase);\n if(entered===null)return;\n try{const u=new URL(entered.trim());if(u.protocol!=="https:")throw new Error("https required");apiBase=u.origin;localStorage.setItem("jon2_api_url",apiBase);checkServer();}\n catch{alert(lang==="ar"?"الرابط غير صحيح. استخدم رابط HTTPS الخاص بخدمة Render.":"Invalid URL. Use your Render service HTTPS URL.");}\n});\nasync function checkServer(){\n const status=document.getElementById("status");\n if(!apiBase){status.textContent=lang==="ar"?"الخادم غير مربوط":"Server not connected";return;}\n try{const r=await fetch(apiBase+"/api/health");if(!r.ok)throw new Error("health");const d=await r.json();status.textContent=d.model_loaded?(lang==="ar"?"النموذج جاهز":"Model ready"):(lang==="ar"?"الخادم متصل — النموذج لم يُحمّل":"Server online — model not loaded");}\n catch{status.textContent=lang==="ar"?"تعذر الوصول للخادم":"Server unreachable";}\n}
 function addMessage(value,kind){
 const el=document.createElement("div");el.className="msg "+kind;el.textContent=value;
 document.getElementById("messages").appendChild(el);
@@ -120,7 +120,7 @@ const data=await r.json();
 const reply=data.reply||data.response||data.message;
 if(typeof reply!=="string"||!reply.trim())throw new Error("No reply");
 addMessage(reply,"bot");
-}catch(err){addMessage(text[lang].error,"bot");}
+}catch(err){addMessage(err.message&&err.message!=="No server URL"?err.message:text[lang].error,"bot");}
 finally{send.disabled=false;input.focus();}
 });
 setLang(lang);
