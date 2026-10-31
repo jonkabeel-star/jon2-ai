@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from hybrid_engine import engine
+from toolkit import available_tools
 
 
 class ChatMessage(BaseModel):
@@ -27,6 +28,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=6000)
     history: list[ChatMessage] = Field(default_factory=list, max_length=10)
+    tool: Literal["chat", "story", "summarize", "rewrite", "translate", "ideas", "code"] = "chat"
 
 
 app = FastAPI(
@@ -71,14 +73,21 @@ def health() -> dict:
     }
 
 
+@app.get("/api/tools")
+def tools_catalog() -> dict:
+    """List the real, allowlisted Python tools exposed by this engine."""
+    return {"tools": available_tools()}
+
+
 @app.post("/api/chat")
 def chat(payload: ChatRequest) -> dict:
     try:
         reply = engine.reply(
             payload.message,
             [item.model_dump() if hasattr(item, "model_dump") else item.dict() for item in payload.history],
+            tool=payload.tool,
         )
-        return {"reply": reply, "model": "Jon2 Hybrid"}
+        return {"reply": reply, "model": "Jon2 Hybrid", "tool": payload.tool}
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:
