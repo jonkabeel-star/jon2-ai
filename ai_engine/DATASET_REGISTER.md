@@ -63,10 +63,11 @@ Do not change a candidate to APPROVED until all fields below are filled and revi
 ## Candidate 4 — Arabic Wikipedia starter corpus (generated in Colab)
 
 - Source: Arabic Wikipedia through the official MediaWiki API (https://ar.wikipedia.org/).
-- Expected collection target: 130,000 characters; this is a target, not yet a collected or verified count.
-- License: Wikipedia text is generally available under CC BY-SA 4.0; verify each page's footer and any source-specific notices.
-- Attribution: wikipedia_ar_sources.json records each article title and URL; article histories provide contributor attribution.
-- Transformations: plain-text extraction, whitespace cleanup, removal of short/noisy lines, exact duplicate-page/text filtering, and possible truncation of the final article.
-- Files generated locally by the Colab notebook: wikipedia_ar_cc_by_sa.txt and wikipedia_ar_sources.json.
-- Status: NOT YET COLLECTED. Run the new collection cell in Colab, then inspect the generated count and manifest before training.
-- Important: CC BY-SA requires attribution and share-alike for adapted material. Do not assume model-weight licensing or commercial redistribution is automatically cleared; review the intended use before public/commercial release.
+- Historical collection: a diverse collection run in Colab reportedly reached approximately 250,000 characters across 51 articles on 2026-10-30. This is historical session output, not currently available for independent verification.
+- Current availability: the collected text and source manifest are absent from the freshly cloned repository and current Colab runtime.
+- License: Wikipedia text is generally available under CC BY-SA 4.0; verify each article page and any source-specific notices.
+- Attribution: the source manifest should record article titles, URLs, and categories; article histories identify contributors.
+- Transformations: plain-text extraction, whitespace cleanup, removal of short/noisy lines, duplicate filtering, and possible truncation of the final article in the existing collector.
+- Storage: keep the corpus and manifest in private Colab/Drive storage; do not commit training text or source manifests to the public GitHub repository.
+- Status: COLLECTED HISTORICALLY / NOT PRESENT IN CURRENT RUNTIME / NOT APPROVED FOR TRAINING OR COMMERCIAL DEPLOYMENT. Recollect only as a quarantined research corpus and preserve its manifest.
+- Important: CC BY-SA requires attribution and share-alike for adapted material. Do not assume model-weight licensing or commercial redistribution is automatically cleared; obtain a rights review for the intended use before training or release.
