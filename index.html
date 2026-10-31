@@ -11,7 +11,7 @@
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 85% 0%,rgba(61,94,190,.20),transparent 36%),radial-gradient(ellipse at 5% 35%,rgba(43,174,173,.10),transparent 28%),var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
-button,textarea{font:inherit}
+button,textarea,select{font:inherit}
 button{cursor:pointer}
 a{color:inherit;text-decoration:none}
 .wrap{width:min(1120px,calc(100% - 36px));margin:auto}
@@ -61,7 +61,7 @@ h1{font-size:clamp(36px,6vw,62px);line-height:1.16;letter-spacing:-1.3px;margin:
 .bot{background:#19263d;margin-inline-end:auto;border:1px solid #263958}
 .user{background:#30477b;margin-inline-start:auto}
 .composer{display:flex;gap:11px;padding:14px;border-top:1px solid var(--line);background:rgba(7,12,22,.45)}
-textarea{resize:vertical;min-height:54px;max-height:150px;flex:1;min-width:0;background:#0a1220;color:var(--text);border:1px solid #344766;border-radius:14px;padding:15px;outline:none}
+select{width:100%;max-width:190px;background:#111d31;color:var(--text);border:1px solid #344766;border-radius:14px;padding:12px;outline:none}select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(113,140,255,.12)}textarea{resize:vertical;min-height:54px;max-height:150px;flex:1;min-width:0;background:#0a1220;color:var(--text);border:1px solid #344766;border-radius:14px;padding:15px;outline:none}
 textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(113,140,255,.12)}
 .send{border:0;border-radius:13px;padding:0 24px;background:linear-gradient(120deg,#718cff,#596de9);color:white;font-weight:800}
 .status-note{padding:0 20px 15px;color:var(--muted);font-size:11px;line-height:1.8}
@@ -70,7 +70,7 @@ footer{border-top:1px solid rgba(130,157,207,.14);padding:25px 0 34px;color:var(
 .footer-inner{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
 button:disabled{opacity:.6;cursor:not-allowed}
 @media(max-width:850px){.hero{grid-template-columns:1fr;padding-top:54px}.hero-art{min-height:240px}.tools{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:520px){.wrap{width:min(100% - 26px,1120px)}header{height:72px}.logo{width:42px;height:42px}.brand-name{font-size:18px}.hero{padding:45px 0 35px;gap:15px}h1{font-size:39px}.hero p{font-size:14px}.hero-art{min-height:215px}.orbit{width:205px;height:205px}.core{width:88px;height:88px;font-size:30px}.f1{top:8px}.f2{bottom:17px}.tools{grid-template-columns:1fr 1fr;gap:9px}.tool{padding:14px;min-height:174px}.tool-icon{width:42px;height:42px;margin-bottom:12px}.tool h3{font-size:14px}.tool p{font-size:11px}.section-head h2{font-size:21px}.chat-top{padding:14px}.messages{height:280px;padding:12px}.composer{flex-direction:column}.send{min-height:48px}.footer-inner{flex-direction:column}}
+@media(max-width:520px){select{max-width:none}.wrap{width:min(100% - 26px,1120px)}header{height:72px}.logo{width:42px;height:42px}.brand-name{font-size:18px}.hero{padding:45px 0 35px;gap:15px}h1{font-size:39px}.hero p{font-size:14px}.hero-art{min-height:215px}.orbit{width:205px;height:205px}.core{width:88px;height:88px;font-size:30px}.f1{top:8px}.f2{bottom:17px}.tools{grid-template-columns:1fr 1fr;gap:9px}.tool{padding:14px;min-height:174px}.tool-icon{width:42px;height:42px;margin-bottom:12px}.tool h3{font-size:14px}.tool p{font-size:11px}.section-head h2{font-size:21px}.chat-top{padding:14px}.messages{height:280px;padding:12px}.composer{flex-direction:column}.send{min-height:48px}.footer-inner{flex-direction:column}}
 </style>
 </head>
 <body>
@@ -105,7 +105,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
   <div class="chat-shell">
     <div class="chat-top"><div class="chat-title"><div class="chat-avatar">J2</div><div><strong data-t="assistantName">المساعد الذكي</strong><small id="status" data-t="offline">الخادم غير متصل حاليًا</small></div></div><button class="clear" id="clear" data-t="clear">مسح المحادثة</button></div>
     <div class="messages" id="messages" aria-live="polite"><div class="msg bot" data-t="welcome">أهلًا بك! واجهة المحادثة جاهزة، وسيتم تفعيل الردود الذكية بعد ربط نموذج Jon2 AI الحقيقي.</div></div>
-    <form class="composer" id="form"><textarea id="input" placeholder="اكتب رسالتك هنا..." data-ph="placeholder" required></textarea><button class="send" id="send" type="submit" data-t="send">إرسال ↑</button></form>
+    <form class="composer" id="form"><select id="toolSelect" aria-label="اختر أداة Jon2 AI"><option value="chat">المحادثة العامة</option><option value="story">كاتب القصص</option><option value="summarize">تلخيص النصوص</option><option value="rewrite">إعادة الصياغة</option><option value="translate">الترجمة</option><option value="ideas">توليد الأفكار</option><option value="code">مساعد البرمجة</option></select><textarea id="input" placeholder="اكتب رسالتك هنا..." data-ph="placeholder" required></textarea><button class="send" id="send" type="submit" data-t="send">إرسال ↑</button></form>
     <div class="status-note" id="statusNote" data-t="chatNote">المحادثة الذكية غير مفعّلة بعد؛ لن نعرض ردودًا وهمية.</div>
   </div>
 </section>
@@ -118,12 +118,12 @@ button:disabled{opacity:.6;cursor:not-allowed}
 <script>
 const translations={
 ar:{
-brandSub:"منصتك للإبداع بالذكاء الاصطناعي",toolsNav:"الأدوات",eyebrow:"مساحة إبداعية مفتوحة للجميع",heroLine1:"حوّل أفكارك إلى",heroLine2:"إبداع مع Jon2 AI",heroText:"اكتشف أدوات الذكاء الاصطناعي لصناعة المحتوى والصور والفيديوهات. ابدأ من فكرتك، واترك مساحة للإبداع.",explore:"استكشف الأدوات ←",tryChat:"جرّب المساعد",toolsTitle:"استوديو الأدوات",toolsDesc:"كل أفكارك الإبداعية في مكان واحد",imageTitle:"توليد الصور",imageDesc:"حوّل وصفك إلى أفكار وصور إبداعية.",videoTitle:"توليد الفيديو",videoDesc:"اصنع مشاهد وقصص فيديو من أفكارك.",audioTitle:"الصوت والتعليق",audioDesc:"أدوات صوتية ومساعدة في التعليق الصوتي.",storyTitle:"كتابة القصص",storyDesc:"طوّر أفكارك إلى قصص وسيناريوهات.",soon:"قريبًا",assistantHeading:"مساعد Jon2 AI",assistantDesc:"مساحة المحادثة الخاصة بك",assistantName:"المساعد الذكي",offline:"الخادم غير متصل حاليًا",clear:"مسح المحادثة",welcome:"أهلًا بك! واجهة المحادثة جاهزة، وسيتم تفعيل الردود الذكية بعد ربط نموذج Jon2 AI الحقيقي.",placeholder:"اكتب رسالتك هنا...",send:"إرسال ↑",chatNote:"المحادثة الذكية غير مفعّلة بعد؛ لن نعرض ردودًا وهمية.",adPlaceholder:"مساحة إعلانية مستقبلية — ستُفعّل بعد موافقة Google AdSense",footerText:"منصة إبداعية مستقلة — قيد التطوير",backendError:"خادم Jon2 AI غير منشور بعد. جرّب المساعد لاحقًا بعد تشغيل الخادم الحقيقي."
+brandSub:"منصتك للإبداع بالذكاء الاصطناعي",toolsNav:"الأدوات",eyebrow:"مساحة إبداعية مفتوحة للجميع",heroLine1:"حوّل أفكارك إلى",heroLine2:"إبداع مع Jon2 AI",heroText:"اكتشف أدوات الذكاء الاصطناعي لصناعة المحتوى والصور والفيديوهات. ابدأ من فكرتك، واترك مساحة للإبداع.",explore:"استكشف الأدوات ←",tryChat:"جرّب المساعد",toolsTitle:"استوديو الأدوات",toolsDesc:"كل أفكارك الإبداعية في مكان واحد",imageTitle:"توليد الصور",imageDesc:"حوّل وصفك إلى أفكار وصور إبداعية.",videoTitle:"توليد الفيديو",videoDesc:"اصنع مشاهد وقصص فيديو من أفكارك.",audioTitle:"الصوت والتعليق",audioDesc:"أدوات صوتية ومساعدة في التعليق الصوتي.",storyTitle:"كتابة القصص",storyDesc:"طوّر أفكارك إلى قصص وسيناريوهات.",soon:"قريبًا",assistantHeading:"مساعد Jon2 AI",assistantDesc:"مساحة المحادثة الخاصة بك",assistantName:"المساعد الذكي",offline:"الخادم غير متصل حاليًا",clear:"مسح المحادثة",welcome:"أهلًا بك! واجهة المحادثة جاهزة، وسيتم تفعيل الردود الذكية بعد ربط نموذج Jon2 AI الحقيقي.",placeholder:"اكتب رسالتك هنا...",send:"إرسال ↑",chatNote:"المحادثة الذكية غير مفعّلة بعد؛ لن نعرض ردودًا وهمية.",adPlaceholder:"مساحة إعلانية مستقبلية — ستُفعّل بعد موافقة Google AdSense",footerText:"منصة إبداعية مستقلة — قيد التطوير",backendError:"خادم Jon2 AI غير مربوط أو غير متاح حاليًا. لم يتم إنشاء رد وهمي؛ أعد المحاولة بعد تشغيل خادم Python."
 },
 en:{
-brandSub:"Your AI-powered creative space",toolsNav:"Tools",eyebrow:"A creative space open to everyone",heroLine1:"Turn your ideas into",heroLine2:"creativity with Jon2 AI",heroText:"Explore AI tools for content, images and videos. Start with an idea and make room for creativity.",explore:"Explore tools →",tryChat:"Try the assistant",toolsTitle:"Creative tools",toolsDesc:"Your creative ideas, all in one place",imageTitle:"Image generation",imageDesc:"Turn your prompts into creative image concepts.",videoTitle:"Video generation",videoDesc:"Create video scenes and stories from your ideas.",audioTitle:"Audio & voice",audioDesc:"Audio tools and voice-over assistance.",storyTitle:"Story writing",storyDesc:"Develop ideas into stories and scripts.",soon:"Coming soon",assistantHeading:"Jon2 AI Assistant",assistantDesc:"Your conversation space",assistantName:"AI Assistant",offline:"Backend currently offline",clear:"Clear chat",welcome:"Welcome! The chat interface is ready. AI replies will be enabled when the real Jon2 AI model is connected.",placeholder:"Type your message here...",send:"Send ↑",chatNote:"AI chat is not active yet; we will not show fake replies.",adPlaceholder:"Future ad space — enabled only after Google AdSense approval",footerText:"Independent creative platform — in development",backendError:"The Jon2 AI backend has not been deployed yet. Please try again after the real server is running."
+brandSub:"Your AI-powered creative space",toolsNav:"Tools",eyebrow:"A creative space open to everyone",heroLine1:"Turn your ideas into",heroLine2:"creativity with Jon2 AI",heroText:"Explore AI tools for content, images and videos. Start with an idea and make room for creativity.",explore:"Explore tools →",tryChat:"Try the assistant",toolsTitle:"Creative tools",toolsDesc:"Your creative ideas, all in one place",imageTitle:"Image generation",imageDesc:"Turn your prompts into creative image concepts.",videoTitle:"Video generation",videoDesc:"Create video scenes and stories from your ideas.",audioTitle:"Audio & voice",audioDesc:"Audio tools and voice-over assistance.",storyTitle:"Story writing",storyDesc:"Develop ideas into stories and scripts.",soon:"Coming soon",assistantHeading:"Jon2 AI Assistant",assistantDesc:"Your conversation space",assistantName:"AI Assistant",offline:"Backend currently offline",clear:"Clear chat",welcome:"Welcome! The chat interface is ready. AI replies will be enabled when the real Jon2 AI model is connected.",placeholder:"Type your message here...",send:"Send ↑",chatNote:"AI chat is not active yet; we will not show fake replies.",adPlaceholder:"Future ad space — enabled only after Google AdSense approval",footerText:"Independent creative platform — in development",backendError:"The Jon2 AI Python backend is not configured or unavailable. No fake reply was generated; try again after the real server is running."
 }};
-const STORAGE_KEY = "jon2_ai_site_state_v1";
+const API_BASE_URL = (window.JON2_API_BASE_URL || "").replace(/\\/+$/, "");\nconst STORAGE_KEY = "jon2_ai_site_state_v1";
 const MAX_SAVED_MESSAGES = 100;
 let lang = "ar";
 let chatMessages = [];
@@ -212,16 +212,68 @@ document.getElementById("clear").addEventListener("click", () => {
 
 document.getElementById("input").addEventListener("input", saveState);
 
-document.getElementById("form").addEventListener("submit", event => {
+async function checkBackend() {
+  const status = document.getElementById("status");
+  const note = document.getElementById("statusNote");
+  if (!API_BASE_URL) {
+    status.textContent = lang === "ar" ? "بانتظار ربط خادم Python" : "Waiting for Python backend";
+    note.textContent = lang === "ar"
+      ? "أدوات النصوص جاهزة برمجيًا، لكنها تحتاج عنوان خادم Python حتى تعمل من الموقع."
+      : "Text tools are implemented, but need the Python server URL before they can run from this site.";
+    return;
+  }
+  try {
+    const response = await fetch(API_BASE_URL + "/api/health");
+    if (!response.ok) throw new Error("Health check failed");
+    const health = await response.json();
+    status.textContent = health.model_loaded
+      ? (lang === "ar" ? "النموذج محمّل وجاهز" : "Model loaded and ready")
+      : (lang === "ar" ? "الخادم متصل — النموذج يُحمّل عند أول طلب" : "Backend online — model loads on first request");
+  } catch (error) {
+    status.textContent = lang === "ar" ? "الخادم غير متصل" : "Backend offline";
+  }
+}
+
+document.getElementById("form").addEventListener("submit", async event => {
   event.preventDefault();
   const input = document.getElementById("input");
+  const send = document.getElementById("send");
   const value = input.value.trim();
-  if (!value) return;
+  const tool = document.getElementById("toolSelect").value;
+  if (!value || send.disabled) return;
 
+  const history = chatMessages
+    .filter(item => item.kind === "user" || item.kind === "bot")
+    .slice(-10)
+    .map(item => ({ role: item.kind === "user" ? "user" : "assistant", content: item.text }));
   addMessage(value, "user");
   input.value = "";
   saveState();
-  addMessage(translations[lang].backendError, "bot");
+
+  if (!API_BASE_URL) {
+    addMessage(translations[lang].backendError, "bot");
+    return;
+  }
+
+  send.disabled = true;
+  send.textContent = lang === "ar" ? "جارٍ التفكير..." : "Thinking...";
+  try {
+    const response = await fetch(API_BASE_URL + "/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: value, history, tool })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Request failed");
+    if (typeof data.reply !== "string" || !data.reply.trim()) throw new Error("Empty model reply");
+    addMessage(data.reply.trim(), "bot");
+  } catch (error) {
+    addMessage((lang === "ar" ? "تعذر الحصول على رد حقيقي من Jon2 AI: " : "Jon2 AI could not return a real response: ") + error.message, "bot");
+  } finally {
+    send.disabled = false;
+    send.textContent = translations[lang].send;
+    checkBackend();
+  }
 });
 
 loadSavedState();
