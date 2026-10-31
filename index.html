@@ -123,18 +123,115 @@ brandSub:"منصتك للإبداع بالذكاء الاصطناعي",toolsNav:
 en:{
 brandSub:"Your AI-powered creative space",toolsNav:"Tools",eyebrow:"A creative space open to everyone",heroLine1:"Turn your ideas into",heroLine2:"creativity with Jon2 AI",heroText:"Explore AI tools for content, images and videos. Start with an idea and make room for creativity.",explore:"Explore tools →",tryChat:"Try the assistant",toolsTitle:"Creative tools",toolsDesc:"Your creative ideas, all in one place",imageTitle:"Image generation",imageDesc:"Turn your prompts into creative image concepts.",videoTitle:"Video generation",videoDesc:"Create video scenes and stories from your ideas.",audioTitle:"Audio & voice",audioDesc:"Audio tools and voice-over assistance.",storyTitle:"Story writing",storyDesc:"Develop ideas into stories and scripts.",soon:"Coming soon",assistantHeading:"Jon2 AI Assistant",assistantDesc:"Your conversation space",assistantName:"AI Assistant",offline:"Backend currently offline",clear:"Clear chat",welcome:"Welcome! The chat interface is ready. AI replies will be enabled when the real Jon2 AI model is connected.",placeholder:"Type your message here...",send:"Send ↑",chatNote:"AI chat is not active yet; we will not show fake replies.",adPlaceholder:"Future ad space — enabled only after Google AdSense approval",footerText:"Independent creative platform — in development",backendError:"The Jon2 AI backend has not been deployed yet. Please try again after the real server is running."
 }};
-let lang="ar";
-function setLang(next){
- lang=next;document.documentElement.lang=lang;document.documentElement.dir=lang==="ar"?"rtl":"ltr";
- document.querySelectorAll("[data-t]").forEach(el=>{const key=el.dataset.t;if(translations[lang][key])el.textContent=translations[lang][key]});
- document.querySelectorAll("[data-ph]").forEach(el=>{const key=el.dataset.ph;if(translations[lang][key])el.placeholder=translations[lang][key]});
- document.getElementById("language").textContent=lang==="ar"?"English 🌐":"العربية 🌐";
+const STORAGE_KEY = "jon2_ai_site_state_v1";
+const MAX_SAVED_MESSAGES = 100;
+let lang = "ar";
+let chatMessages = [];
+let savedDraft = "";
+
+function loadSavedState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const state = JSON.parse(raw);
+    if (!state || state.version !== 1) return;
+    if (state.lang === "ar" || state.lang === "en") lang = state.lang;
+    if (Array.isArray(state.messages)) {
+      chatMessages = state.messages
+        .filter(item =>
+          item &&
+          (item.kind === "user" || item.kind === "bot") &&
+          typeof item.text === "string"
+        )
+        .slice(-MAX_SAVED_MESSAGES)
+        .map(item => ({ kind: item.kind, text: item.text.slice(0, 20000) }));
+    }
+    if (typeof state.draft === "string") savedDraft = state.draft.slice(0, 4000);
+  } catch (error) {
+    console.warn("Jon2 AI could not read its local saved state.", error);
+  }
 }
-document.getElementById("language").addEventListener("click",()=>setLang(lang==="ar"?"en":"ar"));
-function addMessage(value,kind){const el=document.createElement("div");el.className="msg "+kind;el.textContent=value;const box=document.getElementById("messages");box.appendChild(el);box.scrollTop=box.scrollHeight}
-document.getElementById("clear").addEventListener("click",()=>{document.getElementById("messages").replaceChildren();addMessage(translations[lang].welcome,"bot")});
-document.getElementById("form").addEventListener("submit",e=>{e.preventDefault();const input=document.getElementById("input");const value=input.value.trim();if(!value)return;addMessage(value,"user");input.value="";addMessage(translations[lang].backendError,"bot")});
-setLang("ar");
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      version: 1,
+      lang,
+      messages: chatMessages.slice(-MAX_SAVED_MESSAGES),
+      draft: document.getElementById("input").value.slice(0, 4000)
+    }));
+  } catch (error) {
+    console.warn("Jon2 AI could not save state in this browser.", error);
+  }
+}
+
+function setLang(next) {
+  lang = next;
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+  document.querySelectorAll("[data-t]").forEach(el => {
+    const key = el.dataset.t;
+    if (translations[lang][key]) el.textContent = translations[lang][key];
+  });
+  document.querySelectorAll("[data-ph]").forEach(el => {
+    const key = el.dataset.ph;
+    if (translations[lang][key]) el.placeholder = translations[lang][key];
+  });
+  document.getElementById("language").textContent =
+    lang === "ar" ? "English 🌐" : "العربية 🌐";
+}
+
+function renderMessages() {
+  const box = document.getElementById("messages");
+  box.replaceChildren();
+  chatMessages.forEach(item => {
+    const el = document.createElement("div");
+    el.className = "msg " + item.kind;
+    el.textContent = item.text;
+    box.appendChild(el);
+  });
+  box.scrollTop = box.scrollHeight;
+}
+
+function addMessage(value, kind) {
+  chatMessages.push({ text: value, kind });
+  chatMessages = chatMessages.slice(-MAX_SAVED_MESSAGES);
+  renderMessages();
+  saveState();
+}
+
+document.getElementById("language").addEventListener("click", () => {
+  setLang(lang === "ar" ? "en" : "ar");
+  saveState();
+});
+
+document.getElementById("clear").addEventListener("click", () => {
+  chatMessages = [];
+  addMessage(translations[lang].welcome, "bot");
+});
+
+document.getElementById("input").addEventListener("input", saveState);
+
+document.getElementById("form").addEventListener("submit", event => {
+  event.preventDefault();
+  const input = document.getElementById("input");
+  const value = input.value.trim();
+  if (!value) return;
+
+  addMessage(value, "user");
+  input.value = "";
+  saveState();
+  addMessage(translations[lang].backendError, "bot");
+});
+
+loadSavedState();
+setLang(lang);
+document.getElementById("input").value = savedDraft;
+if (chatMessages.length === 0) {
+  chatMessages = [{ text: translations[lang].welcome, kind: "bot" }];
+}
+renderMessages();
+saveState();
 </script>
 </body>
 </html>
