@@ -106,7 +106,7 @@ class Jon2HybridEngine:
 
         tool_prompt = get_tool_prompt(tool)
         self.load()
-        messages = [{"role": "system", "content": SYSTEM_PROMPT + "\\n\\nمهمة الأداة الحالية: " + tool_prompt}]
+        messages = [{"role": "system", "content": SYSTEM_PROMPT + "\n\nمهمة الأداة الحالية: " + tool_prompt}]
         messages.extend(self._clean_history(history))
         messages.append({"role": "user", "content": message})
 
