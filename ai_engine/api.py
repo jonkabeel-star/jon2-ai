@@ -66,7 +66,7 @@ def health() -> dict:
             "JON2_MODEL_REPO",
             "Qwen/Qwen2.5-0.5B-Instruct-GGUF",
         ),
-        "model_quantization": os.getenv("JON2_MODEL_FILE", "*Q4_K_M.gguf"),
+        "model_quantization": os.getenv("JON2_MODEL_FILE", "*q4_k_m.gguf"),
         "public_launch_ready": False,
     }
 
