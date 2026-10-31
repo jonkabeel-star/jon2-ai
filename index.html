@@ -123,7 +123,8 @@ brandSub:"منصتك للإبداع بالذكاء الاصطناعي",toolsNav:
 en:{
 brandSub:"Your AI-powered creative space",toolsNav:"Tools",eyebrow:"A creative space open to everyone",heroLine1:"Turn your ideas into",heroLine2:"creativity with Jon2 AI",heroText:"Explore AI tools for content, images and videos. Start with an idea and make room for creativity.",explore:"Explore tools →",tryChat:"Try the assistant",toolsTitle:"Creative tools",toolsDesc:"Your creative ideas, all in one place",imageTitle:"Image generation",imageDesc:"Turn your prompts into creative image concepts.",videoTitle:"Video generation",videoDesc:"Create video scenes and stories from your ideas.",audioTitle:"Audio & voice",audioDesc:"Audio tools and voice-over assistance.",storyTitle:"Story writing",storyDesc:"Develop ideas into stories and scripts.",soon:"Coming soon",assistantHeading:"Jon2 AI Assistant",assistantDesc:"Your conversation space",assistantName:"AI Assistant",offline:"Backend currently offline",clear:"Clear chat",welcome:"Welcome! The chat interface is ready. AI replies will be enabled when the real Jon2 AI model is connected.",placeholder:"Type your message here...",send:"Send ↑",chatNote:"AI chat is not active yet; we will not show fake replies.",adPlaceholder:"Future ad space — enabled only after Google AdSense approval",footerText:"Independent creative platform — in development",backendError:"The Jon2 AI Python backend is not configured or unavailable. No fake reply was generated; try again after the real server is running."
 }};
-const API_BASE_URL = (window.JON2_API_BASE_URL || "").replace(/\\/+$/, "");\nconst STORAGE_KEY = "jon2_ai_site_state_v1";
+const API_BASE_URL = (window.JON2_API_BASE_URL || "").replace(/\/+$/, "");
+const STORAGE_KEY = "jon2_ai_site_state_v1";
 const MAX_SAVED_MESSAGES = 100;
 let lang = "ar";
 let chatMessages = [];
