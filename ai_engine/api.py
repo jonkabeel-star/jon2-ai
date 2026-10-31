@@ -76,7 +76,7 @@ def chat(payload: ChatRequest) -> dict:
     try:
         reply = engine.reply(
             payload.message,
-            [item.model_dump() for item in payload.history],
+            [item.model_dump() if hasattr(item, "model_dump") else item.dict() for item in payload.history],
         )
         return {"reply": reply, "model": "Jon2 Hybrid"}
     except ValueError as exc:
