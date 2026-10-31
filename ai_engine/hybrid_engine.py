@@ -13,6 +13,8 @@ from typing import Any
 
 from llama_cpp import Llama
 
+from toolkit import get_tool_prompt
+
 
 MODEL_REPO = os.getenv(
     "JON2_MODEL_REPO",
@@ -94,6 +96,7 @@ class Jon2HybridEngine:
         self,
         message: str,
         history: list[dict[str, Any]] | None = None,
+        tool: str = "chat",
     ) -> str:
         if not isinstance(message, str) or not message.strip():
             raise ValueError("اكتب رسالتك أولًا.")
@@ -101,8 +104,9 @@ class Jon2HybridEngine:
         if len(message) > MAX_MESSAGE_CHARS:
             raise ValueError("الرسالة طويلة جدًا. اختصرها ثم حاول مرة أخرى.")
 
+        tool_prompt = get_tool_prompt(tool)
         self.load()
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        messages = [{"role": "system", "content": SYSTEM_PROMPT + "\\n\\nمهمة الأداة الحالية: " + tool_prompt}]
         messages.extend(self._clean_history(history))
         messages.append({"role": "user", "content": message})
 
