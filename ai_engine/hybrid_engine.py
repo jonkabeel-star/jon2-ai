@@ -20,7 +20,7 @@ MODEL_REPO = os.getenv(
 )
 MODEL_FILE = os.getenv(
     "JON2_MODEL_FILE",
-    "*Q4_K_M.gguf",
+    "*q4_k_m.gguf",
 )
 MAX_HISTORY_MESSAGES = 10
 MAX_MESSAGE_CHARS = 6000
