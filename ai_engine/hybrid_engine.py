@@ -1,9 +1,9 @@
 """Jon2 AI hybrid runtime: a quantized open model behind a project-owned Python layer.
 
-The base model is an Apache-2.0 Qwen2.5 0.5B Instruct GGUF quantization.
+The base model is an Apache-2.0 Qwen3 1.7B Instruct GGUF quantization.
 Jon2 owns the Arabic system behavior, conversation handling, API contract, and
 future memory/tools/training layers. This is a starter runtime, not a claim that
-the small base model is a frontier-scale or independently trained Jon2 model.
+the base model is independently trained by Jon2.
 """
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from toolkit import get_tool_prompt
 
 MODEL_REPO = os.getenv(
     "JON2_MODEL_REPO",
-    "Qwen/Qwen2.5-0.5B-Instruct-GGUF",
+    "Qwen/Qwen3-1.7B-GGUF",
 )
 MODEL_FILE = os.getenv(
     "JON2_MODEL_FILE",
@@ -31,7 +31,8 @@ SYSTEM_PROMPT = (
     "أنت Jon2 AI، مساعد عربي ذكي وواضح. أجب بلغة المستخدم، "
     "واجعل العربية طبيعية ومفهومة عند استخدامها. أجب مباشرة وبمعلومات دقيقة. "
     "إذا لم تكن متأكدًا فقل ذلك بوضوح ولا تخترع أسماء أو أحداثًا أو مصادر. "
-    "لا تدّعِ أنك نفذت إجراءً لم تنفذه. نظّم الإجابة عند الحاجة."
+    "لا تعرض خطوات التفكير الداخلية أو وسوم think. لا تدّعِ أنك نفذت إجراءً "
+    "لم تنفذه. نظّم الإجابة عند الحاجة."
 )
 
 
