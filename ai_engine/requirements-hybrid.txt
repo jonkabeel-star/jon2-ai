@@ -1,0 +1,7 @@
+# Install the CPU wheel for llama.cpp Python bindings.
+--extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+
+llama-cpp-python
+huggingface-hub
+fastapi
+uvicorn[standard]
