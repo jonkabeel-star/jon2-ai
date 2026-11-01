@@ -27,16 +27,16 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Install CPU PyTorch for original-model tests
+        run: python -m pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
       - name: Check Python syntax
         run: python -m compileall -q ai_engine
       - name: Audit training text structure
         run: python ai_engine/audit_data.py
-      - name: Test data audit helpers
+      - name: Test data audit helpers and original model
         run: python -m unittest discover -s ai_engine -p 'test_*.py'
       - name: Test private corpus audit utility
         run: python -m unittest discover -s ai_engine/scratch -p 'test_*.py'
-      - name: Install CPU PyTorch for original-model verification
-        run: python -m pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
       - name: Verify original Jon2 model foundation
         run: python ai_engine/scratch/verify_foundation.py
       - name: Set up Node.js
