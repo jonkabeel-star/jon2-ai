@@ -66,7 +66,7 @@ def health() -> dict:
         "model_loaded": engine.ready,
         "model_repo": os.getenv(
             "JON2_MODEL_REPO",
-            "Qwen/Qwen2.5-0.5B-Instruct-GGUF",
+            "Qwen/Qwen3-1.7B-GGUF",
         ),
         "model_quantization": os.getenv("JON2_MODEL_FILE", "*q4_k_m.gguf"),
         "public_launch_ready": False,
