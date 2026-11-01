@@ -1,9 +1,14 @@
 """Tests the inference API's honest not-ready behavior without a checkpoint."""
+import sys
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
-from fastapi.testclient import TestClient
+ENGINE_DIR = Path(__file__).resolve().parents[1]
+if str(ENGINE_DIR) not in sys.path:
+    sys.path.insert(0, str(ENGINE_DIR))
 
+from fastapi.testclient import TestClient
 import serve_jon2
 
 
