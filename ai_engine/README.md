@@ -61,6 +61,21 @@ The default training settings are only a prototype. A small run on the current
 seed corpus will not create a capable assistant. Training quality must be
 measured on held-out Arabic questions before the checkpoint is deployed.
 
+When `--keep-last` is enabled, `jon2-last.pt` now stores model weights,
+optimizer state, learning-rate scheduler state, AMP scaler state, Python and
+PyTorch random-number-generator states, plus a SHA-256 fingerprint of the
+training corpus. To resume the same run after an interruption, use the same
+training arguments and add:
+
+```bash
+python ai_engine/train_jon2.py --data ai_engine/training_data --output ai_engine/checkpoints/jon2-small.pt --last-checkpoint ai_engine/checkpoints/jon2-last.pt --resume ai_engine/checkpoints/jon2-last.pt --keep-last
+```
+
+Resume validation rejects changed training text, tokenizer/model configuration,
+or training-plan settings instead of silently continuing a different run.
+Older checkpoints without complete resume metadata are accepted only through
+the documented legacy fallback and cannot provide bit-for-bit exact resumption.
+
 ## Evaluate a trained checkpoint
 
 The held-out Arabic prompt set is `evaluation/prompts_ar.jsonl`. It is JSONL,
