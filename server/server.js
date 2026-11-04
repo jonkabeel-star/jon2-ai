@@ -102,7 +102,7 @@ function allowRequest(req) {
   return true;
 }
 
-async function askModel(message) {
+async function askModel(message, history = []) {
   if (!AI_MODEL_URL) {
     throw Object.assign(
       new Error("نموذج الذكاء الاصطناعي غير متصل. لم يتم إعداد AI_MODEL_URL."),
@@ -113,7 +113,7 @@ async function askModel(message) {
   const response = await fetch(AI_MODEL_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, prompt: message }),
+    body: JSON.stringify({ message, prompt: message, history }),
     signal: AbortSignal.timeout(90000)
   });
   const data = await response.json().catch(() => ({}));
@@ -286,9 +286,20 @@ const server = http.createServer(async (req, res) => {
     if (body.message.length > 4000) {
       return send(res, 413, { error: "الرسالة طويلة جدًا؛ الحد الأقصى 4000 حرف." });
     }
+    const history = body.history === undefined ? [] : body.history;
+    if (!Array.isArray(history) || history.length > 8 || history.some(item =>
+      !item || !["user", "assistant"].includes(item.role) ||
+      typeof item.content !== "string" || !item.content.trim() || item.content.length > 2000
+    )) {
+      return send(res, 400, { error: "سجل المحادثة غير صالح أو يتجاوز الحد المسموح." });
+    }
+    const safeHistory = history.map(item => ({
+      role: item.role,
+      content: item.content.trim()
+    }));
 
     try {
-      const reply = await askModel(body.message.trim());
+      const reply = await askModel(body.message.trim(), safeHistory);
       return send(res, 200, { project: "Jon2 AI", reply });
     } catch (error) {
       const status = error.status || 502;
