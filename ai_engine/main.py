@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from chat_engine import generate_reply, model_is_ready, load_runtime
 
@@ -24,8 +24,16 @@ app.add_middleware(
 )
 
 
+class HistoryMessage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    role: str = Field(pattern="^(user|assistant)$")
+    content: str = Field(min_length=1, max_length=2000)
+
+
 class ChatRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     message: str = Field(min_length=1, max_length=2000)
+    history: list[HistoryMessage] = Field(default_factory=list, max_length=8)
 
 
 @app.get("/")
@@ -67,7 +75,7 @@ def chat(request: ChatRequest):
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
     try:
         load_runtime()
-        reply = generate_reply(message)
+        reply = generate_reply(message, [item.model_dump() for item in request.history])
         return {"project": "Jon2 AI", "reply": reply}
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
