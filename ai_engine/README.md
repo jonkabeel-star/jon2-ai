@@ -61,19 +61,20 @@ measured on held-out Arabic questions before the checkpoint is deployed.
 
 ## Evaluate a trained checkpoint
 
-After training, run the Arabic smoke evaluation:
+The held-out Arabic prompt set is `evaluation/prompts_ar.jsonl`. It is JSONL,
+not a `.txt` file, so the training corpus reader does not ingest it.
+
+After a real checkpoint has been trained, run:
 
 ```bash
-python ai_engine/evaluate_model.py --checkpoint ai_engine/checkpoints/jon2-small.pt --output ai_engine/evaluation/first-review.json
+python ai_engine/evaluate_model.py --checkpoint ai_engine/checkpoints/jon2-small.pt --prompts ai_engine/evaluation/prompts_ar.jsonl --output ai_engine/evaluation/review-report.json
 ```
 
-The script tests a fixed set of Arabic prompts covering explanation, arithmetic,
-story coherence, clarification, time-sensitive claims, and basic concepts. It
-prints the answers and can save a JSON review report. A human must judge each
-answer for correctness, relevance, Arabic fluency, repetition, and whether the
-model admits uncertainty. Passing this smoke test does not certify safety or
-production quality. Use `EVALUATION_RUBRIC.md` to score each answer and apply
-its release-blocking checks before considering deployment.
+The evaluator generates answers and creates a review template with six blank
+human-scoring dimensions for every prompt. It never assigns an automatic quality
+verdict or marks the model approved. Review every answer using
+`EVALUATION_RUBRIC.md`. No checkpoint currently exists, so this evaluation
+cannot yet be run against a trained model.
 
 ## API endpoints
 
