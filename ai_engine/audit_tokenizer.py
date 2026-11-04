@@ -31,7 +31,7 @@ def _sample_report(tokenizer: ByteBPETokenizer, label: str, text: str) -> dict:
     }
 
 
-def analyze_text(text: str, vocab_size: int = 1000, min_frequency: int = 2) -> dict:
+def analyze_text(text: str, vocab_size: int = 512, min_frequency: int = 2) -> dict:
     if not isinstance(text, str):
         raise TypeError("text must be a string")
     if not text.strip():
@@ -86,7 +86,7 @@ def analyze_directory(data_dir: Path, vocab_size: int = 1000, min_frequency: int
 def main() -> int:
     parser = argparse.ArgumentParser(description="Audit Jon2 BPE tokenization efficiency.")
     parser.add_argument("--data", default="ai_engine/training_data")
-    parser.add_argument("--vocab-size", type=int, default=1000)
+    parser.add_argument("--vocab-size", type=int, default=512)
     parser.add_argument("--min-frequency", type=int, default=2)
     parser.add_argument("--output", default="")
     args = parser.parse_args()
