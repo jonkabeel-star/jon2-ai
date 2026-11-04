@@ -97,7 +97,7 @@ cannot yet be run against a trained model.
 ## API endpoints
 
 - `GET /` — API identity and status
-- `GET /api/health` — checkpoint and model readiness
+- `GET /api/health` — reports API availability separately from `checkpoint_configured`, `model_loaded`, and the combined `chat_ready` flag
 - `POST /api/chat` — generate a response from the trained Jon2 checkpoint
 - `GET /docs` — interactive API documentation
 
