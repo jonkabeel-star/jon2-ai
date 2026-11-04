@@ -2,6 +2,21 @@
 
 Last verified: 2026-11-04
 
+## Latest safety and CI hardening (2026-11-04)
+
+The Python workflow #41752763097 completed successfully on commit `95610102`:
+- The CI environment now installs NumPy and CPU-only PyTorch wheels instead of downloading the default CUDA-enabled PyTorch dependency set.
+- All 5 repository-level source approval tests passed.
+- All 11 AI-engine tokenizer and data-audit tests passed.
+- All 25 AI-engine runtime, evaluation, source-approval, and legacy-training-gate tests passed.
+- The legacy `jon2_core.py` training entry point now enforces the same private source-approval manifest and minimum corpus-size gate as the modern trainer.
+- Source approval path validation now rejects Windows-style backslashes and non-normalized paths; regression tests cover both.
+- The current corpus audit still reports 15,025 characters across 2 files, with zero exact normalized duplicate lines. Rights still require human review.
+
+GitHub Pages build #41752763162 also completed its build stage successfully; deployment was still running at the time of this note.
+
+These changes improve CI efficiency and prevent alternate training paths from bypassing source review. They do not create a trained checkpoint or approve any dataset.
+
 ## Verified engineering tests
 
 The Kaggle Bridge run #11 completed successfully (GitHub Actions run ID: 41749003450).
