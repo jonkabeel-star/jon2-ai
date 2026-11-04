@@ -11,7 +11,9 @@ Create one completed copy of this record for every proposed source. Keep manifes
 - Collection or creation date:
 - Collected by:
 - File name and format:
-- Approximate character / token count:
+- Exact file SHA-256 fingerprint (lowercase hexadecimal, computed from raw file bytes):
+- Exact UTF-8 character count:
+- Approximate token count:
 - Language and dialect:
 - Content categories:
 
