@@ -86,7 +86,7 @@ jobs:
           for attempt in $(seq 1 90); do
             STATUS="$(kaggle kernels status jon2kabeel/hello-jon2 2>&1)"
             STATUS_CODE=$?
-            echo "Kaggle status check $attempt/24:"
+            echo "Kaggle status check $attempt/90:"
             echo "$STATUS"
             if [ $STATUS_CODE -eq 0 ] && echo "$STATUS" | grep -Eqi 'COMPLETE|COMPLETED'; then
               echo "::notice::Kaggle notebook execution completed."
@@ -102,3 +102,37 @@ jobs:
           done
           echo "::error::Kaggle execution did not reach COMPLETE within thirty minutes. Check the Kaggle notebook status and logs."
           exit 1
+
+      - name: Download and verify the trained checkpoint
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/jon2-kernel-output
+          kaggle kernels output jon2kabeel/hello-jon2 -p /tmp/jon2-kernel-output --file-pattern '.*jon2-small\.pt$'
+          CHECKPOINT="$(find /tmp/jon2-kernel-output -type f -name 'jon2-small.pt' -print -quit)"
+          if [ -z "$CHECKPOINT" ]; then
+            echo "::error::Kaggle output did not contain jon2-small.pt"
+            find /tmp/jon2-kernel-output -maxdepth 3 -type f -print
+            exit 1
+          fi
+          test "$(stat -c%s "$CHECKPOINT")" -gt 100000
+          mkdir -p /tmp/jon2-private-weights
+          cp "$CHECKPOINT" /tmp/jon2-private-weights/jon2-small.pt
+          sha256sum /tmp/jon2-private-weights/jon2-small.pt
+          echo "::notice::Checkpoint downloaded and size-verified. It will be stored only in a private Kaggle dataset."
+
+      - name: Store checkpoint in a private Kaggle dataset
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          cat > /tmp/jon2-private-weights/dataset-metadata.json <<'JSON'
+          {
+            "title": "Jon2 AI Private Model Checkpoint",
+            "id": "jon2kabeel/jon2-private-model-checkpoint",
+            "licenses": [{"name": "other"}]
+          }
+          JSON
+          kaggle datasets create -p /tmp/jon2-private-weights -q
+          echo "::notice::Private Kaggle checkpoint dataset created."
