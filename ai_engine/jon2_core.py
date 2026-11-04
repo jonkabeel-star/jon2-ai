@@ -259,13 +259,30 @@ def generate(
     ]
     generated_ids = list(ids)
     tokens = torch.tensor([generated_ids], dtype=torch.long, device=device)
+    # Byte-BPE can otherwise emit an invalid UTF-8 continuation byte.
+    # Keep only candidates that preserve a valid (possibly incomplete) UTF-8 prefix.
+    import codecs
+    generated_bytes = bytearray()
+    utf8_decoder = codecs.getincrementaldecoder("utf-8")("strict")
     for _ in range(max_new_chars):
         context = tokens[:, -model.context:]
         logits = model(context)[:, -1, :] / temperature
-        probabilities = torch.softmax(logits, dim=-1)
+        candidate_logits = logits.clone()
+        valid_candidates = []
+        for candidate in range(tokenizer.vocab_size):
+            try:
+                piece = tokenizer._token_bytes(candidate)
+                utf8_decoder.decode(bytes(generated_bytes) + piece, final=False)
+                valid_candidates.append(candidate)
+            except UnicodeDecodeError:
+                candidate_logits[0, candidate] = float("-inf")
+        if not valid_candidates:
+            break
+        probabilities = torch.softmax(candidate_logits, dim=-1)
         next_id = torch.multinomial(probabilities, num_samples=1)
         token_id = int(next_id.item())
         generated_ids.append(token_id)
+        generated_bytes.extend(tokenizer._token_bytes(token_id))
         tokens = torch.cat((tokens, next_id), dim=1)
 
         matched = next(
