@@ -43,7 +43,7 @@ class Jon2ApiTests(unittest.TestCase):
 
     def test_chat_returns_503_when_checkpoint_is_missing(self):
         with patch.object(
-            jon2_api, "load_runtime",
+            jon2_api, "generate_reply",
             side_effect=FileNotFoundError("missing trained checkpoint"),
         ):
             response = self.client.post("/api/chat", json={"message": "مرحبا"})
@@ -51,22 +51,20 @@ class Jon2ApiTests(unittest.TestCase):
         self.assertIn("missing trained checkpoint", response.json()["detail"])
 
     def test_chat_returns_generated_reply(self):
-        with patch.object(jon2_api, "load_runtime"), \
-             patch.object(jon2_api, "generate_reply", return_value="أهلًا بك"):
+        with patch.object(jon2_api, "generate_reply", return_value="أهلًا بك"):
             response = self.client.post("/api/chat", json={"message": "مرحبا"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["reply"], "أهلًا بك")
 
     def test_chat_rejects_whitespace_only_message(self):
-        with patch.object(jon2_api, "load_runtime") as loader:
+        with patch.object(jon2_api, "generate_reply") as generate:
             response = self.client.post("/api/chat", json={"message": "   "})
         self.assertEqual(response.status_code, 400)
-        loader.assert_not_called()
+        generate.assert_not_called()
 
 
     def test_chat_passes_recent_history_to_runtime(self):
-        with patch.object(jon2_api, "load_runtime"), \
-             patch.object(jon2_api, "generate_reply", return_value="اسمك سامح") as generate:
+        with patch.object(jon2_api, "generate_reply", return_value="اسمك سامح") as generate:
             response = self.client.post("/api/chat", json={
                 "message": "ما اسمي؟",
                 "history": [
