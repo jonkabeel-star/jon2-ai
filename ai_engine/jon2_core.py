@@ -245,6 +245,7 @@ def generate(
     model, tokenizer, prompt: str, device,
     max_new_chars: int = 400, temperature: float = 0.8,
     stop_sequences: list[str] | None = None,
+    min_new_tokens: int = 24,
 ):
     if not prompt.strip():
         raise ValueError("اكتب رسالتك أولًا.")
@@ -296,7 +297,8 @@ def generate(
             ),
             None,
         )
-        if matched is not None:
+        generated_count = len(generated_ids) - prompt_token_count
+        if matched is not None and generated_count >= max(0, min_new_tokens):
             del generated_ids[-len(matched):]
             break
     # If the generation budget ends halfway through a multibyte character,
