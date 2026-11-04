@@ -244,6 +244,7 @@ def load_model(checkpoint_path: str, device: str | None = None):
 def generate(
     model, tokenizer, prompt: str, device,
     max_new_chars: int = 400, temperature: float = 0.8,
+    stop_sequences: list[str] | None = None,
 ):
     if not prompt.strip():
         raise ValueError("اكتب رسالتك أولًا.")
@@ -252,14 +253,33 @@ def generate(
     ids = tokenizer.encode(prompt)
     if not ids:
         ids = [tokenizer.unk_id]
-    tokens = torch.tensor([ids], dtype=torch.long, device=device)
+    stop_ids = [
+        sequence_ids for sequence in (stop_sequences or [])
+        if (sequence_ids := tokenizer.encode(sequence))
+    ]
+    generated_ids = list(ids)
+    tokens = torch.tensor([generated_ids], dtype=torch.long, device=device)
     for _ in range(max_new_chars):
         context = tokens[:, -model.context:]
         logits = model(context)[:, -1, :] / temperature
         probabilities = torch.softmax(logits, dim=-1)
         next_id = torch.multinomial(probabilities, num_samples=1)
+        token_id = int(next_id.item())
+        generated_ids.append(token_id)
         tokens = torch.cat((tokens, next_id), dim=1)
-    return tokenizer.decode(tokens[0].tolist())
+
+        matched = next(
+            (
+                sequence for sequence in stop_ids
+                if len(sequence) <= len(generated_ids)
+                and generated_ids[-len(sequence):] == sequence
+            ),
+            None,
+        )
+        if matched is not None:
+            del generated_ids[-len(matched):]
+            break
+    return tokenizer.decode(generated_ids)
 
 
 def main():
