@@ -146,7 +146,11 @@ def train(args: argparse.Namespace) -> None:
             f"at least {args.minimum_chars:,}. Add reviewed, project-owned or "
             "properly licensed data. Do not duplicate text to pass this check."
         )
-    tokenizer = CharacterTokenizer.from_text(corpus)
+    tokenizer = ByteBPETokenizer.train(
+        corpus,
+        vocab_size=args.tokenizer_vocab_size,
+        min_frequency=args.tokenizer_min_frequency,
+    )
     encoded = torch.tensor(tokenizer.encode(corpus), dtype=torch.long)
     if len(encoded) <= args.context * 2 + 2:
         raise ValueError("Training text must be longer than twice the context window.")
@@ -208,7 +212,7 @@ def train(args: argparse.Namespace) -> None:
     torch.save(
         {
             "model_state": model.cpu().state_dict(),
-            "vocabulary": tokenizer.vocabulary,
+            "tokenizer": tokenizer.to_dict(),
             "config": config,
             "training_steps": args.steps,
             "corpus_characters": len(encoded),
