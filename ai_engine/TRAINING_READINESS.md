@@ -27,9 +27,14 @@ The follow-up run #41750323363 completed successfully:
 - Python source compilation passed.
 - All 10 approval-gate unit tests passed, including the symlink-outside-directory rejection test.
 
-A separate pre-existing Python test workflow exposed a tokenizer serialization defect: the saved JSON had a literal backslash-n suffix, causing JSON decoding to fail. This was corrected in commit 5304dcca0204ceff7e2541ddbf431c52caf3a955. The full Python workflow is still running; its tokenizer save/load regression test is not yet marked verified.
+The tokenizer serialization defect was corrected in commit 5304dcca0204ceff7e2541ddbf431c52caf3a955. The subsequent full Python/code-check workflow on commit ae6b0bf0ea74ebd1f7ef01207cf8f94d7dcc9848 completed successfully:
+- Python compilation passed.
+- All 11 existing Python unit tests passed (including the tokenizer and audit test suites).
+- JavaScript syntax and package-manifest checks passed.
+- The separate approval-gate workflow passed all 10 tests.
+- The dedicated Python workflow installed CPU PyTorch, compiled modules, passed all 5 approval-gate tests, and audited the current corpus.
 
-The approval-gate CI does not run model training, verify the real-world truth of rights claims, or prove model quality.
+These checks do not run model training, verify the real-world truth of rights claims, or prove model quality.
 
 ## Current compute observation
 
