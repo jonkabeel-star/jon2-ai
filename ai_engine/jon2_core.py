@@ -333,8 +333,9 @@ def generate(
             ),
             None,
         )
-        generated_count = len(generated_ids) - prompt_token_count
-        if matched is not None and generated_count >= max(0, min_new_tokens):
+        # Dialogue boundary markers must always stop generation immediately;
+        # min_new_tokens must never force the model into the next user's turn.
+        if matched is not None:
             del generated_ids[-len(matched):]
             break
     # If the generation budget ends halfway through a multibyte character,
