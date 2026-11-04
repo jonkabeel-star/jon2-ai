@@ -66,6 +66,7 @@ class ChatEngineRuntimeTests(unittest.TestCase):
             answer = chat_engine.generate_reply("مرحبًا")
         self.assertEqual(answer, "أهلًا بك")
         self.assertEqual(generator.call_args.args[2], prompt)
+        self.assertEqual(generator.call_args.kwargs["stop_sequences"], ["المستخدم:"])
 
 
 if __name__ == "__main__":
