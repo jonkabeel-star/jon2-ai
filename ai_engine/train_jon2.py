@@ -164,7 +164,7 @@ def train(args):
         for _ in range(start_step):
             scheduler.step()
 
-    scaler = torch.cuda.amp.GradScaler(enabled=amp_enabled)
+    scaler = torch.amp.GradScaler("cuda", enabled=amp_enabled)
     if saved and "scaler_state" in saved:
         scaler.load_state_dict(saved["scaler_state"])
 
@@ -193,7 +193,7 @@ def train(args):
         x, y = _batch(train_data, args.context, args.batch_size, device)
         optimizer.zero_grad(set_to_none=True)
 
-        with torch.cuda.amp.autocast(enabled=amp_enabled):
+        with torch.amp.autocast(device_type="cuda", enabled=amp_enabled):
             logits = model(x)
             loss = nn.functional.cross_entropy(
                 logits.reshape(-1, logits.size(-1)), y.reshape(-1)
