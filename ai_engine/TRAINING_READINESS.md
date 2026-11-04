@@ -8,7 +8,8 @@ The latest Python workflow #41753731801 completed successfully on commit `c991a4
 - CI installs CPU-only PyTorch wheels and the project requirements now declare `torch>=2.3`, matching the modern AMP API used by the trainer.
 - All 5 repository-level source-approval tests passed.
 - All 11 AI-engine tokenizer and data-audit tests passed.
-- All 28 AI-engine runtime, evaluation, source-approval, legacy-training-gate, and training-resume tests passed.
+- All 30 AI-engine runtime, evaluation, source-approval, legacy-training-gate, training-resume, and generation-stop tests passed.
+- Dialogue generation now stops before the next `المستخدم:` marker; regression tests verify that it does not continue into the next training example.
 - Training checkpoints now preserve model, optimizer, scheduler, AMP scaler, Python RNG, PyTorch RNG, CUDA RNG when present, training-plan metadata, and a SHA-256 fingerprint of the exact corpus.
 - Resume validation rejects changed corpus text, tokenizer/model settings, or training-plan settings instead of silently continuing a different run.
 - Resume restores the scheduler's active learning rate into the optimizer, avoiding a warmup-rate reset after restart.
