@@ -31,6 +31,13 @@ def _training_plan(args):
     return {name: getattr(args, name) for name in names}
 
 
+def restore_scheduler_state(scheduler, optimizer, state):
+    """Restore scheduler internals and the optimizer's active learning rate."""
+    scheduler.load_state_dict(state)
+    for group, learning_rate in zip(optimizer.param_groups, scheduler.get_last_lr()):
+        group["lr"] = learning_rate
+
+
 def save_checkpoint(
     path: Path, model, tokenizer, args, step, best_val, config,
     optimizer=None, scheduler=None, scaler=None, corpus_sha256=None,
@@ -151,7 +158,7 @@ def train(args):
 
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_at)
     if saved and "scheduler_state" in saved:
-        scheduler.load_state_dict(saved["scheduler_state"])
+        restore_scheduler_state(scheduler, optimizer, saved["scheduler_state"])
     elif start_step:
         print("Legacy checkpoint: scheduler state unavailable; using step-based fallback.")
         for _ in range(start_step):
