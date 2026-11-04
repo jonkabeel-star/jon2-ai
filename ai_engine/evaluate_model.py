@@ -97,7 +97,7 @@ def main() -> int:
     model, tokenizer, device = load_model(str(checkpoint), device=args.device)
     results = []
     for item in prompts:
-        prompt_text = f"المستخدم: {item['prompt']}\\nJon2:"
+        prompt_text = f"المستخدم: {item['prompt']}\nJon2:"
         full = generate(
             model,
             tokenizer,
@@ -119,7 +119,7 @@ def main() -> int:
                 "notes": "",
             },
         })
-        print("\\n" + "=" * 72)
+        print("\n" + "=" * 72)
         print(item["id"] + ": " + item["prompt"])
         print(answer or "[لم ينتج النموذج إجابة]")
 
@@ -146,11 +146,11 @@ def main() -> int:
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = output.with_suffix(output.suffix + ".tmp")
     temporary.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2) + "\\n",
+        json.dumps(report, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     temporary.replace(output)
-    print(f"\\nGenerated {len(results)} answers for human review.")
+    print(f"\nGenerated {len(results)} answers for human review.")
     print(f"Review report: {output}")
     print("No automatic quality score or release approval was assigned.")
     return 0
