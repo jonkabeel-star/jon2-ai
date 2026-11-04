@@ -1,0 +1,127 @@
+name: Jon2 Saved Checkpoint Evaluation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/jon2-checkpoint-evaluation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate-checkpoint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out Jon2 AI
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download the private saved checkpoint from Kaggle
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${KAGGLE_API_TOKEN:-}" ]; then
+            echo "::error::KAGGLE_API_TOKEN is not configured."
+            exit 1
+          fi
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade "kaggle>=1.8.0"
+          mkdir -p /tmp/jon2-checkpoint
+          kaggle datasets download -d jon2kabeel/jon2-private-model-checkpoint -p /tmp/jon2-checkpoint --unzip
+          CHECKPOINT="$(find /tmp/jon2-checkpoint -type f -name 'jon2-small.pt' -print -quit)"
+          if [ -z "$CHECKPOINT" ]; then
+            echo "::error::The private Kaggle dataset does not contain jon2-small.pt."
+            find /tmp/jon2-checkpoint -maxdepth 3 -type f -print
+            exit 1
+          fi
+          echo "JON2_CHECKPOINT_FILE=$CHECKPOINT" >> "$GITHUB_ENV"
+          sha256sum "$CHECKPOINT"
+          ls -lh "$CHECKPOINT"
+
+      - name: Install CPU PyTorch
+        run: |
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Run Arabic inference checks
+        env:
+          JON2_CHECKPOINT_FILE: ${{ env.JON2_CHECKPOINT_FILE }}
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE/ai_engine" python - <<'PY' | tee jon2-evaluation.txt
+          import os
+          import re
+          import sys
+          from pathlib import Path
+          import torch
+          from jon2_core import load_model, generate
+
+          checkpoint_path = Path(os.environ["JON2_CHECKPOINT_FILE"])
+          checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+          print("JON2 CHECKPOINT EVALUATION")
+          print("checkpoint_bytes:", checkpoint_path.stat().st_size)
+          print("training_steps:", checkpoint.get("training_steps", "unknown"))
+          print("corpus_characters:", checkpoint.get("corpus_characters", "unknown"))
+          print("model_name:", checkpoint.get("model_name", "unknown"))
+          print("torch:", torch.__version__)
+          model, tokenizer, device = load_model(str(checkpoint_path), device="cpu")
+
+          prompts = [
+              "المستخدم: مرحباً، من أنت؟\nJon2:",
+              "المستخدم: اشرح لي ما هو الذكاء الاصطناعي بكلمات بسيطة.\nJon2:",
+              "المستخدم: لماذا تتغير الفصول الأربعة؟\nJon2:",
+              "المستخدم: اكتب ثلاث نصائح لتنظيم الوقت.\nJon2:",
+              "المستخدم: ما الفرق بين الإنترنت والويب؟\nJon2:",
+              "المستخدم: اكتب قصة قصيرة عن أرنب يساعد أصدقاءه.\nJon2:",
+          ]
+
+          results = []
+          for index, prompt in enumerate(prompts, 1):
+              answer = generate(
+                  model, tokenizer, prompt, device,
+                  max_new_chars=220,
+                  temperature=0.8,
+                  stop_sequences=["المستخدم:"],
+                  do_sample=False,
+                  repetition_penalty=1.12,
+                  no_repeat_ngram_size=3,
+                  top_k=40,
+              ).removeprefix(prompt).strip()
+              arabic_chars = len(re.findall(r"[\u0600-\u06FF]", answer))
+              words = re.findall(r"\S+", answer)
+              unique_ratio = len(set(words)) / max(1, len(words))
+              replacement_chars = answer.count("\uFFFD")
+              print(f"\n--- TEST {index} ---")
+              print("QUESTION:", prompt.splitlines()[0].replace("المستخدم: ", ""))
+              print("ANSWER:", answer if answer else "[EMPTY]")
+              print("CHARS:", len(answer), "ARABIC_CHARS:", arabic_chars,
+                    "UNIQUE_WORD_RATIO:", round(unique_ratio, 3),
+                    "REPLACEMENT_CHARS:", replacement_chars)
+              results.append({
+                  "nonempty": bool(answer),
+                  "replacement_free": replacement_chars == 0,
+                  "length": len(answer),
+              })
+
+          passed = sum(x["nonempty"] and x["replacement_free"] for x in results)
+          print("\nTECHNICAL_CHECKS:", passed, "/", len(results))
+          print("QUALITY_STATUS: HUMAN_REVIEW_REQUIRED")
+          if passed != len(results):
+              raise SystemExit("One or more inference checks returned empty or invalid UTF-8 output.")
+          PY
+
+      - name: Upload evaluation transcript
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jon2-arabic-checkpoint-evaluation
+          path: jon2-evaluation.txt
+          if-no-files-found: ignore
+          retention-days: 7
