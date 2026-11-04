@@ -1,0 +1,33 @@
+name: Jon2 AI Code Checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ai_engine/**"
+      - ".github/workflows/jon2-code-checks.yml"
+  pull_request:
+    paths:
+      - "ai_engine/**"
+      - ".github/workflows/jon2-code-checks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  approval-gate-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile Python source
+        run: python -m compileall -q ai_engine
+      - name: Test source approval gate
+        working-directory: ai_engine
+        run: python -m unittest discover -s tests -v
