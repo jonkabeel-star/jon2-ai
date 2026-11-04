@@ -263,7 +263,6 @@ def generate(
     # Keep only candidates that preserve a valid (possibly incomplete) UTF-8 prefix.
     import codecs
     generated_bytes = bytearray()
-    utf8_decoder = codecs.getincrementaldecoder("utf-8")("strict")
     for _ in range(max_new_chars):
         context = tokens[:, -model.context:]
         logits = model(context)[:, -1, :] / temperature
@@ -272,7 +271,8 @@ def generate(
         for candidate in range(tokenizer.vocab_size):
             try:
                 piece = tokenizer._token_bytes(candidate)
-                utf8_decoder.decode(bytes(generated_bytes) + piece, final=False)
+                decoder = codecs.getincrementaldecoder("utf-8")("strict")
+                decoder.decode(bytes(generated_bytes) + piece, final=False)
                 valid_candidates.append(candidate)
             except UnicodeDecodeError:
                 candidate_logits[0, candidate] = float("-inf")
