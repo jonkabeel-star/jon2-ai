@@ -13,6 +13,12 @@ class CorpusQualityAuditTests(unittest.TestCase):
         report = analyze_text("مرحبا بالعالم. Hello world!\nهذا سطر عربي آخر.")
         self.assertGreater(report["language_mix"]["arabic_letters"], 0)
         self.assertGreater(report["language_mix"]["latin_letters"], 0)
+        self.assertLessEqual(report["language_mix"]["arabic_percentage_of_letters"], 100.0)
+        self.assertLessEqual(report["language_mix"]["latin_percentage_of_letters"], 100.0)
+        self.assertLessEqual(
+            report["language_mix"]["arabic_letters"] + report["language_mix"]["latin_letters"],
+            report["language_mix"]["letters_total"],
+        )
         self.assertEqual(report["line_length_characters"]["count"], 2)
         self.assertGreaterEqual(report["sentence_length_characters"]["count"], 2)
 
