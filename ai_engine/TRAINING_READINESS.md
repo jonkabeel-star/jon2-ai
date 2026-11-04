@@ -4,12 +4,13 @@ Last verified: 2026-11-04
 
 ## Latest safety, training-resume, and CI hardening (2026-11-04)
 
-The latest Python workflow #41754167627 completed successfully on commit `14faa182`:
+The latest Python workflow #41754559753 completed successfully on commit `11b3e360`:
 - CI installs CPU-only PyTorch wheels and the project requirements declare `torch>=2.3`, matching the modern AMP API used by the trainer.
 - All 5 repository-level source-approval tests passed.
 - All 11 AI-engine tokenizer and data-audit tests passed.
-- All 30 AI-engine runtime, evaluation, source-approval, legacy-training-gate, training-resume, and generation-stop tests passed.
+- All 33 AI-engine runtime, evaluation, source-approval, legacy-training-gate, training-resume, and generation-stop tests passed.
 - The full workflow completed compilation, all three test suites, and the current training-text audit with no failures.
+- The separate approval-gate workflow #41754559582 and combined Python/Node code checks #41754559636 also completed successfully.
 - Dialogue generation now stops before the next `المستخدم:` marker; regression tests verify that it does not continue into the next training example.
 - Training checkpoints now preserve model, optimizer, scheduler, AMP scaler, Python RNG, PyTorch RNG, CUDA RNG when present, training-plan metadata, and a SHA-256 fingerprint of the exact corpus.
 - Resume validation rejects changed corpus text, tokenizer/model settings, or training-plan settings instead of silently continuing a different run.
@@ -17,6 +18,7 @@ The latest Python workflow #41754167627 completed successfully on commit `14faa1
 - Checkpoint writes are atomic and no longer move the model between devices just to save a checkpoint.
 - The legacy `jon2_core.py` training entry point enforces the same private source-approval manifest and minimum corpus-size gate as the modern trainer.
 - Source-approval path validation rejects Windows-style backslashes and non-normalized paths; regression tests cover both.
+- Every training approval is now bound to the exact raw file bytes by a lowercase SHA-256 fingerprint and exact UTF-8 character count; the gate blocks changed files, missing fingerprints, and mismatched counts. Regression tests cover stale files and altered counts.
 - The current corpus audit still reports 15,025 characters across 2 files, with zero exact normalized duplicate lines. Rights still require human review.
 
 The CI workflow completed all steps, including compilation, all test suites, and the corpus audit. This proves the engineering safeguards work; it does not create a trained checkpoint or approve any dataset.
