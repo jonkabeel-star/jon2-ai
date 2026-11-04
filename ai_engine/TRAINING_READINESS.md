@@ -23,9 +23,13 @@ GitHub Actions code-check run #1 completed successfully (run ID: 41750071591):
 - All 9 source-approval unit tests passed.
 - The approval gate accepted a complete exact-match test manifest and rejected missing, incomplete, duplicate, unapproved, and unsafe-path cases.
 
-A further test was added after that run to reject symlinks pointing outside the training-data directory. Its new workflow run must complete before this additional test is considered verified.
+The follow-up run #41750323363 completed successfully:
+- Python source compilation passed.
+- All 10 approval-gate unit tests passed, including the symlink-outside-directory rejection test.
 
-This CI checks Python syntax and the approval-gate policy only. It does not run model training, verify the real-world truth of rights claims, or prove model quality.
+A separate pre-existing Python test workflow exposed a tokenizer serialization defect: the saved JSON had a literal backslash-n suffix, causing JSON decoding to fail. This was corrected in commit 5304dcca0204ceff7e2541ddbf431c52caf3a955. The full Python workflow is still running; its tokenizer save/load regression test is not yet marked verified.
+
+The approval-gate CI does not run model training, verify the real-world truth of rights claims, or prove model quality.
 
 ## Current compute observation
 
