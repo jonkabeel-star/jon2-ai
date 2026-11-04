@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "ai_engine/**"
+      - "index.html"
+      - "tests/check_frontend_js.py"
       - ".github/workflows/jon2-code-checks.yml"
   pull_request:
     paths:
@@ -31,3 +33,9 @@ jobs:
       - name: Test source approval gate
         working-directory: ai_engine
         run: python -m unittest discover -s tests -p 'test_source_approval.py' -v
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check static website JavaScript syntax
+        run: python tests/check_frontend_js.py index.html
