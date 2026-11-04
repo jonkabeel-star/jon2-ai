@@ -261,6 +261,7 @@ document.getElementById("form").addEventListener("submit", async event => {
   try {
     const history = chatMessages
       .filter(item => item.kind === "user" || item.kind === "assistant")
+      .slice(0, -1)
       .slice(-8)
       .map(item => ({
         role: item.kind === "user" ? "user" : "assistant",
