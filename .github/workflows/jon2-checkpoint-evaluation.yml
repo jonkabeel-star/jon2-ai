@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/jon2-checkpoint-evaluation.yml"
+      - "ai_engine/jon2_core.py"
+      - "ai_engine/tokenizer.py"
+      - "ai_engine/chat_engine.py"
   workflow_dispatch:
 
 permissions:
@@ -71,7 +74,21 @@ jobs:
           print("corpus_characters:", checkpoint.get("corpus_characters", "unknown"))
           print("model_name:", checkpoint.get("model_name", "unknown"))
           print("torch:", torch.__version__)
+          required = {"model_state", "tokenizer", "config"}
+          missing = sorted(required.difference(checkpoint))
+          if missing:
+              raise SystemExit(f"Checkpoint is missing required fields: {missing}")
+          print("config:", checkpoint["config"])
           model, tokenizer, device = load_model(str(checkpoint_path), device="cpu")
+          parameter_count = sum(parameter.numel() for parameter in model.parameters())
+          non_finite = sum(
+              int(not torch.isfinite(parameter).all().item())
+              for parameter in model.parameters()
+          )
+          print("parameter_count:", parameter_count)
+          print("non_finite_parameter_tensors:", non_finite)
+          if non_finite:
+              raise SystemExit("Checkpoint contains NaN or infinite model parameters.")
 
           prompts = [
               "المستخدم: مرحباً، من أنت؟\nJon2:",
@@ -92,7 +109,7 @@ jobs:
                   do_sample=False,
                   repetition_penalty=1.12,
                   no_repeat_ngram_size=3,
-                  top_k=40,
+                  top_k=0,
               ).removeprefix(prompt).strip()
               arabic_chars = len(re.findall(r"[\u0600-\u06FF]", answer))
               words = re.findall(r"\S+", answer)
@@ -107,10 +124,14 @@ jobs:
               results.append({
                   "nonempty": bool(answer),
                   "replacement_free": replacement_chars == 0,
+                  "has_arabic": arabic_chars > 0,
                   "length": len(answer),
               })
 
-          passed = sum(x["nonempty"] and x["replacement_free"] for x in results)
+          passed = sum(
+              x["nonempty"] and x["replacement_free"] and x["has_arabic"]
+              for x in results
+          )
           print("\nTECHNICAL_CHECKS:", passed, "/", len(results))
           print("QUALITY_STATUS: HUMAN_REVIEW_REQUIRED")
           if passed != len(results):
