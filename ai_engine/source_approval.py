@@ -1,23 +1,25 @@
-"""Fail-closed, source-by-source approval gate for Jon2 training data.
-
-This module uses only the Python standard library so its policy checks can be
-tested without installing PyTorch or starting a training run.
-"""
+"""Fail-closed, dependency-free approval gate for Jon2 training data."""
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 
 def validate_source_approvals(data_dir: Path, manifest_path: Path) -> None:
-    """Require an explicit human approval record for every .txt source file."""
+    """Require one explicit human approval for every training .txt source."""
     data_dir = Path(data_dir)
-    manifest_path = Path(manifest_path)
-    files = {
-        path.relative_to(data_dir).as_posix()
-        for path in data_dir.rglob("*.txt")
-        if path.is_file()
-    }
+    root = data_dir.resolve()
+    if not root.is_dir():
+        raise FileNotFoundError(f"Training data directory not found: {data_dir}")
+
+    files = set()
+    for path in data_dir.rglob("*.txt"):
+        if not path.is_file():
+            continue
+        if not path.resolve().is_relative_to(root):
+            raise PermissionError(f"Training text resolves outside data directory: {path}")
+        files.add(path.relative_to(data_dir).as_posix())
+
     if not files:
         raise FileNotFoundError(f"No training .txt files found in {data_dir}.")
     if not manifest_path.is_file():
@@ -34,14 +36,16 @@ def validate_source_approvals(data_dir: Path, manifest_path: Path) -> None:
     if not isinstance(records, list):
         raise ValueError("Manifest must contain an 'approved_sources' list.")
 
-    approvals: dict[str, dict] = {}
+    approvals = {}
     for record in records:
         if not isinstance(record, dict) or not isinstance(record.get("file"), str):
             raise ValueError("Every approval record must contain a relative 'file' path.")
         name = record["file"]
-        candidate = Path(name)
-        if candidate.is_absolute() or ".." in candidate.parts:
-            raise ValueError(f"Unsafe source path in approval manifest: {name}")
+        relative = PurePosixPath(name)
+        if (not name or relative.is_absolute()
+                or any(part in ("", ".", "..") for part in relative.parts)
+                or "\\\\" in name):
+            raise ValueError(f"Unsafe or non-normalized source path: {name!r}")
         if name in approvals:
             raise ValueError(f"Duplicate approval record for {name}.")
         approvals[name] = record
