@@ -51,11 +51,11 @@ jobs:
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
 
       - name: Run Arabic inference checks
-        env:
-          JON2_CHECKPOINT_FILE: ${{ env.JON2_CHECKPOINT_FILE }}
         run: |
           set -euo pipefail
-          PYTHONPATH="$GITHUB_WORKSPACE/ai_engine" python - <<'PY' | tee jon2-evaluation.txt
+          CHECKPOINT="$(find /tmp/jon2-checkpoint -type f -name 'jon2-small.pt' -print -quit)"
+          test -n "$CHECKPOINT"
+          JON2_CHECKPOINT_FILE="$CHECKPOINT" PYTHONPATH="$GITHUB_WORKSPACE/ai_engine" python - <<'PY' | tee jon2-evaluation.txt
           import os
           import re
           import sys
