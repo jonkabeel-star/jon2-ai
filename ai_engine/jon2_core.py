@@ -251,11 +251,16 @@ def generate(
     stop_sequences: list[str] | None = None,
     min_new_tokens: int = 24,
     do_sample: bool = True,
+    repetition_penalty: float = 1.12,
+    no_repeat_ngram_size: int = 3,
+    top_k: int = 40,
 ):
     if not prompt.strip():
         raise ValueError("اكتب رسالتك أولًا.")
     if temperature <= 0:
         raise ValueError("temperature must be greater than zero")
+    if repetition_penalty < 1.0 or no_repeat_ngram_size < 0 or top_k < 0:
+        raise ValueError("Invalid repetition or top-k generation setting")
     ids = tokenizer.encode(prompt)
     if not ids:
         ids = [tokenizer.unk_id]
@@ -276,6 +281,29 @@ def generate(
         context = tokens[:, -model.context:]
         logits = model(context)[:, -1, :] / temperature
         candidate_logits = logits.clone()
+        # Discourage token loops without changing the prompt's influence.
+        if repetition_penalty > 1.0:
+            for token_id in set(generated_ids[prompt_token_count:]):
+                value = candidate_logits[0, token_id]
+                candidate_logits[0, token_id] = (
+                    value / repetition_penalty if value >= 0
+                    else value * repetition_penalty
+                )
+        # Block a token that would repeat an n-gram already generated.
+        if no_repeat_ngram_size > 0 and len(generated_ids) >= no_repeat_ngram_size - 1:
+            prefix = generated_ids[-(no_repeat_ngram_size - 1):] if no_repeat_ngram_size > 1 else []
+            banned = set()
+            for index in range(len(generated_ids) - no_repeat_ngram_size + 1):
+                prior = generated_ids[index:index + no_repeat_ngram_size - 1]
+                if prior == prefix:
+                    banned.add(generated_ids[index + no_repeat_ngram_size - 1])
+            if banned:
+                candidate_logits[0, list(banned)] = float("-inf")
+        # Limit sampling to the strongest remaining candidates.
+        if do_sample and top_k > 0:
+            k = min(top_k, candidate_logits.size(-1))
+            threshold = torch.topk(candidate_logits, k, dim=-1).values[:, -1, None]
+            candidate_logits = candidate_logits.masked_fill(candidate_logits < threshold, float("-inf"))
         valid_candidates = []
         for candidate in range(tokenizer.vocab_size):
             try:
