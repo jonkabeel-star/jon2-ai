@@ -58,6 +58,35 @@ class EvaluationPromptTests(unittest.TestCase):
         self.assertEqual(len(prompts), 12)
         self.assertEqual(len({item["id"] for item in prompts}), 12)
 
+
+    def test_evaluator_uses_dialogue_stop_marker(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from unittest.mock import patch, Mock
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            checkpoint = root / "trained.pt"
+            checkpoint.write_bytes(b"checkpoint placeholder")
+            prompts = root / "prompts.jsonl"
+            prompts.write_text(
+                json.dumps({"id": "one", "prompt": "سؤال"}) + "\\n",
+                encoding="utf-8",
+            )
+            output = root / "report.json"
+            with patch("evaluate_model.load_model", return_value=(object(), object(), "cpu")), \\
+                 patch("evaluate_model.generate", return_value="المستخدم: سؤال\\nJon2:إجابة") as generator, \\
+                 patch("sys.argv", [
+                     "evaluate_model.py", "--checkpoint", str(checkpoint),
+                     "--prompts", str(prompts), "--output", str(output),
+                 ]):
+                with redirect_stdout(StringIO()):
+                    self.assertEqual(main(), 0)
+            self.assertEqual(generator.call_args.kwargs["stop_sequences"], ["المستخدم:"])
+            report = json.loads(output.read_text(encoding="utf-8"))
+            self.assertFalse(report["release_approved"])
+            self.assertIsNone(report["automated_quality_verdict"])
+
     def test_cli_refuses_missing_checkpoint(self):
         from contextlib import redirect_stdout
         from io import StringIO
