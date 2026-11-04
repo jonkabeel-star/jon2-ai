@@ -43,5 +43,8 @@ jobs:
       - name: Test Jon2 AI engine runtime and tokenizer
         run: python -m unittest discover -s ai_engine -p 'test_*.py' -v
 
+      - name: Test checkpoint loading and chat runtime
+        run: python -m unittest discover -s ai_engine/tests -p 'test_chat_engine_runtime.py' -v
+
       - name: Audit current training text
         run: python ai_engine/audit_data.py
