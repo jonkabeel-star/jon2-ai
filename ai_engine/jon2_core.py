@@ -258,6 +258,7 @@ def generate(
         if (sequence_ids := tokenizer.encode(sequence))
     ]
     generated_ids = list(ids)
+    prompt_token_count = len(generated_ids)
     tokens = torch.tensor([generated_ids], dtype=torch.long, device=device)
     # Byte-BPE can otherwise emit an invalid UTF-8 continuation byte.
     # Keep only candidates that preserve a valid (possibly incomplete) UTF-8 prefix.
@@ -296,6 +297,18 @@ def generate(
         if matched is not None:
             del generated_ids[-len(matched):]
             break
+    # If the generation budget ends halfway through a multibyte character,
+    # discard the incomplete trailing token(s) rather than decoding with U+FFFD.
+    while len(generated_ids) > prompt_token_count:
+        try:
+            generated_tail = b"".join(
+                tokenizer._token_bytes(token_id)
+                for token_id in generated_ids[prompt_token_count:]
+            )
+            generated_tail.decode("utf-8", errors="strict")
+            break
+        except UnicodeDecodeError:
+            generated_ids.pop()
     return tokenizer.decode(generated_ids)
 
 
