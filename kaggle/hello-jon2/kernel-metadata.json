@@ -8,7 +8,7 @@
   "enable_gpu": true,
   "enable_internet": true,
   "dataset_sources": [
-    "jon2kabeel/jon2-approved-training-data"
+    "jon2kabeel/jon2-approved-training-data-v2"
   ],
   "competition_sources": [],
   "kernel_sources": []
