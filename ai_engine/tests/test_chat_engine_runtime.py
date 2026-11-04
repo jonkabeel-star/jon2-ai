@@ -56,6 +56,30 @@ class ChatEngineRuntimeTests(unittest.TestCase):
                 chat_engine.generate_reply("   ")
         loader.assert_not_called()
 
+    def test_conversation_prompt_includes_recent_context_and_current_turn(self):
+        prompt = chat_engine.build_conversation_prompt(
+            "ما اسمي؟",
+            [
+                {"role": "user", "content": "اسمي سامح"},
+                {"role": "assistant", "content": "أهلًا سامح"},
+            ],
+        )
+        self.assertEqual(
+            prompt,
+            "المستخدم: اسمي سامح\\nJon2: أهلًا سامح\\nالمستخدم: ما اسمي؟\\nJon2:",
+        )
+
+    def test_conversation_prompt_uses_only_last_eight_turns(self):
+        history = [
+            {"role": "user", "content": f"رسالة {index}"}
+            for index in range(10)
+        ]
+        prompt = chat_engine.build_conversation_prompt("الحالية", history)
+        self.assertNotIn("رسالة 0", prompt)
+        self.assertNotIn("رسالة 1", prompt)
+        self.assertIn("رسالة 9", prompt)
+        self.assertTrue(prompt.endswith("المستخدم: الحالية\\nJon2:"))
+
     def test_reply_contains_only_generated_completion(self):
         prompt = "المستخدم: مرحبًا\nJon2:"
         chat_engine._model = object()
