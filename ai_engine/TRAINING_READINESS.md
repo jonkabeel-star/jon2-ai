@@ -16,6 +16,17 @@ Verified from the Kaggle execution logs:
 
 These are software and architecture tests only. They do not demonstrate useful language ability, factual knowledge, or assistant quality.
 
+## Automated approval-gate CI
+
+GitHub Actions code-check run #1 completed successfully (run ID: 41750071591):
+- Python source compilation passed.
+- All 9 source-approval unit tests passed.
+- The approval gate accepted a complete exact-match test manifest and rejected missing, incomplete, duplicate, unapproved, and unsafe-path cases.
+
+A further test was added after that run to reject symlinks pointing outside the training-data directory. Its new workflow run must complete before this additional test is considered verified.
+
+This CI checks Python syntax and the approval-gate policy only. It does not run model training, verify the real-world truth of rights claims, or prove model quality.
+
 ## Current compute observation
 
 The verified Kaggle session reported:
