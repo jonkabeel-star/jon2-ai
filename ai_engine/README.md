@@ -8,6 +8,7 @@ GPT, another pretrained model, or a hosted AI API.
 - The original Transformer architecture and backward-compatible checkpoint loader are in `jon2_core.py`.
 - New training runs use the project-trained byte-level BPE tokenizer in `tokenizer.py`. It has UTF-8 byte fallback for unseen Arabic, English, punctuation, and emoji; it does not provide pretrained knowledge.
 - The chat runtime loads only a trained Jon2 checkpoint.
+- Dialogue generation stops when it reaches the next `المستخدم:` turn marker, so a reply does not intentionally continue into the following training example.
 - The repository's small original seed text is for pipeline checks only. It is
   not enough to train a useful general-purpose assistant.
 - Until a checkpoint exists, `POST /api/chat` intentionally returns HTTP 503
