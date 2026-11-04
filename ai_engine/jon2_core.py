@@ -264,10 +264,8 @@ def generate(
     ids = tokenizer.encode(prompt)
     if not ids:
         ids = [tokenizer.unk_id]
-    stop_ids = [
-        sequence_ids for sequence in (stop_sequences or [])
-        if (sequence_ids := tokenizer.encode(sequence))
-    ]
+    stop_texts = [sequence for sequence in (stop_sequences or []) if sequence]
+    matched_stop_text = None
     generated_ids = list(ids)
     prompt_token_count = len(generated_ids)
     tokens = torch.tensor([generated_ids], dtype=torch.long, device=device)
@@ -325,18 +323,15 @@ def generate(
         generated_bytes.extend(tokenizer._token_bytes(token_id))
         tokens = torch.cat((tokens, next_id), dim=1)
 
-        matched = next(
-            (
-                sequence for sequence in stop_ids
-                if len(sequence) <= len(generated_ids)
-                and generated_ids[-len(sequence):] == sequence
-            ),
+        # Match stop markers against decoded text, not separately tokenized IDs:
+        # byte-BPE merges can cross the answer/marker boundary.
+        decoded_so_far = bytes(generated_bytes).decode("utf-8", errors="strict")
+        matched_stop_text = next(
+            (marker for marker in stop_texts if decoded_so_far.endswith(marker)),
             None,
         )
-        # Dialogue boundary markers must always stop generation immediately;
-        # min_new_tokens must never force the model into the next user's turn.
-        if matched is not None:
-            del generated_ids[-len(matched):]
+        # Dialogue boundary markers always stop immediately.
+        if matched_stop_text is not None:
             break
     # If the generation budget ends halfway through a multibyte character,
     # discard the incomplete trailing token(s) rather than decoding with U+FFFD.
@@ -352,7 +347,10 @@ def generate(
             removed_piece = tokenizer._token_bytes(removed_id)
             if removed_piece:
                 del generated_bytes[-len(removed_piece):]
-    return tokenizer.decode(generated_ids)
+    decoded = tokenizer.decode(generated_ids)
+    if matched_stop_text and decoded.endswith(matched_stop_text):
+        decoded = decoded[:-len(matched_stop_text)]
+    return decoded
 
 
 def main():
