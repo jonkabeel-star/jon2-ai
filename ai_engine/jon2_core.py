@@ -265,6 +265,7 @@ def generate(
     if not ids:
         ids = [tokenizer.unk_id]
     stop_texts = [sequence for sequence in (stop_sequences or []) if sequence]
+    stop_bytes = [(marker, marker.encode("utf-8")) for marker in stop_texts]
     matched_stop_text = None
     generated_ids = list(ids)
     prompt_token_count = len(generated_ids)
