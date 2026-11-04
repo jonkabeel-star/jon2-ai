@@ -1,3 +1,4 @@
+import hashlib
 import json
 import sys
 import tempfile
@@ -29,6 +30,7 @@ class SourceApprovalGateTests(unittest.TestCase):
         )
 
     def approved_record(self):
+        raw = (self.data / "owned.txt").read_bytes()
         return {
             "file": "owned.txt",
             "status": "APPROVED",
@@ -36,6 +38,8 @@ class SourceApprovalGateTests(unittest.TestCase):
             "review_date": "2026-11-04",
             "rights_basis": "Project-owned sample created for this test",
             "intended_use": "research_training",
+            "sha256": hashlib.sha256(raw).hexdigest(),
+            "character_count": len(raw.decode("utf-8")),
         }
 
     def test_missing_manifest_blocks(self):
