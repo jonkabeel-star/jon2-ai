@@ -133,3 +133,19 @@ python ai_engine/audit_corpus_quality.py --data ai_engine/training_data --output
 The report measures per-file and combined line/sentence length distributions, Arabic/Latin letter mix, normalized exact duplicate lines, Unicode integrity warnings, and counts of email-like, phone-like, and URL patterns. It never includes matched contact values or source text in the report. It reads UTF-8 strictly and rejects invalid byte sequences rather than silently replacing them.
 
 This is a review aid, not an automatic privacy clearance, rights decision, plagiarism detector, or semantic-quality score. Keep reports containing private-source metadata out of public repositories; inspect source text privately and obtain human approval before training.
+
+
+## Dataset inventory and source-approval status
+
+Build a metadata-only inventory before every proposed training run:
+
+```bash
+python ai_engine/dataset_inventory.py --data ai_engine/training_data
+```
+
+The report includes each text file's SHA-256, UTF-8 byte and character counts,
+line counts, and token counts from a temporary BPE tokenizer trained on the
+selected corpus. It reports the source-approval gate as APPROVED or BLOCKED.
+It never copies source text into the report. Token counts are specific to the
+selected corpus and vocabulary size; they are not a measure of language ability.
+The inventory does not grant rights or replace a human source review.
