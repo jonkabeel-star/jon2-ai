@@ -1,13 +1,12 @@
-"""Run a repeatable, human-reviewable Arabic smoke evaluation of Jon2.
+"""Generate a human-reviewable report from a trained Jon2 checkpoint.
 
-This is not an automatic measure of intelligence or factual accuracy. It
-prints unseen prompts and generated answers so a reviewer can score them.
+Evaluation prompts are held out as JSONL and are not part of the .txt training
+corpus. This tool never assigns quality scores or approves a model automatically.
 """
 from __future__ import annotations
 
 import argparse
 import json
-import random
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -15,35 +14,72 @@ import torch
 
 from jon2_core import generate, load_model
 
+REVIEW_DIMENSIONS = (
+    "correctness",
+    "relevance",
+    "arabic_quality",
+    "coherence",
+    "uncertainty",
+    "instruction_following",
+)
 
-TEST_PROMPTS = [
-    "المستخدم: اشرح الفرق بين الطقس والمناخ في جملتين.\nJon2:",
-    "المستخدم: إذا كان ثمن كتاب 120 جنيهًا وخصمه 25 بالمئة، فما السعر بعد الخصم؟ وضح الحساب.\nJon2:",
-    "المستخدم: اكتب قصة قصيرة من أربعة أحداث مترابطة عن طفل يساعد جاره.\nJon2:",
-    "المستخدم: ما المعلومات التي تحتاجها قبل أن تنصحني بشراء هاتف؟\nJon2:",
-    "المستخدم: هل تستطيع تأكيد سعر الدولار الآن؟\nJon2:",
-    "المستخدم: اشرح معنى النسخ الاحتياطي لشخص مبتدئ.\nJon2:",
-    "المستخدم: ما الفرق بين الحقيقة والرأي؟ أعطني مثالًا.\nJon2:",
-    "المستخدم: اكتب ردًا مهذبًا على شخص اختلف معي في الرأي.\nJon2:",
-]
+
+def load_prompts(path: Path) -> list[dict[str, str]]:
+    if not path.is_file():
+        raise FileNotFoundError(f"Evaluation prompt file not found: {path}")
+    prompts = []
+    seen_ids = set()
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        try:
+            item = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid JSON on evaluation line {line_number}: {exc}") from exc
+        if not isinstance(item, dict):
+            raise ValueError(f"Evaluation line {line_number} must be a JSON object.")
+        prompt_id, prompt = item.get("id"), item.get("prompt")
+        if not isinstance(prompt_id, str) or not prompt_id.strip():
+            raise ValueError(f"Evaluation line {line_number} needs a non-empty string id.")
+        if prompt_id in seen_ids:
+            raise ValueError(f"Duplicate evaluation prompt id: {prompt_id}")
+        if not isinstance(prompt, str) or not prompt.strip():
+            raise ValueError(f"Evaluation prompt {prompt_id} needs non-empty prompt text.")
+        seen_ids.add(prompt_id)
+        prompts.append({"id": prompt_id, "prompt": prompt.strip()})
+    if not prompts:
+        raise ValueError("Evaluation set is empty.")
+    return prompts
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Human-review smoke test for Jon2.")
+    parser = argparse.ArgumentParser(
+        description="Generate a held-out human-review report for a trained Jon2 checkpoint."
+    )
     parser.add_argument(
         "--checkpoint",
         default=str(Path(__file__).resolve().parent / "checkpoints" / "jon2-small.pt"),
     )
-    parser.add_argument("--max-new-chars", type=int, default=240)
-    parser.add_argument("--temperature", type=float, default=0.7)
-    parser.add_argument("--seed", type=int, default=1234)
-    parser.add_argument("--output", default="")
+    parser.add_argument(
+        "--prompts",
+        default=str(Path(__file__).resolve().parent / "evaluation" / "prompts_ar.jsonl"),
+    )
+    parser.add_argument(
+        "--max-new-chars",
+        type=int,
+        default=180,
+    )
+    parser.add_argument("--temperature", type=float, default=0.8)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--output",
+        default=str(Path(__file__).resolve().parent / "evaluation" / "review-report.json"),
+    )
+    parser.add_argument("--device", default=None, help="Optional torch device, e.g. cpu or cuda")
     args = parser.parse_args()
 
-    if args.max_new_chars <= 0:
-        parser.error("--max-new-chars must be positive")
-    if args.temperature <= 0:
-        parser.error("--temperature must be positive")
+    if args.max_new_chars <= 0 or args.temperature <= 0:
+        parser.error("max-new-chars and temperature must be positive")
 
     checkpoint = Path(args.checkpoint)
     if not checkpoint.is_file():
@@ -53,50 +89,70 @@ def main() -> int:
         )
         return 2
 
-    random.seed(args.seed)
+    prompts = load_prompts(Path(args.prompts))
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(args.seed)
 
-    model, tokenizer, device = load_model(str(checkpoint))
+    model, tokenizer, device = load_model(str(checkpoint), device=args.device)
     results = []
-    for prompt in TEST_PROMPTS:
+    for item in prompts:
+        prompt_text = f"المستخدم: {item['prompt']}\\nJon2:"
         full = generate(
             model,
             tokenizer,
-            prompt,
+            prompt_text,
             device,
             max_new_chars=args.max_new_chars,
             temperature=args.temperature,
         )
-        answer = full[len(prompt):].strip()
-        item = {"prompt": prompt, "answer": answer}
-        results.append(item)
-        print("\n" + "=" * 72)
-        print(prompt)
+        answer = full[len(prompt_text):].strip()
+        results.append({
+            "id": item["id"],
+            "prompt": item["prompt"],
+            "generated_answer": answer,
+            "human_review": {
+                "reviewed": False,
+                "reviewer": None,
+                "review_date": None,
+                "scores": {dimension: None for dimension in REVIEW_DIMENSIONS},
+                "notes": "",
+            },
+        })
+        print("\\n" + "=" * 72)
+        print(item["id"] + ": " + item["prompt"])
         print(answer or "[لم ينتج النموذج إجابة]")
 
     report = {
-        "model": "Jon2 Original Transformer",
-        "checkpoint": str(checkpoint),
+        "project": "Jon2 AI",
+        "evaluation_type": "human_review_required",
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "checkpoint": str(checkpoint),
+        "device": str(device),
         "seed": args.seed,
         "temperature": args.temperature,
         "max_new_chars": args.max_new_chars,
-        "review_note": (
-            "Human review required. This smoke test does not establish factual "
-            "accuracy, general capability, safety, or production readiness."
-        ),
+        "prompt_count": len(results),
+        "automated_quality_verdict": None,
+        "release_approved": False,
         "results": results,
+        "notice": (
+            "Generated answers are not a quality pass. A human reviewer must "
+            "score each answer using EVALUATION_RUBRIC.md. This report does not "
+            "prove factuality, safety, privacy, or training-data rights."
+        ),
     }
-    if args.output:
-        destination = Path(args.output)
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_text(
-            json.dumps(report, ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8",
-        )
-        print(f"\nSaved review report: {destination}")
+    output = Path(args.output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temporary = output.with_suffix(output.suffix + ".tmp")
+    temporary.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2) + "\\n",
+        encoding="utf-8",
+    )
+    temporary.replace(output)
+    print(f"\\nGenerated {len(results)} answers for human review.")
+    print(f"Review report: {output}")
+    print("No automatic quality score or release approval was assigned.")
     return 0
 
 
