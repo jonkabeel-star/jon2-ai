@@ -1,6 +1,11 @@
 name: Jon2 AI Kaggle Bridge
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/kaggle-bridge.yml"
+      - "kaggle/hello-jon2/**"
   workflow_dispatch:
     inputs:
       kernel_dir:
@@ -40,7 +45,7 @@ jobs:
 
       - name: Validate notebook metadata
         env:
-          KERNEL_DIR: ${{ inputs.kernel_dir }}
+          KERNEL_DIR: ${{ inputs.kernel_dir || 'kaggle/hello-jon2' }}
         run: |
           python - <<'PY'
           import json, os
