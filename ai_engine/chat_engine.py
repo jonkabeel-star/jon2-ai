@@ -53,6 +53,7 @@ def generate_reply(message: str) -> str:
         _device,
         max_new_chars=int(os.getenv("JON2_MAX_NEW_CHARS", "400")),
         temperature=float(os.getenv("JON2_TEMPERATURE", "0.8")),
+        stop_sequences=["المستخدم:"],
     )
     answer = full_text[len(prompt):].strip()
     if not answer:
