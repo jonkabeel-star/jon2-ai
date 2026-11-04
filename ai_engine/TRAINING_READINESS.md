@@ -162,3 +162,18 @@ The audit was aligned with the trainer's default BPE vocabulary size of 512. Pyt
 - The high English and emoji fallback rates show that this Arabic-heavy training text does not teach compact merges for those domains. If English/emoji capability is desired, add diverse rights-cleared examples before training and measure again; do not change the ratios by artificial padding.
 
 This is the more relevant tokenizer baseline for the current training defaults. It still does not indicate comprehension or model quality.
+
+
+## Latest versioned dialogue-batch audit and CI repair (2026-11-04)
+
+The versioned Arabic dialogue-batch audit fix and regression tests were completed in commits `96319a1b`, `2fe7c907`, `bba7b742`, and `e2210ec6`.
+
+- The audit now recognizes versioned files whose stem begins with `original_dialogue_ar`, including `original_dialogue_ar_batch_01.txt`.
+- The first test run exposed a Python `unittest` module-name collision because a new test file reused the existing top-level module name `test_audit_data`. The test file was renamed to `test_versioned_dialogue_batches.py`; no training text was changed.
+- Final Python workflow run `41761026495` completed successfully: 5 source-approval tests, 11 top-level engine/tokenizer/audit tests, and 64 engine test-suite tests passed (80 total).
+- GitHub Pages build `41761026684` completed successfully. Code-check runs for the final repair commit also completed successfully.
+- Corpus quality audit: 3 text files, 151,748 source characters in the inventory, and 96,053 tokenizer tokens. The combined text audit reports 8 normalized duplicate-line groups and 17 excess duplicate lines, all in the 136,075-character dialogue expansion batch. The audit reports no email/phone privacy signals, no replacement characters, no unexpected control characters, and no zero-width/BOM characters for that batch. These are automated signals only; a human must still review the content.
+- The exact-line duplicate result is not permission to delete or rewrite lines. The draft remains unchanged pending owner review.
+- The inventory's approval gate remains `BLOCKED` because the private `source_approvals.json` manifest is absent. No dataset has been approved, no training has run, and no model checkpoint has been created by this workflow.
+
+These results verify the code checks and corpus-audit tooling only. They do not establish semantic quality, legal clearance, or a trained assistant.
