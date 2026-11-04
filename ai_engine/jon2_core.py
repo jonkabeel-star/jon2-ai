@@ -286,6 +286,7 @@ def main():
     if min(
         args.steps, args.batch_size, args.context, args.width,
         args.heads, args.layers, args.eval_steps, args.log_every,
+        args.minimum_chars,
     ) <= 0:
         parser.error("training dimensions and steps must be positive")
     if not 0.05 <= args.validation_fraction <= 0.4:
