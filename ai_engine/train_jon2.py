@@ -41,6 +41,7 @@ def restore_scheduler_state(scheduler, optimizer, state):
 def save_checkpoint(
     path: Path, model, tokenizer, args, step, best_val, config,
     optimizer=None, scheduler=None, scaler=None, corpus_sha256=None,
+    evaluations_without_improvement=0,
 ):
     """Atomically save model, optimizer, scheduler, scaler, and RNG states."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -52,6 +53,7 @@ def save_checkpoint(
         "training_plan": _training_plan(args),
         "training_steps": step,
         "best_validation_loss": best_val,
+        "evaluations_without_improvement": evaluations_without_improvement,
         "corpus_characters": args.corpus_characters,
         "corpus_sha256": corpus_sha256,
         "validation_fraction": args.validation_fraction,
@@ -123,6 +125,7 @@ def train(args):
 
     start_step = 0
     best_val = float("inf")
+    evaluations_without_improvement = 0
     saved = None
     if args.resume:
         resume_path = Path(args.resume)
@@ -144,7 +147,13 @@ def train(args):
             optimizer.load_state_dict(saved["optimizer_state"])
         start_step = int(saved.get("training_steps", 0))
         best_val = float(saved.get("best_validation_loss", float("inf")))
-        print(f"Resuming from step {start_step}; best validation loss={best_val:.4f}")
+        evaluations_without_improvement = int(saved.get("evaluations_without_improvement", 0))
+        if evaluations_without_improvement < 0:
+            raise ValueError("Resume checkpoint has an invalid early-stopping counter.")
+        print(
+            f"Resuming from step {start_step}; best validation loss={best_val:.4f}; "
+            f"evaluations without improvement={evaluations_without_improvement}"
+        )
 
     def lr_at(step):
         if step < args.warmup_steps:
@@ -186,7 +195,6 @@ def train(args):
 
     best_path = Path(args.output)
     last_path = Path(args.last_checkpoint)
-    evaluations_without_improvement = 0
 
     for step in range(start_step, args.steps):
         model.train()
@@ -225,6 +233,7 @@ def train(args):
                 save_checkpoint(
                     best_path, model, tokenizer, args, completed_step,
                     best_val, config, optimizer, scheduler, scaler, corpus_sha256,
+                    evaluations_without_improvement=0,
                 )
                 print(f"Saved new best checkpoint: {best_path}")
             else:
@@ -234,6 +243,7 @@ def train(args):
                 save_checkpoint(
                     last_path, model, tokenizer, args, completed_step,
                     best_val, config, optimizer, scheduler, scaler, corpus_sha256,
+                    evaluations_without_improvement=evaluations_without_improvement,
                 )
 
             if evaluations_without_improvement >= args.patience:
