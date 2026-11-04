@@ -40,5 +40,8 @@ jobs:
       - name: Test training source approval gate
         run: python -m unittest discover -s tests -v
 
+      - name: Test Jon2 AI engine runtime and tokenizer
+        run: python -m unittest discover -s ai_engine -p 'test_*.py' -v
+
       - name: Audit current training text
         run: python ai_engine/audit_data.py
