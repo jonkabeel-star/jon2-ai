@@ -29,11 +29,13 @@ class SourceApprovalTests(unittest.TestCase):
             "rights_basis": "Original text authored for this project",
             "intended_use": "research_training",
         }
-        item.update(overrides)
+        if "file" in overrides:
+            item["file"] = overrides.pop("file")
         source = self.data / item["file"]
         raw = source.read_bytes() if source.is_file() else b""
         item["sha256"] = hashlib.sha256(raw).hexdigest()
         item["character_count"] = len(raw.decode("utf-8"))
+        item.update(overrides)
         return item
 
     def write_manifest(self, records):
