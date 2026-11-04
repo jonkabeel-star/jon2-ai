@@ -52,11 +52,11 @@ class EvaluationPromptTests(unittest.TestCase):
         self.assertEqual(len(REVIEW_DIMENSIONS), 6)
         self.assertIn("arabic_quality", REVIEW_DIMENSIONS)
 
-    def test_repository_heldout_set_has_twelve_unique_prompts(self):
+    def test_repository_heldout_set_has_forty_unique_prompts(self):
         prompt_path = Path(__file__).resolve().parents[1] / "evaluation" / "prompts_ar.jsonl"
         prompts = load_prompts(prompt_path)
         self.assertEqual(len(prompts), 40)
-        self.assertEqual(len({item["id"] for item in prompts}), 12)
+        self.assertEqual(len({item["id"] for item in prompts}), 40)
 
 
     def test_evaluator_uses_dialogue_stop_marker(self):
