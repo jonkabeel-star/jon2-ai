@@ -14,6 +14,7 @@ import torch
 from torch import nn
 
 from tokenizer import ByteBPETokenizer
+from source_approval import validate_source_approvals
 
 SPECIAL_UNK = "�"
 
@@ -137,7 +138,14 @@ def train(args: argparse.Namespace) -> None:
         torch.cuda.manual_seed_all(args.seed)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    validate_source_approvals(Path(args.data), Path(args.approval_manifest))
     corpus = read_corpus(Path(args.data))
+    if len(corpus) < args.minimum_chars:
+        raise ValueError(
+            f"Training corpus has {len(corpus):,} characters; this run requires "
+            f"at least {args.minimum_chars:,}. Add reviewed, project-owned or "
+            "properly licensed data. Do not duplicate text to pass this check."
+        )
     tokenizer = CharacterTokenizer.from_text(corpus)
     encoded = torch.tensor(tokenizer.encode(corpus), dtype=torch.long)
     if len(encoded) <= args.context * 2 + 2:
@@ -259,6 +267,8 @@ def main():
         description="Train the original Jon2 AI language model."
     )
     parser.add_argument("--data", default="ai_engine/training_data")
+    parser.add_argument("--approval-manifest", default="ai_engine/training_data/source_approvals.json")
+    parser.add_argument("--minimum-chars", type=int, default=100_000)
     parser.add_argument("--output", default="ai_engine/checkpoints/jon2-small.pt")
     parser.add_argument("--steps", type=int, default=5000)
     parser.add_argument("--batch-size", type=int, default=16)
