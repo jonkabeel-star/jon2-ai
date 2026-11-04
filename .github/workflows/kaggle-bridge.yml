@@ -75,11 +75,16 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --upgrade six "kaggle>=1.8.0"
 
-      - name: Package approved source files and publish private training dataset
+      - name: Package owner-approved sources and publish private training dataset
         env:
           KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+          JON2_SOURCE_APPROVALS_JSON: ${{ secrets.JON2_SOURCE_APPROVALS_JSON }}
         run: |
           set -euo pipefail
+          if [ -z "${JON2_SOURCE_APPROVALS_JSON:-}" ]; then
+            echo "::error::Training is blocked. Add JON2_SOURCE_APPROVALS_JSON only after reviewing and explicitly approving each exact source file for research training."
+            exit 1
+          fi
           DATASET_DIR=/tmp/jon2-approved-dataset
           mkdir -p "$DATASET_DIR/ai_engine/training_data"
           cp ai_engine/jon2_core.py ai_engine/train_jon2.py ai_engine/tokenizer.py ai_engine/source_approval.py "$DATASET_DIR/ai_engine/"
@@ -87,34 +92,37 @@ jobs:
           cp ai_engine/training_data/original_dialogue_ar_batch_02.txt "$DATASET_DIR/ai_engine/training_data/"
           cp ai_engine/training_data/original_dialogue_ar_batch_03.txt "$DATASET_DIR/ai_engine/training_data/"
           python - <<'PY'
-          import hashlib, json
+          import hashlib, json, os
           from pathlib import Path
           root = Path("/tmp/jon2-approved-dataset/ai_engine/training_data")
+          supplied = json.loads(os.environ["JON2_SOURCE_APPROVALS_JSON"])
+          if not isinstance(supplied, dict) or not isinstance(supplied.get("approved_sources"), list):
+              raise SystemExit("Approval secret must be JSON with an approved_sources list.")
+          records = supplied["approved_sources"]
           files = sorted(root.glob("*.txt"))
-          if len(files) != 3:
-              raise SystemExit(f"Expected exactly 3 approved dialogue batches, found {len(files)}")
-          records = []
+          if len(files) != 3 or len(records) != 3:
+              raise SystemExit("Exactly three source files and three individual owner approvals are required.")
+          approvals = {item.get("file"): item for item in records if isinstance(item, dict)}
+          if len(approvals) != 3 or set(approvals) != {p.name for p in files}:
+              raise SystemExit("Approval records must match the three source filenames exactly.")
           for path in files:
               raw = path.read_bytes()
-              text = raw.decode("utf-8", errors="strict")
-              if len(text.strip()) < 1000:
-                  raise SystemExit(f"Unexpectedly short source: {path.name}")
-              records.append({
-                  "file": path.name,
-                  "sha256": hashlib.sha256(raw).hexdigest(),
-                  "character_count": len(text),
-                  "status": "APPROVED",
-                  "reviewer": "Repository owner — explicit approval for batches 01, 02, and 03 research training only",
-                  "review_date": "2026-11-04",
-                  "rights_basis": "Original project-authored Arabic dialogue created for Jon2 AI. No private conversations or copied third-party dataset text. This records owner approval for research training only, not a legal guarantee.",
-                  "intended_use": "research_training"
-              })
+              decoded = raw.decode("utf-8", errors="strict")
+              item = approvals[path.name]
+              if item.get("sha256") != hashlib.sha256(raw).hexdigest():
+                  raise SystemExit(f"Approval fingerprint mismatch for {path.name}; review the exact current file.")
+              if type(item.get("character_count")) is not int or item["character_count"] != len(decoded):
+                  raise SystemExit(f"Approval character count mismatch for {path.name}.")
+              for field in ("reviewer", "review_date", "rights_basis"):
+                  if not isinstance(item.get(field), str) or not item[field].strip():
+                      raise SystemExit(f"Approval for {path.name} is missing {field}.")
+              if item.get("status") != "APPROVED" or item.get("intended_use") != "research_training":
+                  raise SystemExit(f"{path.name} must be explicitly approved for research_training.")
           (root / "source_approvals.json").write_text(
-              json.dumps({"approved_sources": records}, ensure_ascii=False, indent=2) + "\n",
+              json.dumps(supplied, ensure_ascii=False, indent=2) + "\\n",
               encoding="utf-8"
           )
-          print("Approved source characters:", sum(x["character_count"] for x in records))
-          print("Approved source files:", [x["file"] for x in records])
+          print("Verified three explicit owner approvals against exact source hashes.")
           PY
           cat > "$DATASET_DIR/dataset-metadata.json" <<'JSON'
           {
