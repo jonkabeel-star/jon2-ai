@@ -43,8 +43,9 @@ def validate_source_approvals(data_dir: Path, manifest_path: Path) -> None:
         name = record["file"]
         relative = PurePosixPath(name)
         if (not name or relative.is_absolute()
+                or relative.as_posix() != name
                 or any(part in ("", ".", "..") for part in relative.parts)
-                or "\\\\" in name):
+                or "\\" in name):
             raise ValueError(f"Unsafe or non-normalized source path: {name!r}")
         if name in approvals:
             raise ValueError(f"Duplicate approval record for {name}.")
