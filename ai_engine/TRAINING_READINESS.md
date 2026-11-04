@@ -4,13 +4,14 @@ Last verified: 2026-11-04
 
 ## Latest safety, training-resume, and CI hardening (2026-11-04)
 
-The latest Python workflow #41755161052 completed successfully on commit `2e210879`:
+The latest full Python workflow #41755700669 completed successfully on commit `6e2c3a67`:
 - All 5 repository-level source-approval tests passed.
 - All 11 AI-engine tokenizer and data-audit tests passed.
-- All 34 AI-engine runtime, evaluation, source-approval, legacy-training-gate, training-resume, and generation-stop tests passed.
-- The workflow compiled Python modules, ran all three test suites, and completed the corpus audit successfully: 50 tests passed across the three suites.
-- The latest combined Python/Node code-check runs #41755161152 and #41755161091 completed successfully.
-- GitHub Pages build and deployment #41755161002 completed successfully.
+- All 39 AI-engine API, runtime, evaluation, source-approval, legacy-training-gate, training-resume, and generation-stop tests passed.
+- The workflow compiled Python modules, ran all three test suites, and completed the corpus audit successfully: 55 tests passed across the three suites.
+- The API test suite verifies health/readiness reporting, successful mocked chat responses, missing-checkpoint HTTP 503 behavior, whitespace rejection, and the 2,000-character input limit.
+- Combined Python/Node code-check runs #41755700787 and #41755700649 completed successfully.
+- GitHub Pages build #41755700602 completed; deployment status was still finishing when this note was prepared.
 - Dialogue generation stops before the next `المستخدم:` marker in both chat and held-out evaluation. Regression tests verify the evaluation runner passes the stop marker.
 - Training checkpoints preserve model, optimizer, scheduler, AMP scaler, Python RNG, PyTorch RNG, CUDA RNG when present, training-plan metadata, corpus fingerprint, and the early-stopping no-improvement counter.
 - Resume validation rejects changed corpus text, tokenizer/model settings, or training-plan settings instead of silently continuing a different run.
