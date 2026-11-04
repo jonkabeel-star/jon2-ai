@@ -42,6 +42,10 @@ class GenerationStopTests(unittest.TestCase):
             max_new_chars=100,
             temperature=0.8,
             stop_sequences=[stop_marker],
+            do_sample=False,
+            repetition_penalty=1.0,
+            no_repeat_ngram_size=0,
+            top_k=0,
         )
 
         self.assertEqual(result, prompt + answer)
