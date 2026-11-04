@@ -366,7 +366,9 @@ def generate(
             removed_piece = tokenizer._token_bytes(removed_id)
             if removed_piece:
                 del generated_bytes[-len(removed_piece):]
-    decoded = tokenizer.decode(generated_ids)
+    # Decode the exact byte stream so a stop marker that begins inside a
+    # merged BPE token can be removed without discarding preceding answer bytes.
+    decoded = bytes(generated_bytes).decode("utf-8", errors="strict")
     if matched_stop_text and decoded.endswith(matched_stop_text):
         decoded = decoded[:-len(matched_stop_text)]
     return decoded
