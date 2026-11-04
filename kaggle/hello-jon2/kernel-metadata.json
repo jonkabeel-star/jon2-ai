@@ -1,0 +1,13 @@
+{
+  "id": "jon2kabeel/hello-jon2",
+  "title": "Jon2 AI - Compute Connection Test",
+  "code_file": "hello-jon2.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": []
+}
