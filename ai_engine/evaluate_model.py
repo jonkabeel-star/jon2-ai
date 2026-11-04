@@ -105,6 +105,7 @@ def main() -> int:
             device,
             max_new_chars=args.max_new_chars,
             temperature=args.temperature,
+            stop_sequences=["المستخدم:"],
         )
         answer = full[len(prompt_text):].strip()
         results.append({
