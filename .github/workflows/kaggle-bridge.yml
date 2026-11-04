@@ -123,12 +123,9 @@ jobs:
             "licenses": [{"name": "other"}]
           }
           JSON
-          if kaggle datasets create -p "$DATASET_DIR" -r zip; then
-            echo "::notice::Created private approved-source dataset."
-          else
-            echo "Dataset may already exist; attempting a private version update."
-            kaggle datasets version -p "$DATASET_DIR" -m "Update approved Jon2 Arabic training sources" -q
-          fi
+          echo "Updating the existing approved-source dataset with the three approved batches."
+          kaggle datasets version -p "$DATASET_DIR" -m "Update approved Jon2 Arabic training sources" -q
+          echo "::notice::Approved training dataset version uploaded successfully."
 
       - name: Push notebook to Kaggle and start execution
         env:
