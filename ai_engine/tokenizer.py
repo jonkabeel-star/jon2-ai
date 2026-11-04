@@ -159,7 +159,7 @@ class ByteBPETokenizer:
         destination = Path(path)
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text(
-            json.dumps(self.to_dict(), ensure_ascii=False, indent=2) + "\\n",
+            json.dumps(self.to_dict(), ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
 
