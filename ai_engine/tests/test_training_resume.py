@@ -9,7 +9,7 @@ from pathlib import Path
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from train_jon2 import save_checkpoint, _training_plan
+from train_jon2 import save_checkpoint, _training_plan, restore_scheduler_state
 from tokenizer import ByteBPETokenizer
 
 
@@ -59,6 +59,29 @@ class TrainingResumeTests(unittest.TestCase):
         self.assertEqual(state["corpus_sha256"], "abc123")
         self.assertEqual(state["training_plan"], _training_plan(args))
         self.assertTrue(state["optimizer_state"]["state"])
+
+
+    def test_resume_restores_active_optimizer_learning_rate(self):
+        parameter_a = torch.nn.Parameter(torch.tensor([1.0]))
+        optimizer_a = torch.optim.AdamW([parameter_a], lr=0.01)
+        schedule_a = torch.optim.lr_scheduler.LambdaLR(
+            optimizer_a, lambda step: min(1.0, (step + 1) / 4)
+        )
+        optimizer_a.step()
+        schedule_a.step()
+        optimizer_a.step()
+        schedule_a.step()
+        expected_lr = optimizer_a.param_groups[0]["lr"]
+        saved_scheduler = schedule_a.state_dict()
+
+        parameter_b = torch.nn.Parameter(torch.tensor([1.0]))
+        optimizer_b = torch.optim.AdamW([parameter_b], lr=0.01)
+        schedule_b = torch.optim.lr_scheduler.LambdaLR(
+            optimizer_b, lambda step: min(1.0, (step + 1) / 4)
+        )
+        self.assertNotEqual(optimizer_b.param_groups[0]["lr"], expected_lr)
+        restore_scheduler_state(schedule_b, optimizer_b, saved_scheduler)
+        self.assertAlmostEqual(optimizer_b.param_groups[0]["lr"], expected_lr)
 
     def test_training_plan_captures_schedule_and_data_constraints(self):
         args = self.make_args()
