@@ -45,7 +45,7 @@ jobs:
 
       - name: Validate notebook metadata
         env:
-          KERNEL_DIR: ${{ inputs.kernel_dir || 'kaggle/hello-jon2' }}
+          KERNEL_DIR: kaggle/hello-jon2
         run: |
           python - <<'PY'
           import json, os
@@ -75,5 +75,5 @@ jobs:
       - name: Push notebook to Kaggle
         env:
           KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
-          KERNEL_DIR: ${{ inputs.kernel_dir }}
+          KERNEL_DIR: kaggle/hello-jon2
         run: kaggle kernels push -p "$KERNEL_DIR"
