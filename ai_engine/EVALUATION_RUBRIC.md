@@ -7,10 +7,12 @@ Use this checklist only after a real Jon2 checkpoint has been trained. The curre
 From the repository root:
 
 ```bash
-python ai_engine/evaluate_model.py --checkpoint ai_engine/checkpoints/jon2-small.pt --output ai_engine/evaluation/first-review.json
+python ai_engine/evaluate_model.py --checkpoint ai_engine/checkpoints/jon2-small.pt --prompts ai_engine/evaluation/prompts_ar.jsonl --output ai_engine/evaluation/review-report.json
 ```
 
 Read every generated answer. Do not treat the script completing successfully as a passing evaluation.
+
+The held-out prompt set is `evaluation/prompts_ar.jsonl`. It is JSONL rather than .txt, so the current training corpus loader does not ingest it. Keep evaluation prompts separate from training data. The evaluator writes a review template with six blank human scores for every answer; it never computes an automatic quality verdict or marks a model release-approved.
 
 ## Score each answer
 
