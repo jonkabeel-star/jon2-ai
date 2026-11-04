@@ -12,8 +12,6 @@ import unicodedata
 from collections import Counter
 from pathlib import Path
 
-ARABIC = re.compile(r"[\u0600-\u06ff]")
-LATIN = re.compile(r"[A-Za-z]")
 SENTENCE_SPLIT = re.compile(r"(?<=[.!?؟。])\s+")
 EMAIL = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)
 URL = re.compile(r"\b(?:https?://|www\.)\S+", re.I)
@@ -45,9 +43,9 @@ def analyze_text(text: str, source_name: str = "text") -> dict:
     sentence_lengths = [len(sentence) for sentence in sentences]
     line_lengths = [len(line) for line in lines]
     chars = len(text)
-    arabic_count = len(ARABIC.findall(text))
-    latin_count = len(LATIN.findall(text))
     letters_count = sum(1 for ch in text if ch.isalpha())
+    arabic_count = sum(1 for ch in text if ch.isalpha() and "\\u0600" <= ch <= "\\u06ff")
+    latin_count = sum(1 for ch in text if ch.isalpha() and ("A" <= ch <= "Z" or "a" <= ch <= "z"))
     controls = [
         ch for ch in text
         if unicodedata.category(ch) == "Cc" and ch not in "\n\r\t"
