@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
 
-from chat_engine import generate_reply, model_is_ready, load_runtime
+from chat_engine import generate_reply, model_is_ready
 
 app = FastAPI(
     title="Jon2 AI API",
@@ -46,25 +46,32 @@ def home():
     }
 
 
+def _checkpoint_configured() -> bool:
+    checkpoint = os.getenv(
+        "JON2_CHECKPOINT",
+        os.path.join(os.path.dirname(__file__), "checkpoints", "jon2-small.pt"),
+    )
+    return os.path.isfile(checkpoint)
+
+
 @app.get("/api/health")
 def health():
+    loaded = model_is_ready()
+    checkpoint_available = _checkpoint_configured()
+    model_status = (
+        "ready" if loaded
+        else "checkpoint_available" if checkpoint_available
+        else "checkpoint_missing"
+    )
     return {
         "project": "Jon2 AI",
         "status": "online",
         "model": "Jon2 Original Transformer",
-        "model_loaded": model_is_ready(),
-        "chat_ready": model_is_ready() and os.path.isfile(
-            os.getenv(
-                "JON2_CHECKPOINT",
-                os.path.join(os.path.dirname(__file__), "checkpoints", "jon2-small.pt"),
-            )
-        ),
-        "checkpoint_configured": os.path.isfile(
-            os.getenv(
-                "JON2_CHECKPOINT",
-                os.path.join(os.path.dirname(__file__), "checkpoints", "jon2-small.pt"),
-            )
-        ),
+        "model_loaded": loaded,
+        "checkpoint_configured": checkpoint_available,
+        "chat_ready": loaded and checkpoint_available,
+        "model_status": model_status,
+        "chat_requires_model_checkpoint": True,
     }
 
 
@@ -74,7 +81,6 @@ def chat(request: ChatRequest):
     if not message:
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
     try:
-        load_runtime()
         reply = generate_reply(message, [item.model_dump() for item in request.history])
         return {"project": "Jon2 AI", "reply": reply}
     except ValueError as error:
