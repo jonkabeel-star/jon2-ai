@@ -130,6 +130,7 @@ const API_BASE_URL = String(window.JON2_API_BASE_URL || "").replace(/\/+$/, "");
 let lang = "ar";
 let chatMessages = [];
 let savedDraft = "";
+let apiStatusKey = "offline";
 
 function loadSavedState() {
   try {
@@ -181,6 +182,7 @@ function setLang(next) {
   });
   document.getElementById("language").textContent =
     lang === "ar" ? "English 🌐" : "العربية 🌐";
+  document.getElementById("status").textContent = translations[lang][apiStatusKey];
 }
 
 function renderMessages() {
@@ -217,7 +219,8 @@ document.getElementById("input").addEventListener("input", saveState);
 async function checkApiHealth() {
   const status = document.getElementById("status");
   if (!API_BASE_URL) {
-    status.textContent = translations[lang].offline;
+    apiStatusKey = "offline";
+    status.textContent = translations[lang][apiStatusKey];
     return;
   }
   try {
@@ -228,11 +231,11 @@ async function checkApiHealth() {
     });
     if (!response.ok) throw new Error("Health check failed: " + response.status);
     const health = await response.json();
-    status.textContent = health.chat_ready
-      ? translations[lang].modelReady
-      : translations[lang].apiOnline;
+    apiStatusKey = health.chat_ready ? "modelReady" : "apiOnline";
+    status.textContent = translations[lang][apiStatusKey];
   } catch (error) {
-    status.textContent = translations[lang].offline;
+    apiStatusKey = "offline";
+    status.textContent = translations[lang][apiStatusKey];
     console.warn("Jon2 AI API health check failed.", error);
   }
 }
