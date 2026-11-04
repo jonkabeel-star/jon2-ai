@@ -263,7 +263,9 @@ def generate(
     # Byte-BPE can otherwise emit an invalid UTF-8 continuation byte.
     # Keep only candidates that preserve a valid (possibly incomplete) UTF-8 prefix.
     import codecs
-    generated_bytes = bytearray()
+    generated_bytes = bytearray(
+        b"".join(tokenizer._token_bytes(token_id) for token_id in ids)
+    )
     for _ in range(max_new_chars):
         context = tokens[:, -model.context:]
         logits = model(context)[:, -1, :] / temperature
