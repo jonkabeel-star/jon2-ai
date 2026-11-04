@@ -12,13 +12,22 @@ def validate_source_approvals(data_dir: Path, manifest_path: Path) -> None:
     if not root.is_dir():
         raise FileNotFoundError(f"Training data directory not found: {data_dir}")
 
-    files = set()
+    files = {}
     for path in data_dir.rglob("*.txt"):
         if not path.is_file():
             continue
         if not path.resolve().is_relative_to(root):
             raise PermissionError(f"Training text resolves outside data directory: {path}")
-        files.add(path.relative_to(data_dir).as_posix())
+        relative_name = path.relative_to(data_dir).as_posix()
+        raw = path.read_bytes()
+        try:
+            decoded = raw.decode("utf-8", errors="strict")
+        except UnicodeDecodeError as exc:
+            raise ValueError(f"Training source is not valid UTF-8: {relative_name}") from exc
+        files[relative_name] = {
+            "sha256": hashlib.sha256(raw).hexdigest(),
+            "character_count": len(decoded),
+        }
 
     if not files:
         raise FileNotFoundError(f"No training .txt files found in {data_dir}.")
@@ -51,8 +60,8 @@ def validate_source_approvals(data_dir: Path, manifest_path: Path) -> None:
             raise ValueError(f"Duplicate approval record for {name}.")
         approvals[name] = record
 
-    missing = sorted(files - set(approvals))
-    unexpected = sorted(set(approvals) - files)
+    missing = sorted(set(files) - set(approvals))
+    unexpected = sorted(set(approvals) - set(files))
     if missing or unexpected:
         raise PermissionError(
             f"Training blocked. Missing approvals: {missing or 'none'}; "
@@ -62,6 +71,14 @@ def validate_source_approvals(data_dir: Path, manifest_path: Path) -> None:
     allowed_uses = {"research_training", "public_model", "commercial_model"}
     for name in sorted(files):
         record = approvals[name]
+        expected_hash = files[name]["sha256"]
+        supplied_hash = record.get("sha256")
+        if not isinstance(supplied_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", supplied_hash):
+            raise ValueError(f"Training source {name} requires a lowercase SHA-256 approval fingerprint.")
+        if supplied_hash != expected_hash:
+            raise PermissionError(f"Training blocked: {name} changed after its source approval was recorded.")
+        if type(record.get("character_count")) is not int or record["character_count"] != files[name]["character_count"]:
+            raise PermissionError(f"Training blocked: {name} character count does not match the approved file.")
         if record.get("status") != "APPROVED":
             raise PermissionError(f"Training blocked: {name} is not APPROVED.")
         for field in ("reviewer", "review_date", "rights_basis"):
