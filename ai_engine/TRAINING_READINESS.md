@@ -2,6 +2,24 @@
 
 Last verified: 2026-11-04
 
+
+## Latest tokenizer audit and CI verification (2026-11-04)
+
+The tokenizer-efficiency audit and its five regression tests were added. The Python workflow on commit \`a0c456fa\` completed successfully (run ID \`41757136544\`):
+- 5 repository-level source-approval tests passed.
+- 11 top-level AI-engine tokenizer/data-audit tests passed.
+- 49 AI-engine runtime, evaluation, approval, resume, generation-stop, and coverage tests passed.
+- Total: 65 Python tests passed across the three suites.
+- Python compilation, structural data audit, Arabic coverage audit, and tokenizer audit all completed successfully.
+- The tokenizer audit used a temporary 1,000-entry BPE vocabulary (256 byte tokens plus 744 learned merges) on the raw corpus text. It measured 15,674 characters, 27,844 UTF-8 bytes, and 7,835 tokens; 2,886 tokens (36.8347%) were byte fallback and 4,949 were learned merges. Exact decode round-trip passed.
+- The separate Arabic sample had 36.8421% byte fallback; English and emoji/symbol samples had higher fallback rates (78.3784% and 76.9231%), while the mixed Arabic/English sample measured 30%. All sample round trips were exact. This indicates the current small corpus teaches more merges for some Arabic/mixed patterns than for English/emoji; it is not a language-quality score.
+- The tokenizer audit reads raw text including whitespace and blank lines. The structural audit counts cleaned non-empty non-comment lines, so its 15,025-character total is a different metric, not a contradiction.
+- Structural audit: zero exact normalized duplicate lines. It still warns that the cleaned corpus is below the 100,000-character reference.
+- Code checks passed on commit \`854b32e5\`; the Python workflow for that documentation-only commit and the Pages deployment were still running when this note was prepared.
+
+These results verify the tokenizer instrumentation and engineering tests only. They do not establish semantic understanding, approve the dataset, or create a trained checkpoint. The corpus remains small and rights review remains mandatory.
+
+
 ## Latest safety, training-resume, and CI hardening (2026-11-04)
 
 The latest full Python workflow #41755700669 completed successfully on commit `6e2c3a67`:
@@ -65,9 +83,9 @@ These checks do not run model training, verify the real-world truth of rights cl
 
 ## Held-out Arabic evaluation pipeline
 
-Added a separate 12-prompt Arabic evaluation set at `ai_engine/evaluation/prompts_ar.jsonl`. It covers basic explanation, follow-up ambiguity, arithmetic, summarization, creative writing, instruction following, uncertainty about live facts, logic, translation, beginner guidance, and phishing safety.
+Added a separate 40-prompt Arabic evaluation set at `ai_engine/evaluation/prompts_ar.jsonl`. It covers basic explanation, follow-up ambiguity, arithmetic, summarization, creative writing, instruction following, uncertainty about live facts, logic, translation, beginner guidance, and phishing safety.
 
-The set is JSONL, not .txt, so the current training corpus reader does not ingest it. The evaluation runner in `ai_engine/evaluate_model.py`:
+The set is JSONL, not .txt, so the current training corpus reader does not ingest it. The expanded set covers polysemy, negation, reference resolution, causal and temporal reasoning, morphology, idioms, metaphor, register, cohesion, inference, multi-turn context, counterfactuals, and uncertainty. The evaluation runner in `ai_engine/evaluate_model.py`:
 - requires an existing trained checkpoint and refuses to generate random weights;
 - generates one answer per held-out prompt;
 - creates a structured review report with six blank human-scoring dimensions;
