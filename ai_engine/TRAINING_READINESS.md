@@ -43,6 +43,18 @@ The full Python workflow #41751132597 completed successfully on commit 4adbf0e3:
 
 These checks do not run model training, verify the real-world truth of rights claims, or prove model quality.
 
+## Held-out Arabic evaluation pipeline
+
+Added a separate 12-prompt Arabic evaluation set at `ai_engine/evaluation/prompts_ar.jsonl`. It covers basic explanation, follow-up ambiguity, arithmetic, summarization, creative writing, instruction following, uncertainty about live facts, logic, translation, beginner guidance, and phishing safety.
+
+The set is JSONL, not .txt, so the current training corpus reader does not ingest it. The evaluation runner in `ai_engine/evaluate_model.py`:
+- requires an existing trained checkpoint and refuses to generate random weights;
+- generates one answer per held-out prompt;
+- creates a structured review report with six blank human-scoring dimensions;
+- never computes an automatic quality verdict or marks a release approved.
+
+The rubric and tests were updated. The runner has not been executed against a real checkpoint because no trained checkpoint exists yet.
+
 ## Current compute observation
 
 The verified Kaggle session reported:
