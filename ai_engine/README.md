@@ -107,3 +107,16 @@ python ai_engine/audit_language.py --data ai_engine/training_data --output ai_en
 The report lists each Arabic letter's observed count and percentage, missing letters, word-token count, unique normalized vocabulary, lexical diversity, and frequent words. It analyzes only `.txt` files; held-out JSONL evaluation prompts are not included. Word normalization is used only for aggregate counting and never rewrites training text.
 
 Do not target equal percentages for every letter. Natural Arabic frequencies are unequal, and this report measures the current corpus rather than prescribing quotas. Rare letters should appear in varied, meaningful words and sentences, not be padded through repeated characters. Vocabulary coverage is not semantic understanding: meaning and context require diverse, well-written examples and held-out human evaluation.
+
+
+## Tokenizer efficiency and byte-fallback audit
+
+Measure how efficiently the current BPE tokenizer represents the actual corpus:
+
+\`\`\`bash
+python ai_engine/audit_tokenizer.py --data ai_engine/training_data --vocab-size 1000 --output ai_engine/evaluation/tokenizer-audit.json
+\`\`\`
+
+The report measures total tokens, merged-token count, UTF-8 byte-fallback count and percentage, bytes per token, exact decode round trips, and separate Arabic, English, mixed-language, and emoji samples. It trains a temporary tokenizer from the selected text for measurement only; it does not modify the corpus, create a model checkpoint, or approve any source.
+
+A lower byte-fallback percentage and more bytes represented per token can indicate more compact tokenization for that sample. These are tokenizer-efficiency signals only—not measures of comprehension, factual accuracy, or assistant quality. Keep the held-out evaluation prompts outside the training folder.
