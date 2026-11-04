@@ -40,12 +40,29 @@ def load_runtime() -> None:
     _model, _tokenizer, _device = load_model(str(CHECKPOINT_PATH))
 
 
-def generate_reply(message: str) -> str:
+def build_conversation_prompt(message: str, history=None) -> str:
+    """Build a bounded Arabic dialogue prompt from validated recent turns."""
+    turns = []
+    for item in (history or [])[-8:]:
+        role = item.get("role") if isinstance(item, dict) else None
+        content = item.get("content") if isinstance(item, dict) else None
+        if role not in {"user", "assistant"} or not isinstance(content, str):
+            continue
+        content = content.strip()
+        if not content:
+            continue
+        label = "المستخدم" if role == "user" else "Jon2"
+        turns.append(f"{label}: {content}")
+    turns.append(f"المستخدم: {message.strip()}")
+    return "\n".join(turns) + "\nJon2:"
+
+
+def generate_reply(message: str, history=None) -> str:
     if not message or not message.strip():
         raise ValueError("اكتب رسالتك أولًا.")
 
     load_runtime()
-    prompt = f"المستخدم: {message.strip()}\nJon2:"
+    prompt = build_conversation_prompt(message, history)
     full_text = generate(
         _model,
         _tokenizer,
