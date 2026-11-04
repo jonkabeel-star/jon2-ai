@@ -303,14 +303,16 @@ def generate(
     # discard the incomplete trailing token(s) rather than decoding with U+FFFD.
     while len(generated_ids) > prompt_token_count:
         try:
-            generated_tail = b"".join(
-                tokenizer._token_bytes(token_id)
-                for token_id in generated_ids[prompt_token_count:]
-            )
-            generated_tail.decode("utf-8", errors="strict")
+            # Validate the complete prompt + continuation. A continuation token
+            # may begin with UTF-8 continuation bytes that are valid only when
+            # combined with the final bytes of the prompt.
+            bytes(generated_bytes).decode("utf-8", errors="strict")
             break
         except UnicodeDecodeError:
-            generated_ids.pop()
+            removed_id = generated_ids.pop()
+            removed_piece = tokenizer._token_bytes(removed_id)
+            if removed_piece:
+                del generated_bytes[-len(removed_piece):]
     return tokenizer.decode(generated_ids)
 
 
