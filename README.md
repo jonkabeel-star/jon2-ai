@@ -13,8 +13,7 @@ This repository contains the website interface, an early model prototype, and th
 - [Authentication setup](server/AUTH_SETUP.md) — account API endpoints, required secrets, database migration, and deployment gates.\n- [Original data policy](ai_engine/ORIGINAL_DATA_POLICY.md) — requirements for training text and asset permissions.
 - [Dataset register](ai_engine/DATASET_REGISTER.md) — current dataset approval decisions.
 
-## Hosting boundaries
-
+## Website chat connection\n\nThe static chat interface can call the original FastAPI model API when a backend is deployed. Set `window.JON2_API_BASE_URL` to the backend HTTPS origin before the main inline script loads. The page checks `/api/health` and sends chat messages to `/api/chat`; if no URL is configured, it clearly reports that the backend is not deployed. The API must allow the GitHub Pages origin through CORS. The chat remains unavailable until a real, approved Jon2 checkpoint is installed.\n\n## Hosting boundaries\n
 GitHub Pages can host the static website only. It cannot run the Python model, store passwords securely, or act as the production database. The API and model need a separate HTTPS backend, persistent database, private file storage, and managed secrets.
 
 ## Safety and rights
