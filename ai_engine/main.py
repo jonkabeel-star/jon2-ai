@@ -45,6 +45,12 @@ def health():
         "status": "online",
         "model": "Jon2 Original Transformer",
         "model_loaded": model_is_ready(),
+        "chat_ready": model_is_ready() and os.path.isfile(
+            os.getenv(
+                "JON2_CHECKPOINT",
+                os.path.join(os.path.dirname(__file__), "checkpoints", "jon2-small.pt"),
+            )
+        ),
         "checkpoint_configured": os.path.isfile(
             os.getenv(
                 "JON2_CHECKPOINT",
