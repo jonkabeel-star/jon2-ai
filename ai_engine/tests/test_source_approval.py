@@ -75,6 +75,16 @@ class SourceApprovalTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_source_approvals(self.data, self.manifest)
 
+    def test_windows_style_backslash_path_blocks(self):
+        self.write_manifest([self.record(file="nested\\\\..\\\\one.txt")])
+        with self.assertRaises(ValueError):
+            validate_source_approvals(self.data, self.manifest)
+
+    def test_non_normalized_path_blocks(self):
+        self.write_manifest([self.record(file="nested//one.txt")])
+        with self.assertRaises(ValueError):
+            validate_source_approvals(self.data, self.manifest)
+
     def test_symlink_outside_data_directory_blocks(self):
         outside = self.root / "outside.txt"
         outside.write_text("outside data", encoding="utf-8")
