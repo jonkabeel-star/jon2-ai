@@ -29,13 +29,12 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Validate Kaggle credentials are configured
+      - name: Validate Kaggle API token is configured
         env:
-          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
         run: |
-          if [ -z "$KAGGLE_USERNAME" ] || [ -z "$KAGGLE_KEY" ]; then
-            echo "::error::Add KAGGLE_USERNAME and KAGGLE_KEY as repository Actions secrets."
+          if [ -z "$KAGGLE_API_TOKEN" ]; then
+            echo "::error::Add KAGGLE_API_TOKEN as a repository Actions secret."
             exit 1
           fi
 
@@ -64,11 +63,10 @@ jobs:
           PY
 
       - name: Install Kaggle CLI
-        run: python -m pip install --upgrade kaggle
+        run: python -m pip install --upgrade "kaggle>=1.8.0"
 
       - name: Push notebook to Kaggle
         env:
-          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
           KERNEL_DIR: ${{ inputs.kernel_dir }}
         run: kaggle kernels push -p "$KERNEL_DIR"
