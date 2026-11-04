@@ -56,3 +56,6 @@ jobs:
 
       - name: Audit tokenizer efficiency and byte fallback
         run: python ai_engine/audit_tokenizer.py --data ai_engine/training_data
+
+      - name: Audit corpus quality and privacy signals
+        run: python ai_engine/audit_corpus_quality.py --data ai_engine/training_data
