@@ -34,6 +34,13 @@ The tokenizer serialization defect was corrected in commit 5304dcca0204ceff7e254
 - The separate approval-gate workflow passed all 10 tests.
 - The dedicated Python workflow installed CPU PyTorch, compiled modules, passed all 5 approval-gate tests, and audited the current corpus.
 
+The full Python workflow #41751132597 completed successfully on commit 4adbf0e3:
+- All 11 AI-engine tests passed, including tokenizer serialization round-trip.
+- All 4 new chat-runtime tests passed: missing checkpoints fail closed, checkpoint loading occurs once, empty prompts are rejected, and replies contain only generated completion text.
+- The training approval tests, Python compilation, and data audit passed.
+- The lightweight code-check workflow #41751195037 also passed after isolating PyTorch-dependent runtime tests from the no-PyTorch job.
+- GitHub Pages build and deployment #41751193872 completed successfully.
+
 These checks do not run model training, verify the real-world truth of rights claims, or prove model quality.
 
 ## Current compute observation
