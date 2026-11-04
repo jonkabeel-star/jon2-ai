@@ -26,6 +26,21 @@ class Jon2ApiTests(unittest.TestCase):
         self.assertFalse(payload["checkpoint_configured"])
         self.assertFalse(payload["chat_ready"])
 
+    def test_health_reports_checkpoint_available_without_loading_model(self):
+        with patch.object(jon2_api, "model_is_ready", return_value=False), patch.object(jon2_api, "_checkpoint_configured", return_value=True):
+            response = self.client.get("/api/health")
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["model_status"], "checkpoint_available")
+        self.assertTrue(payload["checkpoint_configured"])
+        self.assertFalse(payload["model_loaded"])
+        self.assertFalse(payload["chat_ready"])
+
+    def test_health_reports_missing_checkpoint(self):
+        with patch.object(jon2_api, "model_is_ready", return_value=False), patch.object(jon2_api, "_checkpoint_configured", return_value=False):
+            response = self.client.get("/api/health")
+        self.assertEqual(response.json()["model_status"], "checkpoint_missing")
+
     def test_chat_returns_503_when_checkpoint_is_missing(self):
         with patch.object(
             jon2_api, "load_runtime",
