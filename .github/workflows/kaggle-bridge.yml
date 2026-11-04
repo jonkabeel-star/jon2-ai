@@ -72,8 +72,33 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --upgrade six "kaggle>=1.8.0"
 
-      - name: Push notebook to Kaggle
+      - name: Push notebook to Kaggle and start execution
         env:
           KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
           KERNEL_DIR: kaggle/hello-jon2
         run: kaggle kernels push -p "$KERNEL_DIR"
+
+      - name: Wait for Kaggle execution and collect logs
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          set +e
+          for attempt in $(seq 1 24); do
+            STATUS="$(kaggle kernels status jon2kabeel/hello-jon2 2>&1)"
+            STATUS_CODE=$?
+            echo "Kaggle status check $attempt/24:"
+            echo "$STATUS"
+            if [ $STATUS_CODE -eq 0 ] && echo "$STATUS" | grep -Eqi 'COMPLETE|COMPLETED'; then
+              echo "::notice::Kaggle notebook execution completed."
+              kaggle kernels logs jon2kabeel/hello-jon2
+              exit $?
+            fi
+            if echo "$STATUS" | grep -Eqi 'KernelWorkerStatus.ERROR|status [" ]*ERROR|ERRORED'; then
+              echo "::error::Kaggle notebook execution failed. Latest logs:"
+              kaggle kernels logs jon2kabeel/hello-jon2
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "::error::Kaggle execution did not reach COMPLETE within six minutes. Check the Kaggle notebook status and logs."
+          exit 1
