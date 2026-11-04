@@ -11,6 +11,8 @@ on:
   pull_request:
     paths:
       - "ai_engine/**"
+      - "index.html"
+      - "tests/check_frontend_js.py"
       - ".github/workflows/jon2-code-checks.yml"
   workflow_dispatch:
 
