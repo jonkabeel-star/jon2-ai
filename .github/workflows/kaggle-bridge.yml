@@ -62,7 +62,7 @@ jobs:
           for key in ("id", "code_file", "language", "kernel_type"):
               if not data.get(key):
                   raise SystemExit(f"Missing required metadata field: {key}")
-          if "jon2kabeel/jon2-approved-training-data" not in data.get("dataset_sources", []):
+          if "jon2kabeel/jon2-approved-training-data-v2" not in data.get("dataset_sources", []):
               raise SystemExit("Notebook must attach the private approved training dataset.")
           code = root / data["code_file"]
           if not code.is_file():
@@ -119,7 +119,7 @@ jobs:
           cat > "$DATASET_DIR/dataset-metadata.json" <<'JSON'
           {
             "title": "Jon2 AI Approved Arabic Training Sources",
-            "id": "jon2kabeel/jon2-approved-training-data",
+            "id": "jon2kabeel/jon2-approved-training-data-v2",
             "licenses": [{"name": "other"}]
           }
           JSON
