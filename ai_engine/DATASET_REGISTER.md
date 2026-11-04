@@ -71,3 +71,13 @@ Do not change a candidate to APPROVED until all fields below are filled and revi
 - Storage: keep the corpus and manifest in private Colab/Drive storage; do not commit training text or source manifests to the public GitHub repository.
 - Status: COLLECTED HISTORICALLY / NOT PRESENT IN CURRENT RUNTIME / NOT APPROVED FOR TRAINING OR COMMERCIAL DEPLOYMENT. Recollect only as a quarantined research corpus and preserve its manifest.
 - Important: CC BY-SA requires attribution and share-alike for adapted material. Do not assume model-weight licensing or commercial redistribution is automatically cleared; obtain a rights review for the intended use before training or release.
+
+## Candidate 5 — Jon2 AI Original Arabic Dialogue Expansion Batch 01
+
+- File: `ai_engine/training_data/original_dialogue_ar_batch_01.txt`
+- Source: 815 original user/assistant dialogue pairs authored specifically for Jon2 AI during development on 2026-11-04. The batch contains approximately 136,075 Unicode characters and does not intentionally use private user conversations, copied web text, or third-party datasets.
+- Intended role: candidate dialogue-training material for Arabic instruction following, multi-turn context, explanations, writing, programming concepts, evaluation literacy, privacy, and safe assistant behavior.
+- Rights status: project-authored draft; repository owner review and explicit acceptance of this exact file and intended training use are required. This entry is not legal advice or a guarantee of rights in any third-party expression that may be inadvertently present.
+- Quality status: draft requiring human review for factual accuracy, language, duplication, balance, and suitability. Automated structural checks cannot establish these qualities.
+- Status: **DRAFT / OWNER REVIEW REQUIRED / NOT APPROVED FOR TRAINING**.
+- Handling: keep the file quarantined from training until the exact-file SHA-256, character count, reviewer, review date, rights basis, and intended use are recorded in the private approval manifest. Do not treat this register entry as approval.
