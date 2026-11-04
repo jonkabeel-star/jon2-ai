@@ -216,10 +216,9 @@ def train(args):
                 best_val = scores["validation"]
                 evaluations_without_improvement = 0
                 save_checkpoint(
-                    best_path, model.cpu(), tokenizer, args, completed_step,
+                    best_path, model, tokenizer, args, completed_step,
                     best_val, config, optimizer, scheduler, scaler, corpus_sha256,
                 )
-                model.to(device)
                 print(f"Saved new best checkpoint: {best_path}")
             else:
                 evaluations_without_improvement += 1
