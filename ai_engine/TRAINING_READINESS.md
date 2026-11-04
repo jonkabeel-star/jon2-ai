@@ -4,24 +4,22 @@ Last verified: 2026-11-04
 
 ## Latest safety, training-resume, and CI hardening (2026-11-04)
 
-The latest Python workflow #41754559753 completed successfully on commit `11b3e360`:
-- CI installs CPU-only PyTorch wheels and the project requirements declare `torch>=2.3`, matching the modern AMP API used by the trainer.
+The latest Python workflow #41755161052 completed successfully on commit `2e210879`:
 - All 5 repository-level source-approval tests passed.
 - All 11 AI-engine tokenizer and data-audit tests passed.
-- All 33 AI-engine runtime, evaluation, source-approval, legacy-training-gate, training-resume, and generation-stop tests passed.
-- The full workflow completed compilation, all three test suites, and the current training-text audit with no failures.
-- The separate approval-gate workflow #41754559582 and combined Python/Node code checks #41754559636 also completed successfully.
-- Dialogue generation now stops before the next `المستخدم:` marker; regression tests verify that it does not continue into the next training example.
-- Training checkpoints now preserve model, optimizer, scheduler, AMP scaler, Python RNG, PyTorch RNG, CUDA RNG when present, training-plan metadata, and a SHA-256 fingerprint of the exact corpus.
+- All 34 AI-engine runtime, evaluation, source-approval, legacy-training-gate, training-resume, and generation-stop tests passed.
+- The workflow compiled Python modules, ran all three test suites, and completed the corpus audit successfully: 50 tests passed across the three suites.
+- The latest combined Python/Node code-check runs #41755161152 and #41755161091 completed successfully.
+- GitHub Pages build and deployment #41755161002 completed successfully.
+- Dialogue generation stops before the next `المستخدم:` marker in both chat and held-out evaluation. Regression tests verify the evaluation runner passes the stop marker.
+- Training checkpoints preserve model, optimizer, scheduler, AMP scaler, Python RNG, PyTorch RNG, CUDA RNG when present, training-plan metadata, corpus fingerprint, and the early-stopping no-improvement counter.
 - Resume validation rejects changed corpus text, tokenizer/model settings, or training-plan settings instead of silently continuing a different run.
 - Resume restores the scheduler's active learning rate into the optimizer, avoiding a warmup-rate reset after restart.
-- Checkpoint writes are atomic and no longer move the model between devices just to save a checkpoint.
-- The legacy `jon2_core.py` training entry point enforces the same private source-approval manifest and minimum corpus-size gate as the modern trainer.
-- Source-approval path validation rejects Windows-style backslashes and non-normalized paths; regression tests cover both.
-- Every training approval is now bound to the exact raw file bytes by a lowercase SHA-256 fingerprint and exact UTF-8 character count; the gate blocks changed files, missing fingerprints, and mismatched counts. Regression tests cover stale files and altered counts.
-- The current corpus audit still reports 15,025 characters across 2 files, with zero exact normalized duplicate lines. Rights still require human review.
+- Checkpoint writes are atomic and do not move the model between devices just to save a checkpoint.
+- Every training approval is bound to the exact raw file bytes by a lowercase SHA-256 fingerprint and exact UTF-8 character count; the gate blocks changed files, missing fingerprints, and mismatched counts.
+- The current corpus audit still reports 15,025 characters across 2 files, below the 100,000-character reference, with zero exact normalized duplicate lines. Rights still require human review.
 
-The CI workflow completed all steps, including compilation, all test suites, and the corpus audit. This proves the engineering safeguards work; it does not create a trained checkpoint or approve any dataset.
+These successful checks verify the engineering safeguards and site deployment. They do not create a trained checkpoint, approve any dataset, or establish assistant quality.
 
 ## Verified engineering tests
 
