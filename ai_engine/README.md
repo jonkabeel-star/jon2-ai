@@ -120,3 +120,16 @@ python ai_engine/audit_tokenizer.py --data ai_engine/training_data --vocab-size 
 The report measures total tokens, merged-token count, UTF-8 byte-fallback count and percentage, bytes per token, exact decode round trips, and separate Arabic, English, mixed-language, and emoji samples. It trains a temporary tokenizer from the selected text for measurement only; it does not modify the corpus, create a model checkpoint, or approve any source.
 
 A lower byte-fallback percentage and more bytes represented per token can indicate more compact tokenization for that sample. These are tokenizer-efficiency signals only—not measures of comprehension, factual accuracy, or assistant quality. Keep the held-out evaluation prompts outside the training folder.
+
+
+## Corpus quality and privacy-signal audit
+
+Run a structural review before considering any text for training:
+
+\`\`\`bash
+python ai_engine/audit_corpus_quality.py --data ai_engine/training_data --output ai_engine/evaluation/corpus-quality-report.json
+\`\`\`
+
+The report measures per-file and combined line/sentence length distributions, Arabic/Latin letter mix, normalized exact duplicate lines, Unicode integrity warnings, and counts of email-like, phone-like, and URL patterns. It never includes matched contact values or source text in the report. It reads UTF-8 strictly and rejects invalid byte sequences rather than silently replacing them.
+
+This is a review aid, not an automatic privacy clearance, rights decision, plagiarism detector, or semantic-quality score. Keep reports containing private-source metadata out of public repositories; inspect source text privately and obtain human approval before training.
