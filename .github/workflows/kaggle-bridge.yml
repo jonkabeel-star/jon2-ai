@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/kaggle-bridge.yml"
       - "kaggle/hello-jon2/**"
+      - "ai_engine/**"
   workflow_dispatch:
     inputs:
       kernel_dir:
@@ -24,7 +25,7 @@ concurrency:
 jobs:
   validate-and-push:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - name: Check out selected branch
         uses: actions/checkout@v4
@@ -61,6 +62,8 @@ jobs:
           for key in ("id", "code_file", "language", "kernel_type"):
               if not data.get(key):
                   raise SystemExit(f"Missing required metadata field: {key}")
+          if "jon2kabeel/jon2-approved-training-data" not in data.get("dataset_sources", []):
+              raise SystemExit("Notebook must attach the private approved training dataset.")
           code = root / data["code_file"]
           if not code.is_file():
               raise SystemExit(f"Notebook file not found: {code}")
@@ -71,6 +74,61 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install --upgrade six "kaggle>=1.8.0"
+
+      - name: Package approved source files and publish private training dataset
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          DATASET_DIR=/tmp/jon2-approved-dataset
+          mkdir -p "$DATASET_DIR/ai_engine/training_data"
+          cp ai_engine/jon2_core.py ai_engine/train_jon2.py ai_engine/tokenizer.py ai_engine/source_approval.py "$DATASET_DIR/ai_engine/"
+          cp ai_engine/training_data/original_dialogue_ar_batch_01.txt "$DATASET_DIR/ai_engine/training_data/"
+          cp ai_engine/training_data/original_dialogue_ar_batch_02.txt "$DATASET_DIR/ai_engine/training_data/"
+          cp ai_engine/training_data/original_dialogue_ar_batch_03.txt "$DATASET_DIR/ai_engine/training_data/"
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          root = Path("/tmp/jon2-approved-dataset/ai_engine/training_data")
+          files = sorted(root.glob("*.txt"))
+          if len(files) != 3:
+              raise SystemExit(f"Expected exactly 3 approved dialogue batches, found {len(files)}")
+          records = []
+          for path in files:
+              raw = path.read_bytes()
+              text = raw.decode("utf-8", errors="strict")
+              if len(text.strip()) < 1000:
+                  raise SystemExit(f"Unexpectedly short source: {path.name}")
+              records.append({
+                  "file": path.name,
+                  "sha256": hashlib.sha256(raw).hexdigest(),
+                  "character_count": len(text),
+                  "status": "APPROVED",
+                  "reviewer": "Repository owner — explicit approval for batches 01, 02, and 03 research training only",
+                  "review_date": "2026-11-04",
+                  "rights_basis": "Original project-authored Arabic dialogue created for Jon2 AI. No private conversations or copied third-party dataset text. This records owner approval for research training only, not a legal guarantee.",
+                  "intended_use": "research_training"
+              })
+          (root / "source_approvals.json").write_text(
+              json.dumps({"approved_sources": records}, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8"
+          )
+          print("Approved source characters:", sum(x["character_count"] for x in records))
+          print("Approved source files:", [x["file"] for x in records])
+          PY
+          cat > "$DATASET_DIR/dataset-metadata.json" <<'JSON'
+          {
+            "title": "Jon2 AI Approved Arabic Training Sources",
+            "id": "jon2kabeel/jon2-approved-training-data",
+            "licenses": [{"name": "other"}]
+          }
+          JSON
+          if kaggle datasets create -p "$DATASET_DIR" -r zip; then
+            echo "::notice::Created private approved-source dataset."
+          else
+            echo "Dataset may already exist; attempting a private version update."
+            kaggle datasets version -p "$DATASET_DIR" -m "Update approved Jon2 Arabic training sources" -q
+          fi
 
       - name: Push notebook to Kaggle and start execution
         env:
@@ -83,10 +141,10 @@ jobs:
           KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
         run: |
           set +e
-          for attempt in $(seq 1 90); do
+          for attempt in $(seq 1 150); do
             STATUS="$(kaggle kernels status jon2kabeel/hello-jon2 2>&1)"
             STATUS_CODE=$?
-            echo "Kaggle status check $attempt/90:"
+            echo "Kaggle status check $attempt/150:"
             echo "$STATUS"
             if [ $STATUS_CODE -eq 0 ] && echo "$STATUS" | grep -Eqi 'COMPLETE|COMPLETED'; then
               echo "::notice::Kaggle notebook execution completed."
@@ -100,7 +158,7 @@ jobs:
             fi
             sleep 20
           done
-          echo "::error::Kaggle execution did not reach COMPLETE within thirty minutes. Check the Kaggle notebook status and logs."
+          echo "::error::Kaggle execution did not reach COMPLETE within fifty minutes."
           exit 1
 
       - name: Download and verify the trained checkpoint
@@ -109,24 +167,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/jon2-kernel-output
-          kaggle kernels output jon2kabeel/hello-jon2 -p /tmp/jon2-kernel-output --file-pattern '.*jon2-small\.pt$'
+          kaggle kernels output jon2kabeel/hello-jon2 -p /tmp/jon2-kernel-output
           CHECKPOINT="$(find /tmp/jon2-kernel-output -type f -name 'jon2-small.pt' -print -quit)"
           if [ -z "$CHECKPOINT" ]; then
             echo "::error::Kaggle output did not contain jon2-small.pt"
-            find /tmp/jon2-kernel-output -maxdepth 3 -type f -print
+            find /tmp/jon2-kernel-output -maxdepth 4 -type f -print
             exit 1
           fi
           test "$(stat -c%s "$CHECKPOINT")" -gt 100000
           mkdir -p /tmp/jon2-private-weights
           cp "$CHECKPOINT" /tmp/jon2-private-weights/jon2-small.pt
           sha256sum /tmp/jon2-private-weights/jon2-small.pt
-          echo "::notice::Checkpoint downloaded and size-verified. It will be stored only in a private Kaggle dataset."
-
-      - name: Store checkpoint in a private Kaggle dataset
-        env:
-          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
-        run: |
-          set -euo pipefail
           cat > /tmp/jon2-private-weights/dataset-metadata.json <<'JSON'
           {
             "title": "Jon2 AI Private Model Checkpoint",
@@ -134,5 +185,14 @@ jobs:
             "licenses": [{"name": "other"}]
           }
           JSON
-          kaggle datasets version -p /tmp/jon2-private-weights -m "Update private Jon2 checkpoint" -q
-          echo "::notice::Private Kaggle checkpoint dataset created."
+
+      - name: Store checkpoint in a private Kaggle dataset
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          if kaggle datasets create -p /tmp/jon2-private-weights -r zip; then
+            echo "::notice::Created private Kaggle checkpoint dataset."
+          else
+            kaggle datasets version -p /tmp/jon2-private-weights -m "Update private Jon2 checkpoint" -q
+          fi
