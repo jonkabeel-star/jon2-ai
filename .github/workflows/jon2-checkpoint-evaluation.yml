@@ -36,7 +36,9 @@ jobs:
             exit 1
           fi
           python -m pip install --upgrade pip
+          python -m pip install --upgrade six
           python -m pip install --upgrade "kaggle>=1.8.0"
+          python -c "import six; print('six dependency OK:', six.__version__)"
           mkdir -p /tmp/jon2-checkpoint
           kaggle datasets download -d jon2kabeel/jon2-private-model-checkpoint -p /tmp/jon2-checkpoint --unzip
           CHECKPOINT="$(find /tmp/jon2-checkpoint -type f -name 'jon2-small.pt' -print -quit)"
@@ -61,7 +63,6 @@ jobs:
           JON2_CHECKPOINT_FILE="$CHECKPOINT" PYTHONPATH="$GITHUB_WORKSPACE/ai_engine" python - <<'PY' | tee jon2-evaluation.txt
           import os
           import re
-          import sys
           from pathlib import Path
           import torch
           from jon2_core import load_model, generate
