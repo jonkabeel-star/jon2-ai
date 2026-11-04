@@ -114,7 +114,7 @@ Do not target equal percentages for every letter. Natural Arabic frequencies are
 Measure how efficiently the current BPE tokenizer represents the actual corpus:
 
 \`\`\`bash
-python ai_engine/audit_tokenizer.py --data ai_engine/training_data --vocab-size 1000 --output ai_engine/evaluation/tokenizer-audit.json
+python ai_engine/audit_tokenizer.py --data ai_engine/training_data --vocab-size 512 --output ai_engine/evaluation/tokenizer-audit.json
 \`\`\`
 
 The report measures total tokens, merged-token count, UTF-8 byte-fallback count and percentage, bytes per token, exact decode round trips, and separate Arabic, English, mixed-language, and emoji samples. It trains a temporary tokenizer from the selected text for measurement only; it does not modify the corpus, create a model checkpoint, or approve any source.
