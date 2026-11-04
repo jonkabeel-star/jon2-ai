@@ -52,3 +52,18 @@ Use a separate held-out test set that was not included in training. Include ordi
 ## Limits
 
 This rubric is an initial manual gate, not a formal benchmark, security audit, privacy audit, or guarantee of production readiness. Passing it does not establish legal rights to the training data.
+
+
+## Expanded Arabic meaning and context coverage
+
+The held-out suite now contains 40 prompts. The additional cases test:
+- polysemy and context-dependent word meaning;
+- negation, conditionals, tense, quantifiers, and temporal order;
+- pronoun reference and ambiguous attachment;
+- cause/effect, contrast, inference, and discourse cohesion;
+- roots, derivation, synonyms, antonyms, idioms, and metaphor;
+- Egyptian colloquial-to-Modern-Standard Arabic conversion and formal/informal register;
+- multi-step instruction following and continuity with prior context;
+- calibrated uncertainty when a sentence admits more than one reading.
+
+These are evaluation questions, not training examples. Keep them held out. Score whether the model explains ambiguity instead of guessing, distinguishes literal from figurative meaning, and uses the surrounding sentence to interpret words. A larger prompt set improves test coverage but does not itself improve the model; only training on permitted, high-quality data and subsequent evaluation can do that.
