@@ -49,3 +49,8 @@ python ai_engine/audit_data.py
 ```
 
 The audit checks structure and duplicates only. It cannot verify copyright, factual correctness, privacy, or language quality. A passing audit is not approval for training or release.
+
+
+## Source provenance template
+
+Before proposing a new dataset, complete `SOURCE_MANIFEST_TEMPLATE.md` for that source and keep it quarantined until a human reviewer approves the exact intended use. Do not commit private manifests or restricted source data to the public repository.
