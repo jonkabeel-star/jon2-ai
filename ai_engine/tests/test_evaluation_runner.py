@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from evaluate_model import load_prompts, REVIEW_DIMENSIONS
+from evaluate_model import load_prompts, REVIEW_DIMENSIONS, main
 
 
 class EvaluationPromptTests(unittest.TestCase):
@@ -51,6 +51,23 @@ class EvaluationPromptTests(unittest.TestCase):
     def test_review_rubric_has_six_dimensions(self):
         self.assertEqual(len(REVIEW_DIMENSIONS), 6)
         self.assertIn("arabic_quality", REVIEW_DIMENSIONS)
+
+    def test_repository_heldout_set_has_twelve_unique_prompts(self):
+        prompt_path = Path(__file__).resolve().parents[1] / "evaluation" / "prompts_ar.jsonl"
+        prompts = load_prompts(prompt_path)
+        self.assertEqual(len(prompts), 12)
+        self.assertEqual(len({item["id"] for item in prompts}), 12)
+
+    def test_cli_refuses_missing_checkpoint(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from unittest.mock import patch
+
+        with tempfile.TemporaryDirectory() as directory:
+            missing = Path(directory) / "not-trained.pt"
+            with patch("sys.argv", ["evaluate_model.py", "--checkpoint", str(missing)]):
+                with redirect_stdout(StringIO()):
+                    self.assertEqual(main(), 2)
 
 
 if __name__ == "__main__":
