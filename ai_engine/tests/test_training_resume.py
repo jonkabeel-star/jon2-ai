@@ -45,18 +45,20 @@ class TrainingResumeTests(unittest.TestCase):
                 path, model, tokenizer, args, 7, 1.25,
                 {"width": 16, "heads": 2, "layers": 1, "context": 8, "dropout": 0.0},
                 optimizer, scheduler, scaler, "abc123",
+                evaluations_without_improvement=3,
             )
             state = torch.load(path, map_location="cpu", weights_only=False)
 
         for key in (
             "optimizer_state", "scheduler_state", "scaler_state",
             "python_rng_state", "torch_rng_state", "training_plan",
-            "corpus_sha256",
+            "corpus_sha256", "evaluations_without_improvement",
         ):
             self.assertIn(key, state)
         self.assertEqual(state["training_steps"], 7)
         self.assertEqual(state["best_validation_loss"], 1.25)
         self.assertEqual(state["corpus_sha256"], "abc123")
+        self.assertEqual(state["evaluations_without_improvement"], 3)
         self.assertEqual(state["training_plan"], _training_plan(args))
         self.assertTrue(state["optimizer_state"]["state"])
 
