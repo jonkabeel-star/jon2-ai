@@ -62,7 +62,7 @@ class EvaluationPromptTests(unittest.TestCase):
     def test_evaluator_uses_dialogue_stop_marker(self):
         from contextlib import redirect_stdout
         from io import StringIO
-        from unittest.mock import patch, Mock
+        from unittest.mock import patch
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
