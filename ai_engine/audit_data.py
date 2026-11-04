@@ -20,6 +20,11 @@ def clean_lines(path: Path) -> list[str]:
     ]
 
 
+def is_dialogue_file(path: Path) -> bool:
+    """Recognize every versioned original Arabic dialogue TXT batch."""
+    return path.suffix.lower() == ".txt" and path.stem.startswith("original_dialogue_ar")
+
+
 def audit_dialogue(path: Path) -> list[str]:
     lines = clean_lines(path)
     errors: list[str] = []
@@ -72,7 +77,7 @@ def main() -> int:
         total_chars += count
         all_lines.extend(lines)
         print(f"{path}: {count:,} characters | {len(lines):,} non-empty lines")
-        if path.name == "original_dialogue_ar.txt":
+        if is_dialogue_file(path):
             errors.extend(audit_dialogue(path))
 
     normalized = [re.sub(r"\s+", " ", line).casefold() for line in all_lines]
