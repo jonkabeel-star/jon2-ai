@@ -2,12 +2,12 @@
 
 Features: warmup + cosine learning-rate decay, CUDA mixed precision when
 available, gradient clipping, validation-based best-checkpoint selection,
-early stopping, and resumable training. No pretrained model is downloaded.
+early stopping, and exact resumable training state. No pretrained model is downloaded.
 """
 from __future__ import annotations
 
 import argparse
-import json
+import hashlib
 import math
 import random
 from pathlib import Path
@@ -15,36 +15,55 @@ from pathlib import Path
 import torch
 from torch import nn
 
-from jon2_core import (
-    Jon2Transformer,
-    _batch,
-    _estimate_loss,
-    read_corpus,
-)
+from jon2_core import Jon2Transformer, _batch, _estimate_loss, read_corpus
 from tokenizer import ByteBPETokenizer
 from source_approval import validate_source_approvals
 
 
-def save_checkpoint(path: Path, model, tokenizer, args, step, best_val, config):
+def _training_plan(args):
+    names = (
+        "steps", "batch_size", "context", "width", "heads", "layers",
+        "dropout", "learning_rate", "weight_decay", "warmup_steps",
+        "validation_fraction", "eval_steps", "eval_every", "patience",
+        "min_delta", "grad_clip", "minimum_chars", "tokenizer_vocab_size",
+        "tokenizer_min_frequency", "seed", "no_amp",
+    )
+    return {name: getattr(args, name) for name in names}
+
+
+def save_checkpoint(
+    path: Path, model, tokenizer, args, step, best_val, config,
+    optimizer=None, scheduler=None, scaler=None, corpus_sha256=None,
+):
+    """Atomically save model, optimizer, scheduler, scaler, and RNG states."""
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
-    torch.save(
-        {
-            "model_state": model.state_dict(),
-            "tokenizer": tokenizer.to_dict(),
-            "config": config,
-            "training_steps": step,
-            "best_validation_loss": best_val,
-            "corpus_characters": args.corpus_characters,
-            "validation_fraction": args.validation_fraction,
-            "model_name": "Jon2 Original Transformer",
-            "training_method": "warmup_cosine_amp_early_stopping",
-        },
-        temporary,
-    )
+    state = {
+        "model_state": model.state_dict(),
+        "tokenizer": tokenizer.to_dict(),
+        "config": config,
+        "training_plan": _training_plan(args),
+        "training_steps": step,
+        "best_validation_loss": best_val,
+        "corpus_characters": args.corpus_characters,
+        "corpus_sha256": corpus_sha256,
+        "validation_fraction": args.validation_fraction,
+        "model_name": "Jon2 Original Transformer",
+        "training_method": "warmup_cosine_amp_early_stopping",
+        "python_rng_state": random.getstate(),
+        "torch_rng_state": torch.get_rng_state(),
+    }
+    if torch.cuda.is_available():
+        state["cuda_rng_state_all"] = torch.cuda.get_rng_state_all()
+    if optimizer is not None:
+        state["optimizer_state"] = optimizer.state_dict()
+    if scheduler is not None:
+        state["scheduler_state"] = scheduler.state_dict()
+    if scaler is not None:
+        state["scaler_state"] = scaler.state_dict()
+
+    torch.save(state, temporary)
     temporary.replace(path)
-
-
 
 
 def train(args):
@@ -59,16 +78,22 @@ def train(args):
     data_dir = Path(args.data)
     validate_source_approvals(data_dir, Path(args.approval_manifest))
     corpus = read_corpus(data_dir)
-    tokenizer = ByteBPETokenizer.train(corpus, vocab_size=args.tokenizer_vocab_size, min_frequency=args.tokenizer_min_frequency)
-    encoded = torch.tensor(tokenizer.encode(corpus), dtype=torch.long)
     args.corpus_characters = len(corpus)
-
     if len(corpus) < args.minimum_chars:
         raise ValueError(
             f"Training corpus has {len(corpus):,} characters; this run requires "
             f"at least {args.minimum_chars:,}. Add reviewed, project-owned or "
             "properly licensed data. Do not duplicate text to pass this check."
         )
+
+    corpus_sha256 = hashlib.sha256(corpus.encode("utf-8")).hexdigest()
+    tokenizer = ByteBPETokenizer.train(
+        corpus,
+        vocab_size=args.tokenizer_vocab_size,
+        min_frequency=args.tokenizer_min_frequency,
+    )
+    encoded = torch.tensor(tokenizer.encode(corpus), dtype=torch.long)
+
     if len(encoded) <= args.context * 2 + 2:
         raise ValueError("Corpus is too short for the selected context window.")
 
@@ -91,7 +116,7 @@ def train(args):
 
     start_step = 0
     best_val = float("inf")
-    stale_evaluations = 0
+    saved = None
     if args.resume:
         resume_path = Path(args.resume)
         if not resume_path.is_file():
@@ -99,6 +124,14 @@ def train(args):
         saved = torch.load(resume_path, map_location=device, weights_only=False)
         if saved.get("tokenizer") != tokenizer.to_dict() or saved.get("config") != config:
             raise ValueError("Resume checkpoint vocabulary/config does not match this run.")
+        if saved.get("corpus_sha256") and saved["corpus_sha256"] != corpus_sha256:
+            raise ValueError("Resume checkpoint was created from different training text.")
+        saved_plan = saved.get("training_plan")
+        if saved_plan is not None and saved_plan != _training_plan(args):
+            raise ValueError(
+                "Resume training settings differ from the saved run. "
+                "Use the same settings to continue exactly, or start a new run."
+            )
         model.load_state_dict(saved["model_state"])
         if "optimizer_state" in saved:
             optimizer.load_state_dict(saved["optimizer_state"])
@@ -117,11 +150,26 @@ def train(args):
         return 0.5 * (1.0 + math.cos(math.pi * progress))
 
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_at)
-    if start_step:
+    if saved and "scheduler_state" in saved:
+        scheduler.load_state_dict(saved["scheduler_state"])
+    elif start_step:
+        print("Legacy checkpoint: scheduler state unavailable; using step-based fallback.")
         for _ in range(start_step):
             scheduler.step()
 
     scaler = torch.cuda.amp.GradScaler(enabled=amp_enabled)
+    if saved and "scaler_state" in saved:
+        scaler.load_state_dict(saved["scaler_state"])
+
+    # Restore RNG only after model/optimizer/scheduler/scaler initialization.
+    if saved:
+        if "python_rng_state" in saved:
+            random.setstate(saved["python_rng_state"])
+        if "torch_rng_state" in saved:
+            torch.set_rng_state(saved["torch_rng_state"].cpu())
+        if torch.cuda.is_available() and "cuda_rng_state_all" in saved:
+            torch.cuda.set_rng_state_all(saved["cuda_rng_state_all"])
+
     print(
         f"Jon2 original training | device={device} | AMP={amp_enabled} | "
         f"tokens={len(encoded):,} | vocab={tokenizer.vocab_size}"
@@ -167,25 +215,19 @@ def train(args):
             if scores["validation"] < best_val - args.min_delta:
                 best_val = scores["validation"]
                 evaluations_without_improvement = 0
-                save_checkpoint(best_path, model.cpu(), tokenizer, args,
-                                completed_step, best_val, config)
+                save_checkpoint(
+                    best_path, model.cpu(), tokenizer, args, completed_step,
+                    best_val, config, optimizer, scheduler, scaler, corpus_sha256,
+                )
                 model.to(device)
                 print(f"Saved new best checkpoint: {best_path}")
             else:
                 evaluations_without_improvement += 1
 
             if args.keep_last:
-                last_path.parent.mkdir(parents=True, exist_ok=True)
-                torch.save(
-                    {
-                        "model_state": model.state_dict(),
-                        "tokenizer": tokenizer.to_dict(),
-                        "config": config,
-                        "training_steps": completed_step,
-                        "best_validation_loss": best_val,
-                        "optimizer_state": optimizer.state_dict(),
-                    },
-                    last_path,
+                save_checkpoint(
+                    last_path, model, tokenizer, args, completed_step,
+                    best_val, config, optimizer, scheduler, scaler, corpus_sha256,
                 )
 
             if evaluations_without_improvement >= args.patience:
