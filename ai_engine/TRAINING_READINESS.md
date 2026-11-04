@@ -2,6 +2,23 @@
 
 Last verified: 2026-11-04
 
+## Latest dataset inventory and website API wiring (2026-11-04)
+
+The privacy-conscious dataset inventory was added in commit `f472424c` and its Python CI run `41758598752` completed successfully:
+- 5 repository-level approval-gate tests passed.
+- 11 top-level engine/tokenizer/audit tests passed.
+- 60 runtime, API, evaluation, training-resume, corpus-quality, and dataset-inventory tests passed.
+- Total: 76 Python tests passed.
+- The inventory found 2 text files, 15,673 UTF-8 characters, 27,843 bytes, 226 lines, 142 non-empty lines, and 9,786 tokens using a temporary 512-token BPE vocabulary.
+- The approval gate reported BLOCKED because the private `source_approvals.json` manifest is absent. Training remains prohibited; no source was approved and no checkpoint was created.
+- The inventory reports SHA-256 fingerprints and counts only; it does not copy corpus text into its report. Token counts are corpus-specific metrics, not a quality score.
+
+The static website chat was then connected to a configurable FastAPI endpoint in commit `653b28b5`. It checks `/api/health`, posts user messages to `/api/chat`, displays backend errors without inventing model answers, and clearly reports that the backend is unavailable when no API URL is configured. The API base is supplied through `window.JON2_API_BASE_URL` before the page's main script. The GitHub Pages site still has no deployed FastAPI model host or trained checkpoint, so real chat remains unavailable.
+
+A Node.js syntax check for the inline website JavaScript was added to GitHub Actions. Code-check run `41758974720` completed successfully on commit `7d94c580`.
+
+These are engineering and integration improvements only. They do not establish a trained model, legal clearance, or production availability.
+
 
 ## Latest tokenizer audit and CI verification (2026-11-04)
 
