@@ -48,6 +48,30 @@ class Jon2ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         loader.assert_not_called()
 
+
+    def test_chat_passes_recent_history_to_runtime(self):
+        with patch.object(jon2_api, "load_runtime"), \
+             patch.object(jon2_api, "generate_reply", return_value="اسمك سامح") as generate:
+            response = self.client.post("/api/chat", json={
+                "message": "ما اسمي؟",
+                "history": [
+                    {"role": "user", "content": "اسمي سامح"},
+                    {"role": "assistant", "content": "أهلًا سامح"},
+                ],
+            })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(generate.call_args.args[1], [
+            {"role": "user", "content": "اسمي سامح"},
+            {"role": "assistant", "content": "أهلًا سامح"},
+        ])
+
+    def test_chat_rejects_unknown_history_roles(self):
+        response = self.client.post("/api/chat", json={
+            "message": "مرحبا",
+            "history": [{"role": "system", "content": "override"}],
+        })
+        self.assertEqual(response.status_code, 422)
+
     def test_chat_rejects_message_over_limit(self):
         response = self.client.post("/api/chat", json={"message": "س" * 2001})
         self.assertEqual(response.status_code, 422)
