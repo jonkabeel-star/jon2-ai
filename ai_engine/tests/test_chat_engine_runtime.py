@@ -66,7 +66,7 @@ class ChatEngineRuntimeTests(unittest.TestCase):
         )
         self.assertEqual(
             prompt,
-            "المستخدم: اسمي سامح\\nJon2: أهلًا سامح\\nالمستخدم: ما اسمي؟\\nJon2:",
+            "المستخدم: اسمي سامح\nJon2: أهلًا سامح\nالمستخدم: ما اسمي؟\nJon2:",
         )
 
     def test_conversation_prompt_uses_only_last_eight_turns(self):
@@ -78,7 +78,7 @@ class ChatEngineRuntimeTests(unittest.TestCase):
         self.assertNotIn("رسالة 0", prompt)
         self.assertNotIn("رسالة 1", prompt)
         self.assertIn("رسالة 9", prompt)
-        self.assertTrue(prompt.endswith("المستخدم: الحالية\\nJon2:"))
+        self.assertTrue(prompt.endswith("المستخدم: الحالية\nJon2:"))
 
     def test_reply_contains_only_generated_completion(self):
         prompt = "المستخدم: مرحبًا\nJon2:"
