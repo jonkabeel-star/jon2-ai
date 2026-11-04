@@ -2,20 +2,22 @@
 
 Last verified: 2026-11-04
 
-## Latest safety and CI hardening (2026-11-04)
+## Latest safety, training-resume, and CI hardening (2026-11-04)
 
-The Python workflow #41752763097 completed successfully on commit `95610102`:
-- The CI environment now installs NumPy and CPU-only PyTorch wheels instead of downloading the default CUDA-enabled PyTorch dependency set.
-- All 5 repository-level source approval tests passed.
+The latest Python workflow #41753731801 completed successfully on commit `c991a4e4`:
+- CI installs CPU-only PyTorch wheels and the project requirements now declare `torch>=2.3`, matching the modern AMP API used by the trainer.
+- All 5 repository-level source-approval tests passed.
 - All 11 AI-engine tokenizer and data-audit tests passed.
-- All 25 AI-engine runtime, evaluation, source-approval, and legacy-training-gate tests passed.
-- The legacy `jon2_core.py` training entry point now enforces the same private source-approval manifest and minimum corpus-size gate as the modern trainer.
-- Source approval path validation now rejects Windows-style backslashes and non-normalized paths; regression tests cover both.
+- All 28 AI-engine runtime, evaluation, source-approval, legacy-training-gate, and training-resume tests passed.
+- Training checkpoints now preserve model, optimizer, scheduler, AMP scaler, Python RNG, PyTorch RNG, CUDA RNG when present, training-plan metadata, and a SHA-256 fingerprint of the exact corpus.
+- Resume validation rejects changed corpus text, tokenizer/model settings, or training-plan settings instead of silently continuing a different run.
+- Resume restores the scheduler's active learning rate into the optimizer, avoiding a warmup-rate reset after restart.
+- Checkpoint writes are atomic and no longer move the model between devices just to save a checkpoint.
+- The legacy `jon2_core.py` training entry point enforces the same private source-approval manifest and minimum corpus-size gate as the modern trainer.
+- Source-approval path validation rejects Windows-style backslashes and non-normalized paths; regression tests cover both.
 - The current corpus audit still reports 15,025 characters across 2 files, with zero exact normalized duplicate lines. Rights still require human review.
 
-GitHub Pages build #41752763162 also completed its build stage successfully; deployment was still running at the time of this note.
-
-These changes improve CI efficiency and prevent alternate training paths from bypassing source review. They do not create a trained checkpoint or approve any dataset.
+The CI workflow completed all steps, including compilation, all test suites, and the corpus audit. This proves the engineering safeguards work; it does not create a trained checkpoint or approve any dataset.
 
 ## Verified engineering tests
 
