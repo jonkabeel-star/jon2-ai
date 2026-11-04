@@ -59,3 +59,6 @@ jobs:
 
       - name: Audit corpus quality and privacy signals
         run: python ai_engine/audit_corpus_quality.py --data ai_engine/training_data
+
+      - name: Build privacy-conscious dataset inventory
+        run: python ai_engine/dataset_inventory.py --data ai_engine/training_data
