@@ -1,4 +1,5 @@
 """Unit tests for the source approval gate; no model dependencies required."""
+import hashlib
 import json
 import tempfile
 import unittest
@@ -29,6 +30,10 @@ class SourceApprovalTests(unittest.TestCase):
             "intended_use": "research_training",
         }
         item.update(overrides)
+        source = self.data / item["file"]
+        raw = source.read_bytes() if source.is_file() else b""
+        item["sha256"] = hashlib.sha256(raw).hexdigest()
+        item["character_count"] = len(raw.decode("utf-8"))
         return item
 
     def write_manifest(self, records):
@@ -94,6 +99,26 @@ class SourceApprovalTests(unittest.TestCase):
             self.record(),
             self.record(file="linked.txt"),
         ])
+        with self.assertRaises(PermissionError):
+            validate_source_approvals(self.data, self.manifest)
+
+
+    def test_changed_file_after_approval_blocks(self):
+        self.write_manifest([self.record()])
+        (self.data / "one.txt").write_text("changed after approval", encoding="utf-8")
+        with self.assertRaises(PermissionError):
+            validate_source_approvals(self.data, self.manifest)
+
+    def test_missing_file_fingerprint_blocks(self):
+        record = self.record()
+        record.pop("sha256")
+        self.write_manifest([record])
+        with self.assertRaises(ValueError):
+            validate_source_approvals(self.data, self.manifest)
+
+    def test_wrong_character_count_blocks(self):
+        record = self.record(character_count=999)
+        self.write_manifest([record])
         with self.assertRaises(PermissionError):
             validate_source_approvals(self.data, self.manifest)
 
