@@ -44,7 +44,7 @@ def analyze_text(text: str, source_name: str = "text") -> dict:
     line_lengths = [len(line) for line in lines]
     chars = len(text)
     letters_count = sum(1 for ch in text if ch.isalpha())
-    arabic_count = sum(1 for ch in text if ch.isalpha() and "\\u0600" <= ch <= "\\u06ff")
+    arabic_count = sum(1 for ch in text if ch.isalpha() and "\u0600" <= ch <= "\u06ff")
     latin_count = sum(1 for ch in text if ch.isalpha() and ("A" <= ch <= "Z" or "a" <= ch <= "z"))
     controls = [
         ch for ch in text
