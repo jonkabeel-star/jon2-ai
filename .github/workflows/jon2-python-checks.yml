@@ -53,3 +53,6 @@ jobs:
 
       - name: Audit Arabic character and vocabulary coverage
         run: python ai_engine/audit_language.py --data ai_engine/training_data
+
+      - name: Audit tokenizer efficiency and byte fallback
+        run: python ai_engine/audit_tokenizer.py --data ai_engine/training_data
