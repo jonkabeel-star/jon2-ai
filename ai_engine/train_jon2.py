@@ -7,6 +7,7 @@ early stopping, and resumable training. No pretrained model is downloaded.
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import random
 from pathlib import Path
@@ -43,6 +44,62 @@ def save_checkpoint(path: Path, model, tokenizer, args, step, best_val, config):
     temporary.replace(path)
 
 
+
+def validate_source_approvals(data_dir: Path, manifest_path: Path) -> None:
+    """Require explicit, source-by-source human approval before any training."""
+    files = {
+        path.relative_to(data_dir).as_posix()
+        for path in data_dir.rglob("*.txt")
+        if path.is_file()
+    }
+    if not files:
+        raise FileNotFoundError(f"No training .txt files found in {data_dir}.")
+    if not manifest_path.is_file():
+        raise PermissionError(
+            f"Training blocked: approval manifest not found at {manifest_path}. "
+            "Review each source and create source_approvals.json privately."
+        )
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise ValueError(f"Invalid source approval manifest: {exc}") from exc
+
+    records = manifest.get("approved_sources") if isinstance(manifest, dict) else None
+    if not isinstance(records, list):
+        raise ValueError("Manifest must contain an 'approved_sources' list.")
+
+    approvals = {}
+    for record in records:
+        if not isinstance(record, dict) or not isinstance(record.get("file"), str):
+            raise ValueError("Every approval record must contain a relative 'file' path.")
+        name = record["file"]
+        if name in approvals:
+            raise ValueError(f"Duplicate approval record for {name}.")
+        approvals[name] = record
+
+    missing = sorted(files - set(approvals))
+    unexpected = sorted(set(approvals) - files)
+    if missing or unexpected:
+        raise PermissionError(
+            f"Training blocked. Missing approvals: {missing or 'none'}; "
+            f"records without matching text files: {unexpected or 'none'}."
+        )
+
+    allowed_uses = {"research_training", "public_model", "commercial_model"}
+    for name in sorted(files):
+        record = approvals[name]
+        if record.get("status") != "APPROVED":
+            raise PermissionError(f"Training blocked: {name} is not APPROVED.")
+        for field in ("reviewer", "review_date", "rights_basis"):
+            if not isinstance(record.get(field), str) or not record[field].strip():
+                raise PermissionError(f"Training blocked: {name} lacks {field}.")
+        if record.get("intended_use") not in allowed_uses:
+            raise PermissionError(
+                f"Training blocked: {name} has no valid intended_use approval."
+            )
+    print(f"Source approval gate: PASS ({len(files)} text files explicitly approved).")
+
+
 def train(args):
     random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -52,7 +109,9 @@ def train(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     amp_enabled = device.type == "cuda" and not args.no_amp
 
-    corpus = read_corpus(Path(args.data))
+    data_dir = Path(args.data)
+    validate_source_approvals(data_dir, Path(args.approval_manifest))
+    corpus = read_corpus(data_dir)
     tokenizer = ByteBPETokenizer.train(corpus, vocab_size=args.tokenizer_vocab_size, min_frequency=args.tokenizer_min_frequency)
     encoded = torch.tensor(tokenizer.encode(corpus), dtype=torch.long)
     args.corpus_characters = len(corpus)
@@ -194,6 +253,7 @@ def train(args):
 def main():
     parser = argparse.ArgumentParser(description="Train Jon2 with modern training safeguards.")
     parser.add_argument("--data", default="ai_engine/training_data")
+    parser.add_argument("--approval-manifest", default="ai_engine/training_data/source_approvals.json")
     parser.add_argument("--output", default="ai_engine/checkpoints/jon2-small.pt")
     parser.add_argument("--last-checkpoint", default="ai_engine/checkpoints/jon2-last.pt")
     parser.add_argument("--resume", default="")
