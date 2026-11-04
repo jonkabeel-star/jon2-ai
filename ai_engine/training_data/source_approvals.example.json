@@ -1,0 +1,12 @@
+{
+  "approved_sources": [
+    {
+      "file": "your-reviewed-file.txt",
+      "status": "APPROVED",
+      "reviewer": "Name of human reviewer",
+      "review_date": "YYYY-MM-DD",
+      "rights_basis": "Describe the documented ownership, licence, or written permission",
+      "intended_use": "research_training"
+    }
+  ]
+}
