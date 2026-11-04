@@ -1,0 +1,11 @@
+# Private training approvals and corpora must never be committed.
+ai_engine/training_data/source_approvals.json
+ai_engine/training_data/private/
+ai_engine/training_data/*private*.txt
+ai_engine/checkpoints/
+ai_engine/evaluation/*.json
+
+# Python-generated files
+__pycache__/
+*.py[cod]
+.pytest_cache/
