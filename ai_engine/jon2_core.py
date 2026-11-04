@@ -246,6 +246,7 @@ def generate(
     max_new_chars: int = 400, temperature: float = 0.8,
     stop_sequences: list[str] | None = None,
     min_new_tokens: int = 24,
+    do_sample: bool = True,
 ):
     if not prompt.strip():
         raise ValueError("اكتب رسالتك أولًا.")
@@ -282,8 +283,11 @@ def generate(
                 candidate_logits[0, candidate] = float("-inf")
         if not valid_candidates:
             break
-        probabilities = torch.softmax(candidate_logits, dim=-1)
-        next_id = torch.multinomial(probabilities, num_samples=1)
+        if do_sample:
+            probabilities = torch.softmax(candidate_logits, dim=-1)
+            next_id = torch.multinomial(probabilities, num_samples=1)
+        else:
+            next_id = torch.argmax(candidate_logits, dim=-1, keepdim=True)
         token_id = int(next_id.item())
         generated_ids.append(token_id)
         generated_bytes.extend(tokenizer._token_bytes(token_id))
