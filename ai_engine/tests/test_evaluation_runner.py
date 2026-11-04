@@ -70,18 +70,24 @@ class EvaluationPromptTests(unittest.TestCase):
             checkpoint.write_bytes(b"checkpoint placeholder")
             prompts = root / "prompts.jsonl"
             prompts.write_text(
-                json.dumps({"id": "one", "prompt": "سؤال"}) + "\\n",
+                json.dumps({"id": "one", "prompt": "سؤال"}) + "\n",
                 encoding="utf-8",
             )
             output = root / "report.json"
-            with patch("evaluate_model.load_model", return_value=(object(), object(), "cpu")), \\
-                 patch("evaluate_model.generate", return_value="المستخدم: سؤال\\nJon2:إجابة") as generator, \\
-                 patch("sys.argv", [
-                     "evaluate_model.py", "--checkpoint", str(checkpoint),
-                     "--prompts", str(prompts), "--output", str(output),
-                 ]):
-                with redirect_stdout(StringIO()):
-                    self.assertEqual(main(), 0)
+            with patch(
+                "evaluate_model.load_model",
+                return_value=(object(), object(), "cpu"),
+            ):
+                with patch(
+                    "evaluate_model.generate",
+                    return_value="المستخدم: سؤال\nJon2:إجابة",
+                ) as generator:
+                    with patch("sys.argv", [
+                        "evaluate_model.py", "--checkpoint", str(checkpoint),
+                        "--prompts", str(prompts), "--output", str(output),
+                    ]):
+                        with redirect_stdout(StringIO()):
+                            self.assertEqual(main(), 0)
             self.assertEqual(generator.call_args.kwargs["stop_sequences"], ["المستخدم:"])
             report = json.loads(output.read_text(encoding="utf-8"))
             self.assertFalse(report["release_approved"])
