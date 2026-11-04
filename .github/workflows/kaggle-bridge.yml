@@ -119,7 +119,7 @@ jobs:
               if item.get("status") != "APPROVED" or item.get("intended_use") != "research_training":
                   raise SystemExit(f"{path.name} must be explicitly approved for research_training.")
           (root / "source_approvals.json").write_text(
-              json.dumps(supplied, ensure_ascii=False, indent=2) + "\\n",
+              json.dumps(supplied, ensure_ascii=False, indent=2) + "\n",
               encoding="utf-8"
           )
           print("Verified three explicit owner approvals against exact source hashes.")
