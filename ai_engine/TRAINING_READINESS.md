@@ -133,3 +133,15 @@ This is a pipeline-test corpus, not a production dataset. The trainer's default 
 ## Release status
 
 NOT READY for assistant deployment. The original model code and checkpoint pipeline pass smoke tests, but no trained, evaluated production checkpoint exists.
+
+
+### Training-default tokenizer configuration (2026-11-04)
+
+The audit was aligned with the trainer's default BPE vocabulary size of 512. Python workflow run \`41757384408\` on commit \`23336d43\` completed successfully:
+- All three Python suites passed again: 5 + 11 + 49 = 65 tests.
+- The tokenizer audit used 512 vocabulary entries (256 byte tokens plus 256 learned merges) and measured 15,674 raw characters, 27,844 UTF-8 bytes, and 9,786 tokens.
+- Byte fallback: 3,120 tokens (31.8823%); learned merges: 6,666; exact decode round-trip passed.
+- Sample fallback rates: Arabic 25.0%, English 93.0233%, mixed Arabic/English 32.0%, emoji/symbols 81.4815%. All sample round trips passed.
+- The high English and emoji fallback rates show that this Arabic-heavy training text does not teach compact merges for those domains. If English/emoji capability is desired, add diverse rights-cleared examples before training and measure again; do not change the ratios by artificial padding.
+
+This is the more relevant tokenizer baseline for the current training defaults. It still does not indicate comprehension or model quality.
