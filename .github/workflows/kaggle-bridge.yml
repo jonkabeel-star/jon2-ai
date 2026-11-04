@@ -134,5 +134,5 @@ jobs:
             "licenses": [{"name": "other"}]
           }
           JSON
-          kaggle datasets create -p /tmp/jon2-private-weights -q
+          kaggle datasets version -p /tmp/jon2-private-weights -m "Update private Jon2 checkpoint" -q
           echo "::notice::Private Kaggle checkpoint dataset created."
