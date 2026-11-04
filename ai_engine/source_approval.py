@@ -1,7 +1,9 @@
 """Fail-closed, dependency-free approval gate for Jon2 training data."""
 from __future__ import annotations
 
+import hashlib
 import json
+import re
 from pathlib import Path, PurePosixPath
 
 
