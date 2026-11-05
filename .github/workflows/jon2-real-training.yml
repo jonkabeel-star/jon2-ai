@@ -46,7 +46,12 @@ jobs:
           metadata = json.loads(Path("/tmp/jon2-private-dataset/dataset-metadata.json").read_text())
           if not isinstance(metadata, dict):
               raise SystemExit("Downloaded Kaggle metadata is not a JSON object.")
-          print("Private Kaggle metadata downloaded successfully.")
+          metadata["id"] = "jon2kabeel/jon2-private-model-checkpoint"
+          Path("/tmp/jon2-private-dataset/dataset-metadata.json").write_text(
+              json.dumps(metadata, ensure_ascii=False, indent=2) + "\\n",
+              encoding="utf-8",
+          )
+          print("Private Kaggle dataset ID added to version metadata.")
           PY
 
       - name: Install CPU-only PyTorch
