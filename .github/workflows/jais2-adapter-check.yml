@@ -6,6 +6,7 @@ on:
     paths:
       - "ai_engine/external_models/jais2_runtime.py"
       - "ai_engine/external_models/test_jais2_runtime.py"
+      - "ai_engine/external_models/evaluation/**"
       - ".github/workflows/jais2-adapter-check.yml"
   pull_request:
     paths:
