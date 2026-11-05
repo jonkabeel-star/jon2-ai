@@ -71,6 +71,24 @@ python ai_engine/evaluate_model.py --checkpoint ai_engine/checkpoints/jon2-small
 
 The evaluator generates answers and creates a review template with six blank human-scoring dimensions for every prompt. It never assigns an automatic quality verdict or marks the model approved. Review every answer using `EVALUATION_RUBRIC.md`. No checkpoint currently exists, so this evaluation cannot yet be run against a trained model.
 
+## Human release gate for public chat
+
+The chat endpoint is intentionally disabled by default, even if a checkpoint file
+is present. The server requires the explicit environment variable
+`JON2_CHAT_RELEASE_APPROVED=true` before it will generate chat replies.
+Without this setting, `GET /api/health` reports `release_approved: false`
+and `chat_ready: false`; `POST /api/chat` returns HTTP 503.
+
+Do not set this variable merely to make the UI appear online. Set it only after
+a human has reviewed the complete held-out evaluation report, checked factuality,
+Arabic fluency, relevance, repetition, safety, and consistency, and approved the
+exact checkpoint being deployed. Keep it unset or set to `false` while the
+checkpoint is unreviewed. A passing automated test suite verifies software
+behavior, not model quality.
+
+For a local deployment, configure the variable in the server process environment;
+never commit secrets or a release approval value to the public repository.
+
 ## API endpoints
 
 - `GET /` — API identity and status
