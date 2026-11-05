@@ -20,6 +20,33 @@ from tokenizer import ByteBPETokenizer
 from source_approval import validate_source_approvals
 
 
+def split_corpus_blocks(corpus: str, validation_fraction: float, seed: int):
+    """Split blank-line-delimited text blocks before fitting the tokenizer."""
+    if not isinstance(corpus, str) or not corpus.strip():
+        raise ValueError("Training corpus must be non-empty text.")
+    if not 0.05 <= validation_fraction <= 0.4:
+        raise ValueError("validation_fraction must be between 0.05 and 0.4.")
+    blocks = [block.strip() for block in __import__("re").split(r"\\n\\s*\\n", corpus) if block.strip()]
+    if len(blocks) < 2:
+        raise ValueError(
+            "At least two blank-line-delimited text blocks are required for a "
+            "held-out validation split."
+        )
+    indices = list(range(len(blocks)))
+    random.Random(seed).shuffle(indices)
+    validation_count = max(1, math.ceil(len(blocks) * validation_fraction))
+    if validation_count >= len(blocks):
+        raise ValueError("Not enough independent text blocks for train/validation.")
+    validation_indices = set(indices[:validation_count])
+    train_text = "\\n\\n".join(
+        block for index, block in enumerate(blocks) if index not in validation_indices
+    )
+    validation_text = "\\n\\n".join(
+        block for index, block in enumerate(blocks) if index in validation_indices
+    )
+    return train_text, validation_text
+
+
 def _training_plan(args):
     names = (
         "steps", "batch_size", "context", "width", "heads", "layers",
@@ -28,7 +55,9 @@ def _training_plan(args):
         "min_delta", "grad_clip", "minimum_chars", "tokenizer_vocab_size",
         "tokenizer_min_frequency", "seed", "no_amp",
     )
-    return {name: getattr(args, name) for name in names}
+    plan = {name: getattr(args, name) for name in names}
+    plan["validation_split_algorithm"] = "seeded_paragraph_blocks_v1"
+    return plan
 
 
 def restore_scheduler_state(scheduler, optimizer, state):
@@ -96,18 +125,20 @@ def train(args):
         )
 
     corpus_sha256 = hashlib.sha256(corpus.encode("utf-8")).hexdigest()
+    train_text, validation_text = split_corpus_blocks(
+        corpus, args.validation_fraction, args.seed
+    )
+    # Fit vocabulary/merges on training text only: validation data stays unseen.
     tokenizer = ByteBPETokenizer.train(
-        corpus,
+        train_text,
         vocab_size=args.tokenizer_vocab_size,
         min_frequency=args.tokenizer_min_frequency,
     )
-    encoded = torch.tensor(tokenizer.encode(corpus), dtype=torch.long)
+    train_data = torch.tensor(tokenizer.encode(train_text), dtype=torch.long)
+    val_data = torch.tensor(tokenizer.encode(validation_text), dtype=torch.long)
 
-    if len(encoded) <= args.context * 2 + 2:
-        raise ValueError("Corpus is too short for the selected context window.")
-
-    split = int(len(encoded) * (1.0 - args.validation_fraction))
-    train_data, val_data = encoded[:split], encoded[split:]
+    if len(train_data) <= args.context + 1:
+        raise ValueError("Training partition is too short for the selected context window.")
     if len(val_data) <= args.context + 1:
         raise ValueError("Validation partition is too short.")
 
