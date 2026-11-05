@@ -147,7 +147,7 @@ def assess_task(min_memory_gib: float = 2.0, require_gpu: bool = False) -> dict[
     memory_ok = available is not None and available >= required
     accepted = bool(memory_ok and (gpu_visible or not require_gpu))
     if require_gpu and not gpu_visible:
-        reason = "A CUDA GPU is required but none is visible to this process."
+        reason = "A supported GPU accelerator (CUDA or Apple MPS) is required but none is visible to this process."
     elif available is None:
         reason = "Available memory could not be measured safely."
     elif not memory_ok:
