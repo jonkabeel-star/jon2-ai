@@ -11,6 +11,7 @@ on:
   pull_request:
     paths:
       - "Dockerfile"
+      - ".dockerignore"
       - "ai_engine/**"
       - ".github/workflows/jon2-container-build.yml"
   workflow_dispatch:
@@ -33,6 +34,39 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
+          load: true
           tags: jon2-ai-api:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Run container and verify health endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name jon2-api-ci -p 8000:8000 jon2-ai-api:ci
+          trap 'docker rm -f jon2-api-ci >/dev/null 2>&1 || true' EXIT
+          python - <<'PY'
+          import json
+          import time
+          import urllib.error
+          import urllib.request
+
+          url = "http://127.0.0.1:8000/api/health"
+          last_error = None
+          for _ in range(30):
+              try:
+                  with urllib.request.urlopen(url, timeout=3) as response:
+                      payload = json.loads(response.read().decode("utf-8"))
+                  assert payload.get("status") == "online", payload
+                  assert payload.get("chat_ready") is False, payload
+                  assert payload.get("release_approved") is False, payload
+                  assert payload.get("model_status") == "checkpoint_missing", payload
+                  print("Container health endpoint passed; chat remains safely blocked.")
+                  print(json.dumps(payload, ensure_ascii=False))
+                  break
+              except Exception as exc:
+                  last_error = exc
+                  time.sleep(2)
+          else:
+              raise SystemExit(f"Container health check failed: {last_error}")
+          PY
