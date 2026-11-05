@@ -124,8 +124,12 @@ class ByteBPETokenizer:
         return value
 
     def decode(self, ids: Iterable[int]) -> str:
-        raw = b"".join(self._token_bytes(int(token_id)) for token_id in ids)
-        return raw.decode("utf-8", errors="replace")
+        token_bytes = []
+        for token_id in ids:
+            if not isinstance(token_id, int) or isinstance(token_id, bool):
+                raise ValueError("Token IDs must be integers, not booleans or coerced values.")
+            token_bytes.append(self._token_bytes(token_id))
+        return b"".join(token_bytes).decode("utf-8", errors="replace")
 
     def to_dict(self) -> dict:
         return {
