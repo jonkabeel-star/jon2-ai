@@ -8,6 +8,7 @@ on:
       - "ai_engine/jon2_core.py"
       - "ai_engine/tokenizer.py"
       - "ai_engine/chat_engine.py"
+      - ".github/workflows/jon2-real-training.yml"
   workflow_dispatch:
 
 permissions:
