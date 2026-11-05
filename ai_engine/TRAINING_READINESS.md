@@ -8,7 +8,7 @@ The latest Python workflow on commit `3ff55c88` completed successfully (run ID `
 - The dataset inventory found 5 UTF-8 text files, 290,513 raw Unicode characters, 515,830 bytes, and 184,342 tokens using a temporary 512-entry BPE tokenizer. These are inventory metrics, not a quality score.
 - The structural dialogue audit counted 284,621 characters after removing blank and metadata-comment lines, and reported 27 exact normalized duplicate groups.
 - The privacy-aware audit reported 40 excess repeated lines. The duplicate prompts include short generic follow-ups; do not delete them mechanically without reviewing their paired answers and context.
-- Its two phone-like matches were both ISO date stamps in file metadata headers, not contact details. This commit makes the heuristic date-aware and adds regression tests for both date exclusion and real phone-like patterns.
+- The earlier two phone-like matches were ISO date stamps in metadata headers, not contact details. The date-aware fix and regression tests passed in Python workflow `41980888020`: all 82 tests passed, and the latest privacy scan reported zero email-like and zero phone-like matches. This pattern scan is not a complete privacy detector.
 - Training approval remains **BLOCKED** because the private `source_approvals.json` manifest is absent; `training_permitted=false`.
 - The current 184,342-token inventory is below the 250,000–500,000-token first-experiment target in `ARABIC_CORPUS_PLAN.md`. The 100,000-character trainer minimum is only a guard against trivially small inputs.
 - No model training was run and no checkpoint was created.

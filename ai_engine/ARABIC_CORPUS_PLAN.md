@@ -8,7 +8,7 @@ This document defines a practical curation target for the first useful Arabic tr
 
 The latest CI inventory found 5 UTF-8 text files with 290,513 raw Unicode characters, 515,830 bytes, and 184,342 tokens using a temporary 512-entry byte-BPE tokenizer. These token counts are corpus/configuration-specific and are not a model-quality score.
 
-The structural audit counted 284,621 characters after removing blank and metadata-comment lines and reported 27 exact normalized duplicate groups. The privacy-aware audit reported 40 excess repeated lines; these require pair-level human review because short repeated follow-up prompts may have different paired answers. Its two phone-like matches were ISO date stamps in metadata headers, not contact details; a date-aware regression fix is being verified in CI.
+The structural audit counted 284,621 characters after removing blank and metadata-comment lines and reported 27 exact normalized duplicate groups. The privacy-aware audit reported 40 excess repeated lines; these require pair-level human review because short repeated follow-up prompts may have different paired answers. The earlier two phone-like matches were ISO date stamps in metadata headers, not contact details. The date-aware fix and regression tests passed in Python workflow `41980888020`: all 82 tests passed, and the latest privacy scan reported zero email-like and zero phone-like matches. This pattern scan is not a complete privacy detector.
 
 The training approval gate remains BLOCKED because the private exact-file approval manifest is absent. The current token inventory is below the 250,000–500,000-token first-experiment target. No training has been run and no checkpoint exists.
 
