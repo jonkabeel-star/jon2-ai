@@ -69,4 +69,20 @@ jobs:
                   time.sleep(2)
           else:
               raise SystemExit(f"Container health check failed: {last_error}")
+
+          request = urllib.request.Request(
+              "http://127.0.0.1:8000/api/chat",
+              data=json.dumps({"message": "مرحبا"}).encode("utf-8"),
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+          try:
+              urllib.request.urlopen(request, timeout=5)
+          except urllib.error.HTTPError as exc:
+              body = json.loads(exc.read().decode("utf-8"))
+              assert exc.code == 503, (exc.code, body)
+              assert "المراجعة البشرية" in body.get("detail", ""), body
+              print("Chat release gate passed: POST /api/chat returns the expected HTTP 503.")
+          else:
+              raise SystemExit("Chat release gate failed: unapproved chat unexpectedly returned success.")
           PY
