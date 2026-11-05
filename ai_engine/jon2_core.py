@@ -227,7 +227,7 @@ def train(args: argparse.Namespace) -> None:
 def load_model(checkpoint_path: str, device: str | None = None):
     target = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
     checkpoint = torch.load(
-        checkpoint_path, map_location=target, weights_only=False
+        checkpoint_path, map_location=target, weights_only=True
     )
     if "tokenizer" in checkpoint:
         tokenizer = ByteBPETokenizer.from_dict(checkpoint["tokenizer"])
