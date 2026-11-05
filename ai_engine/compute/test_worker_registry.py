@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from ai_engine.compute import worker_registry as registry
+from compute import worker_registry as registry
 
 
 class WorkerRegistryTests(unittest.TestCase):
