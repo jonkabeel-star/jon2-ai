@@ -1,18 +1,20 @@
-name: Jon2 RTL compile check
+name: Jon2 RTL compile and smoke tests
 
 on:
   push:
     paths:
       - "hardware/rtl/**"
+      - "hardware/tb/**"
       - ".github/workflows/jon2-rtl-check.yml"
   pull_request:
     paths:
       - "hardware/rtl/**"
+      - "hardware/tb/**"
       - ".github/workflows/jon2-rtl-check.yml"
   workflow_dispatch:
 
 jobs:
-  compile-rv32i-modules:
+  rtl-checks:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -31,3 +33,9 @@ jobs:
         run: |
           iverilog -g2012 -Wall -s jon2_data_memory -o /tmp/jon2-memory.vvp \
             hardware/rtl/jon2_data_memory.sv
+      - name: Run data memory smoke test
+        run: |
+          iverilog -g2012 -Wall -s tb_jon2_data_memory -o /tmp/jon2-memory-test.vvp \
+            hardware/rtl/jon2_data_memory.sv \
+            hardware/tb/tb_jon2_data_memory.sv
+          vvp /tmp/jon2-memory-test.vvp
