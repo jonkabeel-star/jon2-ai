@@ -1,6 +1,10 @@
 name: Verify Jon2 Private Checkpoint
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/jon2-checkpoint-verify.yml"
   workflow_run:
     workflows: ["Jon2 Real CPU Training"]
     types: [completed]
