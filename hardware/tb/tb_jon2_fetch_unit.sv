@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
 module tb_jon2_fetch_unit;
     logic clk = 1'b0;
-    logic reset_n = 1'b0;
+    logic reset_n = 1'b1;
     logic hold = 1'b0;
     logic redirect = 1'b0;
     logic [31:0] redirect_addr = 32'h0;
@@ -26,7 +26,8 @@ module tb_jon2_fetch_unit;
     );
 
     initial begin
-        #2;
+        #1 reset_n = 1'b0;
+        #1;
         if (pc !== 32'h0000_1000) $fatal(1, "configured PC reset failed");
         reset_n = 1'b1;
         #1;
