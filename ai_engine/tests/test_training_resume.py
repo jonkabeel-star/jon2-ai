@@ -9,7 +9,7 @@ from pathlib import Path
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from train_jon2 import save_checkpoint, _training_plan, restore_scheduler_state
+from train_jon2 import (\n    save_checkpoint, _training_plan, restore_scheduler_state, split_corpus_blocks,\n)
 from tokenizer import ByteBPETokenizer
 
 
@@ -62,6 +62,29 @@ class TrainingResumeTests(unittest.TestCase):
         self.assertEqual(state["training_plan"], _training_plan(args))
         self.assertTrue(state["optimizer_state"]["state"])
 
+
+
+    def test_validation_split_keeps_paragraphs_disjoint_and_reproducible(self):
+        corpus = "\\n\\n".join(
+            f"مقطع مستقل رقم {index}\\nنص إضافي للمقطع {index}"
+            for index in range(10)
+        )
+        train_a, validation_a = split_corpus_blocks(corpus, 0.2, 17)
+        train_b, validation_b = split_corpus_blocks(corpus, 0.2, 17)
+        self.assertEqual((train_a, validation_a), (train_b, validation_b))
+        train_blocks = set(train_a.split("\\n\\n"))
+        validation_blocks = set(validation_a.split("\\n\\n"))
+        self.assertEqual(len(validation_blocks), 2)
+        self.assertFalse(train_blocks & validation_blocks)
+        self.assertEqual(len(train_blocks | validation_blocks), 10)
+
+    def test_validation_split_rejects_single_block(self):
+        with self.assertRaisesRegex(ValueError, "At least two"):
+            split_corpus_blocks("مقطع واحد بلا فاصل", 0.1, 42)
+
+    def test_validation_split_rejects_invalid_fraction(self):
+        with self.assertRaisesRegex(ValueError, "validation_fraction"):
+            split_corpus_blocks("أول مقطع\\n\\nثاني مقطع", 0.9, 42)
 
     def test_resume_restores_active_optimizer_learning_rate(self):
         parameter_a = torch.nn.Parameter(torch.tensor([1.0]))
