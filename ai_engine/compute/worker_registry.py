@@ -69,6 +69,16 @@ def _token_hash(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
+
+def _validate_accelerator_values(values: list[str]) -> None:
+    if not isinstance(values, list) or len(values) > 8:
+        raise ValueError("Too many accelerator entries.")
+    for value in values:
+        if not isinstance(value, str) or not value.strip() or len(value) > 100:
+            raise ValueError("Accelerator entries must be non-empty strings up to 100 characters.")
+        if "," in value or any(ord(char) < 32 or ord(char) == 127 for char in value):
+            raise ValueError("Accelerator entries cannot contain commas or control characters.")
+
 def enroll(node_id: str, display_name: str, platform: str,
            cpu_count: int, memory_total_bytes: int,
            accelerator_types: list[str], accelerator_names: list[str]) -> str:
