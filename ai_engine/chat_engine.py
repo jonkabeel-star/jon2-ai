@@ -23,9 +23,9 @@ _device = None
 # Arabic text and ordinary punctuation only. This is a conservative output
 # sanity check, not a proof that an answer is factually correct.
 _ALLOWED_ANSWER = re.compile(
-    r"^[\\u0600-\\u06FF\\s،؛؟.!…ـ0-9٠-٩()«»\\\"'\\-]+$"
+    r"^[\u0600-\u06FF\s،؛؟.!…ـ0-9٠-٩()«»\"'\-]+$"
 )
-_ARABIC_LETTERS = re.compile(r"[\\u0621-\\u064A\\u066E-\\u06D3]")
+_ARABIC_LETTERS = re.compile(r"[\u0621-\u064A\u066E-\u06D3]")
 
 
 def validate_generated_answer(answer: str) -> bool:
@@ -43,11 +43,9 @@ def validate_generated_answer(answer: str) -> bool:
     if arabic_count / max(1, len(visible)) < 0.70:
         return False
 
-    # Reject repeated character runs and short token fragments commonly
-    # produced by a damaged or severely under-trained checkpoint.
-    if re.search(r"(.)\\1{3,}", answer):
+    if re.search(r"(.)\1{3,}", answer):
         return False
-    if re.search(r"(.{2,8})\\1{2,}", answer):
+    if re.search(r"(.{2,8})\1{2,}", answer):
         return False
 
     words = answer.split()
@@ -96,7 +94,7 @@ def build_conversation_prompt(message: str, history=None) -> str:
         label = "المستخدم" if role == "user" else "Jon2"
         turns.append(f"{label}: {content}")
     turns.append(f"المستخدم: {message.strip()}")
-    return "\\n".join(turns) + "\\nJon2:"
+    return "\n".join(turns) + "\nJon2:"
 
 
 def generate_reply(message: str, history=None) -> str:
