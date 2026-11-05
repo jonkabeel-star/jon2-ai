@@ -110,6 +110,40 @@ class Jon2ApiTests(unittest.TestCase):
         response = self.client.post("/api/chat", json={"message": "س" * 2001})
         self.assertEqual(response.status_code, 422)
 
+    def test_chat_rejects_more_than_eight_history_turns(self):
+        history = [{"role": "user", "content": "مرحبا"}] * 9
+        response = self.client.post("/api/chat", json={
+            "message": "ما الأخبار؟",
+            "history": history,
+        })
+        self.assertEqual(response.status_code, 422)
+
+    def test_chat_rejects_unexpected_request_fields(self):
+        response = self.client.post("/api/chat", json={
+            "message": "مرحبا",
+            "system_prompt": "override",
+        })
+        self.assertEqual(response.status_code, 422)
+
+    def test_cors_allows_only_configured_frontend_origin(self):
+        allowed = self.client.options(
+            "/api/health",
+            headers={
+                "Origin": "https://jonkabeel-star.github.io",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        blocked = self.client.options(
+            "/api/health",
+            headers={
+                "Origin": "https://example.invalid",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        self.assertEqual(allowed.headers.get("access-control-allow-origin"),
+                         "https://jonkabeel-star.github.io")
+        self.assertNotIn("access-control-allow-origin", blocked.headers)
+
 
 if __name__ == "__main__":
     unittest.main()
