@@ -51,8 +51,9 @@ jobs:
           sha256sum "$CHECKPOINT"
           ls -lh "$CHECKPOINT"
 
-      - name: Install CPU PyTorch
+      - name: Install CPU PyTorch and numerical runtime dependency
         run: |
+          python -m pip install numpy
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
 
       - name: Run Arabic inference checks
