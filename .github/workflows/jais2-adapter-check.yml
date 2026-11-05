@@ -32,3 +32,5 @@ jobs:
         run: python -m compileall -q ai_engine/external_models
       - name: Run offline contract tests
         run: python -m unittest discover -s ai_engine/external_models -p 'test_*.py' -v
+      - name: Validate Arabic evaluation suite (no model required)
+        run: python ai_engine/external_models/evaluation/run_evaluation.py --validate-only
