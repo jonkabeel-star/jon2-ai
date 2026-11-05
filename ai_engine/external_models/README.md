@@ -53,3 +53,29 @@ The owner-authored evaluation assets are in `evaluation/`:
   `JON2_JAIS2_LOCAL_PATH=/private/path/to/approved/model python ai_engine/external_models/evaluation/run_evaluation.py`
 
 The suite contains project-authored prompts, not scraped benchmark material. The runner does not call a hosted inference API. It does not assign an automatic quality score: a human must review every output. Do not commit generated reports if they contain private prompts or other sensitive data. The evaluation runner is not evidence that a checkpoint has been downloaded or tested.
+
+
+## Private Jon2 Arabic API (disabled by default)
+
+The FastAPI router is mounted separately from the original Jon2 chat engine:
+
+- `POST /api/jais2/chat`
+- `GET /api/jais2/health`
+
+The API is **disabled unless** `JON2_JAIS2_API_ENABLED=true`. Chat also requires a secret `JON2_JAIS2_API_TOKEN` and an HTTP header `Authorization: Bearer <token>`. Never put this token in GitHub, the browser, or the static GitHub Pages frontend. Use a private server-side client over HTTPS only.
+
+Required server-side environment values after rights approval and private checkpoint installation:
+
+- `JON2_JAIS2_API_ENABLED=true`
+- `JON2_JAIS2_API_TOKEN` = a long random secret
+- `JON2_JAIS2_LOCAL_PATH` = path to the approved local checkpoint
+
+With the default configuration, the new health endpoint reports `disabled` and chat returns HTTP 503. Importing the route does not import Transformers or load weights. The original `/api/chat` behavior and its release gate remain separate.
+
+## Dependency version policy (reviewed 2026-11-05)
+
+- FastAPI 0.162.0 is the current PyPI release checked for the route test environment.
+- Transformers 5.22.1 is the current PyPI release checked. Upstream Transformers documentation includes Jais2 support, but the Jais 2 model card also documents a Jais-2-compatible Transformers fork. Do not assume the PyPI wheel and publisher's fork are interchangeable until the exact checkpoint is smoke-tested.
+- PyTorch 2.15.0 is the current PyPI release checked. Do not force-upgrade the production host blindly: choose the wheel matching its Python, CPU/CUDA, and driver environment.
+
+These are version checks, not a claim that the model has been loaded or tested. The model remains blocked pending training-data rights clarification and an owner-approved checkpoint.
