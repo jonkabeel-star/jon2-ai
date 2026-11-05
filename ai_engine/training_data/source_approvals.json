@@ -2,7 +2,7 @@
   "approved_sources": [
     {
       "file": "original_dialogue_ar.txt",
-      "sha256": "0b9220d545d783e15ece1a6defc270ded477f0cd279973417056184557b829cb",
+      "sha256": "fc9962371d548c13b63ebfdd6888ab9aa8093579e4709a9321a2db422ded9313",
       "character_count": 9402,
       "status": "APPROVED",
       "reviewer": "User-confirmed rights holder",
@@ -12,7 +12,7 @@
     },
     {
       "file": "original_dialogue_ar_batch_01.txt",
-      "sha256": "a88fbcaf31aaa26df1cbf4a90c4ef463daa7789a27f2e5a94275fc0226d955d0",
+      "sha256": "77f08523cfb85d2a69d1446451f9c797e95d6dd1d8cd7e509ef9c51826f0014f",
       "character_count": 136075,
       "status": "APPROVED",
       "reviewer": "User-confirmed rights holder",
@@ -22,7 +22,7 @@
     },
     {
       "file": "original_dialogue_ar_batch_02.txt",
-      "sha256": "6e13a2d2e67d4c3121e2138dea0aef9707b9660d06a121778c521495eb331deb",
+      "sha256": "bf675b91af1caff782a476e3249cadd86b7fdf20a63bf631a5a06a49aeeed6c2",
       "character_count": 38276,
       "status": "APPROVED",
       "reviewer": "User-confirmed rights holder",
@@ -32,7 +32,7 @@
     },
     {
       "file": "original_dialogue_ar_batch_03.txt",
-      "sha256": "887d4c3ef9138230d8c565d12b8a41927d4d5b06dfa0475e9fc66bd560a9fc42",
+      "sha256": "04702405388440877b2742135991007429d01d3ffe2533df6a4d931bb656a9bc",
       "character_count": 100489,
       "status": "APPROVED",
       "reviewer": "User-confirmed rights holder",
@@ -42,7 +42,7 @@
     },
     {
       "file": "original_seed_ar.txt",
-      "sha256": "37a84d7155028409e03ddb5a8add81d9625c5208729b2863506738f2c78c9b19",
+      "sha256": "7f2063a58a8b5211cbe26f205f33f209097cc4a4f76b3c0d805d19d2a03ae022",
       "character_count": 6271,
       "status": "APPROVED",
       "reviewer": "User-confirmed rights holder",
