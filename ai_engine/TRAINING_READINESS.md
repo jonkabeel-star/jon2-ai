@@ -1,10 +1,22 @@
 # Jon2 AI — Training Readiness Gate
 
-Last verified: 2026-11-04
+Last verified: 2026-11-05
 
-## Latest dataset inventory and website API wiring (2026-11-04)
+## Current corpus snapshot (verified from CI on 2026-11-05)
 
-The privacy-conscious dataset inventory was added in commit `f472424c` and its Python CI run `41758598752` completed successfully:
+The latest Python workflow on commit `3ff55c88` completed successfully (run ID `41949334107`):
+- The dataset inventory found 5 UTF-8 text files, 290,513 raw Unicode characters, 515,830 bytes, and 184,342 tokens using a temporary 512-entry BPE tokenizer. These are inventory metrics, not a quality score.
+- The structural dialogue audit counted 284,621 characters after removing blank and metadata-comment lines, and reported 27 exact normalized duplicate groups.
+- The privacy-aware audit reported 40 excess repeated lines. The duplicate prompts include short generic follow-ups; do not delete them mechanically without reviewing their paired answers and context.
+- Its two phone-like matches were both ISO date stamps in file metadata headers, not contact details. This commit makes the heuristic date-aware and adds regression tests for both date exclusion and real phone-like patterns.
+- Training approval remains **BLOCKED** because the private `source_approvals.json` manifest is absent; `training_permitted=false`.
+- The current 184,342-token inventory is below the 250,000–500,000-token first-experiment target in `ARABIC_CORPUS_PLAN.md`. The 100,000-character trainer minimum is only a guard against trivially small inputs.
+- No model training was run and no checkpoint was created.
+
+
+## Historical dataset inventory and website API wiring (2026-11-04)
+
+The earlier privacy-conscious dataset inventory snapshot was added in commit `f472424c` and its Python CI run `41758598752` completed successfully. The figures in this historical section are superseded by the 2026-11-05 snapshot above:
 - 5 repository-level approval-gate tests passed.
 - 11 top-level engine/tokenizer/audit tests passed.
 - 60 runtime, API, evaluation, training-resume, corpus-quality, and dataset-inventory tests passed.
@@ -53,7 +65,7 @@ The latest full Python workflow #41755700669 completed successfully on commit `6
 - Resume restores the scheduler's active learning rate into the optimizer, avoiding a warmup-rate reset after restart.
 - Checkpoint writes are atomic and do not move the model between devices just to save a checkpoint.
 - Every training approval is bound to the exact raw file bytes by a lowercase SHA-256 fingerprint and exact UTF-8 character count; the gate blocks changed files, missing fingerprints, and mismatched counts.
-- The current corpus audit still reports 15,025 characters across 2 files, below the 100,000-character reference, with zero exact normalized duplicate lines. Rights still require human review.
+- At that historical point, the corpus audit reported 15,025 characters across 2 files. This is not the current corpus inventory; rights still require human review.
 
 These successful checks verify the engineering safeguards and site deployment. They do not create a trained checkpoint, approve any dataset, or establish assistant quality.
 
@@ -120,7 +132,7 @@ The verified Kaggle session reported:
 
 The notebook metadata requests GPU, but the observed session did not provide CUDA. Do not plan a GPU training run until a fresh runtime explicitly reports CUDA and a GPU device.
 
-## Current data inventory
+## Historical data inventory (2026-11-04)
 
 The embedded project corpus contains:
 - original_dialogue_ar.txt: 9,059 characters

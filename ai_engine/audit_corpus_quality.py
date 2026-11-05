@@ -10,6 +10,7 @@ import json
 import re
 import unicodedata
 from collections import Counter
+from datetime import date
 from pathlib import Path
 
 SENTENCE_SPLIT = re.compile(r"(?<=[.!?؟。])\s+")
@@ -22,6 +23,26 @@ ZERO_WIDTH = {"\u200b", "\u200c", "\u200d", "\ufeff", "\u2060"}
 def normalize_line(line: str) -> str:
     """Normalize whitespace and Unicode composition for duplicate detection only."""
     return " ".join(unicodedata.normalize("NFC", line).casefold().split())
+
+
+def phone_like_matches(text: str) -> list[str]:
+    """Return phone-like strings while excluding valid ISO calendar dates.
+
+    Date stamps such as 2026-11-04 match the broad phone heuristic but are not
+    contact details. Keep the heuristic conservative and report counts only.
+    """
+    matches = []
+    for candidate in PHONE.findall(text):
+        value = candidate.strip()
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            try:
+                date.fromisoformat(value)
+            except ValueError:
+                pass
+            else:
+                continue
+        matches.append(candidate)
+    return matches
 
 
 def analyze_text(text: str, source_name: str = "text") -> dict:
@@ -52,6 +73,7 @@ def analyze_text(text: str, source_name: str = "text") -> dict:
     ]
     replacement_count = text.count("\ufffd")
     zero_width_count = sum(text.count(ch) for ch in ZERO_WIDTH)
+    phone_matches = phone_like_matches(text)
 
     def distribution(values: list[int]) -> dict:
         if not values:
@@ -96,13 +118,13 @@ def analyze_text(text: str, source_name: str = "text") -> dict:
         "privacy_review_signals": {
             "email_like_matches": len(EMAIL.findall(text)),
             "url_matches": len(URL.findall(text)),
-            "phone_like_matches": len(PHONE.findall(text)),
+            "phone_like_matches": len(phone_matches),
             "note": "Counts only; matched values are never included in this report. Human review is still required.",
         },
         "warnings": _warnings(
             chars, duplicate_excess_lines, replacement_count,
             len(controls), zero_width_count,
-            len(EMAIL.findall(text)), len(PHONE.findall(text)),
+            len(EMAIL.findall(text)), len(phone_matches),
         ),
     }
 

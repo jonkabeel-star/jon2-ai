@@ -37,6 +37,16 @@ class CorpusQualityAuditTests(unittest.TestCase):
         self.assertNotIn("test.person@example.com", rendered)
         self.assertNotIn("+1 202 555 0198", rendered)
 
+    def test_iso_calendar_dates_are_not_flagged_as_phone_numbers(self):
+        report = analyze_text("# Authored for this project on 2026-11-04.\nنص عربي")
+        self.assertEqual(report["privacy_review_signals"]["phone_like_matches"], 0)
+        self.assertFalse(any("personal contact information" in item for item in report["warnings"]))
+
+    def test_phone_like_number_is_still_flagged_without_exposing_value(self):
+        report = analyze_text("مثال توضيحي: 01012345678")
+        self.assertEqual(report["privacy_review_signals"]["phone_like_matches"], 1)
+        self.assertNotIn("01012345678", str(report))
+
     def test_integrity_signals_and_empty_text(self):
         report = analyze_text("نص\u200b تالف\ufffd\n")
         self.assertEqual(report["integrity_signals"]["unicode_replacement_characters"], 1)

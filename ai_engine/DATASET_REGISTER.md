@@ -75,9 +75,33 @@ Do not change a candidate to APPROVED until all fields below are filled and revi
 ## Candidate 5 — Jon2 AI Original Arabic Dialogue Expansion Batch 01
 
 - File: `ai_engine/training_data/original_dialogue_ar_batch_01.txt`
-- Source: 815 original user/assistant dialogue pairs authored specifically for Jon2 AI during development on 2026-11-04. The batch contains approximately 136,075 Unicode characters and does not intentionally use private user conversations, copied web text, or third-party datasets.
-- Intended role: candidate dialogue-training material for Arabic instruction following, multi-turn context, explanations, writing, programming concepts, evaluation literacy, privacy, and safe assistant behavior.
-- Rights status: project-authored draft; repository owner review and explicit acceptance of this exact file and intended training use are required. This entry is not legal advice or a guarantee of rights in any third-party expression that may be inadvertently present.
-- Quality status: draft requiring human review for factual accuracy, language, duplication, balance, and suitability. Automated structural checks cannot establish these qualities.
+- Source: 815 user/assistant dialogue pairs drafted for the Jon2 AI project on 2026-11-04. The file header states that private conversations, copied web text, and third-party datasets were not used; this is a project-source declaration, not independent legal verification.
+- Raw file size: 136,075 Unicode characters; SHA-256: `77f08523cfb85d2a69d1446451f9c797e95d6dd1d8cd7e509ef9c51826f0014f`.
+- Intended role: candidate dialogue material for Arabic instruction following, multi-turn context, explanations, writing, programming concepts, evaluation literacy, privacy, and safe assistant behavior.
+- Rights status: project-authored draft; owner review and explicit acceptance of this exact file and training use remain required. This entry is not legal advice or a guarantee that every legal right is cleared.
+- Quality status: requires human review for factual accuracy, Arabic fluency, duplication, balance, and suitability. Automated structural checks cannot establish these qualities.
 - Status: **DRAFT / OWNER REVIEW REQUIRED / NOT APPROVED FOR TRAINING**.
-- Handling: keep the file quarantined from training until the exact-file SHA-256, character count, reviewer, review date, rights basis, and intended use are recorded in the private approval manifest. Do not treat this register entry as approval.
+- Handling: keep excluded from training until the exact-file approval record is created privately with reviewer, review date, rights basis, and intended use. Do not treat this register entry as approval.
+
+
+## Candidate 6 — Jon2 AI Original Arabic Dialogue Expansion Batch 02
+
+- File: `ai_engine/training_data/original_dialogue_ar_batch_02.txt`
+- Source: project-authored Arabic dialogue draft dated 2026-11-04. Its file header describes it as based on stable general knowledge and says no private conversations, copied web text, or third-party datasets were used; this declaration has not been independently verified.
+- Raw file size: 38,276 Unicode characters; SHA-256: `bf675b91af1caff782a476e3249cadd86b7fdf20a63bf631a5a06a49aeeed6c2`.
+- Intended role: candidate research material for factual uncertainty, learning, reasoning, everyday explanations, and safe assistance.
+- Rights status: draft requiring repository-owner review and explicit acceptance of this exact file and intended training use; not legal advice or a guarantee of rights.
+- Quality status: requires human review for accuracy, language, duplication, balance, and suitability.
+- Status: **DRAFT / OWNER REVIEW REQUIRED / NOT APPROVED FOR TRAINING**.
+- Handling: keep excluded from training until exact-file approval metadata is recorded in the private manifest.
+
+## Candidate 7 — Jon2 AI Original Arabic Dialogue Expansion Batch 03
+
+- File: `ai_engine/training_data/original_dialogue_ar_batch_03.txt`
+- Source: project-authored Arabic dialogue draft. Its file header describes it as project-authored and says private conversations and copied third-party text were not used; this declaration has not been independently verified.
+- Raw file size: 100,489 Unicode characters; SHA-256: `04702405388440877b2742135991007429d01d3ffe2533df6a4d931bb656a9bc`.
+- Intended role: candidate research material for Arabic explanations, reasoning, language, writing, and multi-turn response patterns.
+- Rights status: draft requiring repository-owner review and explicit acceptance of this exact file and intended training use; not legal advice or a guarantee of rights.
+- Quality status: requires human review for factual accuracy, Arabic fluency, duplication, balance, and suitability.
+- Status: **DRAFT / OWNER REVIEW REQUIRED / NOT APPROVED FOR TRAINING**.
+- Handling: keep excluded from training until exact-file approval metadata is recorded in the private manifest.

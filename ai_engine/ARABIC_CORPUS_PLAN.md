@@ -4,7 +4,15 @@
 
 This document defines a practical curation target for the first useful Arabic training experiments. It is a sampling plan, not a claim that a particular corpus size guarantees assistant quality. All sources must pass the source-rights approval gate before they are added to training.
 
-## Current measured baseline
+## Current measured baseline (verified 2026-11-05)
+
+The latest CI inventory found 5 UTF-8 text files with 290,513 raw Unicode characters, 515,830 bytes, and 184,342 tokens using a temporary 512-entry byte-BPE tokenizer. These token counts are corpus/configuration-specific and are not a model-quality score.
+
+The structural audit counted 284,621 characters after removing blank and metadata-comment lines and reported 27 exact normalized duplicate groups. The privacy-aware audit reported 40 excess repeated lines; these require pair-level human review because short repeated follow-up prompts may have different paired answers. Its two phone-like matches were ISO date stamps in metadata headers, not contact details; a date-aware regression fix is being verified in CI.
+
+The training approval gate remains BLOCKED because the private exact-file approval manifest is absent. The current token inventory is below the 250,000–500,000-token first-experiment target. No training has been run and no checkpoint exists.
+
+## Historical seed-corpus baseline (2026-11-04)
 
 The automated audit on 2026-11-04 reported:
 - 15,674 characters in the combined `.txt` files counted by the language audit (including the join newline).
@@ -70,4 +78,4 @@ The 40-prompt held-out set in `evaluation/prompts_ar.jsonl` tests many of these 
 
 ## Current decision
 
-Do not start a training run from the current 15k-character seed corpus. It is useful for code-path tests only. First approve data rights, curate a substantially larger corpus, measure it with `audit_language.py`, and confirm the real compute device before training.
+Do not start training from the current corpus. Although it exceeds the trainer's 100,000-character guard, the inventory is only 184,342 temporary BPE tokens, below the 250,000–500,000-token first-experiment target; duplicate prompts still need pair-level review; and the private exact-file source-approval manifest is absent. First complete owner review and rights approval for each exact file, curate and evaluate the material, and confirm a real GPU/compute device before any training run.

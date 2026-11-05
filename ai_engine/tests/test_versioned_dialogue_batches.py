@@ -15,6 +15,30 @@ class DialogueBatchAuditTests(unittest.TestCase):
         self.assertFalse(is_dialogue_file(Path("original_seed_ar.txt")))
         self.assertFalse(is_dialogue_file(Path("original_dialogue_ar_batch_01.jsonl")))
 
+    def test_all_project_dialogue_batches_are_registered_and_unapproved(self):
+        repository = Path(__file__).resolve().parents[2]
+        training_dir = repository / "ai_engine" / "training_data"
+        readme = (training_dir / "README.md").read_text(encoding="utf-8")
+        register = (repository / "ai_engine" / "DATASET_REGISTER.md").read_text(encoding="utf-8")
+        batches = sorted(training_dir.glob("original_dialogue_ar_batch_*.txt"))
+        self.assertGreaterEqual(len(batches), 3)
+
+        for batch in batches:
+            with self.subTest(batch=batch.name):
+                row = next((line for line in readme.splitlines() if batch.name in line), "")
+                self.assertTrue(row, f"{batch.name} is missing from training_data/README.md")
+                self.assertIn("not approved", row.casefold())
+
+                marker = f"`{batch.name}`"
+                position = register.find(marker)
+                self.assertNotEqual(position, -1, f"{batch.name} is missing from DATASET_REGISTER.md")
+                section_start = register.rfind("\n## Candidate", 0, position)
+                section_end = register.find("\n## Candidate", position + len(marker))
+                section = register[section_start:section_end if section_end >= 0 else None]
+                status_lines = [line for line in section.splitlines() if line.startswith("- Status:")]
+                self.assertTrue(status_lines, f"{batch.name} has no register status")
+                self.assertIn("NOT APPROVED", status_lines[0].upper())
+
     def test_valid_alternating_dialogue_passes(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "original_dialogue_ar_batch_01.txt"
