@@ -68,3 +68,32 @@ Before approving Jais 2 8B, obtain a written answer from the publisher covering:
 - The official Cerebras Jais 2 technical overview states that Jais 2 pretraining used 2.6 trillion curated Arabic, English, and code tokens, and that supervised fine-tuning used more than twenty million instruction-response pairs. The overview describes the training pipeline but the public page reviewed here still does not give a source-by-source dataset manifest with license/permission evidence.
 - The official Inception contact page provides a company contact form/page, but the reviewed page does not publish a direct email address. Jon2 has therefore prepared a written inquiry at `ai_engine/external_models/Jais2_RIGHTS_INQUIRY.md`; send it through the official contact page rather than guessing an email.
 - This additional review does not resolve source-level rights. **Jais 2 remains on HOLD.** No checkpoint download, fine-tuning, production inference, or public chat activation is authorized by this audit.
+
+
+## New Arabic-model candidate review (2026-11-05)
+
+### Jais 3 / K2 Horizon — promising transparency, but not approved for Jon2
+
+Official sources published in September–October 2026 describe K2 Horizon as a much more transparent release than a weights-only model: IFM says it releases training data or detailed construction recipes, mixture composition, code, configurations, logs, evaluations, and weights. The Jais 3 technical blog then discloses more of the Arabic adaptation pipeline.
+
+However, this does **not** make Jais 3 eligible under Jon2's current data policy:
+
+- Jais 3 sizes include 7B and 32B, not the owner's selected 8B size.
+- The official Jais 3 technical blog explicitly says its cool-down stage includes **Arabic Wikipedia**. Jon2's owner has not approved Wikipedia-derived training material.
+- Jais 3 continues pretraining from K2 Horizon and replays K2 Horizon training data. The K2 Horizon mixture includes diverse web sources and synthetic data; where redistribution is restricted, IFM says it publishes source descriptions, filtering/construction methods, and mixture composition. This still requires source-by-source rights review against Jon2's stricter policy.
+- The Jais 3 announcement reports strong Arabic results, but publisher-reported aggregate benchmark scores do not establish Egyptian-dialect suitability for Jon2.
+
+Official references:
+- K2 Horizon transparency and dataset release description: https://ifm.ai/blog/k2/
+- Jais 3 technical training disclosure: https://ifm.ai/blog/jais3/
+- Jais 3 launch announcement: https://www.inception42.ai/news/Jais3-Launch
+
+**Decision: NOT APPROVED for Jon2 at this time.** This is not a quality judgment. It is excluded because it is 7B rather than 8B and its disclosed pipeline includes Arabic Wikipedia, which the owner has not authorized. Do not silently switch the project from Jais 2 8B to Jais 3 7B.
+
+### Jais 2 remains the exact-size candidate
+
+The official Jais 2 technical article confirms the 8B release and summarizes the training stages and aggregate data scale, but it does not provide the source-level dataset manifest needed for Jon2's rights review. Keep Jais 2 on HOLD pending a written response from the publisher.
+
+## Adapter verification automation
+
+Added an offline-only contract test suite at `test_jais2_runtime.py` and a GitHub Actions workflow at `.github/workflows/jais2-adapter-check.yml`. These checks verify fail-closed local-path behavior and enforce `local_files_only=True` plus `trust_remote_code=False` in the loader. They do not download weights, install the model, or prove inference quality. Confirm the GitHub Actions run result before treating these checks as passed.
