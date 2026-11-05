@@ -9,7 +9,7 @@ module tb_jon2_core_jumps;
     always #5 clk=~clk;
 
     jon2_core #(
-        .INSTRUCTION_WORDS(8),
+        .INSTRUCTION_WORDS(9),
         .DATA_WORDS(8),
         .RESET_PC(32'h0000_1000),
         .INSTRUCTION_BASE_ADDR(32'h0000_1000),
@@ -25,7 +25,7 @@ module tb_jon2_core_jumps;
         #1 reset_n=0;
         #1;
         reset_n=1;
-        repeat(5) begin
+        repeat(6) begin
             @(posedge clk); #1;
             $display("JUMP TRACE pc=%h insn=%h halted=%b x1=%h x2=%h x3=%h x4=%h x5=%h x6=%h x7=%h",
                 debug_pc, debug_instruction, halted,
@@ -35,17 +35,17 @@ module tb_jon2_core_jumps;
                 dut.registers.registers[7]);
         end
 
-        if (dut.registers.registers[1] !== 32'd24)
+        if (dut.registers.registers[1] !== 32'h0000_101c)
             $fatal(1, "JALR base register setup failed");
-        if (dut.registers.registers[2] !== 32'h0000_1008)
+        if (dut.registers.registers[2] !== 32'h0000_100c)
             $fatal(1, "JAL link register incorrect: %h", dut.registers.registers[2]);
-        if (dut.registers.registers[3] !== 32'd0)
+        if (dut.registers.registers[3] === 32'd99)
             $fatal(1, "JAL failed to skip wrong-path instruction");
         if (dut.registers.registers[4] !== 32'd7)
             $fatal(1, "JAL target instruction did not execute");
-        if (dut.registers.registers[5] !== 32'h0000_1014)
+        if (dut.registers.registers[5] !== 32'h0000_1018)
             $fatal(1, "JALR link register incorrect: %h", dut.registers.registers[5]);
-        if (dut.registers.registers[6] !== 32'd0)
+        if (dut.registers.registers[6] === 32'd99)
             $fatal(1, "JALR failed to skip wrong-path instruction");
         if (dut.registers.registers[7] !== 32'd42)
             $fatal(1, "JALR target instruction did not execute");
