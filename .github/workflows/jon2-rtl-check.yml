@@ -49,3 +49,17 @@ jobs:
             hardware/rtl/jon2_instruction_memory.sv \
             hardware/tb/tb_jon2_instruction_memory.sv
           vvp /tmp/jon2-instruction-test.vvp
+      - name: Compile instruction fetch unit
+        run: |
+          iverilog -g2012 -Wall -s jon2_fetch_unit -o /tmp/jon2-fetch.vvp \
+            hardware/rtl/jon2_pc.sv \
+            hardware/rtl/jon2_instruction_memory.sv \
+            hardware/rtl/jon2_fetch_unit.sv
+      - name: Run instruction fetch smoke test
+        run: |
+          iverilog -g2012 -Wall -s tb_jon2_fetch_unit -o /tmp/jon2-fetch-test.vvp \
+            hardware/rtl/jon2_pc.sv \
+            hardware/rtl/jon2_instruction_memory.sv \
+            hardware/rtl/jon2_fetch_unit.sv \
+            hardware/tb/tb_jon2_fetch_unit.sv
+          vvp /tmp/jon2-fetch-test.vvp
