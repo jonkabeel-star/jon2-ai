@@ -4,7 +4,23 @@ No pretrained third-party model or hosted AI API is loaded. The model must
 first be trained and saved as a Jon2 checkpoint.
 """
 import os
+from pathlib import Path
+
 from answer_quality import validate_generated_answer
+from jon2_core import generate, load_model
+
+CHECKPOINT_PATH = Path(
+    os.getenv(
+        "JON2_CHECKPOINT",
+        str(Path(__file__).resolve().parent / "checkpoints" / "jon2-small.pt"),
+    )
+)
+
+_model = None
+_tokenizer = None
+_device = None
+
+
 def model_is_ready() -> bool:
     return _model is not None and _tokenizer is not None
 
