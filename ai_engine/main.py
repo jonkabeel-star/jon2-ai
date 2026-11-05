@@ -4,12 +4,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
 
 from chat_engine import generate_reply, model_is_ready
+from external_models.jais2_routes import router as jais2_router
 
 app = FastAPI(
     title="Jon2 AI API",
     description="API for the original, project-owned Jon2 language model.",
     version="1.1.0",
 )
+
+app.include_router(jais2_router)
+
 
 app.add_middleware(
     CORSMiddleware,
