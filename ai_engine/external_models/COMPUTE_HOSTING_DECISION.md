@@ -28,6 +28,17 @@ Official sources:
 
 **Jon2 decision:** Kaggle may be evaluated for an interactive, temporary model-load and quality test after rights approval. It is not a permanent public API host, and we must not promise continuous uptime.
 
+
+### Hugging Face Spaces ZeroGPU (newly evaluated)
+
+Hugging Face's current official documentation describes a free ZeroGPU option for eligible personal accounts: up to two hosted ZeroGPU Spaces, Gradio SDK only, with dynamic NVIDIA RTX Pro 6000 Blackwell allocation. The documented free-account GPU quota is 5 minutes per day, with queueing and availability constraints. This is a shared, quota-limited demo environment, not a guaranteed always-on production service.
+
+Official sources:
+- https://huggingface.co/docs/hub/spaces-zerogpu
+- https://huggingface.co/docs/hub/spaces-overview
+
+**Jon2 decision:** keep this as a possible *temporary interactive inference proof-of-concept* after the rights and HF access gates are cleared. It may be enough to test a short real conversation on a GPU, but the daily quota, Gradio-only integration, queue, and lack of guaranteed uptime make it unsuitable as the permanent Jon2 API. Do not publish model weights, access tokens, or private prompts in the Space repository or client code. Any gated model token must be stored only as a Space secret, and the Space visibility/access implications must be reviewed before deployment.
+
 ## What a real inference host must provide
 
 Before selecting or paying for any host, verify all of the following against the exact model format and runtime:
