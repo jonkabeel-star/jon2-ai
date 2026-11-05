@@ -40,7 +40,7 @@ These are source files only. Their presence does not establish that the modules 
 - LW and SW word accesses only; byte/halfword loads and stores are not implemented.
 - BEQ, BNE, BLT, BGE, BLTU, and BGEU branch comparisons.
 - JAL, JALR, LUI, and AUIPC control encodings.
-- An initial single-cycle integrated core is present in RTL. Its end-to-end simulation test passed for two ADDI instructions followed by ADD in GitHub Actions run 42019893953. This is an early RV32I subset, not a complete or production-ready CPU.
+- An initial single-cycle integrated core is present in RTL. Its end-to-end simulation test passed for ADDI, ADD, LUI, SW, LW, and a taken BEQ branch (including wrong-path skipping) in GitHub Actions run 42020217848. This is an early RV32I subset, not a complete or production-ready CPU.
 - Byte/halfword memory operations, robust exception/trap handling, privilege modes, interrupts, caches, pipelining, and broad ISA compliance remain unimplemented and require further verification.
 
 ## Next engineering milestones
