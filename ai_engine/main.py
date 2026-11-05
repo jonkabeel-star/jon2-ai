@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, ConfigDict
 
 from chat_engine import generate_reply, model_is_ready
 from external_models.jais2_routes import router as jais2_router
+from compute.routes import router as compute_router
 
 app = FastAPI(
     title="Jon2 AI API",
@@ -13,6 +14,7 @@ app = FastAPI(
 )
 
 app.include_router(jais2_router)
+app.include_router(compute_router)
 
 
 app.add_middleware(
