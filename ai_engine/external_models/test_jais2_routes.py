@@ -1,5 +1,10 @@
 import os
+import sys
 import unittest
+from pathlib import Path
+
+# Match the server's execution layout, where ai_engine is the import root.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from unittest.mock import patch
 
 from fastapi import HTTPException
