@@ -59,6 +59,20 @@ class ByteBPETokenizerTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     ByteBPETokenizer.from_dict(value)
 
+    def test_decode_rejects_coerced_and_boolean_ids(self):
+        tokenizer = ByteBPETokenizer()
+        for token_id in (True, False, "65", 65.0):
+            with self.subTest(token_id=token_id):
+                with self.assertRaises(ValueError):
+                    tokenizer.decode([token_id])
+
+    def test_decode_rejects_out_of_range_ids(self):
+        tokenizer = ByteBPETokenizer()
+        for token_id in (-1, 256):
+            with self.subTest(token_id=token_id):
+                with self.assertRaises(ValueError):
+                    tokenizer.decode([token_id])
+
 
 if __name__ == "__main__":
     unittest.main()
