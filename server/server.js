@@ -113,7 +113,7 @@ async function askModel(message, history = []) {
   const response = await fetch(AI_MODEL_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, prompt: message, history }),
+    body: JSON.stringify({ message, history }),
     signal: AbortSignal.timeout(90000)
   });
   const data = await response.json().catch(() => ({}));
