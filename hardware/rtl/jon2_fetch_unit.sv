@@ -17,7 +17,7 @@ module jon2_fetch_unit #(
     output logic        instruction_valid,
     output logic        instruction_error
 );
-    jon2_pc program_counter (
+    jon2_pc #(.RESET_PC(RESET_PC)) program_counter (
         .clk(clk),
         .reset_n(reset_n),
         .hold(hold),
