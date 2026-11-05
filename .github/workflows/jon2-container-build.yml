@@ -58,9 +58,22 @@ jobs:
                   with urllib.request.urlopen(url, timeout=3) as response:
                       payload = json.loads(response.read().decode("utf-8"))
                   assert payload.get("status") == "alive", payload
-                  assert payload.get("chat_ready") is False, payload
-                  assert payload.get("release_approved") is False, payload
-                  assert payload.get("model_status") == "checkpoint_missing", payload
+                  model_health = json.load(urllib.request.urlopen(
+                      "http://127.0.0.1:8000/api/health", timeout=5
+                  ))
+                  assert model_health.get("status") == "online", model_health
+                  assert model_health.get("chat_ready") is False, model_health
+                  assert model_health.get("release_approved") is False, model_health
+                  assert model_health.get("model_status") == "checkpoint_missing", model_health
+                  print("Container liveness and model health passed; chat remains safely blocked.")
+                  try:
+                      urllib.request.urlopen("http://127.0.0.1:8000/api/health/ready", timeout=5)
+                  except urllib.error.HTTPError as exc:
+                      ready_body = json.loads(exc.read().decode("utf-8"))
+                      assert exc.code == 503, (exc.code, ready_body)
+                      assert ready_body.get("detail", {}).get("status") == "not_ready", ready_body
+                  else:
+                      raise SystemExit("Readiness gate failed: unreviewed model reported ready.")
                   print("Container liveness endpoint passed; model readiness is checked separately.")
                   print(json.dumps(payload, ensure_ascii=False))
 
