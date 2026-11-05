@@ -43,6 +43,22 @@ class ByteBPETokenizerTests(unittest.TestCase):
                 "merges": [[256, 1]],
             })
 
+    def test_rejects_boolean_token_ids(self):
+        for pair in ([True, 1], [1, False]):
+            with self.subTest(pair=pair):
+                with self.assertRaises(ValueError):
+                    ByteBPETokenizer.from_dict({
+                        "format": "jon2-byte-bpe-v1",
+                        "base_vocab_size": 256,
+                        "merges": [list(pair)],
+                    })
+
+    def test_rejects_non_object_tokenizer_data(self):
+        for value in (None, [], "not-a-tokenizer"):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    ByteBPETokenizer.from_dict(value)
+
 
 if __name__ == "__main__":
     unittest.main()
