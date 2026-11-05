@@ -1,8 +1,7 @@
 // Jon2 Compute Hardware - RV32I instruction decoder
-// RTL design source only. Not tested on physical FPGA hardware.
-// Decodes the base integer instruction fields needed by the initial core.
-// alu_ctrl encoding matches jon2_alu.sv:
-// 0 ADD, 1 SUB, 2 AND, 3 OR, 4 XOR,
+// RTL design source only. Not compiled or tested on physical FPGA hardware.
+// Supports the implemented RV32I subset; unsupported encodings remain illegal.
+// alu_ctrl: 0 ADD, 1 SUB, 2 AND, 3 OR, 4 XOR,
 // 5 SLT, 6 SLTU, 7 SLL, 8 SRL, 9 SRA.
 module jon2_decoder (
     input  logic [31:0] instruction,
@@ -16,10 +15,8 @@ module jon2_decoder (
     output logic        jump,
     output logic [3:0]  alu_ctrl
 );
-
-    logic [6:0] opcode;
+    logic [6:0] opcode, funct7;
     logic [2:0] funct3;
-    logic [6:0] funct7;
 
     assign opcode = instruction[6:0];
     assign funct3 = instruction[14:12];
@@ -37,90 +34,78 @@ module jon2_decoder (
         alu_ctrl    = 4'd0;
 
         case (opcode)
-            // Register-register integer operations (R-type)
-            7'b0110011: begin
+            7'b0110011: begin // R-type
                 case (funct3)
                     3'b000: begin
-                        if (funct7 == 7'b0000000) begin
-                            legal = 1'b1; reg_write = 1'b1; alu_ctrl = 4'd0;
-                        end else if (funct7 == 7'b0100000) begin
-                            legal = 1'b1; reg_write = 1'b1; alu_ctrl = 4'd1;
-                        end
+                        if (funct7 == 7'b0000000) begin legal=1; reg_write=1; alu_ctrl=0; end
+                        else if (funct7 == 7'b0100000) begin legal=1; reg_write=1; alu_ctrl=1; end
                     end
-                    3'b111: if (funct7 == 7'b0000000) begin legal=1'b1; reg_write=1'b1; alu_ctrl=4'd2; end
-                    3'b110: if (funct7 == 7'b0000000) begin legal=1'b1; reg_write=1'b1; alu_ctrl=4'd3; end
-                    3'b100: if (funct7 == 7'b0000000) begin legal=1'b1; reg_write=1'b1; alu_ctrl=4'd4; end
-                    3'b010: if (funct7 == 7'b0000000) begin legal=1'b1; reg_write=1'b1; alu_ctrl=4'd5; end
-                    3'b011: if (funct7 == 7'b0000000) begin legal=1'b1; reg_write=1'b1; alu_ctrl=4'd6; end
-                    3'b001: if (funct7 == 7'b0000000) begin legal=1'b1; reg_write=1'b1; alu_ctrl=4'd7; end
+                    3'b111: if (funct7 == 0) begin legal=1; reg_write=1; alu_ctrl=2; end
+                    3'b110: if (funct7 == 0) begin legal=1; reg_write=1; alu_ctrl=3; end
+                    3'b100: if (funct7 == 0) begin legal=1; reg_write=1; alu_ctrl=4; end
+                    3'b010: if (funct7 == 0) begin legal=1; reg_write=1; alu_ctrl=5; end
+                    3'b011: if (funct7 == 0) begin legal=1; reg_write=1; alu_ctrl=6; end
+                    3'b001: if (funct7 == 0) begin legal=1; reg_write=1; alu_ctrl=7; end
                     3'b101: begin
-                        if (funct7 == 7'b0000000) begin legal=1'b1; reg_write=1'b1; alu_ctrl=4'd8; end
-                        else if (funct7 == 7'b0100000) begin legal=1'b1; reg_write=1'b1; alu_ctrl=4'd9; end
+                        if (funct7 == 0) begin legal=1; reg_write=1; alu_ctrl=8; end
+                        else if (funct7 == 7'b0100000) begin legal=1; reg_write=1; alu_ctrl=9; end
                     end
                     default: begin end
                 endcase
             end
 
-            // Immediate integer operations (I-type ALU)
-            7'b0010011: begin
-                alu_src_imm = 1'b1;
+            7'b0010011: begin // I-type ALU
                 case (funct3)
-                    3'b000: begin legal=1'b1; reg_write=1'b1; alu_ctrl=4'd0; end // ADDI
-                    3'b111: begin legal=1'b1; reg_write=1'b1; alu_ctrl=4'd2; end // ANDI
-                    3'b110: begin legal=1'b1; reg_write=1'b1; alu_ctrl=4'd3; end // ORI
-                    3'b100: begin legal=1'b1; reg_write=1'b1; alu_ctrl=4'd4; end // XORI
-                    3'b010: begin legal=1'b1; reg_write=1'b1; alu_ctrl=4'd5; end // SLTI
-                    3'b011: begin legal=1'b1; reg_write=1'b1; alu_ctrl=4'd6; end // SLTIU
-                    3'b001: if (funct7 == 7'b0000000) begin legal=1'b1; reg_write=1'b1; alu_ctrl=4'd7; end
+                    3'b000: begin legal=1; reg_write=1; alu_src_imm=1; alu_ctrl=0; end
+                    3'b111: begin legal=1; reg_write=1; alu_src_imm=1; alu_ctrl=2; end
+                    3'b110: begin legal=1; reg_write=1; alu_src_imm=1; alu_ctrl=3; end
+                    3'b100: begin legal=1; reg_write=1; alu_src_imm=1; alu_ctrl=4; end
+                    3'b010: begin legal=1; reg_write=1; alu_src_imm=1; alu_ctrl=5; end
+                    3'b011: begin legal=1; reg_write=1; alu_src_imm=1; alu_ctrl=6; end
+                    3'b001: if (funct7 == 0) begin legal=1; reg_write=1; alu_src_imm=1; alu_ctrl=7; end
                     3'b101: begin
-                        if (funct7 == 7'b0000000) begin legal=1'b1; reg_write=1'b1; alu_ctrl=4'd8; end
-                        else if (funct7 == 7'b0100000) begin legal=1'b1; reg_write=1'b1; alu_ctrl=4'd9; end
+                        if (funct7 == 0) begin legal=1; reg_write=1; alu_src_imm=1; alu_ctrl=8; end
+                        else if (funct7 == 7'b0100000) begin legal=1; reg_write=1; alu_src_imm=1; alu_ctrl=9; end
                     end
                     default: begin end
                 endcase
-                if (!legal) alu_src_imm = 1'b0;
             end
 
-            // Load word (LW)
-            7'b0000011: if (funct3 == 3'b010) begin
-                legal=1'b1; reg_write=1'b1; alu_src_imm=1'b1;
-                mem_read=1'b1; mem_to_reg=1'b1; alu_ctrl=4'd0;
+            7'b0000011: if (funct3 == 3'b010) begin // LW
+                legal=1; reg_write=1; alu_src_imm=1;
+                mem_read=1; mem_to_reg=1; alu_ctrl=0;
             end
 
-            // Store word (SW)
-            7'b0100011: if (funct3 == 3'b010) begin
-                legal=1'b1; alu_src_imm=1'b1; mem_write=1'b1; alu_ctrl=4'd0;
+            7'b0100011: if (funct3 == 3'b010) begin // SW
+                legal=1; alu_src_imm=1; mem_write=1; alu_ctrl=0;
             end
 
-            // Conditional branches: BEQ and BNE
-            7'b1100011: begin
-                if (funct3 == 3'b000 || funct3 == 3'b001) begin
-                    legal=1'b1; branch=1'b1; alu_ctrl=4'd1;
-                end
+            7'b1100011: begin // All six RV32I branch conditions
+                case (funct3)
+                    3'b000, 3'b001, 3'b100, 3'b101, 3'b110, 3'b111: begin
+                        legal=1; branch=1; alu_ctrl=1;
+                    end
+                    default: begin end
+                endcase
             end
 
-            // Jump and link (JAL)
-            7'b1101111: begin
-                legal=1'b1; reg_write=1'b1; jump=1'b1;
+            7'b1101111: begin // JAL
+                legal=1; reg_write=1; jump=1;
             end
 
-            // Jump and link register (JALR)
-            7'b1100111: if (funct3 == 3'b000) begin
-                legal=1'b1; reg_write=1'b1; alu_src_imm=1'b1; jump=1'b1; alu_ctrl=4'd0;
+            7'b1100111: if (funct3 == 3'b000) begin // JALR
+                legal=1; reg_write=1; alu_src_imm=1; jump=1; alu_ctrl=0;
             end
 
-            // Load upper immediate (LUI)
-            7'b0110111: begin
-                legal=1'b1; reg_write=1'b1; alu_src_imm=1'b1;
+            7'b0110111: begin // LUI
+                legal=1; reg_write=1; alu_src_imm=1;
             end
 
-            // Add upper immediate to PC (AUIPC)
-            7'b0010111: begin
-                legal=1'b1; reg_write=1'b1; alu_src_imm=1'b1; alu_ctrl=4'd0;
+            7'b0010111: begin // AUIPC
+                legal=1; reg_write=1; alu_src_imm=1; alu_ctrl=0;
             end
 
             default: begin end
         endcase
     end
-
 endmodule
