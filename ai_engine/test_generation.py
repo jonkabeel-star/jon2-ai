@@ -1,10 +1,14 @@
 """Regression tests for UTF-8-safe top-k sampling in the original Jon2 generator."""
 import unittest
 
-import torch
+try:
+    import torch
+except ImportError:  # lightweight code-audit jobs may not install model dependencies
+    torch = None
 
-from tokenizer import ByteBPETokenizer
-from jon2_core import generate
+if torch is not None:
+    from tokenizer import ByteBPETokenizer
+    from jon2_core import generate
 
 
 class InvalidTopKModel:
@@ -21,6 +25,7 @@ class InvalidTopKModel:
 
 
 class GenerationSamplingTests(unittest.TestCase):
+    @unittest.skipIf(torch is None, "PyTorch is not installed in this lightweight test environment")
     def test_top_k_ignores_invalid_utf8_candidates(self):
         tokenizer = ByteBPETokenizer()
         answer = generate(
