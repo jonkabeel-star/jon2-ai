@@ -13,6 +13,9 @@ import main as jon2_api
 
 class Jon2ApiTests(unittest.TestCase):
     def setUp(self):
+        self.release_env = patch.dict(jon2_api.os.environ, {"JON2_CHAT_RELEASE_APPROVED": "true"})
+        self.release_env.start()
+        self.addCleanup(self.release_env.stop)
         self.client = TestClient(jon2_api.app)
 
     def test_health_distinguishes_api_online_from_model_readiness(self):
@@ -40,6 +43,24 @@ class Jon2ApiTests(unittest.TestCase):
         with patch.object(jon2_api, "model_is_ready", return_value=False), patch.object(jon2_api, "_checkpoint_configured", return_value=False):
             response = self.client.get("/api/health")
         self.assertEqual(response.json()["model_status"], "checkpoint_missing")
+
+    def test_chat_is_blocked_until_human_release_approval(self):
+        with patch.dict(jon2_api.os.environ, {"JON2_CHAT_RELEASE_APPROVED": "false"}), \
+             patch.object(jon2_api, "generate_reply") as generate:
+            response = self.client.post("/api/chat", json={"message": "مرحبا"})
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("مراجعة البشرية", response.json()["detail"])
+        generate.assert_not_called()
+
+    def test_health_reports_release_blocked_without_approval(self):
+        with patch.dict(jon2_api.os.environ, {"JON2_CHAT_RELEASE_APPROVED": "false"}), \
+             patch.object(jon2_api, "model_is_ready", return_value=True), \
+             patch.object(jon2_api, "_checkpoint_configured", return_value=True):
+            response = self.client.get("/api/health")
+        payload = response.json()
+        self.assertEqual(payload["model_status"], "release_blocked")
+        self.assertFalse(payload["chat_ready"])
+        self.assertFalse(payload["release_approved"])
 
     def test_chat_returns_503_when_checkpoint_is_missing(self):
         with patch.object(
