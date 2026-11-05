@@ -63,6 +63,29 @@ jobs:
                   assert payload.get("model_status") == "checkpoint_missing", payload
                   print("Container health endpoint passed; chat remains safely blocked.")
                   print(json.dumps(payload, ensure_ascii=False))
+
+                  compute_health = json.load(urllib.request.urlopen(
+                      "http://127.0.0.1:8000/api/compute/health", timeout=5
+                  ))
+                  assert compute_health.get("service") == "Jon2 Compute Control Plane", compute_health
+                  assert compute_health.get("provisioning_status") == "not_provisioned_by_this_service", compute_health
+
+                  resources = json.load(urllib.request.urlopen(
+                      "http://127.0.0.1:8000/api/compute/resources", timeout=5
+                  ))
+                  assert resources.get("schema_version") == 1, resources
+                  assert resources.get("capacity_class") in {
+                      "cpu_only", "gpu_visible", "apple_mps_visible"
+                  }, resources
+                  assert "cpu" in resources and "memory" in resources, resources
+
+                  admission = json.load(urllib.request.urlopen(
+                      "http://127.0.0.1:8000/api/compute/admission?min_memory_gib=0.1&require_gpu=true",
+                      timeout=5
+                  ))
+                  assert admission.get("execution_started") is False, admission
+                  assert admission.get("gpu_required") is True, admission
+                  print("Jon2 Compute API checks passed: hardware is discovered, not provisioned.")
                   break
               except Exception as exc:
                   last_error = exc
