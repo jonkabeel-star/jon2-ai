@@ -9,7 +9,9 @@ from pathlib import Path
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from train_jon2 import (\n    save_checkpoint, _training_plan, restore_scheduler_state, split_corpus_blocks,\n)
+from train_jon2 import (
+    save_checkpoint, _training_plan, restore_scheduler_state, split_corpus_blocks,
+)
 from tokenizer import ByteBPETokenizer
 
 
