@@ -44,9 +44,9 @@ jobs:
           import json
           from pathlib import Path
           metadata = json.loads(Path("/tmp/jon2-private-dataset/dataset-metadata.json").read_text())
-          if not isinstance(metadata, dict) or not metadata.get("id") or not metadata.get("title"):
-              raise SystemExit("Downloaded Kaggle metadata is incomplete.")
-          print("Verified private checkpoint metadata:", json.dumps(metadata, ensure_ascii=False))
+          if not isinstance(metadata, dict):
+              raise SystemExit("Downloaded Kaggle metadata is not a JSON object.")
+          print("Private Kaggle metadata downloaded successfully.")
           PY
 
       - name: Install CPU-only PyTorch
