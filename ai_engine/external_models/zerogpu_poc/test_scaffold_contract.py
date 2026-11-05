@@ -68,7 +68,7 @@ class ZeroGPUScaffoldContractTests(unittest.TestCase):
         self.assertIn("revision=REVISION", self.source)
         self.assertIn("trust_remote_code=False", self.source)
         self.assertNotIn("trust_remote_code=True", self.source)
-        self.assertIn('local_files_only=True', self.source) is False  # Space fetch is gated by owner approval.
+        self.assertNotIn("local_files_only=True", self.source)  # Space downloads only after owner approval gates.
 
 
 if __name__ == "__main__":
