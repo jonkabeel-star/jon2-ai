@@ -39,3 +39,17 @@ The model card identifies 8B BF16 weights. The raw parameter storage alone is ap
 6. Run held-out Egyptian Arabic, MSA, multi-turn, factuality, and safety evaluations.
 7. Human-review the full report.
 8. Only then consider connecting the adapter to a private Jon2 API route. Keep the original Jon2 model path separate.
+
+
+## Egyptian Arabic evaluation suite
+
+The owner-authored evaluation assets are in `evaluation/`:
+
+- `jon2_arabic_eval_v1.json`: 16 short conversations covering Egyptian dialect, MSA, multi-turn coherence, factual uncertainty, instruction following, privacy, honesty, and prompt injection.
+- `run_evaluation.py`: local-only runner that uses the configured checkpoint through `jais2_runtime.py` and writes a JSON report to the local filesystem.
+- Validate the suite without model weights:
+  `python ai_engine/external_models/evaluation/run_evaluation.py --validate-only`
+- Run inference only after rights approval and local checkpoint setup:
+  `JON2_JAIS2_LOCAL_PATH=/private/path/to/approved/model python ai_engine/external_models/evaluation/run_evaluation.py`
+
+The suite contains project-authored prompts, not scraped benchmark material. The runner does not call a hosted inference API. It does not assign an automatic quality score: a human must review every output. Do not commit generated reports if they contain private prompts or other sensitive data. The evaluation runner is not evidence that a checkpoint has been downloaded or tested.
