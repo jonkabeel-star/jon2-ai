@@ -39,6 +39,34 @@ jobs:
           iverilog -g2012 -Wall -s tb_jon2_register_file -o /tmp/jon2-register-file-test.vvp \
             hardware/rtl/jon2_register_file.sv hardware/tb/tb_jon2_register_file.sv
           vvp /tmp/jon2-register-file-test.vvp
+      - name: Compile integrated Jon2 core
+        run: |
+          iverilog -g2012 -Wall -s jon2_core -o /tmp/jon2-core.vvp \
+            hardware/rtl/jon2_pc.sv \
+            hardware/rtl/jon2_instruction_memory.sv \
+            hardware/rtl/jon2_fetch_unit.sv \
+            hardware/rtl/jon2_decoder.sv \
+            hardware/rtl/jon2_immediate_gen.sv \
+            hardware/rtl/jon2_control_unit.sv \
+            hardware/rtl/jon2_register_file.sv \
+            hardware/rtl/jon2_alu.sv \
+            hardware/rtl/jon2_data_memory.sv \
+            hardware/rtl/jon2_core.sv
+      - name: Run integrated core program
+        run: |
+          iverilog -g2012 -Wall -s tb_jon2_core -o /tmp/jon2-core-test.vvp \
+            hardware/rtl/jon2_pc.sv \
+            hardware/rtl/jon2_instruction_memory.sv \
+            hardware/rtl/jon2_fetch_unit.sv \
+            hardware/rtl/jon2_decoder.sv \
+            hardware/rtl/jon2_immediate_gen.sv \
+            hardware/rtl/jon2_control_unit.sv \
+            hardware/rtl/jon2_register_file.sv \
+            hardware/rtl/jon2_alu.sv \
+            hardware/rtl/jon2_data_memory.sv \
+            hardware/rtl/jon2_core.sv \
+            hardware/tb/tb_jon2_core.sv
+          vvp /tmp/jon2-core-test.vvp
       - name: Compile control unit and dependencies
         run: |
           iverilog -g2012 -Wall -s jon2_control_unit -o /tmp/jon2-control.vvp \
