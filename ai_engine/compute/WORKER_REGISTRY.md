@@ -17,8 +17,8 @@
 
 Set these environment variables on the API host:
 - `JON2_COMPUTE_OWNER_TOKEN`: random secret with at least 32 characters.
-- `JON2_COMPUTE_DB_PATH`: persistent writable path, e.g.
-  `/var/lib/jon2/compute/workers.sqlite3`.
+- `JON2_COMPUTE_DB_PATH`: set this to a persistent writable volume path in production.
+  The default `/tmp/jon2-compute/workers.sqlite3` is intentionally ephemeral.
 
 ## Security and operational limits
 - Always serve this API over HTTPS. Never put owner or worker tokens in Git,
