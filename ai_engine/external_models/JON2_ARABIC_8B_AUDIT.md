@@ -151,3 +151,17 @@ Jon2 decision:
 - Keep Jais 2 on HOLD and do not replace it automatically. Apertus 1.5 may become the preferred candidate only after the v1.5 4T-token data supplement is documented at source/license level, the owner personally reviews the AUP and contact-information disclosure, and Arabic evaluation confirms acceptable quality.
 - Do not download, accept access conditions, fine-tune, or deploy this checkpoint yet.
 
+
+
+## Apertus 1.5 source-level rights review — 2026-11-05
+
+The official Apertus dataset transparency catalogue was inspected directly (including its `used_in` field, license labels, and notes). The catalogue explicitly lists `HuggingFaceFW/clean-wikipedia` with `cc-by-sa-4.0` under `used_in: v1`. The official Apertus 1.5 release notes state that v1.5 is continued pretraining from Apertus 1.0. Therefore the v1.5 model inherits a base-model lineage whose v1 training catalogue includes Wikipedia / CC BY-SA, which the owner explicitly prohibited.
+
+The v1.5 catalogue also includes additional records with Unknown/Other/Mixed/Openrail license labels and at least one v1.5 dataset row marked CC-BY-NC-4.0. The publisher describes filters and source-level exclusions for some mixed datasets, but this does not satisfy Jon2's stricter requirement to avoid prohibited or unclear source material across the entire inherited lineage.
+
+Official evidence:
+- Release notes: https://huggingface.co/blog/swiss-ai/apertus-v15-release-notes
+- Dataset catalogue: https://github.com/swiss-ai/apertus-data-transparency
+- Raw catalogue: https://raw.githubusercontent.com/swiss-ai/apertus-data-transparency/main/Apertus%20dataset%20repository.tsv
+
+**Decision: Apertus 1.5 8B is REJECTED for Jon2 under the current data policy.** Do not download, fine-tune, or deploy it. The Apache-2.0 model-weight license does not override the owner's explicit data-source restrictions. See `APERTUS_1_5_RIGHTS_REVIEW.md` for details. This does not alter the Jais 2 HOLD decision or authorize a substitute.
