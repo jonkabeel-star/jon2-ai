@@ -99,6 +99,8 @@ def generate_reply(
         add_generation_prompt=True,
     )
     inputs = _tokenizer(prompt, return_tensors="pt")
+    # Jais 2 model forward does not consume tokenizer token_type_ids.
+    inputs.pop("token_type_ids", None)
     input_device = _model.get_input_embeddings().weight.device
     inputs = {key: value.to(input_device) for key, value in inputs.items()}
 
