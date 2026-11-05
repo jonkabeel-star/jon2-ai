@@ -27,20 +27,12 @@ module tb_jon2_fetch_unit;
 
     initial begin
         #2;
-        if (pc !== 32'h0000_0000) $fatal(1, "PC reset failed");
+        if (pc !== 32'h0000_1000) $fatal(1, "configured PC reset failed");
         reset_n = 1'b1;
         #1;
-        if (pc !== 32'h0000_0000 || instruction_valid || !instruction_error)
-            $fatal(1, "reset PC outside configured instruction window should fault");
-
-        // Redirect to the configured program image.
-        redirect = 1'b1;
-        redirect_addr = 32'h0000_1000;
-        @(posedge clk); #1;
-        redirect = 1'b0;
-        if (pc !== 32'h0000_1000 || !instruction_valid || instruction_error ||
+        if (!instruction_valid || instruction_error ||
             instruction !== 32'h00500093)
-            $fatal(1, "redirected first fetch failed");
+            $fatal(1, "reset-address instruction fetch failed");
 
         @(posedge clk); #1;
         if (pc !== 32'h0000_1004 || !instruction_valid ||
@@ -59,7 +51,7 @@ module tb_jon2_fetch_unit;
         redirect = 1'b0;
         if (pc !== 32'h0000_1008 || !instruction_valid ||
             instruction !== 32'h002081B3)
-            $fatal(1, "redirected third fetch failed");
+            $fatal(1, "redirected fetch failed");
 
         $display("PASS: Jon2 fetch unit smoke tests");
         $finish;
