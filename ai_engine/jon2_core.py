@@ -298,25 +298,36 @@ def generate(
                     banned.add(generated_ids[index + no_repeat_ngram_size - 1])
             if banned:
                 candidate_logits[0, list(banned)] = float("-inf")
-        # Limit sampling to the strongest remaining candidates.
-        if do_sample and top_k > 0:
-            k = min(top_k, candidate_logits.size(-1))
-            threshold = torch.topk(candidate_logits, k, dim=-1).values[:, -1, None]
-            candidate_logits = candidate_logits.masked_fill(candidate_logits < threshold, float("-inf"))
+        # First remove tokens that would corrupt the UTF-8 byte stream.
         valid_candidates = []
         for candidate in range(tokenizer.vocab_size):
             try:
                 piece = tokenizer._token_bytes(candidate)
                 decoder = codecs.getincrementaldecoder("utf-8")("strict")
                 decoder.decode(bytes(generated_bytes) + piece, final=False)
-                valid_candidates.append(candidate)
+                if torch.isfinite(candidate_logits[0, candidate]):
+                    valid_candidates.append(candidate)
             except UnicodeDecodeError:
                 candidate_logits[0, candidate] = float("-inf")
         if not valid_candidates:
             break
+
+        # Apply top-k only after UTF-8 filtering. Applying it before filtering
+        # can leave every remaining logit at -inf and make softmax return NaN.
+        if do_sample and top_k > 0 and len(valid_candidates) > top_k:
+            valid_logits = candidate_logits[0, valid_candidates]
+            selected_positions = torch.topk(valid_logits, top_k).indices.tolist()
+            selected_candidates = [valid_candidates[index] for index in selected_positions]
+            filtered_logits = torch.full_like(candidate_logits, float("-inf"))
+            filtered_logits[0, selected_candidates] = candidate_logits[0, selected_candidates]
+            candidate_logits = filtered_logits
+
         if do_sample:
             probabilities = torch.softmax(candidate_logits, dim=-1)
-            next_id = torch.multinomial(probabilities, num_samples=1)
+            if not torch.isfinite(probabilities).all() or probabilities.sum() <= 0:
+                next_id = torch.argmax(candidate_logits, dim=-1, keepdim=True)
+            else:
+                next_id = torch.multinomial(probabilities, num_samples=1)
         else:
             next_id = torch.argmax(candidate_logits, dim=-1, keepdim=True)
         token_id = int(next_id.item())
