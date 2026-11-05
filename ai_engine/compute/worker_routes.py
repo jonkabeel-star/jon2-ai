@@ -4,22 +4,40 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import APIRouter, Header, HTTPException
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from . import worker_registry as registry
 
 router = APIRouter(prefix="/api/compute/workers", tags=["Jon2 Compute Workers"])
 
 
+def _validate_label_list(value):
+    if not isinstance(value, list) or len(value) > 8:
+        raise ValueError("Accelerator fields must be lists with at most 8 entries.")
+    cleaned = []
+    for item in value:
+        if not isinstance(item, str) or not item.strip() or len(item) > 100:
+            raise ValueError("Accelerator entries must be non-empty strings up to 100 characters.")
+        if "," in item or any(ord(char) < 32 or ord(char) == 127 for char in item):
+            raise ValueError("Accelerator entries cannot contain commas or control characters.")
+        cleaned.append(item.strip())
+    return cleaned
+
+
 class EnrollmentRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    node_id: str = Field(min_length=3, max_length=64)
-    display_name: str = Field(default="Jon2 worker", max_length=80)
+    node_id: str = Field(min_length=3, max_length=64, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{2,63}$")
+    display_name: str = Field(default="Jon2 worker", min_length=1, max_length=80)
     platform: str = Field(min_length=1, max_length=80)
     cpu_count: int = Field(ge=1, le=4096)
     memory_total_bytes: int = Field(ge=0, le=2**60)
     accelerator_types: list[str] = Field(default_factory=list, max_length=8)
     accelerator_names: list[str] = Field(default_factory=list, max_length=8)
+
+    @field_validator("accelerator_types", "accelerator_names", mode="before")
+    @classmethod
+    def validate_accelerator_labels(cls, value):
+        return _validate_label_list(value)
 
 
 class HeartbeatRequest(BaseModel):
@@ -28,6 +46,11 @@ class HeartbeatRequest(BaseModel):
     memory_total_bytes: int = Field(ge=0, le=2**60)
     accelerator_types: list[str] = Field(default_factory=list, max_length=8)
     accelerator_names: list[str] = Field(default_factory=list, max_length=8)
+
+    @field_validator("accelerator_types", "accelerator_names", mode="before")
+    @classmethod
+    def validate_accelerator_labels(cls, value):
+        return _validate_label_list(value)
 
 
 def _owner(candidate: str | None) -> None:
