@@ -2,6 +2,7 @@
 import unittest
 
 from answer_quality import validate_generated_answer
+from evaluate_model import diagnose_answer
 
 
 class GeneratedAnswerQualityTests(unittest.TestCase):
@@ -33,6 +34,31 @@ class GeneratedAnswerQualityTests(unittest.TestCase):
         self.assertFalse(validate_generated_answer(
             "This is an English answer."
         ))
+
+
+
+class EvaluationDiagnosticsTests(unittest.TestCase):
+    def test_flags_empty_answer(self):
+        result = diagnose_answer("")
+        self.assertIn("empty_answer", result["surface_warnings"])
+        self.assertTrue(result["human_semantic_review_required"])
+
+    def test_plain_arabic_has_no_low_arabic_warning(self):
+        result = diagnose_answer(
+            "هذه إجابة عربية واضحة تحتوي على كلمات متنوعة ومفهومة للاختبار."
+        )
+        self.assertNotIn("low_arabic_character_ratio", result["surface_warnings"])
+
+    def test_flags_repeated_word_sequence(self):
+        result = diagnose_answer(
+            "هذه إجابة هذه إجابة هذه إجابة هذه إجابة هذه إجابة"
+        )
+        self.assertIn("low_unique_word_ratio", result["surface_warnings"])
+
+    def test_diagnostics_never_issue_quality_verdict(self):
+        result = diagnose_answer("هذه إجابة عربية للاختبار فقط.")
+        self.assertNotIn("quality_verdict", result)
+        self.assertTrue(result["human_semantic_review_required"])
 
 
 if __name__ == "__main__":
