@@ -13,6 +13,7 @@ GPT, another pretrained model, or a hosted AI API.
 - Both `jon2-small.pt` and `jon2-last.pt` were uploaded to the private Kaggle dataset `jon2kabeel/jon2-private-model-checkpoint`. Verification run [42028045019](https://github.com/jonkabeel-star/jon2-ai/actions/runs/42028045019) independently confirmed both files are visible in that private dataset.
 - The checkpoint was loaded on CPU and real inference was executed. Example outputs were fragmented and incoherent Arabic text. Automated technical checks do not establish language quality.
 - The 40-prompt held-out Arabic evaluation completed on CPU in run [42028581017](https://github.com/jonkabeel-star/jon2-ai/actions/runs/42028581017); the report is available as the `jon2-heldout-arabic-human-review` workflow artifact for 14 days.
+- A UTF-8-safe top-k sampling defect discovered during evaluation was fixed in `jon2_core.py`; a regression test now covers cases where top-k would otherwise select only invalid continuation bytes.
 - The generated answers remain visibly incoherent and malformed, so the checkpoint **fails the practical Arabic conversation gate**. The successful evaluator run means only that generation and report creation completed; it is not a quality pass. Do not enable public chat.
 - **This is genuine model training, but not a usable conversational assistant yet.** Keep public chat disabled. Improve corpus quality and quantity, model/tokenizer capacity, and held-out semantic evaluation before considering release.
 
