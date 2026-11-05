@@ -6,6 +6,7 @@ on:
     paths:
       - "ai_engine/training_data/source_approvals.json"
       - "ai_engine/train_jon2.py"
+      - ".github/workflows/jon2-real-training.yml"
   workflow_dispatch:
 
 permissions:
