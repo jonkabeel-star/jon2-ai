@@ -67,15 +67,15 @@ class TrainingResumeTests(unittest.TestCase):
 
 
     def test_validation_split_keeps_paragraphs_disjoint_and_reproducible(self):
-        corpus = "\\n\\n".join(
-            f"مقطع مستقل رقم {index}\\nنص إضافي للمقطع {index}"
+        corpus = "\n\n".join(
+            f"مقطع مستقل رقم {index}\nنص إضافي للمقطع {index}"
             for index in range(10)
         )
         train_a, validation_a = split_corpus_blocks(corpus, 0.2, 17)
         train_b, validation_b = split_corpus_blocks(corpus, 0.2, 17)
         self.assertEqual((train_a, validation_a), (train_b, validation_b))
-        train_blocks = set(train_a.split("\\n\\n"))
-        validation_blocks = set(validation_a.split("\\n\\n"))
+        train_blocks = set(train_a.split("\n\n"))
+        validation_blocks = set(validation_a.split("\n\n"))
         self.assertEqual(len(validation_blocks), 2)
         self.assertFalse(train_blocks & validation_blocks)
         self.assertEqual(len(train_blocks | validation_blocks), 10)
@@ -86,7 +86,7 @@ class TrainingResumeTests(unittest.TestCase):
 
     def test_validation_split_rejects_invalid_fraction(self):
         with self.assertRaisesRegex(ValueError, "validation_fraction"):
-            split_corpus_blocks("أول مقطع\\n\\nثاني مقطع", 0.9, 42)
+            split_corpus_blocks("أول مقطع\n\nثاني مقطع", 0.9, 42)
 
     def test_resume_restores_active_optimizer_learning_rate(self):
         parameter_a = torch.nn.Parameter(torch.tensor([1.0]))
