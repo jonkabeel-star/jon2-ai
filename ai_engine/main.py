@@ -65,10 +65,10 @@ def health():
     checkpoint_available = _checkpoint_configured()
     release_approved = _chat_release_approved()
     model_status = (
-        "release_blocked" if not release_approved
-        else "ready" if loaded and checkpoint_available
-        else "checkpoint_available" if checkpoint_available
-        else "checkpoint_missing"
+        "checkpoint_missing" if not checkpoint_available
+        else "release_blocked" if not release_approved
+        else "ready" if loaded
+        else "checkpoint_available"
     )
     return {
         "project": "Jon2 AI",
@@ -85,14 +85,14 @@ def health():
 
 @app.post("/api/chat")
 def chat(request: ChatRequest):
+    message = request.message.strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
     if not _chat_release_approved():
         raise HTTPException(
             status_code=503,
             detail="محادثة Jon2 متوقفة حتى اعتماد جودة النموذج بعد المراجعة البشرية.",
         )
-    message = request.message.strip()
-    if not message:
-        raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
     try:
         reply = generate_reply(message, [item.model_dump() for item in request.history])
         return {"project": "Jon2 AI", "reply": reply}
