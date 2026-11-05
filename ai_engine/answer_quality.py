@@ -38,3 +38,40 @@ def validate_generated_answer(answer: str) -> bool:
             ):
                 return False
     return True
+
+
+def diagnose_answer(answer: str) -> dict:
+    """Report surface-level warning signals without pretending to judge meaning."""
+    import re
+
+    text = answer.strip() if isinstance(answer, str) else ""
+    words = re.findall(r"\S+", text)
+    visible = [char for char in text if not char.isspace()]
+    arabic = len(re.findall(r"[\u0621-\u064A\u066E-\u06D3]", text))
+    unique_ratio = len(set(words)) / max(1, len(words))
+    repeated_trigram = any(
+        words[index:index + 3] == words[index + 3:index + 6]
+        for index in range(max(0, len(words) - 5))
+    )
+    warnings = []
+    if len(text) < 20:
+        warnings.append("very_short_answer")
+    if len(words) < 4:
+        warnings.append("very_few_words")
+    if arabic / max(1, len(visible)) < 0.70:
+        warnings.append("low_arabic_character_ratio")
+    if len(words) >= 8 and unique_ratio < 0.45:
+        warnings.append("low_unique_word_ratio")
+    if repeated_trigram:
+        warnings.append("repeated_three_word_sequence")
+    if not text:
+        warnings.append("empty_answer")
+    return {
+        "character_count": len(text),
+        "word_count": len(words),
+        "arabic_character_ratio": round(arabic / max(1, len(visible)), 3),
+        "unique_word_ratio": round(unique_ratio, 3),
+        "surface_warnings": warnings,
+        "human_semantic_review_required": True,
+    }
+
