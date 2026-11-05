@@ -111,6 +111,7 @@ jobs:
           PY
 
           docker exec jon2-api-ci python -m unittest \
+            test_api \
             compute.test_resource_probe \
             compute.test_worker_registry \
             compute.test_worker_agent \
