@@ -12,6 +12,7 @@
 - Model card declares Apache-2.0 for the model release.
 - Model card describes Arabic and English training from scratch, an Arabic-centric vocabulary, MSA and regional dialect support.
 - The public model card inspected for this audit does not provide a sufficiently detailed, auditable inventory of underlying pretraining and post-training datasets, source URLs, per-source licenses, or rights/permission basis for every text source.
+- Related historical disclosure: the older Jais-family model card (not the Jais 2 card) explicitly lists public web pages, Wikipedia articles, news, social-network content, books, arXiv papers, and synthetic translations as training sources. This does **not** prove Jais 2 used the same sources; it does make a written clarification about Jais 2's own corpus especially important for this project. See https://huggingface.co/inception42/jais-family-590m-chat/blob/refs/pr/2/README.md.
 - Therefore Apache-2.0 on the model repository is not treated as proof that every underlying training text is independently cleared for Jon2's intended use.
 - **Status: HOLD — do not download, fine-tune, or deploy until the model authors provide adequate written provenance and rights clarification.**
 
