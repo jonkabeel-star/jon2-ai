@@ -90,3 +90,8 @@ def revoke_worker(
     if not registry.revoke(node_id):
         raise HTTPException(status_code=404, detail="Worker not found.")
     return {"node_id": node_id, "revoked": True}
+
+
+@router.on_event("startup")
+def initialize_worker_registry():
+    registry.initialize()
