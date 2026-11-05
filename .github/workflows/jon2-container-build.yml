@@ -98,3 +98,26 @@ jobs:
           done
           echo "Image privacy check passed: no training data, checkpoints, or evaluation material."
 
+          python - <<'PY'
+          import urllib.request
+
+          def preflight(origin):
+              request = urllib.request.Request(
+                  "http://127.0.0.1:8000/api/chat",
+                  headers={
+                      "Origin": origin,
+                      "Access-Control-Request-Method": "POST",
+                      "Access-Control-Request-Headers": "content-type",
+                  },
+                  method="OPTIONS",
+              )
+              with urllib.request.urlopen(request, timeout=5) as response:
+                  return response.headers
+
+          allowed = preflight("https://jonkabeel-star.github.io")
+          assert allowed.get("Access-Control-Allow-Origin") == "https://jonkabeel-star.github.io", allowed
+          denied = preflight("https://untrusted.example")
+          assert denied.get("Access-Control-Allow-Origin") is None, denied
+          print("CORS checks passed: GitHub Pages origin allowed; unrelated origin not allowed.")
+          PY
+
