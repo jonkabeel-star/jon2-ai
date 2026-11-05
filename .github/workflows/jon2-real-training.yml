@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/jon2-real-training.yml"
       - "ai_engine/training_data/source_approvals.json"
       - "ai_engine/train_jon2.py"
   workflow_dispatch:
