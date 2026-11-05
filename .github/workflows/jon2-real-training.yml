@@ -145,7 +145,7 @@ jobs:
           metadata = json.loads(p.read_text(encoding="utf-8"))
           if not isinstance(metadata, dict):
               raise SystemExit("Kaggle dataset metadata must be a JSON object.")
-          metadata["id"] = "jonkabeel-star/jon2-private-model-checkpoint"
+          metadata["id"] = "jon2kabeel/jon2-private-model-checkpoint"
           metadata.setdefault("title", "Jon2 Private Model Checkpoint")
           metadata.setdefault("description", "Private internal storage for Jon2 AI model checkpoints. Not licensed for public redistribution.")
           if not metadata.get("licenses"):
