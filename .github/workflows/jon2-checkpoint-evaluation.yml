@@ -69,7 +69,7 @@ jobs:
           from jon2_core import load_model, generate
 
           checkpoint_path = Path(os.environ["JON2_CHECKPOINT_FILE"])
-          checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+          checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
           print("JON2 CHECKPOINT EVALUATION")
           print("checkpoint_bytes:", checkpoint_path.stat().st_size)
           print("training_steps:", checkpoint.get("training_steps", "unknown"))
