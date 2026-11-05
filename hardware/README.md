@@ -27,7 +27,7 @@ This directory is the hardware-design track for Jon2 AI. RTL source describes ci
 - `rtl/jon2_control_unit.sv` — control signals, branch decisions, immediate selection, and writeback/PC selection.
 - `rtl/jon2_data_memory.sv` — parameterized 32-bit word memory for aligned accesses in a configurable address window.
 - `rtl/jon2_instruction_memory.sv` — parameterized read-only instruction store with optional `$readmemh` initialization and address validation.
-- `tb/tb_jon2_data_memory.sv` — smoke test for write/read, alignment rejection, and out-of-range rejection.
+- `tb/tb_jon2_data_memory.sv` — tests write/read, alignment and bounds rejection, plus `WORDS=1` and non-power-of-two `WORDS=3` memory configurations.
 - `tb/tb_jon2_instruction_memory.sv` and `tb/fixtures/jon2_instruction_memory.hex` — deterministic instruction-memory read and bounds tests.
 - `tb/tb_jon2_fetch_unit.sv` — reset, sequential fetch, hold, and redirect smoke tests.
 - `tb/tb_jon2_core.sv` and `tb/fixtures/jon2_core_program.hex` — end-to-end core program test covering ADDI, ADD, LUI, SW, LW, and a taken BEQ with wrong-path skipping.
@@ -35,7 +35,7 @@ This directory is the hardware-design track for Jon2 AI. RTL source describes ci
 - `tb/tb_jon2_core_jumps.sv` and `tb/fixtures/jon2_jump_program.hex` — end-to-end JAL/JALR target, link-address, and wrong-path tests.
 - `tb/tb_jon2_core_faults.sv`, `tb/fixtures/jon2_unaligned_store.hex`, `tb/fixtures/jon2_illegal_instruction.hex`, and `tb/fixtures/jon2_out_of_range_store.hex` plus `tb/fixtures/jon2_out_of_range_load.hex` — verify halt, fault reporting, PC hold, and disabled register writes for unaligned stores, illegal instructions, and out-of-range loads/stores.
 
-These are source files and simulation testbenches only. The GitHub Actions RTL workflow completed successfully in run `42023004276`, including integrated core execution, branch/jump control tests, JAL/JALR execution, and fault-halt tests for unaligned stores, illegal instructions, and out-of-range loads/stores. This verifies the tested simulations and compilation only; it does not establish synthesis or physical hardware operation. The data memory is an RTL memory array and is not physical RAM.
+These are source files and simulation testbenches only. The GitHub Actions RTL workflow completed successfully in run `42031802710`, including integrated core execution, branch/jump control tests, JAL/JALR execution, fault-halt tests for unaligned stores, illegal instructions, and out-of-range loads/stores. The data-memory test also covers one-word and non-power-of-two three-word configurations. This verifies the tested simulations and compilation only; it does not establish synthesis or physical hardware operation. The data memory is an RTL memory array and is not physical RAM.
 
 ## Implemented subset and limitations
 - Integer ALU operations: ADD, SUB, AND, OR, XOR, SLT, SLTU, SLL, SRL, SRA.
