@@ -1,8 +1,7 @@
 """Regression tests for the Jon2 generated-answer quality guard."""
 import unittest
 
-from answer_quality import validate_generated_answer
-from evaluate_model import diagnose_answer
+from answer_quality import diagnose_answer, validate_generated_answer
 
 
 class GeneratedAnswerQualityTests(unittest.TestCase):
