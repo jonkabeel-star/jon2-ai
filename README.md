@@ -4,7 +4,7 @@ Jon2 AI is an independent Arabic-first AI platform project.
 
 ## Project status
 
-This repository contains the website interface, an early original-model prototype, and the first API gateway. It is **not yet a public production AI service**. A deployed Python model runtime, approved training corpus, quality-approved checkpoint, persistent database, secure public accounts, video rendering, YouTube OAuth/upload, and AdSense are not live.
+This repository contains the website interface, an early original-model prototype, and the first API gateway. A first genuine CPU-trained Jon2 checkpoint is now stored privately, but its Arabic replies are not coherent enough for user-facing chat. It is **not yet a public production AI service**. A deployed Python model runtime, approved training corpus, quality-approved checkpoint, persistent database, secure public accounts, video rendering, YouTube OAuth/upload, and AdSense are not live.
 
 ## Start here
 
