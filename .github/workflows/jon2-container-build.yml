@@ -112,7 +112,7 @@ jobs:
 
           docker exec jon2-api-ci python -m unittest \
             compute.test_resource_probe \
-            compute.test_worker_registry -v
+            compute.test_worker_registry \\\n            compute.test_worker_agent -v
 
           for private_path in \
             /app/ai_engine/training_data \
