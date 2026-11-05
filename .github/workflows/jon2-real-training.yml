@@ -148,6 +148,18 @@ jobs:
           if [ -s ai_engine/checkpoints/jon2-last.pt ]; then
             cp ai_engine/checkpoints/jon2-last.pt /tmp/jon2-private-dataset/
           fi
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("/tmp/jon2-private-dataset/dataset-metadata.json")
+          metadata = json.loads(p.read_text(encoding="utf-8"))
+          if not isinstance(metadata, dict):
+              raise SystemExit("Kaggle dataset metadata must be a JSON object.")
+          metadata["id"] = "jonkabeel-star/jon2-private-model-checkpoint"
+          p.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+          print("Prepared metadata ID:", metadata["id"])
+          print("Prepared metadata title:", metadata.get("title", "(not supplied)"))
+          PY
           kaggle datasets version -p /tmp/jon2-private-dataset -m "Jon2 original Arabic Transformer CPU training"
           echo "Private checkpoint dataset version updated."
 
