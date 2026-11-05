@@ -57,9 +57,9 @@ def diagnose_answer(answer: str) -> dict:
     import re
 
     text = answer.strip() if isinstance(answer, str) else ""
-    words = re.findall(r"\\S+", text)
+    words = re.findall(r"\S+", text)
     visible = [char for char in text if not char.isspace()]
-    arabic = len(re.findall(r"[\\u0621-\\u064A\\u066E-\\u06D3]", text))
+    arabic = len(re.findall(r"[\u0621-\u064A\u066E-\u06D3]", text))
     unique_ratio = len(set(words)) / max(1, len(words))
     repeated_trigram = any(
         words[index:index + 3] == words[index + 3:index + 6]
@@ -148,6 +148,7 @@ def main() -> int:
             "id": item["id"],
             "prompt": item["prompt"],
             "generated_answer": answer,
+            "automated_diagnostics": diagnose_answer(answer),
             "human_review": {
                 "reviewed": False,
                 "reviewer": None,
@@ -170,7 +171,11 @@ def main() -> int:
         "temperature": args.temperature,
         "max_new_chars": args.max_new_chars,
         "prompt_count": len(results),
-        "automated_quality_verdict": None,\n        "diagnostic_notice": (\n            "Surface warnings detect empty, unusually short, low-Arabic, or repetitive text only. " \n            "They do not measure correctness, relevance, coherence, or factuality and never approve release."\n        ),
+        "automated_quality_verdict": None,
+        "diagnostic_notice": (
+            "Surface warnings detect empty, unusually short, low-Arabic, or repetitive text only. "
+            "They do not measure correctness, relevance, coherence, or factuality and never approve release."
+        ),
         "release_approved": False,
         "results": results,
         "notice": (
