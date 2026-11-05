@@ -30,9 +30,10 @@ This directory is the hardware-design track for Jon2 AI. RTL source describes ci
 - `tb/tb_jon2_data_memory.sv` — smoke test for write/read, alignment rejection, and out-of-range rejection.
 - `tb/tb_jon2_instruction_memory.sv` and `tb/fixtures/jon2_instruction_memory.hex` — deterministic instruction-memory read and bounds tests.
 - `tb/tb_jon2_fetch_unit.sv` — reset, sequential fetch, hold, and redirect smoke tests.
-- `tb/tb_jon2_core.sv` and `tb/fixtures/jon2_core_program.hex` — end-to-end program test for two ADDI instructions followed by ADD.
+- `tb/tb_jon2_core.sv` and `tb/fixtures/jon2_core_program.hex` — end-to-end core program test covering ADDI, ADD, LUI, SW, LW, and a taken BEQ with wrong-path skipping.
+- `tb/tb_jon2_control_unit.sv` — tests all six branch conditions, signed/unsigned comparisons, JAL/JALR control signals, and rejection of an unsupported branch encoding.
 
-These are source files only. Their presence does not establish that the modules compile, pass tests, synthesize, or run on hardware. The GitHub Actions workflow attempts compilation; its result must be inspected before claiming successful compilation. The data memory is an RTL memory array and is not physical RAM.
+These are source files and simulation testbenches only. The GitHub Actions RTL workflow completed successfully in run `42020847534`, including the integrated core program and the expanded control-unit branch/jump tests. This verifies the tested simulations and compilation only; it does not establish synthesis or physical hardware operation. The data memory is an RTL memory array and is not physical RAM.
 
 ## Implemented subset and limitations
 - Integer ALU operations: ADD, SUB, AND, OR, XOR, SLT, SLTU, SLL, SRL, SRA.
@@ -40,12 +41,12 @@ These are source files only. Their presence does not establish that the modules 
 - LW and SW word accesses only; byte/halfword loads and stores are not implemented.
 - BEQ, BNE, BLT, BGE, BLTU, and BGEU branch comparisons.
 - JAL, JALR, LUI, and AUIPC control encodings.
-- An initial single-cycle integrated core is present in RTL. Its end-to-end simulation test passed for ADDI, ADD, LUI, SW, LW, and a taken BEQ branch (including wrong-path skipping) in GitHub Actions run 42020217848. This is an early RV32I subset, not a complete or production-ready CPU.
+- An initial single-cycle integrated core is present in RTL. Its end-to-end simulation test passed for ADDI, ADD, LUI, SW, LW, and a taken BEQ branch (including wrong-path skipping). A separate control-unit test passed all six branch conditions, signed/unsigned comparison cases, JAL/JALR control selection, and unsupported-branch rejection in GitHub Actions run 42020847534. This is an early RV32I subset, not a complete or production-ready CPU.
 - Byte/halfword memory operations, robust exception/trap handling, privilege modes, interrupts, caches, pipelining, and broad ISA compliance remain unimplemented and require further verification.
 
 ## Next engineering milestones
 1. Review interfaces and operation encodings across all RTL modules.
-2. Expand end-to-end tests for branches, jumps, load/store, and fault conditions.
+2. Expand end-to-end tests for JAL/JALR execution, load/store fault handling, and illegal-instruction halt behavior.
 3. Review synthesis compatibility and remove simulation-only constructs where needed.
 4. Run broader RTL lint, simulation, and ISA compliance tests.
 5. Synthesize and generate a bitstream for a selected FPGA family.
