@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: jon2-ai-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: JON2_CHAT_RELEASE_APPROVED
+        value: "false"
