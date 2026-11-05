@@ -23,6 +23,22 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y iverilog
+      - name: Compile ALU
+        run: |
+          iverilog -g2012 -Wall -s jon2_alu -o /tmp/jon2-alu.vvp hardware/rtl/jon2_alu.sv
+      - name: Run ALU smoke test
+        run: |
+          iverilog -g2012 -Wall -s tb_jon2_alu -o /tmp/jon2-alu-test.vvp \
+            hardware/rtl/jon2_alu.sv hardware/tb/tb_jon2_alu.sv
+          vvp /tmp/jon2-alu-test.vvp
+      - name: Compile register file
+        run: |
+          iverilog -g2012 -Wall -s jon2_register_file -o /tmp/jon2-register-file.vvp hardware/rtl/jon2_register_file.sv
+      - name: Run register file smoke test
+        run: |
+          iverilog -g2012 -Wall -s tb_jon2_register_file -o /tmp/jon2-register-file-test.vvp \
+            hardware/rtl/jon2_register_file.sv hardware/tb/tb_jon2_register_file.sv
+          vvp /tmp/jon2-register-file-test.vvp
       - name: Compile control unit and dependencies
         run: |
           iverilog -g2012 -Wall -s jon2_control_unit -o /tmp/jon2-control.vvp \
