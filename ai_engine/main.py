@@ -10,12 +10,11 @@ from compute.routes import router as compute_router
 app = FastAPI(
     title="Jon2 AI API",
     description="API for the original, project-owned Jon2 language model.",
-    version="1.1.0",
+    version="1.2.0",
 )
 
 app.include_router(jais2_router)
 app.include_router(compute_router)
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -49,6 +48,7 @@ def home():
         "status": "api_online",
         "model": "Jon2 Original Transformer",
         "health": "/api/health",
+        "docs": "/docs",
     }
 
 
@@ -65,6 +65,12 @@ def _checkpoint_configured() -> bool:
     return os.path.isfile(checkpoint)
 
 
+@app.get("/api/health/live")
+def liveness():
+    """Process liveness only; deliberately independent of model readiness."""
+    return {"project": "Jon2 AI", "status": "alive"}
+
+
 @app.get("/api/health")
 def health():
     loaded = model_is_ready()
@@ -79,6 +85,7 @@ def health():
     return {
         "project": "Jon2 AI",
         "status": "online",
+        "api_version": app.version,
         "model": "Jon2 Original Transformer",
         "model_loaded": loaded,
         "checkpoint_configured": checkpoint_available,
@@ -87,6 +94,22 @@ def health():
         "model_status": model_status,
         "chat_requires_model_checkpoint": True,
     }
+
+
+@app.get("/api/health/ready")
+def readiness():
+    """Readiness for user-facing chat, not merely process liveness."""
+    snapshot = health()
+    if not snapshot["chat_ready"]:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "not_ready",
+                "reason": snapshot["model_status"],
+                "chat_ready": False,
+            },
+        )
+    return {"project": "Jon2 AI", "status": "ready", "chat_ready": True}
 
 
 @app.post("/api/chat")
