@@ -1,0 +1,111 @@
+name: Jon2 Real CPU Training
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/jon2-real-training.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  train-original-jon2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Check out Jon2 source and approved training corpus
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install CPU-only PyTorch
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Verify approved source fingerprints and train the original Transformer
+        run: |
+          set -euo pipefail
+          mkdir -p ai_engine/checkpoints training-output
+          PYTHONPATH=ai_engine python ai_engine/train_jon2.py \
+            --data ai_engine/training_data \
+            --approval-manifest ai_engine/training_data/source_approvals.json \
+            --output ai_engine/checkpoints/jon2-small.pt \
+            --last-checkpoint ai_engine/checkpoints/jon2-last.pt \
+            --steps 1200 \
+            --batch-size 8 \
+            --context 96 \
+            --width 96 \
+            --heads 4 \
+            --layers 2 \
+            --dropout 0.1 \
+            --learning-rate 0.0003 \
+            --weight-decay 0.1 \
+            --warmup-steps 100 \
+            --validation-fraction 0.1 \
+            --eval-steps 4 \
+            --eval-every 100 \
+            --patience 5 \
+            --min-delta 0.001 \
+            --grad-clip 1.0 \
+            --minimum-chars 100000 \
+            --tokenizer-vocab-size 384 \
+            --tokenizer-min-frequency 2 \
+            --seed 42 \
+            --keep-last 2>&1 | tee training-output/training.log
+          test -s ai_engine/checkpoints/jon2-small.pt
+          sha256sum ai_engine/checkpoints/jon2-small.pt | tee training-output/checkpoint.sha256
+          ls -lh ai_engine/checkpoints/jon2-small.pt
+
+      - name: Load checkpoint and run real CPU inference smoke test
+        run: |
+          set -euo pipefail
+          PYTHONPATH=ai_engine python - <<'PY' | tee training-output/inference-smoke-test.log
+          import torch
+          from jon2_core import load_model, generate
+
+          path = "ai_engine/checkpoints/jon2-small.pt"
+          checkpoint = torch.load(path, map_location="cpu", weights_only=True)
+          model, tokenizer, device = load_model(path, device="cpu")
+          params = sum(p.numel() for p in model.parameters())
+          finite = all(torch.isfinite(p).all().item() for p in model.parameters())
+          print("checkpoint_training_steps:", checkpoint.get("training_steps"))
+          print("checkpoint_corpus_characters:", checkpoint.get("corpus_characters"))
+          print("checkpoint_validation_fraction:", checkpoint.get("validation_fraction"))
+          print("model_parameters:", params)
+          print("all_parameters_finite:", finite)
+          if not finite:
+              raise SystemExit("Non-finite model weights detected")
+          for prompt in [
+              "المستخدم: مرحباً، من أنت؟\nJon2:",
+              "المستخدم: اشرح الذكاء الاصطناعي ببساطة.\nJon2:",
+          ]:
+              answer = generate(
+                  model, tokenizer, prompt, device,
+                  max_new_chars=80, do_sample=False,
+                  repetition_penalty=1.10, no_repeat_ngram_size=3,
+                  stop_sequences=["المستخدم:"],
+              ).removeprefix(prompt).strip()
+              print("\nPROMPT:", prompt.splitlines()[0])
+              print("GENERATED_OUTPUT:", answer or "[empty output]")
+          print("\nSMOKE_TEST: checkpoint loaded and inference executed on CPU.")
+          print("QUALITY_STATUS: HUMAN_REVIEW_REQUIRED")
+          PY
+
+      - name: Upload trained checkpoint and training evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jon2-original-transformer-training
+          path: |
+            ai_engine/checkpoints/jon2-small.pt
+            ai_engine/checkpoints/jon2-last.pt
+            training-output/
+          if-no-files-found: warn
+          retention-days: 30
