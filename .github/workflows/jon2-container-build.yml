@@ -114,7 +114,8 @@ jobs:
             compute.test_resource_probe \
             compute.test_worker_registry \
             compute.test_worker_agent \
-            compute.test_worker_routes -v
+            compute.test_worker_routes \
+            compute.test_task_contract -v
 
           for private_path in \
             /app/ai_engine/training_data \
