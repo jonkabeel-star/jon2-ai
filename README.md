@@ -14,6 +14,7 @@ This repository contains the website interface, an early original-model prototyp
 - [Original data policy](ai_engine/ORIGINAL_DATA_POLICY.md) — requirements for training text and asset permissions.
 - [Dataset register](ai_engine/DATASET_REGISTER.md) — current dataset approval decisions.
 - [Original model API guide](ai_engine/README.md) — local API, training safeguards, and evaluation instructions.
+- [Backend deployment notes](ai_engine/DEPLOYMENT.md) — CPU-only container build, health checks, and safe release configuration.
 
 ## Website chat connection
 
