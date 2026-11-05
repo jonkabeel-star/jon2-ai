@@ -29,6 +29,16 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
 
+      - name: Print exact source fingerprints for approval-manifest repair
+        run: |
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          for path in sorted(Path("ai_engine/training_data").rglob("*.txt")):
+              raw = path.read_bytes()
+              print(f"SOURCE_FINGERPRINT {path.relative_to('ai_engine/training_data').as_posix()} {hashlib.sha256(raw).hexdigest()} {len(raw.decode('utf-8'))}")
+          PY
+
       - name: Verify approved source fingerprints and train the original Transformer
         run: |
           set -euo pipefail
