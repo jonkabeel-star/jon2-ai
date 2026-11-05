@@ -148,7 +148,7 @@ jobs:
           metadata.setdefault("title", "Jon2 Private Model Checkpoint")
           if not metadata.get("licenses"):
               raise SystemExit("Kaggle dataset metadata has no license; refusing to invent one.")
-          p.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+          p.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
           print("Prepared metadata:", json.dumps(metadata, ensure_ascii=False))
           PY
           kaggle datasets version -p /tmp/jon2-private-dataset -m "Jon2 original Arabic Transformer CPU training"
