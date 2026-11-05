@@ -130,3 +130,18 @@ jobs:
             hardware/rtl/jon2_core.sv \
             hardware/tb/tb_jon2_core_jumps.sv
           vvp /tmp/jon2-core-jumps-test.vvp
+      - name: Run integrated core fault tests
+        run: |
+          iverilog -g2012 -Wall -s tb_jon2_core_faults -o /tmp/jon2-core-faults-test.vvp \
+            hardware/rtl/jon2_pc.sv \
+            hardware/rtl/jon2_instruction_memory.sv \
+            hardware/rtl/jon2_fetch_unit.sv \
+            hardware/rtl/jon2_decoder.sv \
+            hardware/rtl/jon2_immediate_gen.sv \
+            hardware/rtl/jon2_control_unit.sv \
+            hardware/rtl/jon2_register_file.sv \
+            hardware/rtl/jon2_alu.sv \
+            hardware/rtl/jon2_data_memory.sv \
+            hardware/rtl/jon2_core.sv \
+            hardware/tb/tb_jon2_core_faults.sv
+          vvp /tmp/jon2-core-faults-test.vvp
