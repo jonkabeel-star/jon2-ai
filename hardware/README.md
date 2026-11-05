@@ -24,6 +24,7 @@ This directory is the hardware-design track for Jon2 AI. RTL source describes ci
 - `rtl/jon2_immediate_gen.sv` — I/S/B/U/J immediate-value generation.
 - `rtl/jon2_control_unit.sv` — control signals, branch decisions, immediate selection, and writeback/PC selection.
 - `rtl/jon2_data_memory.sv` — parameterized 32-bit word memory for aligned accesses in a configurable address window.
+- `tb/tb_jon2_data_memory.sv` — smoke test for write/read, alignment rejection, and out-of-range rejection.
 
 These are source files only. Their presence does not establish that the modules compile, pass tests, synthesize, or run on hardware. The GitHub Actions workflow attempts compilation; its result must be inspected before claiming successful compilation. The data memory is an RTL memory array and is not physical RAM.
 
