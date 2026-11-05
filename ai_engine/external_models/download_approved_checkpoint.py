@@ -42,7 +42,7 @@ def main() -> None:
     if not target_raw:
         raise SystemExit("STOP: set JON2_MODEL_TARGET to private storage outside this repo.")
     target = Path(target_raw).expanduser().resolve()
-    repo_root = Path(__file__).resolve().parents[3]
+    repo_root = Path(__file__).resolve().parents[2]
     if target == repo_root or repo_root in target.parents:
         raise SystemExit("STOP: model weights must not be stored inside the Git repository.")
     if target.exists() and any(target.iterdir()):
