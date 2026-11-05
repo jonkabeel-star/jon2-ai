@@ -58,7 +58,7 @@ When `--keep-last` is enabled, `jon2-last.pt` stores model weights, optimizer st
 python ai_engine/train_jon2.py --data ai_engine/training_data --output ai_engine/checkpoints/jon2-small.pt --last-checkpoint ai_engine/checkpoints/jon2-last.pt --resume ai_engine/checkpoints/jon2-last.pt --keep-last
 ```
 
-Resume validation rejects changed training text, tokenizer/model configuration, or training-plan settings instead of silently continuing a different run. Older checkpoints without complete resume metadata are accepted only through the documented legacy fallback and cannot provide bit-for-bit exact resumption.
+Resume validation rejects changed training text, tokenizer/model configuration, or training-plan settings instead of silently continuing a different run. Resume checkpoints are read with PyTorch's restricted `weights_only=True` deserializer; the regression suite verifies the saved optimizer, scheduler, scaler, and RNG metadata can be loaded in this mode. Older checkpoints without complete resume metadata are accepted only through the documented legacy fallback and cannot provide bit-for-bit exact resumption.
 
 ## Evaluate a trained checkpoint
 
