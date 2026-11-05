@@ -1,0 +1,54 @@
+{
+  "approved_sources": [
+    {
+      "file": "original_dialogue_ar.txt",
+      "sha256": "0b9220d545d783e15ece1a6defc270ded477f0cd279973417056184557b829cb",
+      "character_count": 9402,
+      "status": "APPROVED",
+      "reviewer": "User-confirmed rights holder",
+      "review_date": "2026-11-05",
+      "rights_basis": "User explicitly confirmed ownership or authorization to use this source for private experimental Jon2 research training in this conversation.",
+      "intended_use": "research_training"
+    },
+    {
+      "file": "original_dialogue_ar_batch_01.txt",
+      "sha256": "a88fbcaf31aaa26df1cbf4a90c4ef463daa7789a27f2e5a94275fc0226d955d0",
+      "character_count": 136075,
+      "status": "APPROVED",
+      "reviewer": "User-confirmed rights holder",
+      "review_date": "2026-11-05",
+      "rights_basis": "User explicitly confirmed ownership or authorization to use this source for private experimental Jon2 research training in this conversation.",
+      "intended_use": "research_training"
+    },
+    {
+      "file": "original_dialogue_ar_batch_02.txt",
+      "sha256": "6e13a2d2e67d4c3121e2138dea0aef9707b9660d06a121778c521495eb331deb",
+      "character_count": 38276,
+      "status": "APPROVED",
+      "reviewer": "User-confirmed rights holder",
+      "review_date": "2026-11-05",
+      "rights_basis": "User explicitly confirmed ownership or authorization to use this source for private experimental Jon2 research training in this conversation.",
+      "intended_use": "research_training"
+    },
+    {
+      "file": "original_dialogue_ar_batch_03.txt",
+      "sha256": "887d4c3ef9138230d8c565d12b8a41927d4d5b06dfa0475e9fc66bd560a9fc42",
+      "character_count": 100489,
+      "status": "APPROVED",
+      "reviewer": "User-confirmed rights holder",
+      "review_date": "2026-11-05",
+      "rights_basis": "User explicitly confirmed ownership or authorization to use this source for private experimental Jon2 research training in this conversation.",
+      "intended_use": "research_training"
+    },
+    {
+      "file": "original_seed_ar.txt",
+      "sha256": "37a84d7155028409e03ddb5a8add81d9625c5208729b2863506738f2c78c9b19",
+      "character_count": 6271,
+      "status": "APPROVED",
+      "reviewer": "User-confirmed rights holder",
+      "review_date": "2026-11-05",
+      "rights_basis": "User explicitly confirmed ownership or authorization to use this source for private experimental Jon2 research training in this conversation.",
+      "intended_use": "research_training"
+    }
+  ]
+}
