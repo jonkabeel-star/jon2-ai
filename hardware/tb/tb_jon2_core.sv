@@ -9,7 +9,7 @@ module tb_jon2_core;
     always #5 clk=~clk;
 
     jon2_core #(
-        .INSTRUCTION_WORDS(3),
+        .INSTRUCTION_WORDS(4),
         .DATA_WORDS(16),
         .RESET_PC(32'h0000_1000),
         .INSTRUCTION_BASE_ADDR(32'h0000_1000),
