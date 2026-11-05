@@ -9,7 +9,7 @@ module tb_jon2_core;
     always #5 clk=~clk;
 
     jon2_core #(
-        .INSTRUCTION_WORDS(4),
+        .INSTRUCTION_WORDS(11),
         .DATA_WORDS(16),
         .RESET_PC(32'h0000_1000),
         .INSTRUCTION_BASE_ADDR(32'h0000_1000),
@@ -26,7 +26,7 @@ module tb_jon2_core;
         #1;
         if (debug_pc !== 32'h0000_1000) $fatal(1,"core reset PC failed");
         reset_n=1;
-        repeat(3) begin
+        repeat(10) begin
             @(posedge clk); #1;
         end
         if (dut.registers.registers[1] !== 32'd5)
@@ -35,6 +35,10 @@ module tb_jon2_core;
             $fatal(1,"ADDI x2 failed: %h",dut.registers.registers[2]);
         if (dut.registers.registers[3] !== 32'd17)
             $fatal(1,"ADD x3 failed: %h",dut.registers.registers[3]);
+        if (dut.registers.registers[5] !== 32'd17) $fatal(1,"LW x5 failed: %h",dut.registers.registers[5]);
+        if (dut.data_memory.memory[0] !== 32'd17) $fatal(1,"SW memory write failed: %h",dut.data_memory.memory[0]);
+        if (dut.registers.registers[6] !== 32'd1) $fatal(1,"BEQ did not skip wrong path: %h",dut.registers.registers[6]);
+        if (dut.registers.registers[7] !== 32'd42) $fatal(1,"branch target ADDI failed: %h",dut.registers.registers[7]);
         if (halted) $fatal(1,"core halted unexpectedly");
         $display("PASS: Jon2 core executed ADDI, ADDI, ADD program");
         $finish;
