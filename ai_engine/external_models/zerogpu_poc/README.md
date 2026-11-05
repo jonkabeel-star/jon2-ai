@@ -4,6 +4,7 @@ emoji: 🧠
 colorFrom: blue
 colorTo: cyan
 sdk: gradio
+python_version: "3.12.12"
 sdk_version: 5.49.1
 app_file: app.py
 pinned: false
@@ -14,6 +15,10 @@ pinned: false
 **Locked by default. Not deployed. No model weights are stored in this repository.**
 
 This is a temporary, interactive inference experiment—not the production Jon2 API and not a permanent hosting solution.
+
+## Runtime dependencies
+
+The Space runtime supplies Gradio, `spaces`, and `huggingface_hub`; they are intentionally not duplicated in `requirements.txt`. The app-level requirements contain only Transformers and Accelerate.
 
 ## Mandatory gates
 
