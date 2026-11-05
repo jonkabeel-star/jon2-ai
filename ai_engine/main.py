@@ -46,6 +46,11 @@ def home():
     }
 
 
+def _chat_release_approved() -> bool:
+    """Require an explicit release decision after human quality review."""
+    return os.getenv("JON2_CHAT_RELEASE_APPROVED", "false").strip().lower() == "true"
+
+
 def _checkpoint_configured() -> bool:
     checkpoint = os.getenv(
         "JON2_CHECKPOINT",
@@ -58,8 +63,10 @@ def _checkpoint_configured() -> bool:
 def health():
     loaded = model_is_ready()
     checkpoint_available = _checkpoint_configured()
+    release_approved = _chat_release_approved()
     model_status = (
-        "ready" if loaded
+        "release_blocked" if not release_approved
+        else "ready" if loaded and checkpoint_available
         else "checkpoint_available" if checkpoint_available
         else "checkpoint_missing"
     )
@@ -69,7 +76,8 @@ def health():
         "model": "Jon2 Original Transformer",
         "model_loaded": loaded,
         "checkpoint_configured": checkpoint_available,
-        "chat_ready": loaded and checkpoint_available,
+        "chat_ready": release_approved and loaded and checkpoint_available,
+        "release_approved": release_approved,
         "model_status": model_status,
         "chat_requires_model_checkpoint": True,
     }
@@ -77,6 +85,11 @@ def health():
 
 @app.post("/api/chat")
 def chat(request: ChatRequest):
+    if not _chat_release_approved():
+        raise HTTPException(
+            status_code=503,
+            detail="محادثة Jon2 متوقفة حتى اعتماد جودة النموذج بعد المراجعة البشرية.",
+        )
     message = request.message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
