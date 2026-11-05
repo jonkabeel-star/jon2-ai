@@ -86,3 +86,15 @@ jobs:
           else:
               raise SystemExit("Chat release gate failed: unapproved chat unexpectedly returned success.")
           PY
+
+          for private_path in \
+            /app/ai_engine/training_data \
+            /app/ai_engine/checkpoints \
+            /app/ai_engine/evaluation; do
+            if docker exec jon2-api-ci test -e "$private_path"; then
+              echo "::error::Private training or evaluation material was included in the runtime image: $private_path"
+              exit 1
+            fi
+          done
+          echo "Image privacy check passed: no training data, checkpoints, or evaluation material."
+
