@@ -15,7 +15,8 @@ module jon2_data_memory #(
     output logic        access_valid,
     output logic        access_error
 );
-    localparam integer INDEX_BITS = $clog2(WORDS);
+    // Keep the index vector legal for the single-word configuration too.
+    localparam integer INDEX_BITS = (WORDS <= 1) ? 1 : $clog2(WORDS);
     logic [31:0] memory [0:WORDS-1];
     logic [31:0] byte_offset;
     logic in_range;
