@@ -31,3 +31,8 @@ def compute_admission(
         return assess_task(min_memory_gib=min_memory_gib, require_gpu=require_gpu)
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error))
+
+
+# Authenticated worker registry endpoints (task dispatch remains disabled).
+from .worker_routes import router as worker_router
+router.include_router(worker_router)
