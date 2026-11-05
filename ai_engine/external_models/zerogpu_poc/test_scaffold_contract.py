@@ -62,6 +62,30 @@ class ZeroGPUScaffoldContractTests(unittest.TestCase):
         self.assertNotIn("model.generate", locked)
         self.assertNotIn("torch", locked)
 
+
+    def test_model_download_and_loading_are_inside_owner_gate(self):
+        top_level_loads = [
+            node for node in self.tree.body
+            if isinstance(node, ast.Expr)
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Attribute)
+            and node.value.func.attr == "from_pretrained"
+        ]
+        self.assertEqual(top_level_loads, [])
+        gated_blocks = [
+            node for node in self.tree.body
+            if isinstance(node, ast.If) and ast.unparse(node.test) == "MODEL_ENABLED"
+        ]
+        self.assertEqual(len(gated_blocks), 2)
+        gated_source = "\\n".join(ast.unparse(node) for node in gated_blocks)
+        self.assertIn("AutoTokenizer.from_pretrained", gated_source)
+        self.assertIn("AutoModelForCausalLM.from_pretrained", gated_source)
+
+    def test_secrets_are_not_rendered_or_logged(self):
+        self.assertNotIn("HF_TOKEN}", self.source)
+        self.assertNotIn("print(HF_TOKEN", self.source)
+        self.assertIn("load_error = type(exc).__name__", self.source)
+
     def test_model_loading_disables_remote_code_and_uses_fixed_revision(self):
         self.assertIn("revision=REVISION", self.source)
         self.assertIn("trust_remote_code=False", self.source)
