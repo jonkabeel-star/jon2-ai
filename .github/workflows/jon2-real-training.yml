@@ -35,6 +35,7 @@ jobs:
             echo "::error::KAGGLE_API_TOKEN is missing; refusing to train without private checkpoint storage."
             exit 1
           fi
+          python -m pip install --upgrade six
           python -m pip install --upgrade kaggle
           mkdir -p /tmp/jon2-private-dataset
           kaggle datasets metadata -d jon2kabeel/jon2-private-model-checkpoint -p /tmp/jon2-private-dataset
