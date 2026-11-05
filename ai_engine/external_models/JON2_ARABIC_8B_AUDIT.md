@@ -97,3 +97,30 @@ The official Jais 2 technical article confirms the 8B release and summarizes the
 ## Adapter verification automation
 
 Added an offline-only contract test suite at `test_jais2_runtime.py` and a GitHub Actions workflow at `.github/workflows/jais2-adapter-check.yml`. These checks verify fail-closed local-path behavior and enforce `local_files_only=True` plus `trust_remote_code=False` in the loader. They do not download weights, install the model, or prove inference quality. Confirm the GitHub Actions run result before treating these checks as passed.
+
+
+## New candidate review — Karnak 40B (Egyptian-focused)
+
+Official sources reviewed on 2026-11-05:
+
+- AIC project page: https://www.aic.gov.eg/projects/38/
+- AIC launch announcement for Karnak Chat (2026-08-23): https://www.aic.gov.eg/news/43/
+- Official Hugging Face model card: https://huggingface.co/Applied-Innovation-Center/Karnak-40B-v1.0
+
+What the publisher states:
+
+- Karnak is an Egyptian Arabic-English model family, with explicit focus on Egyptian colloquial Arabic and local cultural context.
+- The published open-weight checkpoint is Karnak 40B, approximately 40B parameters, not 8B.
+- Its model card identifies Qwen/Qwen3-30B-A3B-Instruct-2507 as the base model and describes depth extension, continued pretraining, and supervised fine-tuning.
+- The Hugging Face model card declares Apache-2.0 for the Karnak release.
+- AIC describes the training material as curated, cleaned, and locally sourced Arabic data, but the public materials reviewed here do not provide a source-by-source dataset inventory, source URLs, licenses, or permission evidence.
+- The AIC launch announcement says the model draws on documents published in Egypt and the Arab world; this description alone does not establish the license or reuse permission for every source.
+
+Jon2 decision:
+
+- **NOT SELECTED for the current 8B target:** the published checkpoint is 40B.
+- **RIGHTS HOLD:** Apache-2.0 on the model card does not replace the missing source-level training-data rights manifest.
+- **POTENTIALLY RELEVANT TO EGYPTIAN DIALECT RESEARCH:** its stated focus is aligned with Jon2's Egyptian-first goal, so retain it as a research lead only.
+- Do not download, fine-tune, deploy, or switch the project to Karnak without a separate owner decision, compatible compute, and written source-level rights review.
+
+This review does not change the selected Jais 2 8B candidate or authorize any third-party checkpoint.
