@@ -51,17 +51,17 @@ jobs:
           import urllib.error
           import urllib.request
 
-          url = "http://127.0.0.1:8000/api/health"
+          url = "http://127.0.0.1:8000/api/health/live"
           last_error = None
           for _ in range(30):
               try:
                   with urllib.request.urlopen(url, timeout=3) as response:
                       payload = json.loads(response.read().decode("utf-8"))
-                  assert payload.get("status") == "online", payload
+                  assert payload.get("status") == "alive", payload
                   assert payload.get("chat_ready") is False, payload
                   assert payload.get("release_approved") is False, payload
                   assert payload.get("model_status") == "checkpoint_missing", payload
-                  print("Container health endpoint passed; chat remains safely blocked.")
+                  print("Container liveness endpoint passed; model readiness is checked separately.")
                   print(json.dumps(payload, ensure_ascii=False))
 
                   compute_health = json.load(urllib.request.urlopen(
