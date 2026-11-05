@@ -136,6 +136,8 @@ class ByteBPETokenizer:
 
     @classmethod
     def from_dict(cls, data: dict) -> "ByteBPETokenizer":
+        if not isinstance(data, dict):
+            raise ValueError("Tokenizer data must be a JSON object.")
         if data.get("format") != "jon2-byte-bpe-v1":
             raise ValueError("Unsupported tokenizer format.")
         if data.get("base_vocab_size") != 256:
@@ -148,7 +150,7 @@ class ByteBPETokenizer:
             if (
                 not isinstance(pair, list)
                 or len(pair) != 2
-                or any(not isinstance(value, int) for value in pair)
+                or any(not isinstance(value, int) or isinstance(value, bool) for value in pair)
                 or any(value < 0 or value >= expected_id for value in pair)
             ):
                 raise ValueError(f"Invalid BPE merge definition at token {expected_id}.")
