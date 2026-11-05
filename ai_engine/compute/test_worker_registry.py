@@ -70,7 +70,7 @@ class WorkerRegistryTests(unittest.TestCase):
             registry.enroll(
                 node_id="test-node-004", display_name="Node",
                 platform="linux", cpu_count=2, memory_total_bytes=1024,
-                accelerator_types=[], accelerator_names=["GPU\\nInjected"]
+                accelerator_types=[], accelerator_names=["GPU\nInjected"]
             )
 
     def test_owner_token_requires_32_characters(self):
