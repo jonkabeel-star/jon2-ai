@@ -83,3 +83,18 @@ The 40-prompt held-out set in `evaluation/prompts_ar.jsonl` tests many of these 
 ## Current decision
 
 Do not start training from the current corpus. Although it exceeds the trainer's 100,000-character guard, the inventory is only 184,342 temporary BPE tokens, below the 250,000–500,000-token first-experiment target; duplicate prompts still need pair-level review; and the private exact-file source-approval manifest is absent. First complete owner review and rights approval for each exact file, curate and evaluate the material, and confirm a real GPU/compute device before any training run.
+
+
+## Superseding project status — 2026-11-05 (verified after the first real training run)
+
+This section supersedes the earlier "Current decision" statement above for the historical first experiment. The earlier statement accurately described the state at workflow run `41999747352`, but it is no longer the latest project state.
+
+- Owner approval was given for the exact five project-authored files only: `original_dialogue_ar.txt`, `original_dialogue_ar_batch_01.txt`, `original_dialogue_ar_batch_02.txt`, `original_dialogue_ar_batch_03.txt`, and `original_seed_ar.txt`. The training workflow used the private exact-file approval manifest and hash checks. This approval does not extend to any new file, external dataset, or future revision with changed bytes.
+- A real PyTorch CPU training run completed in GitHub Actions: [run 42027297208](https://github.com/jonkabeel-star/jon2-ai/actions/runs/42027297208). It ran 1,200 optimizer steps; the best validation checkpoint was at step 900 with validation loss 3.6355. The resumable last checkpoint was at step 1,200. The model had 269,952 parameters.
+- Training corpus metrics from that run: 289,120 Unicode characters; 185,697 training tokens and 20,679 validation tokens. These are actual training-run measurements and are distinct from the earlier temporary byte-BPE inventory.
+- The private checkpoint was evaluated on 40 held-out Arabic prompts in [run 42028581017](https://github.com/jonkabeel-star/jon2-ai/actions/runs/42028581017). The generated answers were fragmented and not sufficiently understandable or coherent. The run completing successfully means the evaluation process ran; it does not mean the model passed.
+- **Current release decision: BLOCKED.** Do not set `JON2_CHAT_RELEASE_APPROVED=true`, do not present this checkpoint as a working assistant, and do not deploy it for public chat.
+- The next work is model/data quality diagnosis and a better controlled experiment plan. Do not start another training run merely by repeating the same corpus and settings. Any new training source or changed source file requires a separate explicit owner approval and rights review first.
+- Public-repository structural audit snapshot (workflow run `42067766282`): the five tracked text files totaled 284,621 characters and contained 27 exact normalized duplicate lines. This public snapshot is not the same measurement as the training-run corpus; do not merge or substitute these metrics. The audit's structural pass does not establish factual accuracy, fluency, or legal rights.
+
+The first real training experiment is therefore complete as an engineering milestone but failed the human-facing answer-quality gate. The project is in model-quality improvement, not chat release.
