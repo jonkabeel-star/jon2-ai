@@ -5,7 +5,7 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    healthCheckPath: /api/health
+    healthCheckPath: /api/health/live
     envVars:
       - key: JON2_CHAT_RELEASE_APPROVED
         value: "false"
