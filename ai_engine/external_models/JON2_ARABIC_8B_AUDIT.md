@@ -60,3 +60,11 @@ Before approving Jais 2 8B, obtain a written answer from the publisher covering:
 - Required attribution, notice, opt-out, or share-alike obligations.
 
 **Current operational decision:** prepare the integration design, but do not download or train on an unverified third-party checkpoint. This is a rights-and-provenance hold, not a technical failure.
+
+
+## Additional official-source review (2026-11-05)
+
+- Inception's current multilingual-models page explicitly lists Jais-2 8B and Jais-2 8B Chat, and describes Jais pre-trained models as trained from scratch. It also provides an official "Get in touch" route: https://www.inception42.ai/contact.
+- The official Cerebras Jais 2 technical overview states that Jais 2 pretraining used 2.6 trillion curated Arabic, English, and code tokens, and that supervised fine-tuning used more than twenty million instruction-response pairs. The overview describes the training pipeline but the public page reviewed here still does not give a source-by-source dataset manifest with license/permission evidence.
+- The official Inception contact page provides a company contact form/page, but the reviewed page does not publish a direct email address. Jon2 has therefore prepared a written inquiry at `ai_engine/external_models/Jais2_RIGHTS_INQUIRY.md`; send it through the official contact page rather than guessing an email.
+- This additional review does not resolve source-level rights. **Jais 2 remains on HOLD.** No checkpoint download, fine-tuning, production inference, or public chat activation is authorized by this audit.
