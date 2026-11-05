@@ -2,6 +2,7 @@ services:
   - type: web
     name: jon2-ai-api
     runtime: docker
+    region: frankfurt
     plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
