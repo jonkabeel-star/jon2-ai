@@ -116,27 +116,38 @@ jobs:
               words = re.findall(r"\S+", answer)
               unique_ratio = len(set(words)) / max(1, len(words))
               replacement_chars = answer.count("\uFFFD")
+              allowed_script = bool(re.fullmatch(r"[\u0600-\u06FF\s،؛؟.!…ـ0-9٠-٩()«»\"'\-]+", answer))
+              visible_chars = [char for char in answer if not char.isspace()]
+              arabic_ratio = arabic_chars / max(1, len(visible_chars))
               print(f"\n--- TEST {index} ---")
               print("QUESTION:", prompt.splitlines()[0].replace("المستخدم: ", ""))
               print("ANSWER:", answer if answer else "[EMPTY]")
               print("CHARS:", len(answer), "ARABIC_CHARS:", arabic_chars,
+                    "ARABIC_RATIO:", round(arabic_ratio, 3),
+                    "ALLOWED_ARABIC_SCRIPT:", allowed_script,
                     "UNIQUE_WORD_RATIO:", round(unique_ratio, 3),
                     "REPLACEMENT_CHARS:", replacement_chars)
               results.append({
                   "nonempty": bool(answer),
                   "replacement_free": replacement_chars == 0,
                   "has_arabic": arabic_chars > 0,
+                  "allowed_script": allowed_script,
+                  "arabic_ratio": arabic_ratio >= 0.70,
                   "length": len(answer),
               })
 
           passed = sum(
               x["nonempty"] and x["replacement_free"] and x["has_arabic"]
+              and x["allowed_script"] and x["arabic_ratio"]
               for x in results
           )
           print("\nTECHNICAL_CHECKS:", passed, "/", len(results))
           print("QUALITY_STATUS: HUMAN_REVIEW_REQUIRED")
           if passed != len(results):
-              raise SystemExit("One or more inference checks returned empty or invalid UTF-8 output.")
+              raise SystemExit(
+                  "Checkpoint failed the Arabic output-quality gate: empty, invalid, "
+                  "non-Arabic-script, or low-Arabic-ratio response detected."
+              )
           PY
 
       - name: Upload evaluation transcript
