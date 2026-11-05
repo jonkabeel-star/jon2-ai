@@ -48,6 +48,20 @@ class WorkerRegistryTests(unittest.TestCase):
         self.assertFalse(registry.authenticate_worker("test-node-002", token))
         self.assertEqual(registry.list_workers()[0]["status"], "stale_or_revoked")
 
+    def test_accelerator_metadata_rejects_delimiters_and_control_chars(self):
+        with self.assertRaises(ValueError):
+            registry.enroll(
+                node_id="test-node-003", display_name="Node",
+                platform="linux", cpu_count=2, memory_total_bytes=1024,
+                accelerator_types=["cuda,gpu"], accelerator_names=[]
+            )
+        with self.assertRaises(ValueError):
+            registry.enroll(
+                node_id="test-node-004", display_name="Node",
+                platform="linux", cpu_count=2, memory_total_bytes=1024,
+                accelerator_types=[], accelerator_names=["GPU\\nInjected"]
+            )
+
     def test_owner_token_requires_32_characters(self):
         with patch.dict(os.environ, {"JON2_COMPUTE_OWNER_TOKEN": "short"}):
             self.assertFalse(registry.owner_token_configured())
