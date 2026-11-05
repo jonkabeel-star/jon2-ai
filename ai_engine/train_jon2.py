@@ -131,7 +131,7 @@ def train(args):
         resume_path = Path(args.resume)
         if not resume_path.is_file():
             raise FileNotFoundError(f"Resume checkpoint not found: {resume_path}")
-        saved = torch.load(resume_path, map_location=device, weights_only=False)
+        saved = torch.load(resume_path, map_location=device, weights_only=True)
         if saved.get("tokenizer") != tokenizer.to_dict() or saved.get("config") != config:
             raise ValueError("Resume checkpoint vocabulary/config does not match this run.")
         if saved.get("corpus_sha256") and saved["corpus_sha256"] != corpus_sha256:
