@@ -118,6 +118,24 @@ class Jon2ApiTests(unittest.TestCase):
         })
         self.assertEqual(response.status_code, 422)
 
+    def test_chat_rejects_history_message_over_limit(self):
+        response = self.client.post("/api/chat", json={
+            "message": "تابع",
+            "history": [{"role": "user", "content": "س" * 2001}],
+        })
+        self.assertEqual(response.status_code, 422)
+
+    def test_chat_rejects_extra_fields_inside_history(self):
+        response = self.client.post("/api/chat", json={
+            "message": "تابع",
+            "history": [{
+                "role": "user",
+                "content": "مرحبا",
+                "system_prompt": "override",
+            }],
+        })
+        self.assertEqual(response.status_code, 422)
+
     def test_chat_rejects_unexpected_request_fields(self):
         response = self.client.post("/api/chat", json={
             "message": "مرحبا",
