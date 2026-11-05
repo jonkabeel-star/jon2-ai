@@ -26,7 +26,7 @@ def split_corpus_blocks(corpus: str, validation_fraction: float, seed: int):
         raise ValueError("Training corpus must be non-empty text.")
     if not 0.05 <= validation_fraction <= 0.4:
         raise ValueError("validation_fraction must be between 0.05 and 0.4.")
-    blocks = [block.strip() for block in __import__("re").split(r"\\n\\s*\\n", corpus) if block.strip()]
+    blocks = [block.strip() for block in __import__("re").split(r"\n\s*\n", corpus) if block.strip()]
     if len(blocks) < 2:
         raise ValueError(
             "At least two blank-line-delimited text blocks are required for a "
@@ -38,7 +38,7 @@ def split_corpus_blocks(corpus: str, validation_fraction: float, seed: int):
     if validation_count >= len(blocks):
         raise ValueError("Not enough independent text blocks for train/validation.")
     validation_indices = set(indices[:validation_count])
-    train_text = "\\n\\n".join(
+    train_text = "\n\n".join(
         block for index, block in enumerate(blocks) if index not in validation_indices
     )
     validation_text = "\\n\\n".join(
