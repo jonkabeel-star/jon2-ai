@@ -24,7 +24,9 @@ This directory is the hardware-design track for Jon2 AI. RTL source describes ci
 - `rtl/jon2_immediate_gen.sv` — I/S/B/U/J immediate-value generation.
 - `rtl/jon2_control_unit.sv` — control signals, branch decisions, immediate selection, and writeback/PC selection.
 - `rtl/jon2_data_memory.sv` — parameterized 32-bit word memory for aligned accesses in a configurable address window.
+- `rtl/jon2_instruction_memory.sv` — parameterized read-only instruction store with optional `$readmemh` initialization and address validation.
 - `tb/tb_jon2_data_memory.sv` — smoke test for write/read, alignment rejection, and out-of-range rejection.
+- `tb/tb_jon2_instruction_memory.sv` and `tb/fixtures/jon2_instruction_memory.hex` — deterministic instruction-memory read and bounds tests.
 
 These are source files only. Their presence does not establish that the modules compile, pass tests, synthesize, or run on hardware. The GitHub Actions workflow attempts compilation; its result must be inspected before claiming successful compilation. The data memory is an RTL memory array and is not physical RAM.
 
@@ -38,7 +40,7 @@ These are source files only. Their presence does not establish that the modules 
 
 ## Next engineering milestones
 1. Review interfaces and operation encodings across all RTL modules.
-2. Add instruction memory/fetch and integrate the data-memory interface.
+2. Add the program-counter/instruction-memory fetch path and integrate the data-memory interface.
 3. Integrate register file, ALU, control, PC, and memories into a top-level RV32I core.
 4. Add testbenches for instruction decoding, branches, memory bounds/alignment, and end-to-end instruction execution.
 5. Run RTL compilation and simulation in an available tool environment; report exact results.
