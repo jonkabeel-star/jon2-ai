@@ -6,12 +6,18 @@ on:
     paths:
       - "ai_engine/external_models/jais2_runtime.py"
       - "ai_engine/external_models/test_jais2_runtime.py"
+      - "ai_engine/external_models/jais2_routes.py"
+      - "ai_engine/external_models/test_jais2_routes.py"
+      - "ai_engine/main.py"
       - "ai_engine/external_models/evaluation/**"
       - ".github/workflows/jais2-adapter-check.yml"
   pull_request:
     paths:
       - "ai_engine/external_models/jais2_runtime.py"
       - "ai_engine/external_models/test_jais2_runtime.py"
+      - "ai_engine/external_models/jais2_routes.py"
+      - "ai_engine/external_models/test_jais2_routes.py"
+      - "ai_engine/main.py"
       - ".github/workflows/jais2-adapter-check.yml"
   workflow_dispatch:
 
@@ -29,6 +35,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Install API test dependency
+        run: python -m pip install "fastapi==0.162.0"
       - name: Compile adapter and tests
         run: python -m compileall -q ai_engine/external_models
       - name: Run offline contract tests
