@@ -105,3 +105,22 @@ Do not change a candidate to APPROVED until all fields below are filled and revi
 - Quality status: requires human review for factual accuracy, Arabic fluency, duplication, balance, and suitability.
 - Status: **DRAFT / OWNER REVIEW REQUIRED / NOT APPROVED FOR TRAINING**.
 - Handling: keep excluded from training until exact-file approval metadata is recorded in the private manifest.
+
+
+## Verified first training experiment and exact-file owner approval — 2026-11-05
+
+The repository's earlier candidate statuses above record their state before the owner approved the exact five project-authored files for a controlled research training run. The historical entries are retained rather than rewritten. The owner approval applied only to these exact files and hashes in the private approval manifest:
+
+- `ai_engine/training_data/original_dialogue_ar.txt`
+- `ai_engine/training_data/original_dialogue_ar_batch_01.txt`
+- `ai_engine/training_data/original_dialogue_ar_batch_02.txt`
+- `ai_engine/training_data/original_dialogue_ar_batch_03.txt`
+- `ai_engine/training_data/original_seed_ar.txt`
+
+A real CPU training run completed: [Jon2 Real CPU Training, run 42027297208](https://github.com/jonkabeel-star/jon2-ai/actions/runs/42027297208). It used the private exact-file approval/hash gate and produced a private checkpoint. Recorded run metrics: 1,200 optimizer steps; 269,952 parameters; 289,120 Unicode characters; 185,697 training tokens; 20,679 validation tokens; best validation loss 3.6355 at step 900. The last resumable checkpoint was saved at step 1,200.
+
+A 40-prompt held-out evaluation completed in [run 42028581017](https://github.com/jonkabeel-star/jon2-ai/actions/runs/42028581017). The checkpoint's generated Arabic answers were fragmented and not sufficiently understandable/coherent. Thus the training pipeline was exercised successfully, but the model did **not** pass the assistant-quality gate and is **not approved for chat release**.
+
+Approval scope is limited to the five exact files above as they existed at approval time. It does not approve later edits, new batches, external datasets, Wikipedia, web-crawled text, or any other source. New or modified training material requires fresh explicit owner approval and rights review. Keep ArabicText-Large, HPLT, and Wikipedia sources NOT APPROVED as recorded above.
+
+Operational decision: keep `JON2_CHAT_RELEASE_APPROVED` false. Do not describe the checkpoint as a functioning conversational assistant. Improve model and data quality before another controlled training run; do not repeat training unchanged merely to produce another checkpoint.
