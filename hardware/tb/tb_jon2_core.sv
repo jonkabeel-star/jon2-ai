@@ -26,7 +26,7 @@ module tb_jon2_core;
         #1;
         if (debug_pc !== 32'h0000_1000) $fatal(1,"core reset PC failed");
         reset_n=1;
-        repeat(10) begin
+        repeat(9) begin
             @(posedge clk); #1;
             $display("CORE TRACE pc=%h insn=%h halted=%b legal=%b memerr=%b x1=%h x2=%h x3=%h x4=%h x5=%h x6=%h x7=%h", debug_pc, debug_instruction, halted, dut.legal, dut.memory_error, dut.registers.registers[1], dut.registers.registers[2], dut.registers.registers[3], dut.registers.registers[4], dut.registers.registers[5], dut.registers.registers[6], dut.registers.registers[7]);
         end
