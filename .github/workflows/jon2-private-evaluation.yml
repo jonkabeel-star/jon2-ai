@@ -1,0 +1,63 @@
+name: Jon2 Private Checkpoint Human Evaluation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/jon2-private-evaluation.yml"
+  workflow_run:
+    workflows: ["Verify Jon2 Private Checkpoint"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate-private-checkpoint:
+    if: ${{ github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out Jon2 evaluation code and held-out prompts
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download the verified private checkpoint
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade six
+          python -m pip install --upgrade kaggle
+          mkdir -p /tmp/jon2-checkpoint
+          kaggle datasets download jon2kabeel/jon2-private-model-checkpoint -f jon2-small.pt -p /tmp/jon2-checkpoint --unzip
+          test -s /tmp/jon2-checkpoint/jon2-small.pt
+
+      - name: Run the 40 held-out Arabic prompts on CPU
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          mkdir -p ai_engine/checkpoints training-output
+          cp /tmp/jon2-checkpoint/jon2-small.pt ai_engine/checkpoints/jon2-small.pt
+          python ai_engine/evaluate_model.py \
+            --checkpoint ai_engine/checkpoints/jon2-small.pt \
+            --prompts ai_engine/evaluation/prompts_ar.jsonl \
+            --output training-output/review-report.json \
+            --device cpu \
+            --max-new-chars 120 \
+            --temperature 0.8 \
+            --seed 42
+
+      - name: Upload human-review report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jon2-heldout-arabic-human-review
+          path: training-output/review-report.json
+          if-no-files-found: warn
+          retention-days: 14
