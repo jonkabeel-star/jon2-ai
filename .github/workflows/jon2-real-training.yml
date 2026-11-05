@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/jon2-real-training.yml"
+      - "ai_engine/training_data/source_approvals.json"
+      - "ai_engine/train_jon2.py"
   workflow_dispatch:
 
 permissions:
@@ -23,6 +25,28 @@ jobs:
         with:
           python-version: "3.11"
           cache: "pip"
+
+      - name: Verify private checkpoint destination
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${KAGGLE_API_TOKEN:-}" ]; then
+            echo "::error::KAGGLE_API_TOKEN is missing; refusing to train without private checkpoint storage."
+            exit 1
+          fi
+          python -m pip install --upgrade kaggle
+          mkdir -p /tmp/jon2-private-dataset
+          kaggle datasets metadata -d jon2kabeel/jon2-private-model-checkpoint -p /tmp/jon2-private-dataset
+          test -s /tmp/jon2-private-dataset/dataset-metadata.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          metadata = json.loads(Path("/tmp/jon2-private-dataset/dataset-metadata.json").read_text())
+          if metadata.get("id") != "jon2kabeel/jon2-private-model-checkpoint":
+              raise SystemExit("Private Kaggle destination metadata mismatch.")
+          print("Verified private checkpoint destination:", metadata["id"])
+          PY
 
       - name: Install CPU-only PyTorch
         run: |
@@ -108,14 +132,24 @@ jobs:
           print("QUALITY_STATUS: HUMAN_REVIEW_REQUIRED")
           PY
 
-      - name: Upload trained checkpoint and training evidence
+      - name: Store trained weights in the private Kaggle dataset
+        if: success()
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          cp ai_engine/checkpoints/jon2-small.pt /tmp/jon2-private-dataset/
+          if [ -s ai_engine/checkpoints/jon2-last.pt ]; then
+            cp ai_engine/checkpoints/jon2-last.pt /tmp/jon2-private-dataset/
+          fi
+          kaggle datasets version -p /tmp/jon2-private-dataset -m "Jon2 original Arabic Transformer CPU training"
+          echo "Private checkpoint dataset version updated."
+
+      - name: Upload non-sensitive training evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: jon2-original-transformer-training
-          path: |
-            ai_engine/checkpoints/jon2-small.pt
-            ai_engine/checkpoints/jon2-last.pt
-            training-output/
+          name: jon2-training-evidence
+          path: training-output/
           if-no-files-found: warn
-          retention-days: 30
+          retention-days: 7
