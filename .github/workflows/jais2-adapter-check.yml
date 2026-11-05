@@ -24,6 +24,7 @@ on:
       - "ai_engine/external_models/jais2_routes.py"
       - "ai_engine/external_models/test_jais2_routes.py"
       - "ai_engine/main.py"
+      - "ai_engine/external_models/evaluation/**"
       - ".github/workflows/jais2-adapter-check.yml"
   workflow_dispatch:
 
