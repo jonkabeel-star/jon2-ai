@@ -39,3 +39,13 @@ jobs:
             hardware/rtl/jon2_data_memory.sv \
             hardware/tb/tb_jon2_data_memory.sv
           vvp /tmp/jon2-memory-test.vvp
+      - name: Compile instruction memory
+        run: |
+          iverilog -g2012 -Wall -s jon2_instruction_memory -o /tmp/jon2-instruction-memory.vvp \
+            hardware/rtl/jon2_instruction_memory.sv
+      - name: Run instruction memory smoke test
+        run: |
+          iverilog -g2012 -Wall -s tb_jon2_instruction_memory -o /tmp/jon2-instruction-test.vvp \
+            hardware/rtl/jon2_instruction_memory.sv \
+            hardware/tb/tb_jon2_instruction_memory.sv
+          vvp /tmp/jon2-instruction-test.vvp
