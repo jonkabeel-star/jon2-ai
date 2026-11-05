@@ -17,7 +17,8 @@ This directory is the hardware-design track for Jon2 AI. RTL source describes ci
 - First source milestone: implement and review datapath/control blocks, then integrate a top-level core.
 
 ## Current RTL source files
-- `rtl/jon2_pc.sv` — 32-bit program counter with reset, hold, and redirect.
+- `rtl/jon2_pc.sv` — 32-bit program counter with configurable reset, hold, and redirect.
+- `rtl/jon2_fetch_unit.sv` — connects the program counter to instruction memory.
 - `rtl/jon2_alu.sv` — 32-bit arithmetic/logic operations.
 - `rtl/jon2_register_file.sv` — integer register file with x0 hardwired to zero.
 - `rtl/jon2_decoder.sv` — implemented instruction decoding, including six branch encodings.
@@ -27,6 +28,7 @@ This directory is the hardware-design track for Jon2 AI. RTL source describes ci
 - `rtl/jon2_instruction_memory.sv` — parameterized read-only instruction store with optional `$readmemh` initialization and address validation.
 - `tb/tb_jon2_data_memory.sv` — smoke test for write/read, alignment rejection, and out-of-range rejection.
 - `tb/tb_jon2_instruction_memory.sv` and `tb/fixtures/jon2_instruction_memory.hex` — deterministic instruction-memory read and bounds tests.
+- `tb/tb_jon2_fetch_unit.sv` — reset, sequential fetch, hold, and redirect smoke tests.
 
 These are source files only. Their presence does not establish that the modules compile, pass tests, synthesize, or run on hardware. The GitHub Actions workflow attempts compilation; its result must be inspected before claiming successful compilation. The data memory is an RTL memory array and is not physical RAM.
 
@@ -40,7 +42,7 @@ These are source files only. Their presence does not establish that the modules 
 
 ## Next engineering milestones
 1. Review interfaces and operation encodings across all RTL modules.
-2. Add the program-counter/instruction-memory fetch path and integrate the data-memory interface.
+2. Integrate the program-counter/instruction-memory fetch path with decode and datapath control.
 3. Integrate register file, ALU, control, PC, and memories into a top-level RV32I core.
 4. Add testbenches for instruction decoding, branches, memory bounds/alignment, and end-to-end instruction execution.
 5. Run RTL compilation and simulation in an available tool environment; report exact results.
