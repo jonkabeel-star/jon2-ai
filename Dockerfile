@@ -16,9 +16,8 @@ COPY ai_engine/ /app/ai_engine/
 
 EXPOSE 8000
 
-# Check API process liveness; model readiness is reported separately by /api/health.
+# Liveness checks only whether the API process responds; model readiness is separate.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-  CMD python -c "import os,urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.getenv('PORT', '8000') + '/api/health', timeout=4).read()"
-
+  CMD python -c "import os,urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.getenv('PORT', '8000') + '/api/health/live', timeout=4).read()"
 
 CMD ["sh", "-c", "uvicorn main:app --app-dir /app/ai_engine --host 0.0.0.0 --port ${PORT:-8000}"]
