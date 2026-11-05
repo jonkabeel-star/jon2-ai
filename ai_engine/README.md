@@ -47,7 +47,7 @@ From the repository root:
 python ai_engine/train_jon2.py --data ai_engine/training_data --output ai_engine/checkpoints/jon2-small.pt --keep-last
 ```
 
-The tokenizer is learned only from the supplied project-owned/licensed corpus. The default BPE vocabulary size is 512 and can be changed with `--tokenizer-vocab-size`. Byte-level fallback keeps unseen characters representable. Tokenizer files are validated strictly when loaded: malformed metadata, invalid merge references, and boolean values masquerading as integer token IDs are rejected. Existing character-tokenizer checkpoints remain loadable, but new BPE checkpoints use a different vocabulary and must be trained from scratch.
+The tokenizer is learned only from the supplied project-owned/licensed corpus. The default BPE vocabulary size is 512 and can be changed with `--tokenizer-vocab-size`. Byte-level fallback keeps unseen characters representable. Tokenizer files are validated strictly when loaded: malformed metadata, invalid merge references, and boolean values masquerading as integer token IDs are rejected. Decoding also rejects booleans, strings, floats, and out-of-range IDs instead of silently coercing them. Existing character-tokenizer checkpoints remain loadable, but new BPE checkpoints use a different vocabulary and must be trained from scratch.
 
 The default training settings are only a prototype. A small run on the current seed corpus will not create a capable assistant. Training quality must be measured on held-out Arabic questions before the checkpoint is deployed.
 
