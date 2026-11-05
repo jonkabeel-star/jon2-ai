@@ -11,6 +11,7 @@ GPT, another pretrained model, or a hosted AI API.
 - The original Jon2 Transformer completed 1,200 optimizer steps on the five explicitly approved UTF-8 training files (289,120 characters; 185,697 training tokens and 20,679 validation tokens).
 - Best validation checkpoint was selected at step 900 (validation loss 3.6355); the checkpoint contains approximately 270,000 parameters and was saved as `jon2-small.pt`.
 - The checkpoint was uploaded to the existing private Kaggle dataset `jon2kabeel/jon2-private-model-checkpoint`; the run also loaded it and executed CPU inference successfully.
+- Saved-checkpoint evaluation [run 42025935876](https://github.com/jonkabeel-star/jon2-ai/actions/runs/42025935876) downloaded the private checkpoint and passed all 6/6 technical script/UTF-8 checks. This is not a semantic-quality pass: generated replies were fragmented and incoherent, so the model is not ready for user-facing chat.
 - **This is genuine training, but not a usable conversational assistant yet.** The smoke-test answers were incoherent Arabic fragments. Keep public chat disabled; improve corpus quality, tokenizer/model capacity, and training/evaluation before considering release.
 
 
