@@ -18,6 +18,7 @@ module jon2_control_unit (
     output logic [1:0]  writeback_sel,
     output logic [3:0]  alu_ctrl,
     output logic [2:0]  imm_type,
+    output logic [31:0] immediate,
     output logic        imm_valid,
     output logic        branch_taken,
     output logic [1:0]  pc_sel
@@ -31,9 +32,6 @@ module jon2_control_unit (
     logic dec_mem_to_reg;
     logic dec_branch;
     logic dec_jump;
-    logic [2:0] opcode_funct3;
-
-    assign opcode_funct3 = instruction[14:12];
 
     jon2_decoder decoder (
         .instruction(instruction),
@@ -63,7 +61,7 @@ module jon2_control_unit (
     jon2_immediate_gen immediate_generator (
         .instruction(instruction),
         .imm_type(imm_type),
-        .immediate(),
+        .immediate(immediate),
         .valid_type(imm_valid)
     );
 
@@ -86,9 +84,9 @@ module jon2_control_unit (
             writeback_sel = 2'd3;
 
         if (dec_branch && legal) begin
-            if (opcode_funct3 == 3'b000)
+            if (instruction[14:12] == 3'b000)
                 branch_taken = (rs1_value == rs2_value); // BEQ
-            else if (opcode_funct3 == 3'b001)
+            else if (instruction[14:12] == 3'b001)
                 branch_taken = (rs1_value != rs2_value); // BNE
             if (branch_taken)
                 pc_sel = 2'd1;
