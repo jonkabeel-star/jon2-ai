@@ -1,13 +1,13 @@
 """Runtime for the original Jon2 language model.
 
 No pretrained third-party model or hosted AI API is loaded. The model must
-first be trained and saved as a Jon2 checkpoint.
+first be trained and saved as a Jon2 checkpoint. Heavy PyTorch/model imports
+are deliberately lazy so the API health service can start on small hosts.
 """
 import os
 from pathlib import Path
 
 from answer_quality import validate_generated_answer
-from jon2_core import generate, load_model
 
 CHECKPOINT_PATH = Path(
     os.getenv(
@@ -27,6 +27,18 @@ def model_is_ready() -> bool:
 
 def checkpoint_is_available() -> bool:
     return CHECKPOINT_PATH.is_file()
+
+
+def load_model(checkpoint_path: str):
+    """Import the PyTorch model runtime only when a real checkpoint exists."""
+    from jon2_core import load_model as load_jon2_model
+    return load_jon2_model(checkpoint_path)
+
+
+def generate(*args, **kwargs):
+    """Import generation code only when a loaded model is actually used."""
+    from jon2_core import generate as generate_jon2
+    return generate_jon2(*args, **kwargs)
 
 
 def load_runtime() -> None:
