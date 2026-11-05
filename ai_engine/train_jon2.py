@@ -219,9 +219,10 @@ def train(args):
 
     print(
         f"Jon2 original training | device={device} | AMP={amp_enabled} | "
-        f"tokens={len(encoded):,} | vocab={tokenizer.vocab_size}"
+        f"train_tokens={len(train_data):,} | validation_tokens={len(val_data):,} | "
+        f"vocab={tokenizer.vocab_size}"
     )
-    if len(encoded) < 500_000:
+    if (len(train_data) + len(val_data)) < 500_000:
         print("CAUTION: corpus remains small for a general-purpose assistant.")
 
     best_path = Path(args.output)
