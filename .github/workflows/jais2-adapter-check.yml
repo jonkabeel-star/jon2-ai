@@ -17,6 +17,9 @@ on:
   pull_request:
     paths:
       - "ai_engine/external_models/jais2_runtime.py"
+      - "ai_engine/external_models/download_approved_checkpoint.py"
+      - "ai_engine/external_models/test_checkpoint_downloader.py"
+      - "ai_engine/external_models/STEP3_WEIGHT_ACQUISITION.md"
       - "ai_engine/external_models/test_jais2_runtime.py"
       - "ai_engine/external_models/jais2_routes.py"
       - "ai_engine/external_models/test_jais2_routes.py"
