@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 NODE_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,63}$")
-DEFAULT_DB = "/var/lib/jon2/compute/workers.sqlite3"
+DEFAULT_DB = "/tmp/jon2-compute/workers.sqlite3"
 
 
 def _db_path() -> str:
