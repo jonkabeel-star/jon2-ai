@@ -47,7 +47,7 @@ class TrainingResumeTests(unittest.TestCase):
                 optimizer, scheduler, scaler, "abc123",
                 evaluations_without_improvement=3,
             )
-            state = torch.load(path, map_location="cpu", weights_only=False)
+            state = torch.load(path, map_location="cpu", weights_only=True)
 
         for key in (
             "optimizer_state", "scheduler_state", "scaler_state",
