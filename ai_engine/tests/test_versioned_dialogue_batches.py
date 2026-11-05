@@ -29,7 +29,7 @@ class DialogueBatchAuditTests(unittest.TestCase):
                 self.assertTrue(row, f"{batch.name} is missing from training_data/README.md")
                 self.assertIn("not approved", row.casefold())
 
-                marker = f"`{batch.name}`"
+                marker = f"training_data/{batch.name}"
                 position = register.find(marker)
                 self.assertNotEqual(position, -1, f"{batch.name} is missing from DATASET_REGISTER.md")
                 section_start = register.rfind("\n## Candidate", 0, position)
