@@ -91,8 +91,8 @@ module jon2_core #(
         .WORDS(DATA_WORDS), .BASE_ADDR(DATA_BASE_ADDR)
     ) data_memory (
         .clk(clk),
-        .read_enable(mem_read && legal && !fault),
-        .write_enable(mem_write && legal && !fault),
+        .read_enable(mem_read && legal),
+        .write_enable(mem_write && legal),
         .address(alu_result), .write_data(rs2_value),
         .read_data(memory_read_data),
         .access_valid(memory_valid), .access_error(memory_error)
