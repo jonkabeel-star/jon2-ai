@@ -107,3 +107,11 @@ jobs:
             hardware/rtl/jon2_fetch_unit.sv \
             hardware/tb/tb_jon2_fetch_unit.sv
           vvp /tmp/jon2-fetch-test.vvp
+      - name: Run control-unit branch and jump tests
+        run: |
+          iverilog -g2012 -Wall -s tb_jon2_control_unit -o /tmp/jon2-control-test.vvp \
+            hardware/rtl/jon2_decoder.sv \
+            hardware/rtl/jon2_immediate_gen.sv \
+            hardware/rtl/jon2_control_unit.sv \
+            hardware/tb/tb_jon2_control_unit.sv
+          vvp /tmp/jon2-control-test.vvp
