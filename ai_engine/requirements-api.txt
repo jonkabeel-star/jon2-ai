@@ -1,0 +1,4 @@
+fastapi
+uvicorn[standard]
+httpx
+torch>=2.3
