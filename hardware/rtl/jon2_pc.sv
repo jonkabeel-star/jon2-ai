@@ -1,4 +1,6 @@
-module jon2_pc (
+module jon2_pc #(
+    parameter logic [31:0] RESET_PC = 32'h0000_0000
+) (
     input logic clk,
     input logic reset_n,
     input logic hold,
@@ -8,7 +10,7 @@ module jon2_pc (
 );
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)
-            pc <= 32'h00000000;
+            pc <= RESET_PC;
         else if (!hold) begin
             if (redirect)
                 pc <= redirect_addr;
