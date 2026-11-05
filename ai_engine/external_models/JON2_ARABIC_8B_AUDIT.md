@@ -12,6 +12,9 @@
 - Model card declares Apache-2.0 for the model release.
 - Model card describes Arabic and English training from scratch, an Arabic-centric vocabulary, MSA and regional dialect support.
 - The public model card inspected for this audit does not provide a sufficiently detailed, auditable inventory of underlying pretraining and post-training datasets, source URLs, per-source licenses, or rights/permission basis for every text source.
+- The Hugging Face repository currently requires a logged-in user to review and accept access conditions before downloading files; this is a model-access gate, not evidence that the underlying training corpus rights are cleared.
+- The model card reports 8B parameters in BF16 and an 8,192-token context window. BF16 weights alone require roughly 16 GB before runtime memory, KV cache, and operating-system overhead; an actual deployment needs additional memory.
+- The model card publishes its own benchmark results, including Arabic instruction-following and AraGen results. Treat these as publisher-reported results, not an independent guarantee of Egyptian-dialect quality; Jon2 must run its own held-out Egyptian Arabic evaluation.
 - Related historical disclosure: the older Jais-family model card (not the Jais 2 card) explicitly lists public web pages, Wikipedia articles, news, social-network content, books, arXiv papers, and synthetic translations as training sources. This does **not** prove Jais 2 used the same sources; it does make a written clarification about Jais 2's own corpus especially important for this project. See https://huggingface.co/inception42/jais-family-590m-chat/blob/refs/pr/2/README.md.
 - Therefore Apache-2.0 on the model repository is not treated as proof that every underlying training text is independently cleared for Jon2's intended use.
 - **Status: HOLD — do not download, fine-tune, or deploy until the model authors provide adequate written provenance and rights clarification.**
@@ -34,6 +37,8 @@
 6. Do not set `JON2_CHAT_RELEASE_APPROVED=true` until the selected checkpoint passes held-out Egyptian Arabic and MSA evaluation plus human review.
 
 ## Implementation preparation
+
+A separate local-only adapter has been added at `ai_engine/external_models/jais2_runtime.py`. It loads from a local directory only (`local_files_only=True`), disables remote custom code, uses the model's chat template, and does not call an inference provider. It is intentionally not connected to the public `/api/chat` route and cannot load anything until a local path is configured. This is preparation code, not a model download or a successful inference test.
 
 The integration must be isolated from the original Jon2 model:
 
