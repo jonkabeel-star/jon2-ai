@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from ai_engine.compute.resource_probe import assess_task, inspect_resources
+from compute.resource_probe import assess_task, inspect_resources
 
 
 class ComputeProbeTests(unittest.TestCase):
