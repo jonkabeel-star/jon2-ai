@@ -43,10 +43,8 @@ class ZeroGPUScaffoldContractTests(unittest.TestCase):
         decorator = handler.decorator_list[0]
         self.assertIsInstance(decorator, ast.Call)
         self.assertEqual(ast.unparse(decorator.func), "spaces.GPU")
-        self.assertEqual(
-            ast.unparse(decorator.args[0]) if decorator.args else None,
-            "45",
-        )
+        duration = {item.arg: item.value for item in decorator.keywords}.get("duration")
+        self.assertEqual(ast.unparse(duration), "45")
 
     def test_gradio_events_use_the_selected_handler(self):
         self.assertIn("handler = reply_enabled if MODEL_ENABLED else reply_locked", self.source)
