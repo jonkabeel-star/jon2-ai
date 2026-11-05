@@ -164,8 +164,7 @@ class Jon2ApiTests(unittest.TestCase):
 
 
     def test_health_marks_chat_ready_only_when_release_checkpoint_and_model_are_ready(self):
-        with patch.object(jon2_api, "model_is_ready", return_value=True), \\
-             patch.object(jon2_api, "_checkpoint_configured", return_value=True):
+        with patch.object(jon2_api, "model_is_ready", return_value=True), patch.object(jon2_api, "_checkpoint_configured", return_value=True):
             response = self.client.get("/api/health")
         self.assertEqual(response.status_code, 200)
         payload = response.json()
@@ -176,8 +175,7 @@ class Jon2ApiTests(unittest.TestCase):
         self.assertTrue(payload["chat_ready"])
 
     def test_health_never_marks_chat_ready_when_checkpoint_is_missing(self):
-        with patch.object(jon2_api, "model_is_ready", return_value=True), \\
-             patch.object(jon2_api, "_checkpoint_configured", return_value=False):
+        with patch.object(jon2_api, "model_is_ready", return_value=True), patch.object(jon2_api, "_checkpoint_configured", return_value=False):
             response = self.client.get("/api/health")
         payload = response.json()
         self.assertEqual(payload["model_status"], "checkpoint_missing")
