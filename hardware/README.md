@@ -19,6 +19,7 @@ This directory is the hardware-design track for Jon2 AI. RTL source describes ci
 ## Current RTL source files
 - `rtl/jon2_pc.sv` — 32-bit program counter with configurable reset, hold, and redirect.
 - `rtl/jon2_fetch_unit.sv` — connects the program counter to instruction memory.
+- `rtl/jon2_core.sv` — initial single-cycle RV32I subset integration of fetch, decode, register file, ALU, and word data memory.
 - `rtl/jon2_alu.sv` — 32-bit arithmetic/logic operations.
 - `rtl/jon2_register_file.sv` — integer register file with x0 hardwired to zero.
 - `rtl/jon2_decoder.sv` — implemented instruction decoding, including six branch encodings.
@@ -29,6 +30,7 @@ This directory is the hardware-design track for Jon2 AI. RTL source describes ci
 - `tb/tb_jon2_data_memory.sv` — smoke test for write/read, alignment rejection, and out-of-range rejection.
 - `tb/tb_jon2_instruction_memory.sv` and `tb/fixtures/jon2_instruction_memory.hex` — deterministic instruction-memory read and bounds tests.
 - `tb/tb_jon2_fetch_unit.sv` — reset, sequential fetch, hold, and redirect smoke tests.
+- `tb/tb_jon2_core.sv` and `tb/fixtures/jon2_core_program.hex` — end-to-end program test for two ADDI instructions followed by ADD.
 
 These are source files only. Their presence does not establish that the modules compile, pass tests, synthesize, or run on hardware. The GitHub Actions workflow attempts compilation; its result must be inspected before claiming successful compilation. The data memory is an RTL memory array and is not physical RAM.
 
@@ -38,16 +40,16 @@ These are source files only. Their presence does not establish that the modules 
 - LW and SW word accesses only; byte/halfword loads and stores are not implemented.
 - BEQ, BNE, BLT, BGE, BLTU, and BGEU branch comparisons.
 - JAL, JALR, LUI, and AUIPC control encodings.
-- No complete integrated CPU core exists yet. Instruction fetch, datapath wiring, load/store address integration, exception handling, and full verification remain to be completed.
+- An initial single-cycle integrated core is now present in RTL and has an end-to-end test program. This is an early RV32I subset, not a complete or production-ready CPU.
+- Byte/halfword memory operations, robust exception/trap handling, privilege modes, interrupts, caches, pipelining, and broad ISA compliance remain unimplemented and require further verification.
 
 ## Next engineering milestones
 1. Review interfaces and operation encodings across all RTL modules.
-2. Integrate the program-counter/instruction-memory fetch path with decode and datapath control.
-3. Integrate register file, ALU, control, PC, and memories into a top-level RV32I core.
-4. Add testbenches for instruction decoding, branches, memory bounds/alignment, and end-to-end instruction execution.
-5. Run RTL compilation and simulation in an available tool environment; report exact results.
-6. Synthesize and generate a bitstream for a selected FPGA family.
-7. Program and test on an actual compatible FPGA development board.
+2. Expand end-to-end tests for branches, jumps, load/store, and fault conditions.
+3. Review synthesis compatibility and remove simulation-only constructs where needed.
+4. Run broader RTL lint, simulation, and ISA compliance tests.
+5. Synthesize and generate a bitstream for a selected FPGA family.
+6. Program and test on an actual compatible FPGA development board.
 
 ## Hardware boundary
 A physical FPGA development board is required before claiming the design has been loaded onto hardware. A separate real compute board or computer will be required for a useful Jon2 AI host. A small FPGA soft CPU is an embedded control processor, not a substitute for a GPU or a powerful AI inference server.
