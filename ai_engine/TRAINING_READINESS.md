@@ -4,16 +4,15 @@ Last verified: 2026-11-05
 
 ## Current corpus snapshot (verified from CI on 2026-11-05)
 
-The latest Python workflow on commit `3ff55c88` completed successfully (run ID `41949334107`):
-- The dataset inventory found 5 UTF-8 text files, 290,513 raw Unicode characters, 515,830 bytes, and 184,342 tokens using a temporary 512-entry BPE tokenizer. These are inventory metrics, not a quality score.
-- The structural dialogue audit counted 284,621 characters after removing blank and metadata-comment lines, and reported 27 exact normalized duplicate groups.
-- The privacy-aware audit reported 40 excess repeated lines. The duplicate prompts include short generic follow-ups; do not delete them mechanically without reviewing their paired answers and context.
-- The earlier two phone-like matches were ISO date stamps in metadata headers, not contact details. The date-aware fix and regression tests passed in Python workflow `41980888020`: all 82 tests passed, and the latest privacy scan reported zero email-like and zero phone-like matches. This pattern scan is not a complete privacy detector.
-- Training approval remains **BLOCKED** because the private `source_approvals.json` manifest is absent; `training_permitted=false`.
-- The current 184,342-token inventory is below the 250,000–500,000-token first-experiment target in `ARABIC_CORPUS_PLAN.md`. The 100,000-character trainer minimum is only a guard against trivially small inputs.
-- No model training was run and no checkpoint was created.
-- Kaggle Bridge run `41980668978` was triggered by a documentation-only push because the old path filter included every file under `training_data/`. It stopped at the explicit approval-secret check; no private dataset was published, no Kaggle kernel was pushed, and no training started. The workflow is now manual-dispatch-only with a required confirmation input, in addition to the exact-file approval secret.
+The latest Python workflow on commit `af64da753087b1c189a89ec9572e05f708e1ff94` (run ID `41998554967`) completed successfully:
+- The privacy-conscious inventory found 5 UTF-8 text files, 290,513 raw Unicode characters, and 184,342 tokens using a temporary 512-entry BPE tokenizer. These are inventory metrics, not a quality score.
+- The corpus-quality audit reported 28 exact normalized duplicate-line groups and 40 excess repeated lines across the scanned corpus. The report detected no Unicode replacement characters, unexpected control characters, or zero-width/BOM characters in the listed files. Automated scans are not complete privacy or quality reviews.
+- Duplicate detection is exact after NFC and whitespace normalization; paraphrases are not detected. Paragraph-level train/validation splitting reduces direct paragraph overlap, but identical lines can still occur in different paragraphs and may cross the split. Do not delete or rewrite repeated lines mechanically; review their context first.
+- Training approval remains **BLOCKED** because the private `source_approvals.json` manifest is absent; `training_permitted=false`. No source was approved.
+- No model training was run and no release-ready checkpoint was created by this workflow.
+- All Python checks, engine tests, corpus audits, inventory generation, container build, code checks, and GitHub Pages deployment completed successfully for this commit.
 
+These results verify engineering checks and inventory tooling only. They do not establish content ownership, legal clearance, semantic quality, or assistant readiness.
 
 ## Historical dataset inventory and website API wiring (2026-11-04)
 
