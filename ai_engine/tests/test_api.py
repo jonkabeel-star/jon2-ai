@@ -163,5 +163,26 @@ class Jon2ApiTests(unittest.TestCase):
         self.assertNotIn("access-control-allow-origin", blocked.headers)
 
 
+    def test_health_marks_chat_ready_only_when_release_checkpoint_and_model_are_ready(self):
+        with patch.object(jon2_api, "model_is_ready", return_value=True), \\
+             patch.object(jon2_api, "_checkpoint_configured", return_value=True):
+            response = self.client.get("/api/health")
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["model_status"], "ready")
+        self.assertTrue(payload["release_approved"])
+        self.assertTrue(payload["checkpoint_configured"])
+        self.assertTrue(payload["model_loaded"])
+        self.assertTrue(payload["chat_ready"])
+
+    def test_health_never_marks_chat_ready_when_checkpoint_is_missing(self):
+        with patch.object(jon2_api, "model_is_ready", return_value=True), \\
+             patch.object(jon2_api, "_checkpoint_configured", return_value=False):
+            response = self.client.get("/api/health")
+        payload = response.json()
+        self.assertEqual(payload["model_status"], "checkpoint_missing")
+        self.assertFalse(payload["chat_ready"])
+
+
 if __name__ == "__main__":
     unittest.main()
