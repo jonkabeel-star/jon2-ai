@@ -17,6 +17,21 @@ checkpoint can start and report API health without importing the heavy model
 runtime. This is a startup optimization only; it does not make inference
 available or reduce the memory needed to load a model.
 
+## Deploy the locked API from an iPhone
+
+The repository includes a Render Blueprint at `render.yaml`. This is a deployment recipe, not a deployed service. The project owner must sign in to the hosting provider and authorize access to this GitHub repository; repository automation cannot create that account authorization on the owner's behalf.
+
+For an initial health-only deployment:
+
+1. Open the hosting provider's dashboard in Safari and choose its Blueprint/new-from-repository flow.
+2. Connect `jonkabeel-star/jon2-ai` and select the `main` branch.
+3. Let the provider read the root `render.yaml` and review the proposed service named `jon2-ai-api`.
+4. Keep `JON2_CHAT_RELEASE_APPROVED=false`. Do not add a checkpoint, training corpus, approval manifest, or secret to the repository.
+5. After the provider finishes deploying, open the service's HTTPS `/api/health` address. A healthy API process with `chat_ready=false` is the expected safe result at this stage.
+6. Do not set `window.JON2_API_BASE_URL` in the public website until the HTTPS health endpoint and CORS behavior have been checked.
+
+The host's dashboard, account, repository authorization, and deployment URL are owner-controlled. No deployment has been performed merely by committing this Blueprint. A free health-only deployment also does not prove that the host can load or serve the PyTorch model; the free Render resource limits documented below are not suitable evidence of inference capacity.
+
 ## Container configuration
 
 The image installs FastAPI, Uvicorn, and the CPU-only PyTorch wheel. It does not
