@@ -73,42 +73,56 @@ def status_text() -> str:
     return "النموذج محمّل داخل جلسة GPU مؤقتة."
 
 
-def reply(message: str) -> str:
-    if not MODEL_ENABLED:
-        raise gr.Error(status_text())
-    if model is None or tokenizer is None:
-        raise gr.Error(status_text())
+def _validate_message(message: str) -> str:
     if not isinstance(message, str) or not message.strip():
         raise gr.Error("اكتب رسالة أولًا.")
+    message = message.strip()
     if len(message) > 1500:
         raise gr.Error("الحد الأقصى للرسالة 1500 حرف.")
+    return message
 
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": message.strip()},
-    ]
-    prompt = tokenizer.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
-    )
-    inputs = tokenizer(prompt, return_tensors="pt")
-    inputs.pop("token_type_ids", None)
-    input_device = model.get_input_embeddings().weight.device
-    inputs = {key: value.to(input_device) for key, value in inputs.items()}
 
-    with torch.inference_mode():
-        output = model.generate(
-            **inputs,
-            max_new_tokens=160,
-            do_sample=False,
-            repetition_penalty=1.08,
-            eos_token_id=tokenizer.eos_token_id,
-            pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
+def reply_locked(message: str) -> str:
+    # Keep locked requests off the GPU so they cannot consume ZeroGPU quota.
+    raise gr.Error(status_text())
+
+
+if MODEL_ENABLED:
+    @spaces.GPU(duration=45)
+    def reply_enabled(message: str) -> str:
+        message = _validate_message(message)
+        if model is None or tokenizer is None:
+            raise gr.Error(status_text())
+
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": message},
+        ]
+        prompt = tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
         )
-    generated = output[0, inputs["input_ids"].shape[-1]:]
-    answer = tokenizer.decode(generated, skip_special_tokens=True).strip()
-    if not answer:
-        raise gr.Error("النموذج أعاد ردًا فارغًا.")
-    return answer
+        inputs = tokenizer(prompt, return_tensors="pt")
+        inputs.pop("token_type_ids", None)
+        input_device = model.get_input_embeddings().weight.device
+        inputs = {key: value.to(input_device) for key, value in inputs.items()}
+
+        with torch.inference_mode():
+            output = model.generate(
+                **inputs,
+                max_new_tokens=160,
+                do_sample=False,
+                repetition_penalty=1.08,
+                eos_token_id=tokenizer.eos_token_id,
+                pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
+            )
+        generated = output[0, inputs["input_ids"].shape[-1]:]
+        answer = tokenizer.decode(generated, skip_special_tokens=True).strip()
+        if not answer:
+            raise gr.Error("النموذج أعاد ردًا فارغًا.")
+        return answer
+
+
+handler = reply_enabled if MODEL_ENABLED else reply_locked
 
 
 with gr.Blocks(title="Jon2 Arabic — ZeroGPU Test") as demo:
@@ -129,8 +143,8 @@ with gr.Blocks(title="Jon2 Arabic — ZeroGPU Test") as demo:
     )
     send = gr.Button("إرسال")
     answer = gr.Textbox(label="رد Jon2 Arabic", lines=6, interactive=False)
-    send.click(fn=reply, inputs=message, outputs=answer)
-    message.submit(fn=reply, inputs=message, outputs=answer)
+    send.click(fn=handler, inputs=message, outputs=answer)
+    message.submit(fn=handler, inputs=message, outputs=answer)
 
 if __name__ == "__main__":
     demo.launch()
