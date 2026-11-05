@@ -7,13 +7,12 @@ GPT, another pretrained model, or a hosted AI API.
 
 ## Latest real training run
 
-- GitHub Actions run [42025615175](https://github.com/jonkabeel-star/jon2-ai/actions/runs/42025615175) completed successfully on a real CPU runner.
-- The original Jon2 Transformer completed 1,200 optimizer steps on the five explicitly approved UTF-8 training files (289,120 characters; 185,697 training tokens and 20,679 validation tokens).
-- Best validation checkpoint was selected at step 900 (validation loss 3.6355); the checkpoint contains approximately 270,000 parameters and was saved as `jon2-small.pt`.
-- The checkpoint was uploaded to the existing private Kaggle dataset `jon2kabeel/jon2-private-model-checkpoint`; the run also loaded it and executed CPU inference successfully.
-- Saved-checkpoint evaluation [run 42025935876](https://github.com/jonkabeel-star/jon2-ai/actions/runs/42025935876) downloaded the private checkpoint and passed all 6/6 technical script/UTF-8 checks. This is not a semantic-quality pass: generated replies were fragmented and incoherent, so the model is not ready for user-facing chat.
-- **This is genuine training, but not a usable conversational assistant yet.** The smoke-test answers were incoherent Arabic fragments. Keep public chat disabled; improve corpus quality, tokenizer/model capacity, and training/evaluation before considering release.
-
+- GitHub Actions run [42027297208](https://github.com/jonkabeel-star/jon2-ai/actions/runs/42027297208) completed successfully on a real CPU runner.
+- The original Jon2 Transformer completed 1,200 optimizer steps on the five explicitly approved UTF-8 training files (289,120 corpus characters; 185,697 training tokens and 20,679 validation tokens).
+- Best validation checkpoint was selected at step 900 (validation loss 3.6355); the final run also saved a resumable last checkpoint at step 1,200. The model has 269,952 parameters.
+- Both `jon2-small.pt` and `jon2-last.pt` were uploaded to the private Kaggle dataset `jon2kabeel/jon2-private-model-checkpoint`. Verification run [42028045019](https://github.com/jonkabeel-star/jon2-ai/actions/runs/42028045019) independently confirmed both files are visible in that private dataset.
+- The checkpoint was loaded on CPU and real inference was executed. Example outputs were fragmented and incoherent Arabic text. Automated technical checks do not establish language quality.
+- **This is genuine model training, but not a usable conversational assistant yet.** Keep public chat disabled. Improve corpus quality and quantity, model/tokenizer capacity, and held-out semantic evaluation before considering release.
 
 - The original Transformer architecture and backward-compatible checkpoint loader are in `jon2_core.py`.
 - New training runs use the project-trained byte-level BPE tokenizer in `tokenizer.py`. It has UTF-8 byte fallback for unseen Arabic, English, punctuation, and emoji; it does not provide pretrained knowledge.
@@ -80,7 +79,7 @@ After a real checkpoint has been trained, run:
 python ai_engine/evaluate_model.py --checkpoint ai_engine/checkpoints/jon2-small.pt --prompts ai_engine/evaluation/prompts_ar.jsonl --output ai_engine/evaluation/review-report.json
 ```
 
-The evaluator generates answers and creates a review template with six blank human-scoring dimensions for every prompt. It never assigns an automatic quality verdict or marks the model approved. Review every answer using `EVALUATION_RUBRIC.md`. No checkpoint currently exists, so this evaluation cannot yet be run against a trained model.
+The evaluator generates answers and creates a review template with six blank human-scoring dimensions for every prompt. It never assigns an automatic quality verdict or marks the model approved. Review every answer using `EVALUATION_RUBRIC.md`. A trained checkpoint exists in the private Kaggle dataset. Download it to the configured checkpoint path before running this evaluation; the workflow's successful smoke test is not a substitute for human review.
 
 ## Human release gate for public chat
 
