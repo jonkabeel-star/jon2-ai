@@ -41,7 +41,7 @@ def split_corpus_blocks(corpus: str, validation_fraction: float, seed: int):
     train_text = "\n\n".join(
         block for index, block in enumerate(blocks) if index not in validation_indices
     )
-    validation_text = "\\n\\n".join(
+    validation_text = "\n\n".join(
         block for index, block in enumerate(blocks) if index in validation_indices
     )
     return train_text, validation_text
