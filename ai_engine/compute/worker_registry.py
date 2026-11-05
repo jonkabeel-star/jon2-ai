@@ -90,8 +90,8 @@ def enroll(node_id: str, display_name: str, platform: str,
         raise ValueError("memory_total_bytes is outside the accepted range.")
     if len(display_name) > 80 or len(platform) > 80:
         raise ValueError("display_name or platform is too long.")
-    if len(accelerator_types) > 8 or len(accelerator_names) > 8:
-        raise ValueError("Too many accelerator entries.")
+    _validate_accelerator_values(accelerator_types)
+    _validate_accelerator_values(accelerator_names)
     token = secrets.token_urlsafe(48)
     now = time.time()
     with _connect() as db:
@@ -137,8 +137,8 @@ def heartbeat(node_id: str, token: str, cpu_count: int,
               accelerator_names: list[str]) -> bool:
     if not 1 <= cpu_count <= 4096 or not 0 <= memory_total_bytes <= 2**60:
         raise ValueError("Worker capacity values are outside accepted ranges.")
-    if len(accelerator_types) > 8 or len(accelerator_names) > 8:
-        raise ValueError("Too many accelerator entries.")
+    _validate_accelerator_values(accelerator_types)
+    _validate_accelerator_values(accelerator_names)
     if not authenticate_worker(node_id, token):
         return False
     with _connect() as db:
