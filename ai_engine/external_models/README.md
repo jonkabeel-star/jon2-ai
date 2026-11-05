@@ -79,3 +79,8 @@ With the default configuration, the new health endpoint reports `disabled` and c
 - PyTorch 2.15.0 is the current PyPI release checked. Do not force-upgrade the production host blindly: choose the wheel matching its Python, CPU/CUDA, and driver environment.
 
 These are version checks, not a claim that the model has been loaded or tested. The model remains blocked pending training-data rights clarification and an owner-approved checkpoint.
+
+
+## Additional Egyptian-focused candidate reviewed
+
+Karnak 40B from Egypt's Applied Innovation Center is documented as especially focused on Egyptian colloquial Arabic. It is **not selected** for the current 8B target, and its public model materials do not provide the source-by-source training-data rights manifest Jon2 requires. See the Karnak section in [JON2_ARABIC_8B_AUDIT.md](JON2_ARABIC_8B_AUDIT.md). This review does not authorize downloading or deploying Karnak.
