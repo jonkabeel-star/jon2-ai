@@ -47,15 +47,15 @@ module tb_jon2_core_faults;
             $fatal(1, "unaligned store did not raise a memory fault");
         if (pc_mem !== 32'h0000_1008)
             $fatal(1, "memory-faulting instruction PC was not held: %h", pc_mem);
-        if (memory_fault_core.registers.registers[2] !== 32'd0)
-            $fatal(1, "instruction after memory fault executed");
+        if (wr_mem)
+            $fatal(1, "register write remained enabled during memory fault");
 
         if (!halt_ill || illegal_core.legal)
             $fatal(1, "illegal instruction did not halt the core");
         if (pc_ill !== 32'h0000_1000)
             $fatal(1, "illegal instruction PC was not held: %h", pc_ill);
-        if (illegal_core.registers.registers[2] !== 32'd0)
-            $fatal(1, "instruction after illegal instruction executed");
+        if (wr_ill)
+            $fatal(1, "register write remained enabled during illegal instruction fault");
 
         $display("PASS: unaligned memory access and illegal instruction halt without executing following instructions");
         $finish;
