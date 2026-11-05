@@ -124,3 +124,30 @@ Jon2 decision:
 - Do not download, fine-tune, deploy, or switch the project to Karnak without a separate owner decision, compatible compute, and written source-level rights review.
 
 This review does not change the selected Jais 2 8B candidate or authorize any third-party checkpoint.
+
+
+## New candidate review — Apertus 1.5 8B (2026-11-05)
+
+Official sources reviewed:
+- Project Apertus transparency page: https://apertus-ai.org/pages/about/
+- Official Hugging Face model card: https://huggingface.co/swiss-ai/Apertus-v1.5-8B
+- Official model collection: https://huggingface.co/collections/swiss-ai/apertus-v15
+
+What is promising:
+- The publisher describes Apertus as fully open and publishes architecture, weights, training data, and methods. Apertus 1.0 is described as using public, versioned sources under open licenses, respecting web-data opt-outs, and being released under Apache-2.0.
+- Apertus 1.5 offers an 8B-class checkpoint (the model card identifies it as Apertus-v1.5-8B; the repository UI reports approximately 9B total parameters), Apache-2.0, and multilingual text/image/audio input.
+- The v1.5 card describes fully open training data and says the full training details will be published in its technical report.
+
+Important unresolved points:
+- Apertus 1.5 is a continuation of Apertus 1.0 with an additional multimodal mix of 4 trillion tokens for the 8B model. The model card says the detailed technical report and training pipelines will be provided in the coming weeks; the full source-level inventory and rights mapping for this v1.5 addition therefore still need to be checked before Jon2 can approve it.
+- The Hugging Face repository requires the account owner to review and accept Apache-2.0 plus the Apertus Acceptable Use Policy. The page also says the owner's email and username will be shared with the repository authors on acceptance. Do not accept this on the owner's behalf.
+- The official page describes multilingual coverage but does not establish strong Egyptian-colloquial performance. Jon2 must run its own Egyptian Arabic and MSA evaluation.
+- The model card says its Transformers integration is not yet in a released upstream Transformers version and currently points to a Swiss-AI fork. Runtime compatibility and pinned dependencies must be tested before deployment.
+- Its 8B BF16 class is not suitable for the user's iPhone 12 Pro Max as a local inference host. A separate compatible GPU host is still required.
+
+Jon2 decision:
+- **PROMISING RIGHTS-TRANSPARENCY CANDIDATE, NOT APPROVED YET.**
+- This is a stronger transparency lead than a weights-only model, and it preserves the project's approximate 8B target.
+- Keep Jais 2 on HOLD and do not replace it automatically. Apertus 1.5 may become the preferred candidate only after the v1.5 4T-token data supplement is documented at source/license level, the owner personally reviews the AUP and contact-information disclosure, and Arabic evaluation confirms acceptable quality.
+- Do not download, accept access conditions, fine-tune, or deploy this checkpoint yet.
+
