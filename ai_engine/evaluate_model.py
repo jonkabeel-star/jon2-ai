@@ -52,6 +52,42 @@ def load_prompts(path: Path) -> list[dict[str, str]]:
     return prompts
 
 
+def diagnose_answer(answer: str) -> dict:
+    """Report surface-level warning signals without pretending to judge meaning."""
+    import re
+
+    text = answer.strip() if isinstance(answer, str) else ""
+    words = re.findall(r"\\S+", text)
+    visible = [char for char in text if not char.isspace()]
+    arabic = len(re.findall(r"[\\u0621-\\u064A\\u066E-\\u06D3]", text))
+    unique_ratio = len(set(words)) / max(1, len(words))
+    repeated_trigram = any(
+        words[index:index + 3] == words[index + 3:index + 6]
+        for index in range(max(0, len(words) - 5))
+    )
+    warnings = []
+    if len(text) < 20:
+        warnings.append("very_short_answer")
+    if len(words) < 4:
+        warnings.append("very_few_words")
+    if arabic / max(1, len(visible)) < 0.70:
+        warnings.append("low_arabic_character_ratio")
+    if len(words) >= 8 and unique_ratio < 0.45:
+        warnings.append("low_unique_word_ratio")
+    if repeated_trigram:
+        warnings.append("repeated_three_word_sequence")
+    if not text:
+        warnings.append("empty_answer")
+    return {
+        "character_count": len(text),
+        "word_count": len(words),
+        "arabic_character_ratio": round(arabic / max(1, len(visible)), 3),
+        "unique_word_ratio": round(unique_ratio, 3),
+        "surface_warnings": warnings,
+        "human_semantic_review_required": True,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Generate a held-out human-review report for a trained Jon2 checkpoint."
@@ -134,7 +170,7 @@ def main() -> int:
         "temperature": args.temperature,
         "max_new_chars": args.max_new_chars,
         "prompt_count": len(results),
-        "automated_quality_verdict": None,
+        "automated_quality_verdict": None,\n        "diagnostic_notice": (\n            "Surface warnings detect empty, unusually short, low-Arabic, or repetitive text only. " \n            "They do not measure correctness, relevance, coherence, or factuality and never approve release."\n        ),
         "release_approved": False,
         "results": results,
         "notice": (
