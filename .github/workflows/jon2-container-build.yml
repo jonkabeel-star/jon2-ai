@@ -99,6 +99,7 @@ jobs:
           echo "Image privacy check passed: no training data, checkpoints, or evaluation material."
 
           python - <<'PY'
+          import urllib.error
           import urllib.request
 
           def preflight(origin):
@@ -111,13 +112,19 @@ jobs:
                   },
                   method="OPTIONS",
               )
-              with urllib.request.urlopen(request, timeout=5) as response:
-                  return response.headers
+              try:
+                  with urllib.request.urlopen(request, timeout=5) as response:
+                      return response.status, response.headers
+              except urllib.error.HTTPError as error:
+                  return error.code, error.headers
 
-          allowed = preflight("https://jonkabeel-star.github.io")
+          allowed_status, allowed = preflight("https://jonkabeel-star.github.io")
+          assert allowed_status == 200, (allowed_status, allowed)
           assert allowed.get("Access-Control-Allow-Origin") == "https://jonkabeel-star.github.io", allowed
-          denied = preflight("https://untrusted.example")
+
+          denied_status, denied = preflight("https://untrusted.example")
+          assert denied_status == 400, (denied_status, denied)
           assert denied.get("Access-Control-Allow-Origin") is None, denied
-          print("CORS checks passed: GitHub Pages origin allowed; unrelated origin not allowed.")
+          print("CORS checks passed: GitHub Pages origin allowed; unrelated origin rejected with HTTP 400.")
           PY
 
