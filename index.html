@@ -105,7 +105,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
   <div class="chat-shell">
     <div class="chat-top"><div class="chat-title"><div class="chat-avatar">J2</div><div><strong data-t="assistantName">المساعد الذكي</strong><small id="status" data-t="offline">الخادم غير متصل حاليًا</small></div></div><button class="clear" id="clear" data-t="clear">مسح المحادثة</button></div>
     <div class="messages" id="messages" aria-live="polite"><div class="msg bot" data-t="welcome">أهلًا بك! واجهة المحادثة جاهزة، وسيتم تفعيل الردود الذكية بعد ربط نموذج Jon2 AI الحقيقي.</div></div>
-    <form class="composer" id="form"><textarea id="input" placeholder="اكتب رسالتك هنا..." data-ph="placeholder" required></textarea><button class="send" id="send" type="submit" data-t="send">إرسال ↑</button></form>
+    <form class="composer" id="form"><textarea id="input" placeholder="اكتب رسالتك هنا..." data-ph="placeholder" maxlength="2000" required></textarea><button class="send" id="send" type="submit" data-t="send">إرسال ↑</button></form>
     <div class="status-note" id="statusNote" data-t="chatNote">المحادثة الذكية غير مفعّلة بعد؛ لن نعرض ردودًا وهمية.</div>
   </div>
 </section>
@@ -149,7 +149,7 @@ function loadSavedState() {
         .slice(-MAX_SAVED_MESSAGES)
         .map(item => ({ kind: item.kind, text: item.text.slice(0, 20000) }));
     }
-    if (typeof state.draft === "string") savedDraft = state.draft.slice(0, 4000);
+    if (typeof state.draft === "string") savedDraft = state.draft.slice(0, 2000);
   } catch (error) {
     console.warn("Jon2 AI could not read its local saved state.", error);
   }
@@ -161,7 +161,7 @@ function saveState() {
       version: 1,
       lang,
       messages: chatMessages.slice(-MAX_SAVED_MESSAGES),
-      draft: document.getElementById("input").value.slice(0, 4000)
+      draft: document.getElementById("input").value.slice(0, 2000)
     }));
   } catch (error) {
     console.warn("Jon2 AI could not save state in this browser.", error);
