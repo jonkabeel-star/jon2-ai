@@ -12,6 +12,7 @@ The latest Python workflow on commit `3ff55c88` completed successfully (run ID `
 - Training approval remains **BLOCKED** because the private `source_approvals.json` manifest is absent; `training_permitted=false`.
 - The current 184,342-token inventory is below the 250,000–500,000-token first-experiment target in `ARABIC_CORPUS_PLAN.md`. The 100,000-character trainer minimum is only a guard against trivially small inputs.
 - No model training was run and no checkpoint was created.
+- Kaggle Bridge run `41980668978` was triggered by a documentation-only push because the old path filter included every file under `training_data/`. It stopped at the explicit approval-secret check; no private dataset was published, no Kaggle kernel was pushed, and no training started. The workflow is now manual-dispatch-only with a required confirmation input, in addition to the exact-file approval secret.
 
 
 ## Historical dataset inventory and website API wiring (2026-11-04)

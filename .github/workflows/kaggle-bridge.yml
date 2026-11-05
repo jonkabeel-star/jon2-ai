@@ -1,18 +1,16 @@
 name: Jon2 AI Kaggle Bridge
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/kaggle-bridge.yml"
-      - "kaggle/hello-jon2/**"
-      - "ai_engine/jon2_core.py"
-      - "ai_engine/train_jon2.py"
-      - "ai_engine/tokenizer.py"
-      - "ai_engine/source_approval.py"
-      - "ai_engine/training_data/**"
+  # Training is never triggered by a normal code or documentation push.
+  # It requires an explicit manual dispatch confirmation and the separate
+  # exact-file owner-approval secret below.
   workflow_dispatch:
     inputs:
+      confirm_research_training:
+        description: "Confirm that every exact source file has been reviewed and approved for research training"
+        required: true
+        default: false
+        type: boolean
       kernel_dir:
         description: "Repository folder containing kernel-metadata.json and notebook"
         required: true
@@ -28,6 +26,7 @@ concurrency:
 
 jobs:
   validate-and-push:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.confirm_research_training == true }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
