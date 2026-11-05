@@ -28,7 +28,31 @@ def _linux_meminfo() -> dict[str, int] | None:
     return None
 
 
+def _cgroup_memory() -> dict[str, int] | None:
+    # Prefer the container limit over host RAM so admission is conservative.
+    try:
+        with open("/sys/fs/cgroup/memory.max", "r", encoding="ascii") as handle:
+            raw_limit = handle.read().strip()
+        with open("/sys/fs/cgroup/memory.current", "r", encoding="ascii") as handle:
+            raw_current = handle.read().strip()
+        if raw_limit != "max":
+            limit, current = int(raw_limit), int(raw_current)
+            if limit > 0:
+                return {
+                    "total_bytes": limit,
+                    "available_bytes": max(0, limit - current),
+                }
+    except (OSError, ValueError):
+        pass
+    return None
+
+
 def _memory() -> dict[str, int | None]:
+    # cgroup limits must take precedence over host-level memory figures.
+    limited = _cgroup_memory()
+    if limited:
+        return limited
+
     try:
         import psutil  # type: ignore
         vm = psutil.virtual_memory()
@@ -39,21 +63,6 @@ def _memory() -> dict[str, int | None]:
     result = _linux_meminfo()
     if result:
         return result
-
-    # cgroup v2 can expose a smaller container limit than host RAM.
-    try:
-        with open("/sys/fs/cgroup/memory.max", "r", encoding="ascii") as handle:
-            raw_limit = handle.read().strip()
-        with open("/sys/fs/cgroup/memory.current", "r", encoding="ascii") as handle:
-            raw_current = handle.read().strip()
-        if raw_limit != "max":
-            limit, current = int(raw_limit), int(raw_current)
-            return {
-                "total_bytes": limit,
-                "available_bytes": max(0, limit - current),
-            }
-    except (OSError, ValueError):
-        pass
     return {"total_bytes": None, "available_bytes": None}
 
 
@@ -133,7 +142,7 @@ def assess_task(min_memory_gib: float = 2.0, require_gpu: bool = False) -> dict[
     available = snapshot["memory"]["available_bytes"]
     required = int(min_memory_gib * 1024 ** 3)
     gpu_visible = any(
-        item["type"] == "cuda" for item in snapshot["accelerators"]
+        item["type"] in {"cuda", "mps"} for item in snapshot["accelerators"]
     )
     memory_ok = available is not None and available >= required
     accepted = bool(memory_ok and (gpu_visible or not require_gpu))
