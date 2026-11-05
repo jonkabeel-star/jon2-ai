@@ -1,0 +1,41 @@
+name: Verify Jon2 Private Checkpoint
+
+on:
+  workflow_run:
+    workflows: ["Jon2 Real CPU Training"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-private-checkpoint:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Kaggle CLI
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade kaggle
+
+      - name: Verify both checkpoint files are visible in the private dataset
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4 5 6; do
+            files="$(kaggle datasets files jon2kabeel/jon2-private-model-checkpoint -v 2>&1)" || true
+            printf '%s\\n' "$files"
+            if printf '%s\\n' "$files" | grep -Fq "jon2-small.pt" && printf '%s\\n' "$files" | grep -Fq "jon2-last.pt"; then
+              echo "PRIVATE_CHECKPOINT_FILES_VERIFIED"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Expected checkpoint files were not visible in the private Kaggle dataset."
+          exit 1
