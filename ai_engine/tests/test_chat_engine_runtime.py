@@ -2,6 +2,8 @@
 import sys
 import tempfile
 import unittest
+
+import torch
 from pathlib import Path
 from unittest import mock
 
@@ -79,6 +81,35 @@ class ChatEngineRuntimeTests(unittest.TestCase):
         self.assertNotIn("رسالة 1", prompt)
         self.assertIn("رسالة 9", prompt)
         self.assertTrue(prompt.endswith("المستخدم: الحالية\nJon2:"))
+
+    def test_checkpoint_loader_uses_safe_torch_deserialization(self):
+        import jon2_core
+
+        tokenizer = mock.Mock(vocab_size=32)
+        model = mock.Mock()
+        model.to.return_value = model
+        checkpoint = {
+            "tokenizer": {},
+            "config": {},
+            "model_state": {},
+        }
+        with mock.patch.object(
+            jon2_core.torch, "load", return_value=checkpoint
+        ) as loader, mock.patch.object(
+            jon2_core.ByteBPETokenizer, "from_dict", return_value=tokenizer
+        ), mock.patch.object(
+            jon2_core, "Jon2Transformer", return_value=model
+        ):
+            loaded_model, loaded_tokenizer, device = jon2_core.load_model(
+                "checkpoint.pt", device="cpu"
+            )
+
+        loader.assert_called_once_with(
+            "checkpoint.pt", map_location=torch.device("cpu"), weights_only=True
+        )
+        self.assertIs(loaded_model, model)
+        self.assertIs(loaded_tokenizer, tokenizer)
+        self.assertEqual(device.type, "cpu")
 
     def test_reply_contains_only_generated_completion(self):
         prompt = "المستخدم: مرحبًا\nJon2:"
