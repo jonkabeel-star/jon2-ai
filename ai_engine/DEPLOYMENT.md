@@ -6,9 +6,8 @@ locked, health-checkable API deployment.
 
 ## Safe first deployment
 
-The Render Blueprint deploys the API with
-JON2_CHAT_RELEASE_APPROVED=false. This allows the service health endpoint
-to be checked without exposing unreviewed model output. The chat endpoint must
+The Render Blueprint targets the Frankfurt region on the Free plan and deploys the API with
+JON2_CHAT_RELEASE_APPROVED=false. Its platform health check uses `/api/health/live`, which only verifies that the API process responds; `/api/health` reports model status separately. The chat endpoint must
 remain unavailable until a real checkpoint passes held-out evaluation and
 human review.
 
@@ -48,10 +47,10 @@ public Git repository or Docker image.
 ## Health and release behavior
 
 - GET / confirms that the API process responds.
-- GET /api/health reports checkpoint presence, model loading, release
-  approval, and the combined chat_ready state.
-- POST /api/chat remains HTTP 503 unless explicit release approval is set
-  and a usable checkpoint is available.
+- GET /api/health/live checks only that the API process responds.
+- GET /api/health reports checkpoint presence, model loading, release approval, and the combined `chat_ready` state.
+- GET /api/health/ready returns HTTP 503 until a real checkpoint is loaded and its release is approved.
+- POST /api/chat remains HTTP 503 unless explicit release approval is set and a usable checkpoint is available.
 
 A successful container build or health check does not mean the model is useful.
 
