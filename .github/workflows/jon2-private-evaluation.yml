@@ -1,4 +1,4 @@
-name: Jon2 Private Checkpoint Human Evaluation
+name: Jon2 Private Checkpoint Human Evaluation # UTF-8 sampling regression recheck
 
 on:
   push:
