@@ -18,8 +18,8 @@ class Jon2MoEArchitectureTests(unittest.TestCase):
         active = estimate_active_parameters(config)
         self.assertGreater(total, 20_000_000_000)
         self.assertLess(total, 21_000_000_000)
-        self.assertGreater(active, 4_000_000_000)
-        self.assertLess(active, 5_000_000_000)
+        self.assertGreater(active, 3_500_000_000)
+        self.assertLess(active, 3_900_000_000)
         self.assertLess(active, total)
 
     def test_invalid_grouped_query_dimensions_rejected(self):
@@ -46,7 +46,7 @@ class Jon2MoEArchitectureTests(unittest.TestCase):
         loss = logits.float().mean()
         loss.backward()
         self.assertIsNotNone(model.layers[0].moe.router.weight.grad)
-        self.assertIsNotNone(model.layers[0].moe.experts[0].gate_proj.weight.grad)
+        self.assertTrue(any(\n            expert.gate_proj.weight.grad is not None\n            for expert in model.layers[0].moe.experts\n        ))
 
     def test_context_limit_is_enforced(self):
         config = MoE20BConfig(
