@@ -15,7 +15,7 @@ from model_profiles import PROFILES, describe_profile, list_profiles
 app = FastAPI(
     title="Jon2 AI API",
     description="API for the original, project-owned Jon2 language model with persistent conversation memory.",
-    version="1.4.0",
+    version="1.5.0",
 )
 
 app.include_router(jais2_router)
@@ -108,6 +108,9 @@ def health():
         "model_status": model_status,
         "chat_requires_model_checkpoint": True,
         "conversation_memory": "sqlite",
+        "memory_retrieval": "arabic_normalized_bm25_lexical",
+        "memory_recent_context_turns": 8,
+        "memory_long_term_scan_limit": 200,
     }
 
 
