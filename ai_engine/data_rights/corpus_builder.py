@@ -80,36 +80,40 @@ def build_corpus(manifest_path: str | Path, data_root: str | Path,
     if destination == manifest_path.parent or manifest_path.parent in destination.parents:
         raise ValueError("Private corpus output must not be written inside the Git repository.")
     sources = load_approved_sources(manifest_path)
-    documents: list[dict] = []
+    train_rows, validation_rows = [], []
     source_summaries = []
     for source in sources:
+        split = source.get("split")
+        if split not in {"train", "validation"}:
+            raise ValueError(f"Source {source.get('dataset_id')} must declare split='train' or split='validation'.")
         path = _safe_source_path(root, source.get("local_path"))
         actual_hash = sha256_file(path)
         if actual_hash != source["content_hash_sha256"]:
             raise ValueError(f"SHA-256 mismatch for approved source {source['dataset_id']}.")
-        count_before = len(documents)
+        target = train_rows if split == "train" else validation_rows
+        count_before = len(target)
+        seen_hashes = set()
         for text in _read_documents(path):
-            documents.append({
+            text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
+            if text_hash in seen_hashes:
+                continue
+            seen_hashes.add(text_hash)
+            target.append({
                 "text": text,
                 "source_id": source["dataset_id"],
                 "source_sha256": actual_hash,
             })
         source_summaries.append({
             "dataset_id": source["dataset_id"],
+            "split": split,
             "sha256": actual_hash,
-            "documents": len(documents) - count_before,
+            "documents": len(target) - count_before,
         })
-    if not documents:
-        raise ValueError("No approved source documents found; refusing to create an empty corpus.")
-    # Stable split by source+text hash so repeated builds produce identical assignments.
+    if not train_rows or not validation_rows:
+        raise ValueError("At least one approved source assigned to each of train and validation is required.")
     train_path = destination / "train.jsonl"
     validation_path = destination / "validation.jsonl"
     destination.mkdir(parents=True, exist_ok=True)
-    train_rows, validation_rows = [], []
-    for row in documents:
-        key = hashlib.sha256((row["source_id"] + "\\0" + row["text"]).encode("utf-8")).digest()
-        target = validation_rows if key[0] < 26 else train_rows
-        target.append(row)
     if not train_rows or not validation_rows:
         raise ValueError("Corpus must produce non-empty train and validation splits; add more approved documents.")
     _atomic_jsonl(train_path, train_rows)
