@@ -10,11 +10,12 @@ from chat_engine import generate_reply, model_is_ready
 import chat_memory
 from external_models.jais2_routes import router as jais2_router
 from compute.routes import router as compute_router
+from model_profiles import PROFILES, describe_profile, list_profiles
 
 app = FastAPI(
     title="Jon2 AI API",
     description="API for the original, project-owned Jon2 language model with persistent conversation memory.",
-    version="1.3.0",
+    version="1.4.0",
 )
 
 app.include_router(jais2_router)
@@ -123,6 +124,32 @@ def readiness():
             },
         )
     return {"project": "Jon2 AI", "status": "ready", "chat_ready": True}
+
+
+
+@app.get("/api/model/profiles")
+def model_profiles():
+    """List architecture presets; this endpoint never allocates or trains a model."""
+    return {
+        "project": "Jon2 AI",
+        "status": "configuration_only",
+        "weights_created": False,
+        "profiles": list_profiles(),
+    }
+
+
+@app.get("/api/model/profiles/{profile_name}")
+def model_profile(profile_name: str):
+    """Describe one known profile without starting a training job."""
+    try:
+        return {
+            "project": "Jon2 AI",
+            "status": "configuration_only",
+            "weights_created": False,
+            "profile": describe_profile(profile_name),
+        }
+    except ValueError as error:
+        raise HTTPException(status_code=404, detail=str(error))
 
 
 @app.get("/api/memory/{session_id}")
