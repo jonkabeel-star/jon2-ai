@@ -82,6 +82,7 @@ def build_corpus(manifest_path: str | Path, data_root: str | Path,
     sources = load_approved_sources(manifest_path)
     train_rows, validation_rows = [], []
     source_summaries = []
+    global_seen_hashes = set()
     for source in sources:
         split = source.get("split")
         if split not in {"train", "validation"}:
@@ -92,12 +93,11 @@ def build_corpus(manifest_path: str | Path, data_root: str | Path,
             raise ValueError(f"SHA-256 mismatch for approved source {source['dataset_id']}.")
         target = train_rows if split == "train" else validation_rows
         count_before = len(target)
-        seen_hashes = set()
         for text in _read_documents(path):
             text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
-            if text_hash in seen_hashes:
+            if text_hash in global_seen_hashes:
                 continue
-            seen_hashes.add(text_hash)
+            global_seen_hashes.add(text_hash)
             target.append({
                 "text": text,
                 "source_id": source["dataset_id"],
