@@ -129,6 +129,7 @@ jobs:
             test_chat_engine \
             test_model_profiles \
             test_large_model_preflight \
+            test_moe_20b \
             compute.test_resource_probe \
             compute.test_worker_registry \
             compute.test_worker_agent \
