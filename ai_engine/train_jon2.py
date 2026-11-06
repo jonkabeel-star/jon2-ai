@@ -58,7 +58,7 @@ def _training_plan(args):
     )
     plan = {name: getattr(args, name) for name in names}
     plan["validation_split_algorithm"] = "seeded_paragraph_blocks_v1"
-    if getattr(args, "minimum_tokens_per_parameter", 0) > 0:
+    if getattr(args,  0) > 0:
         plan["minimum_tokens_per_parameter"] = args.minimum_tokens_per_parameter
     return plan
 
