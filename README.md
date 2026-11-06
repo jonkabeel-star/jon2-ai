@@ -22,7 +22,7 @@ The static chat interface can call the original FastAPI model API when a backend
 
 The chat must remain unavailable until a real Jon2 checkpoint passes the project's Arabic-output checks and human review. A running API alone does not mean the model is ready. The browser client checks `/api/health`, displays the difference between API liveness and model readiness, and posts each message with a browser-generated UUID `session_id` to `/api/chat`; the FastAPI service stores the exchange in its private SQLite memory. The client accepts only an HTTPS API origin (HTTP is allowed for localhost development), and the backend CORS allowlist includes the GitHub Pages origin.
 
-For GitHub Pages, define `window.JON2_API_BASE_URL = "https://YOUR-DEPLOYED-API-HOST"` in a small configuration script loaded before the inline website script. Replace the example with the actual HTTPS origin after deployment; do not commit credentials or private tokens. Until an owner deploys the API and configures that origin, the GitHub Pages site correctly reports that no backend is connected.
+For GitHub Pages, edit the single setting in the root `jon2-config.js` file to `window.JON2_API_BASE_URL = "https://YOUR-DEPLOYED-API-HOST";` after the API is deployed. The file is loaded before the chat client, accepts only an HTTPS origin (or localhost HTTP for development), and must contain no credentials or private tokens. Until an owner deploys the API and configures that origin, the GitHub Pages site correctly reports that no backend is connected.
 
 ## Hosting boundaries
 
