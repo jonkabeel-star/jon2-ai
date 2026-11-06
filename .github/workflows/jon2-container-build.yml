@@ -131,6 +131,7 @@ jobs:
             test_large_model_preflight \
             test_moe_20b \
             test_moe_training \
+            test_data_rights_gate \
             compute.test_resource_probe \
             compute.test_worker_registry \
             compute.test_worker_agent \
