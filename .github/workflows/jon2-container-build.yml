@@ -132,6 +132,7 @@ jobs:
             test_moe_20b \
             test_moe_training \
             test_data_rights_gate \
+            test_corpus_builder \
             compute.test_resource_probe \
             compute.test_worker_registry \
             compute.test_worker_agent \
