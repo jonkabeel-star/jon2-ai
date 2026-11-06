@@ -127,6 +127,7 @@ jobs:
             test_api \
             test_chat_memory \
             test_chat_engine \
+            test_model_profiles \
             compute.test_resource_probe \
             compute.test_worker_registry \
             compute.test_worker_agent \
