@@ -111,7 +111,11 @@ def generate_reply(message: str, history=None, memories=None) -> str:
         raise ValueError("اكتب رسالتك أولًا.")
 
     load_runtime()
-    prompt = build_conversation_prompt(message, history, memories, tokenizer=_tokenizer, context=_model.context)
+    prompt = build_conversation_prompt(
+        message, history, memories,
+        tokenizer=_tokenizer if callable(getattr(_tokenizer, "encode", None)) else None,
+        context=getattr(_model, "context", 128),
+    )
     full_text = generate(
         _model,
         _tokenizer,
