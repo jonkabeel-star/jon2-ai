@@ -83,6 +83,20 @@ class ApiHealthTests(unittest.TestCase):
                 self.assertEqual(response["session_id"], sid)
                 self.assertEqual(main.memory_status(sid)["message_count"], 2)
 
+    def test_failed_generation_does_not_store_an_orphan_user_turn(self):
+        sid = "123e4567-e89b-42d3-a456-426614174000"
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.dict(os.environ, {
+                "JON2_CHAT_RELEASE_APPROVED": "true",
+                "JON2_MEMORY_DB_PATH": str(Path(directory) / "memory.sqlite3"),
+            }, clear=False), patch(
+                "main.generate_reply", side_effect=RuntimeError("inference failed")
+            ):
+                with self.assertRaises(HTTPException) as caught:
+                    main.chat(main.ChatRequest(message="سؤال تجريبي", session_id=sid))
+                self.assertEqual(caught.exception.status_code, 503)
+                self.assertEqual(main.memory_status(sid)["message_count"], 0)
+
     def test_model_profiles_endpoint_is_configuration_only(self):
         result = main.model_profiles()
         self.assertEqual(result["status"], "configuration_only")
