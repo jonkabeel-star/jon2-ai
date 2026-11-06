@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "policy": {
+    "wikipedia": "blocked",
+    "cc_by_sa": "blocked",
+    "unknown_or_missing_license": "blocked",
+    "training_permission_required": true,
+    "source_level_provenance_required": true,
+    "human_approval_required": true
+  },
+  "approved_sources": []
+}
