@@ -32,7 +32,7 @@ class LargeModelPreflightTests(unittest.TestCase):
                 estimate_storage_gib(value, 2)
 
     def test_rejects_invalid_storage_width(self):
-        for value in (0, -1, float("nan")):
+        for value in (0, -1, float("nan"), float("inf"), True):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 estimate_storage_gib(TARGET_PARAMETERS, value)
 
