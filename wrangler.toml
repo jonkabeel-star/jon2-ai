@@ -1,4 +1,4 @@
-name = "jon2-cloud-api"
+name = "jon2-ai"
 main = "cloudflare/worker.py"
 compatibility_date = "2026-11-06"
 compatibility_flags = ["python_workers"]
