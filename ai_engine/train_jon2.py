@@ -55,7 +55,6 @@ def _training_plan(args):
         "validation_fraction", "eval_steps", "eval_every", "patience",
         "min_delta", "grad_clip", "minimum_chars", "tokenizer_vocab_size",
         "tokenizer_min_frequency", "seed", "no_amp",
-        "minimum_tokens_per_parameter",
     )
     plan = {name: getattr(args, name) for name in names}
     plan["validation_split_algorithm"] = "seeded_paragraph_blocks_v1"
