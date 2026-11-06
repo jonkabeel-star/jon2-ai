@@ -110,10 +110,21 @@ def recent_messages(session_id: str, limit: int = 8, path: Path | None = None) -
     return [{"role": row["role"], "content": row["content"]} for row in reversed(rows)]
 
 
+def _normalize_arabic(text: str) -> str:
+    normalized = unicodedata.normalize("NFKC", str(text or "")).lower()
+    normalized = re.sub(r"[\u064b-\u065f\u0670\u0640]", "", normalized)
+    return normalized.translate(str.maketrans({
+        "أ": "ا", "إ": "ا", "آ": "ا", "ٱ": "ا", "ى": "ي",
+    }))
+
+
+_NORMALIZED_STOPWORDS = {_normalize_arabic(word) for word in STOPWORDS}
+
+
 def _terms(text: str) -> set[str]:
-    normalized = unicodedata.normalize("NFKC", text).lower()
+    normalized = _normalize_arabic(text)
     tokens = re.findall(r"[\u0621-\u064a\u0660-\u0669a-z0-9]{2,}", normalized)
-    return {token for token in tokens if token not in STOPWORDS}
+    return {token for token in tokens if token not in _NORMALIZED_STOPWORDS}
 
 
 def relevant_memories(session_id: str, query: str, limit: int = 4, path: Path | None = None) -> list[dict]:
