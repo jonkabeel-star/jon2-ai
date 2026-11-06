@@ -1,6 +1,6 @@
 """Training primitives and hard admission gates for Jon2 MoE."""
 from __future__ import annotations
-import hashlib, os, random, tempfile
+import hashlib, math, os, random, tempfile
 from pathlib import Path
 import torch
 import torch.nn.functional as F
@@ -8,7 +8,7 @@ import torch.nn.functional as F
 def validate_corpus_scale(token_count: int, parameter_count: int, minimum_ratio: float = 10.0) -> float:
     if type(token_count) is not int or token_count <= 0 or type(parameter_count) is not int or parameter_count <= 0:
         raise ValueError("Token and parameter counts must be positive integers.")
-    if isinstance(minimum_ratio, bool) or not isinstance(minimum_ratio, (int, float)) or minimum_ratio <= 0:
+    if isinstance(minimum_ratio, bool) or not isinstance(minimum_ratio, (int, float)) or not math.isfinite(minimum_ratio) or minimum_ratio <= 0:
         raise ValueError("minimum_ratio must be positive.")
     ratio = token_count / parameter_count
     if ratio < minimum_ratio:
@@ -17,6 +17,8 @@ def validate_corpus_scale(token_count: int, parameter_count: int, minimum_ratio:
 
 def validate_20b_training_hardware(min_gpu_count: int = 8, min_gpu_memory_gib: float = 80.0) -> dict:
     """Inventory only; never allocates tensors or provisions hardware."""
+    if type(min_gpu_count) is not int or min_gpu_count < 1 or not isinstance(min_gpu_memory_gib, (int, float)) or isinstance(min_gpu_memory_gib, bool) or not math.isfinite(min_gpu_memory_gib) or min_gpu_memory_gib <= 0:
+        raise ValueError("GPU count and memory requirements must be positive finite values.")
     if not torch.cuda.is_available():
         raise RuntimeError("20B training blocked: no CUDA GPUs are visible.")
     count = torch.cuda.device_count()
@@ -89,6 +91,8 @@ def save_training_checkpoint(path: str | Path, *, model, optimizer, step: int, c
     for label, digest in (("corpus_sha256", corpus_sha256), ("tokenizer_sha256", tokenizer_sha256)):
         if not isinstance(digest, str) or len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
             raise ValueError(f"{label} must be a lowercase SHA-256 hex digest.")
+    if torch.distributed.is_available() and torch.distributed.is_initialized() and torch.distributed.get_world_size() > 1:
+        raise RuntimeError("Multi-rank checkpoint coordination is not implemented yet; refusing an unsafe partial checkpoint.")
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     state = {"format": "jon2_moe_training_checkpoint_v1", "model_state": model.state_dict(), "optimizer_state": optimizer.state_dict(), "step": step, "tokens_seen": tokens_seen, "config": config, "corpus_sha256": corpus_sha256, "tokenizer_sha256": tokenizer_sha256, "python_rng_state": random.getstate(), "torch_rng_state": torch.get_rng_state(), "cuda_rng_state_all": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None}
@@ -107,6 +111,8 @@ def save_training_checkpoint(path: str | Path, *, model, optimizer, step: int, c
 
 def load_training_checkpoint(path: str | Path, *, model, optimizer, expected_config: dict, corpus_sha256: str, tokenizer_sha256: str) -> dict:
     """Restore only a trusted checkpoint produced by Jon2."""
+    if torch.distributed.is_available() and torch.distributed.is_initialized() and torch.distributed.get_world_size() > 1:
+        raise RuntimeError("Multi-rank checkpoint restore is not implemented yet.")
     checkpoint = torch.load(path, map_location="cpu", weights_only=False)
     if checkpoint.get("format") != "jon2_moe_training_checkpoint_v1":
         raise ValueError("Unsupported checkpoint format.")
