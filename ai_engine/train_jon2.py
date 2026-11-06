@@ -18,6 +18,7 @@ from torch import nn
 from jon2_core import Jon2Transformer, _batch, _estimate_loss, read_corpus
 from tokenizer import ByteBPETokenizer
 from source_approval import validate_source_approvals
+from model_profiles import PROFILES, describe_profile
 
 
 def split_corpus_blocks(corpus: str, validation_fraction: float, seed: int):
@@ -291,8 +292,9 @@ def main():
     parser = argparse.ArgumentParser(description="Train Jon2 with modern training safeguards.")
     parser.add_argument("--data", default="ai_engine/training_data")
     parser.add_argument("--approval-manifest", default="ai_engine/training_data/source_approvals.json")
-    parser.add_argument("--output", default="ai_engine/checkpoints/jon2-small.pt")
-    parser.add_argument("--last-checkpoint", default="ai_engine/checkpoints/jon2-last.pt")
+    parser.add_argument("--profile", choices=sorted(PROFILES), default="", help="Select a scalable Jon2 architecture preset.")
+    parser.add_argument("--output", default=None, help="Best checkpoint path; profile-specific path is selected by default.")
+    parser.add_argument("--last-checkpoint", default=None, help="Resumable checkpoint path; profile-specific path is selected by default.")
     parser.add_argument("--resume", default="")
     parser.add_argument("--steps", type=int, default=10000)
     parser.add_argument("--batch-size", type=int, default=16)
@@ -317,6 +319,28 @@ def main():
     parser.add_argument("--no-amp", action="store_true")
     parser.add_argument("--keep-last", action="store_true")
     args = parser.parse_args()
+
+    if args.profile:
+        selected = describe_profile(args.profile)
+        args.width = selected["width"]
+        args.heads = selected["heads"]
+        args.layers = selected["layers"]
+        args.context = selected["context"]
+        args.batch_size = selected["batch_size"]
+        args.tokenizer_vocab_size = selected["tokenizer_vocab_size"]
+        print(
+            f"Selected profile={args.profile} | "
+            f"estimated_parameters={selected['estimated_parameters']:,} | "
+            f"fp32_weights_gib={selected['estimated_fp32_weights_gib']}"
+        )
+        print("Profile selection configures a new model; it does not create trained weights.")
+
+    if args.output is None:
+        suffix = args.profile or "small"
+        args.output = f"ai_engine/checkpoints/jon2-{suffix}.pt"
+    if args.last_checkpoint is None:
+        suffix = args.profile or "small"
+        args.last_checkpoint = f"ai_engine/checkpoints/jon2-{suffix}-last.pt"
 
     positive = [
         args.steps, args.batch_size, args.context, args.width, args.heads,
