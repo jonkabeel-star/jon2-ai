@@ -171,13 +171,24 @@ class SparseMoE(nn.Module):
             SwiGLUExpert(config.hidden_size, config.expert_intermediate_size)
             for _ in range(config.num_experts)
         ])
+        self.last_aux_loss = torch.tensor(0.0)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         batch, sequence, hidden = x.shape
         flat = x.reshape(-1, hidden)
         routing = self.router(flat).float()
+        router_probabilities = F.softmax(routing, dim=-1)
         weights, indices = torch.topk(routing, self.top_k, dim=-1)
         weights = F.softmax(weights, dim=-1).to(dtype=x.dtype)
+        # Switch-style load-balancing auxiliary loss discourages expert collapse.
+        assignment_fraction = F.one_hot(indices, num_classes=self.num_experts).float()
+        assignment_fraction = assignment_fraction.sum(dim=(0, 1)) / max(
+            1, flat.shape[0] * self.top_k
+        )
+        mean_probability = router_probabilities.mean(dim=0)
+        self.last_aux_loss = self.num_experts * torch.sum(
+            assignment_fraction * mean_probability
+        )
         output = torch.zeros_like(flat)
 
         # Dispatch only tokens selected for each expert. No unselected expert runs.
@@ -232,6 +243,13 @@ class Jon2MoEForCausalLM(nn.Module):
         if self.lm_head is None:
             return F.linear(hidden, self.embed_tokens.weight)
         return self.lm_head(hidden)
+
+    @property
+    def router_aux_loss(self) -> torch.Tensor:
+        losses = [layer.moe.last_aux_loss for layer in self.layers]
+        if not losses:
+            return torch.zeros((), device=self.embed_tokens.weight.device)
+        return torch.stack(losses).mean()
 
     def architecture_report(self) -> dict:
         return {
