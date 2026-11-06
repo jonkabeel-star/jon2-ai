@@ -11,7 +11,12 @@ BYTES_PER_GIB = 1024 ** 3
 def estimate_storage_gib(parameters: int, bytes_per_parameter: float) -> float:
     if type(parameters) is not int or parameters <= 0:
         raise ValueError("parameters must be a positive integer")
-    if not isinstance(bytes_per_parameter, (int, float)) or bytes_per_parameter <= 0:
+    if (
+        isinstance(bytes_per_parameter, bool)
+        or not isinstance(bytes_per_parameter, (int, float))
+        or not math.isfinite(bytes_per_parameter)
+        or bytes_per_parameter <= 0
+    ):
         raise ValueError("bytes_per_parameter must be positive")
     return parameters * bytes_per_parameter / BYTES_PER_GIB
 
