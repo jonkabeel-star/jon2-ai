@@ -53,18 +53,20 @@ def load_runtime() -> None:
     _model, _tokenizer, _device = load_model(str(CHECKPOINT_PATH))
 
 
-def build_conversation_prompt(message: str, history=None, memories=None) -> str:
-    """Build a compact prompt that fits the original model's short context."""
-    sections = []
-    relevant = []
+def build_conversation_prompt(message: str, history=None, memories=None, tokenizer=None, context=None) -> str:
+    """Build a prompt that fits the checkpoint's actual token context."""
+    question = str(message).strip()
+    if not question:
+        raise ValueError("اكتب رسالتك أولًا.")
+
+    memory_items = []
     for item in (memories or [])[:2]:
         role = item.get("role") if isinstance(item, dict) else None
         content = item.get("content") if isinstance(item, dict) else None
         if role in {"user", "assistant"} and isinstance(content, str) and content.strip():
             label = "المستخدم" if role == "user" else "Jon2"
-            relevant.append(f"{label}: {content.strip()[-90:]}")
-    if relevant:
-        sections.append("ذاكرة سابقة:\n" + "\n".join(relevant))
+            memory_items.append(f"{label}: {content.strip()[-90:]}")
+
     turns = []
     for item in (history or [])[-4:]:
         role = item.get("role") if isinstance(item, dict) else None
@@ -72,13 +74,36 @@ def build_conversation_prompt(message: str, history=None, memories=None) -> str:
         if role not in {"user", "assistant"} or not isinstance(content, str):
             continue
         content = content.strip()
-        if not content:
+        if content:
+            label = "المستخدم" if role == "user" else "Jon2"
+            turns.append(f"{label}: {content[-90:]}")
+
+    # Reserve the final token for the model's answer marker. Drop oldest
+    # context first; only shorten the current question if it alone is too long.
+    token_limit = max(8, int(context or getattr(_model, "context", 128)))
+    while True:
+        sections = []
+        if memory_items:
+            sections.append("ذاكرة سابقة:\n" + "\n".join(memory_items))
+        dialogue = list(turns) + [f"المستخدم: {question}\nJon2:"]
+        sections.append("\n".join(dialogue))
+        prompt = "\n".join(sections)
+        if tokenizer is None or len(tokenizer.encode(prompt)) <= token_limit - 1:
+            return prompt
+        if turns:
+            turns.pop(0)
             continue
-        label = "المستخدم" if role == "user" else "Jon2"
-        turns.append(f"{label}: {content[-90:]}")
-    turns.append(f"المستخدم: {message.strip()[-220:]}")
-    sections.append("\n".join(turns) + "\nJon2:")
-    return "\n".join(sections)
+        if memory_items:
+            memory_items.pop(0)
+            continue
+        if len(question) > 8:
+            question = question[-max(8, len(question) // 2):]
+            continue
+        # Last-resort safe prompt still includes a compact form of the question.
+        compact = f"سؤال: {question[-4:]}\nJon2:"
+        if len(tokenizer.encode(compact)) > token_limit - 1:
+            raise ValueError("نافذة سياق النموذج أصغر من أن تستوعب السؤال.")
+        return compact
 
 
 def generate_reply(message: str, history=None, memories=None) -> str:
