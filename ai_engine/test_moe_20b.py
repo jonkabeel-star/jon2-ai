@@ -9,7 +9,7 @@ if torch is not None:
     from moe_20b import (
         Jon2MoEForCausalLM,
         MoE20BConfig,
-        default_20b_config,
+        default_20b_config,\n        default_20b_report,
         estimate_active_parameters,
         estimate_moe_parameters,
     )
@@ -26,6 +26,11 @@ class Jon2MoEArchitectureTests(unittest.TestCase):
         self.assertGreater(active, 3_500_000_000)
         self.assertLess(active, 3_900_000_000)
         self.assertLess(active, total)
+        report = default_20b_report()
+        self.assertEqual(report["total_parameters"], total)
+        self.assertEqual(report["weights_created"], False)
+        self.assertEqual(report["weights_trained"], False)
+        self.assertAlmostEqual(report["weights_only_gib"]["bf16_fp16"], 38.38, places=1)
 
     def test_invalid_grouped_query_dimensions_rejected(self):
         config = MoE20BConfig(
