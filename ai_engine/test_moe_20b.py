@@ -9,7 +9,8 @@ if torch is not None:
     from moe_20b import (
         Jon2MoEForCausalLM,
         MoE20BConfig,
-        default_20b_config,\n        default_20b_report,
+        default_20b_config,
+        default_20b_report,
         estimate_active_parameters,
         estimate_moe_parameters,
     )
