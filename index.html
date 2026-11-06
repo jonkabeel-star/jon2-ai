@@ -123,22 +123,25 @@ brandSub:"منصتك للإبداع بالذكاء الاصطناعي",toolsNav:
 en:{
 brandSub:"Your AI-powered creative space",toolsNav:"Tools",eyebrow:"A creative space open to everyone",heroLine1:"Turn your ideas into",heroLine2:"creativity with Jon2 AI",heroText:"Explore AI tools for content, images and videos. Start with an idea and make room for creativity.",explore:"Explore tools →",tryChat:"Try the assistant",toolsTitle:"Creative tools",toolsDesc:"Your creative ideas, all in one place",imageTitle:"Image generation",imageDesc:"Turn your prompts into creative image concepts.",videoTitle:"Video generation",videoDesc:"Create video scenes and stories from your ideas.",audioTitle:"Audio & voice",audioDesc:"Audio tools and voice-over assistance.",storyTitle:"Story writing",storyDesc:"Develop ideas into stories and scripts.",soon:"Coming soon",assistantHeading:"Jon2 AI Assistant",assistantDesc:"Your conversation space",assistantName:"AI Assistant",offline:"Backend currently offline",apiOnline:"Backend connected — model is not ready yet",modelReady:"Jon2 model is ready",requestFailed:"Could not get a reply from the Jon2 AI server.",clear:"Clear chat",welcome:"Welcome! The chat interface is ready. AI replies will be enabled when the real Jon2 AI model is connected.",placeholder:"Type your message here...",send:"Send ↑",chatNote:"AI chat is not active yet; we will not show fake replies.",adPlaceholder:"Future ad space — enabled only after Google AdSense approval",footerText:"Independent creative platform — in development",backendError:"The Jon2 AI backend has not been deployed yet. Please try again after the real server is running."
 }};
-const STORAGE_KEY = "jon2_ai_site_state_v1";
+const STORAGE_KEY = "jon2_ai_site_state_v2";
+const LEGACY_STORAGE_KEY = "jon2_ai_site_state_v1";
 const MAX_SAVED_MESSAGES = 100;
 // Set window.JON2_API_BASE_URL in the page before this script when the API host is deployed.
-const API_BASE_URL = String(window.JON2_API_BASE_URL || "").replace(/\/+$/, "");
+const API_BASE_URL = String(window.JON2_API_BASE_URL || (location.hostname.endsWith("github.io") ? "" : location.origin)).replace(/\/+$/, "");
 let lang = "ar";
 let chatMessages = [];
 let savedDraft = "";
 let apiStatusKey = "offline";
+let sessionId = "";
 
 function loadSavedState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (!raw) { sessionId = crypto.randomUUID(); return; }
     const state = JSON.parse(raw);
     if (!state || state.version !== 1) return;
     if (state.lang === "ar" || state.lang === "en") lang = state.lang;
+    sessionId = typeof state.sessionId === "string" && /^[0-9a-f-]{36}$/i.test(state.sessionId) ? state.sessionId : crypto.randomUUID();
     if (Array.isArray(state.messages)) {
       chatMessages = state.messages
         .filter(item =>
@@ -158,7 +161,8 @@ function loadSavedState() {
 function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      version: 1,
+      version: 2,
+      sessionId,
       lang,
       messages: chatMessages.slice(-MAX_SAVED_MESSAGES),
       draft: document.getElementById("input").value.slice(0, 2000)
@@ -209,7 +213,16 @@ document.getElementById("language").addEventListener("click", () => {
   saveState();
 });
 
-document.getElementById("clear").addEventListener("click", () => {
+document.getElementById("clear").addEventListener("click", async () => {
+  const oldSession = sessionId;
+  if (API_BASE_URL && oldSession) {
+    try {
+      await fetch(API_BASE_URL + "/api/memory/" + encodeURIComponent(oldSession), { method: "DELETE" });
+    } catch (error) {
+      console.warn("Jon2 memory could not be cleared on the server.", error);
+    }
+  }
+  sessionId = crypto.randomUUID();
   chatMessages = [];
   addMessage(translations[lang].welcome, "bot");
 });
@@ -259,21 +272,13 @@ document.getElementById("form").addEventListener("submit", async event => {
   send.disabled = true;
   send.setAttribute("aria-busy", "true");
   try {
-    const history = chatMessages
-      .filter(item => item.kind === "user" || item.kind === "assistant")
-      .slice(0, -1)
-      .slice(-8)
-      .map(item => ({
-        role: item.kind === "user" ? "user" : "assistant",
-        content: item.text.slice(0, 2000)
-      }));
     const response = await fetch(API_BASE_URL + "/api/chat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json"
       },
-      body: JSON.stringify({ message: value, history }),
+      body: JSON.stringify({ message: value, session_id: sessionId }),
       signal: AbortSignal.timeout(60000)
     });
     const payload = await response.json().catch(() => ({}));
