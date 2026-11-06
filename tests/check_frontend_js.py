@@ -36,6 +36,19 @@ def check_inline_scripts(html_path: Path) -> int:
     if not source:
         raise ValueError(f"No inline JavaScript found in {html_path}.")
 
+    required_contract = (
+        "window.JON2_API_BASE_URL",
+        '"/api/health"',
+        '"/api/chat"',
+        "session_id: sessionId",
+        "health.chat_ready",
+        "apiNotReadyNote",
+        "AbortSignal.timeout",
+    )
+    missing = [marker for marker in required_contract if marker not in source]
+    if missing:
+        raise AssertionError("Frontend chat API contract is incomplete: " + ", ".join(missing))
+
     with tempfile.NamedTemporaryFile(
         mode="w", suffix=".js", encoding="utf-8", delete=False
     ) as handle:
