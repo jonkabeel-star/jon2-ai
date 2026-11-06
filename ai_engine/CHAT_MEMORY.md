@@ -12,6 +12,7 @@
 - Excludes the latest 8 turns from long-term retrieval to avoid duplicating
   content already supplied as recent conversation history.
 - Supplies at most 4 retrieved snippets to the current chat endpoint.
+- Commits each user/assistant exchange atomically only after generation succeeds; failed inference cannot leave an orphan user message in history.
 - Provides `GET /api/memory/{session_id}` for message counts and
   `DELETE /api/memory/{session_id}` to erase a session.
 
