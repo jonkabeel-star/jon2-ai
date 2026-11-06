@@ -133,11 +133,12 @@ def _terms(text: str) -> list[str]:
 
 def _rank_memory(query_terms: list[str], document_terms: list[str],
                  document_frequency: Counter, document_count: int,
-                 recency: float, exact_phrase: bool) -> float:
+                 average_document_length: float, recency: float,
+                 exact_phrase: bool) -> float:
     """A small BM25-style score with bounded recency and phrase boosts."""
     frequencies = Counter(document_terms)
     doc_length = len(document_terms)
-    average_length = max(1.0, sum(document_frequency.values()) / max(1, document_count))
+    average_length = max(1.0, average_document_length)
     score = 0.0
     for term in set(query_terms):
         frequency = frequencies.get(term, 0)
@@ -187,6 +188,7 @@ def relevant_memories(session_id: str, query: str, limit: int = 4,
         recency = 1.0 - index / max(1, document_count - 1)
         score = _rank_memory(
             query_terms, terms, document_frequency, document_count,
+            sum(len(item) for item in tokenized) / max(1, document_count),
             recency, normalized_query in normalized_content,
         )
         if score > 0:
