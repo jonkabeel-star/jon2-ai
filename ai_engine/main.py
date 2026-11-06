@@ -189,10 +189,11 @@ def chat(request: ChatRequest):
             # Read context before storing the current turn, preventing duplicate prompt entries.
             history = chat_memory.recent_messages(request.session_id, limit=8)
             memories = chat_memory.relevant_memories(request.session_id, message, limit=4)
-            chat_memory.add_message(request.session_id, "user", message)
         reply = generate_reply(message, history, memories)
         if request.session_id:
-            chat_memory.add_message(request.session_id, "assistant", reply)
+            # Commit both sides only after generation succeeds; failed inference
+            # must not leave an orphan user turn that repeats on the next request.
+            chat_memory.add_exchange(request.session_id, message, reply)
         return {
             "project": "Jon2 AI",
             "reply": reply,
