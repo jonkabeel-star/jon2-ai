@@ -14,7 +14,7 @@ Use a decoder-only Transformer with sparse Mixture-of-Experts (MoE) feed-forward
 
 The design is informed by public modern MoE architectures, including OpenAI's published gpt-oss-20b architecture (21B-class total parameters, approximately 3.6B active per token, 24 layers, 32 experts with top-4 routing). This is an architecture reference only: Jon2 does not copy its weights, tokenizer, training corpus, or checkpoints.
 
-## Rights policy
+## Implemented architecture code\n\n`ai_engine/moe_20b.py` now contains an experimental decoder-only MoE implementation with GQA, RoPE, RMSNorm, SwiGLU experts, top-k sparse routing, and a router load-balancing auxiliary loss. Its default configuration estimates approximately 20.61B total parameters and approximately 3.69B active parameters per token. Small configurations are unit-tested; the default 20B model is never instantiated by CI. This code creates randomly initialized parameters only when explicitly instantiated. It does not provide trained weights, tokenizer training, a distributed training runtime, or an inference service.\n\n`ai_engine/test_moe_20b.py` tests parameter estimates, routing, gradient flow, context limits, and tied embeddings using tiny test configurations.\n\n## Rights policy
 
 - No third-party checkpoint is adopted by this specification.
 - No pretrained model is downloaded.
