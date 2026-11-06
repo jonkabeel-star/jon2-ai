@@ -77,7 +77,14 @@ def build_corpus(manifest_path: str | Path, data_root: str | Path,
     destination = Path(output_dir).resolve()
     if destination == root or root in destination.parents:
         raise ValueError("Output directory must be separate from the source data root.")
-    if destination == manifest_path.parent or manifest_path.parent in destination.parents:
+    repository_root = next(
+        (parent for parent in manifest_path.parents if (parent / ".git").exists()),
+        None,
+    )
+    protected_roots = [manifest_path.parent]
+    if repository_root is not None:
+        protected_roots.append(repository_root)
+    if any(destination == protected or protected in destination.parents for protected in protected_roots):
         raise ValueError("Private corpus output must not be written inside the Git repository.")
     sources = load_approved_sources(manifest_path)
     train_rows, validation_rows = [], []
