@@ -55,6 +55,7 @@ def _training_plan(args):
         "validation_fraction", "eval_steps", "eval_every", "patience",
         "min_delta", "grad_clip", "minimum_chars", "tokenizer_vocab_size",
         "tokenizer_min_frequency", "seed", "no_amp",
+        "minimum_tokens_per_parameter",
     )
     plan = {name: getattr(args, name) for name in names}
     plan["validation_split_algorithm"] = "seeded_paragraph_blocks_v1"
@@ -151,6 +152,21 @@ def train(args):
         "dropout": args.dropout,
     }
     model = Jon2Transformer(vocab_size=tokenizer.vocab_size, **config).to(device)
+    parameter_count = sum(parameter.numel() for parameter in model.parameters())
+    corpus_tokens = len(train_data) + len(val_data)
+    tokens_per_parameter = corpus_tokens / max(1, parameter_count)
+    print(
+        f"Model parameters={parameter_count:,} | approved_corpus_tokens={corpus_tokens:,} | "
+        f"tokens_per_parameter={tokens_per_parameter:.4f}"
+    )
+    if args.minimum_tokens_per_parameter and tokens_per_parameter < args.minimum_tokens_per_parameter:
+        raise ValueError(
+            f"Insufficient approved training data for profile '{args.profile}': "
+            f"{tokens_per_parameter:.4f} tokens/parameter; "
+            f"minimum required is {args.minimum_tokens_per_parameter}. "
+            "Add diverse, rights-approved Arabic data. Do not duplicate text or lower this guard."
+        )
+
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay
     )
@@ -315,6 +331,7 @@ def main():
     parser.add_argument("--minimum-chars", type=int, default=100_000)
     parser.add_argument("--tokenizer-vocab-size", type=int, default=512)
     parser.add_argument("--tokenizer-min-frequency", type=int, default=2)
+    parser.add_argument("--minimum-tokens-per-parameter", type=float, default=None)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--no-amp", action="store_true")
     parser.add_argument("--keep-last", action="store_true")
@@ -328,12 +345,19 @@ def main():
         args.context = selected["context"]
         args.batch_size = selected["batch_size"]
         args.tokenizer_vocab_size = selected["tokenizer_vocab_size"]
+        if args.minimum_tokens_per_parameter is None:
+            args.minimum_tokens_per_parameter = 10.0
         print(
             f"Selected profile={args.profile} | "
             f"estimated_parameters={selected['estimated_parameters']:,} | "
             f"fp32_weights_gib={selected['estimated_fp32_weights_gib']}"
         )
         print("Profile selection configures a new model; it does not create trained weights.")
+
+    if args.minimum_tokens_per_parameter is None:
+        args.minimum_tokens_per_parameter = 0.0
+    if args.minimum_tokens_per_parameter < 0:
+        parser.error("minimum-tokens-per-parameter cannot be negative")
 
     if args.output is None:
         suffix = args.profile or "small"
