@@ -27,12 +27,21 @@ def sha256_file(path: Path) -> str:
 def _safe_source_path(root: Path, relative: str) -> Path:
     if not isinstance(relative, str) or not relative.strip():
         raise ValueError("Every approved source needs a local_path.")
-    candidate = (root / relative).resolve(strict=True)
+    relative_path = Path(relative)
+    if relative_path.is_absolute() or ".." in relative_path.parts:
+        raise ValueError("Source path cannot be absolute or traverse parent directories.")
+    unresolved = root / relative_path
+    cursor = root
+    for part in relative_path.parts:
+        cursor = cursor / part
+        if cursor.is_symlink():
+            raise ValueError("Training source path cannot contain symlinks.")
+    candidate = unresolved.resolve(strict=True)
     resolved_root = root.resolve(strict=True)
     if candidate == resolved_root or resolved_root not in candidate.parents:
         raise ValueError("Source path must remain inside the declared private data root.")
-    if candidate.is_symlink() or not candidate.is_file():
-        raise ValueError("Training source must be a regular, non-symlink file.")
+    if not candidate.is_file():
+        raise ValueError("Training source must be a regular file.")
     if candidate.suffix.lower() not in {".txt", ".jsonl"}:
         raise ValueError("Only UTF-8 .txt and .jsonl source files are supported.")
     return candidate
