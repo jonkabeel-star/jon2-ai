@@ -15,7 +15,7 @@ class CorpusBuilderTests(unittest.TestCase):
             ("jon2/owner-written-validation", "validation.txt", "validation", 30),
         ):
             source = root / filename
-            source.write_text("\\n".join(f"جملة عربية {split} رقم {i}" for i in range(count)), encoding="utf-8")
+            source.write_text("\n".join(f"جملة عربية {split} رقم {i}" for i in range(count)), encoding="utf-8")
             digest = hashlib.sha256(source.read_bytes()).hexdigest()
             sources.append({
                 "dataset_id": dataset_id,
@@ -46,12 +46,27 @@ class CorpusBuilderTests(unittest.TestCase):
             manifest, _ = self._manifest(root)
             output = Path(tmp) / "private-output"
             report = build_corpus(manifest, root, output)
+
             self.assertEqual(report["documents"], 130)
             self.assertEqual(report["train_documents"], 100)
             self.assertEqual(report["validation_documents"], 30)
             self.assertTrue((output / "train.jsonl").is_file())
             self.assertTrue((output / "validation.jsonl").is_file())
             self.assertFalse(report["downloaded_data"])
+
+            train_lines = (output / "train.jsonl").read_text(encoding="utf-8").splitlines()
+            validation_lines = (output / "validation.jsonl").read_text(encoding="utf-8").splitlines()
+            train_records = [json.loads(line) for line in train_lines]
+            validation_records = [json.loads(line) for line in validation_lines]
+            self.assertEqual(len(train_records), 100)
+            self.assertEqual(len(validation_records), 30)
+            self.assertTrue((output / "train.jsonl").read_bytes().endswith(b"\n"))
+            self.assertTrue((output / "validation.jsonl").read_bytes().endswith(b"\n"))
+            self.assertTrue(
+                {record["text"] for record in train_records}.isdisjoint(
+                    record["text"] for record in validation_records
+                )
+            )
 
     def test_rejects_hash_mismatch(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -72,6 +87,24 @@ class CorpusBuilderTests(unittest.TestCase):
             manifest.write_text(json.dumps(data), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "Rights review failed"):
                 build_corpus(manifest, root, Path(tmp) / "private-output")
+
+    def test_rejects_output_inside_repository_checkout(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            temp_root = Path(tmp)
+            data_root = temp_root / "private-data"
+            data_root.mkdir()
+            manifest, _ = self._manifest(data_root)
+
+            repository = temp_root / "repository"
+            (repository / ".git").mkdir(parents=True)
+            manifest_in_repo = repository / "ai_engine" / "data_rights" / "approved_sources.json"
+            manifest_in_repo.parent.mkdir(parents=True)
+            manifest_in_repo.write_text(manifest.read_text(encoding="utf-8"), encoding="utf-8")
+            output = repository / "generated-corpus"
+
+            with self.assertRaisesRegex(ValueError, "inside the Git repository"):
+                build_corpus(manifest_in_repo, data_root, output)
+            self.assertFalse(output.exists())
 
 
 if __name__ == "__main__":

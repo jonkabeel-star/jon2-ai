@@ -86,6 +86,7 @@ def build_corpus(manifest_path: str | Path, data_root: str | Path,
         protected_roots.append(repository_root)
     if any(destination == protected or protected in destination.parents for protected in protected_roots):
         raise ValueError("Private corpus output must not be written inside the Git repository.")
+
     sources = load_approved_sources(manifest_path)
     train_rows, validation_rows = [], []
     source_summaries = []
@@ -116,17 +117,18 @@ def build_corpus(manifest_path: str | Path, data_root: str | Path,
             "sha256": actual_hash,
             "documents": len(target) - count_before,
         })
+
     if not train_rows or not validation_rows:
         raise ValueError("At least one approved source assigned to each of train and validation is required.")
+
+    destination.mkdir(parents=True, exist_ok=True)
     train_path = destination / "train.jsonl"
     validation_path = destination / "validation.jsonl"
-    destination.mkdir(parents=True, exist_ok=True)
-    if not train_rows or not validation_rows:
-        raise ValueError("Corpus must produce non-empty train and validation splits; add more approved documents.")
     _atomic_jsonl(train_path, train_rows)
     _atomic_jsonl(validation_path, validation_rows)
+
     return {
-        "documents": len(documents),
+        "documents": len(train_rows) + len(validation_rows),
         "train_documents": len(train_rows),
         "validation_documents": len(validation_rows),
         "sources": source_summaries,
@@ -141,9 +143,9 @@ def build_corpus(manifest_path: str | Path, data_root: str | Path,
 def _atomic_jsonl(path: Path, rows: list[dict]) -> None:
     fd, temporary = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=path.parent)
     try:
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
             for row in rows:
-                handle.write(json.dumps(row, ensure_ascii=False) + "\\n")
+                handle.write(json.dumps(row, ensure_ascii=False) + "\n")
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temporary, path)
