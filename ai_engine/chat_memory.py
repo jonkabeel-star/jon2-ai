@@ -10,8 +10,8 @@ import os
 import re
 import sqlite3
 import unicodedata
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterable
 
 DEFAULT_DB = Path.home() / ".jon2-ai" / "memory.sqlite3"
 MAX_CONTENT_CHARS = 4000
@@ -29,14 +29,18 @@ def database_path() -> Path:
     return Path(raw).expanduser() if raw else DEFAULT_DB
 
 
-def _connect(path: Path | None = None) -> sqlite3.Connection:
+@contextmanager
+def _connect(path: Path | None = None):
     target = path or database_path()
     target.parent.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(str(target), timeout=10)
     db.row_factory = sqlite3.Row
-    db.execute("PRAGMA journal_mode=WAL")
-    db.execute("PRAGMA foreign_keys=ON")
-    return db
+    try:
+        db.execute("PRAGMA journal_mode=WAL")
+        db.execute("PRAGMA foreign_keys=ON")
+        yield db
+    finally:
+        db.close()
 
 
 def initialize(path: Path | None = None) -> None:
