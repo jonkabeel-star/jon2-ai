@@ -103,6 +103,33 @@ def add_message(session_id: str, role: str, content: str, path: Path | None = No
         )
 
 
+
+def add_exchange(session_id: str, user_content: str, assistant_content: str,
+                path: Path | None = None) -> None:
+    """Persist a complete user/assistant exchange atomically after generation succeeds."""
+    sid = _valid_session(session_id)
+    user_text = str(user_content or "").strip()
+    assistant_text = str(assistant_content or "").strip()
+    for label, value in (("user", user_text), ("assistant", assistant_text)):
+        if not value or len(value) > MAX_CONTENT_CHARS:
+            raise ValueError(f"{label} message is empty or too long.")
+    initialize(path)
+    with _connect(path) as db:
+        db.execute("INSERT OR IGNORE INTO conversations(session_id) VALUES (?)", (sid,))
+        db.executemany(
+            "INSERT INTO messages(session_id, role, content) VALUES (?,?,?)",
+            ((sid, "user", user_text), (sid, "assistant", assistant_text)),
+        )
+        db.execute(
+            """DELETE FROM messages WHERE session_id=? AND id NOT IN
+               (SELECT id FROM messages WHERE session_id=? ORDER BY id DESC LIMIT ?)""",
+            (sid, sid, MAX_MESSAGES_PER_SESSION),
+        )
+        db.execute(
+            "UPDATE conversations SET updated_at=CURRENT_TIMESTAMP WHERE session_id=?",
+            (sid,),
+        )
+
 def recent_messages(session_id: str, limit: int = 8, path: Path | None = None) -> list[dict]:
     sid = _valid_session(session_id)
     initialize(path)
