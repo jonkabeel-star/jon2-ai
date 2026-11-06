@@ -45,7 +45,7 @@ report = build_corpus(
 print(report)
 ```
 
-The output directory must be outside the Git repository and separate from the source directory. It contains `train.jsonl` and `validation.jsonl`, plus SHA-256 values in the returned report. Keep the corpus private; do not commit it or put it in the public container image.
+Each manifest source must explicitly declare `split` as `train` or `validation`; entire sources are kept in one split to avoid document-level leakage. Exact duplicate text is removed across both splits. The output directory must be outside the Git repository and separate from the source directory. It contains `train.jsonl` and `validation.jsonl`, plus SHA-256 values in the returned report. Keep the corpus private; do not commit it or put it in the public container image.
 
 ## Current project state
 
