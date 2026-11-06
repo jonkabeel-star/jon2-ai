@@ -43,10 +43,14 @@ class Jon2MoEArchitectureTests(unittest.TestCase):
         tokens = torch.randint(0, config.vocab_size, (2, 7))
         logits = model(tokens)
         self.assertEqual(tuple(logits.shape), (2, 7, config.vocab_size))
-        loss = logits.float().mean()
+        self.assertTrue(torch.isfinite(model.router_aux_loss))
+        loss = logits.float().mean() + 0.01 * model.router_aux_loss
         loss.backward()
         self.assertIsNotNone(model.layers[0].moe.router.weight.grad)
-        self.assertTrue(any(\n            expert.gate_proj.weight.grad is not None\n            for expert in model.layers[0].moe.experts\n        ))
+        self.assertTrue(any(
+            expert.gate_proj.weight.grad is not None
+            for expert in model.layers[0].moe.experts
+        ))
 
     def test_context_limit_is_enforced(self):
         config = MoE20BConfig(
@@ -59,7 +63,7 @@ class Jon2MoEArchitectureTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             model(torch.ones((1, 5), dtype=torch.long))
 
-    def test_tied_embeddings_have_no_separate_lm_head(self):
+    def test_tied_embeddings_parameter_count_matches_module(self):
         config = MoE20BConfig(
             vocab_size=32, hidden_size=16, num_layers=1,
             num_attention_heads=2, num_key_value_heads=1,
@@ -69,8 +73,8 @@ class Jon2MoEArchitectureTests(unittest.TestCase):
         model = Jon2MoEForCausalLM(config)
         self.assertIsNone(model.lm_head)
         self.assertEqual(
-            model.embed_tokens.weight.data_ptr(),
-            model.embed_tokens.weight.data_ptr(),
+            estimate_moe_parameters(config),
+            sum(parameter.numel() for parameter in model.parameters()),
         )
 
 
