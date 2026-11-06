@@ -22,7 +22,7 @@ class ApiHealthTests(unittest.TestCase):
         }, clear=False), patch("main.model_is_ready", return_value=False):
             result = main.health()
         self.assertEqual(result["status"], "online")
-        self.assertEqual(result["api_version"], "1.3.0")
+        self.assertEqual(result["api_version"], "1.4.0")
         self.assertFalse(result["chat_ready"])
         self.assertFalse(result["release_approved"])
         self.assertEqual(result["model_status"], "checkpoint_missing")
