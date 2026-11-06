@@ -1,5 +1,7 @@
 import os
 import re
+from pathlib import Path
+from fastapi.responses import FileResponse
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
@@ -49,6 +51,11 @@ class ChatRequest(BaseModel):
 
 @app.get("/")
 def home():
+    # Serve the actual website from the same Python process when packaged.
+    # This makes the browser chat call this API's own origin without a second host.
+    web_index = Path(__file__).resolve().parent.parent / "index.html"
+    if web_index.is_file():
+        return FileResponse(web_index, media_type="text/html")
     return {
         "project": "Jon2 AI",
         "status": "api_online",
