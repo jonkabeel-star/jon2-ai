@@ -17,8 +17,8 @@ def estimate_storage_gib(parameters: int, bytes_per_parameter: float) -> float:
 
 
 def estimate_adam_training_gib(parameters: int) -> float:
-    """Approximate aggregate state only: 16 bytes/parameter, excluding activations."""
-    return estimate_storage_gib(parameters, 16)
+    """Approximate mixed-precision Adam state: 18 bytes/parameter, excluding activations."""
+    return estimate_storage_gib(parameters, 18)
 
 
 def build_report(parameters: int = TARGET_PARAMETERS) -> dict:
