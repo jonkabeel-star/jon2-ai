@@ -1,21 +1,25 @@
 """Persistent, private-by-session conversation memory for Jon2.
 
-Stores actual user/assistant turns in SQLite and retrieves relevant past turns
-with a transparent lexical ranking. This is memory, not a claim of model
-training or semantic embedding quality.
+Stores actual user/assistant turns in SQLite. Retrieval uses a bounded,
+Arabic-normalized BM25-style lexical ranker; it is not semantic embedding
+search and does not train or modify model weights.
 """
 from __future__ import annotations
 
+import math
 import os
 import re
 import sqlite3
 import unicodedata
+from collections import Counter
 from contextlib import contextmanager
 from pathlib import Path
 
 DEFAULT_DB = Path.home() / ".jon2-ai" / "memory.sqlite3"
 MAX_CONTENT_CHARS = 4000
 MAX_MESSAGES_PER_SESSION = 500
+RETRIEVAL_SCAN_LIMIT = 200
+RECENT_CONTEXT_RESERVE = 8
 STOPWORDS = {
     "في", "من", "على", "الى", "إلى", "عن", "مع", "ده", "دي", "دا", "هو",
     "هي", "انا", "أنا", "انت", "أنت", "كان", "كانت", "يكون", "اللي",
@@ -121,13 +125,38 @@ def _normalize_arabic(text: str) -> str:
 _NORMALIZED_STOPWORDS = {_normalize_arabic(word) for word in STOPWORDS}
 
 
-def _terms(text: str) -> set[str]:
+def _terms(text: str) -> list[str]:
     normalized = _normalize_arabic(text)
     tokens = re.findall(r"[\u0621-\u064a\u0660-\u0669a-z0-9]{2,}", normalized)
-    return {token for token in tokens if token not in _NORMALIZED_STOPWORDS}
+    return [token for token in tokens if token not in _NORMALIZED_STOPWORDS]
 
 
-def relevant_memories(session_id: str, query: str, limit: int = 4, path: Path | None = None) -> list[dict]:
+def _rank_memory(query_terms: list[str], document_terms: list[str],
+                 document_frequency: Counter, document_count: int,
+                 recency: float, exact_phrase: bool) -> float:
+    """A small BM25-style score with bounded recency and phrase boosts."""
+    frequencies = Counter(document_terms)
+    doc_length = len(document_terms)
+    average_length = max(1.0, sum(document_frequency.values()) / max(1, document_count))
+    score = 0.0
+    for term in set(query_terms):
+        frequency = frequencies.get(term, 0)
+        if not frequency:
+            continue
+        df = document_frequency[term]
+        inverse_frequency = math.log(1.0 + (document_count - df + 0.5) / (df + 0.5))
+        length_norm = frequency * 2.2 / (
+            frequency + 1.2 * (0.25 + 0.75 * doc_length / average_length)
+        )
+        score += inverse_frequency * length_norm
+    if exact_phrase:
+        score *= 1.35
+    return score * (1.0 + 0.12 * recency)
+
+
+def relevant_memories(session_id: str, query: str, limit: int = 4,
+                       path: Path | None = None) -> list[dict]:
+    """Retrieve older long-term turns, excluding the recent window already sent as history."""
     sid = _valid_session(session_id)
     query_terms = _terms(query)
     if not query_terms:
@@ -135,20 +164,37 @@ def relevant_memories(session_id: str, query: str, limit: int = 4, path: Path | 
     initialize(path)
     with _connect(path) as db:
         rows = db.execute(
-            "SELECT role,content,id FROM messages WHERE session_id=? ORDER BY id DESC LIMIT 200",
-            (sid,),
+            "SELECT role,content,id FROM messages WHERE session_id=? ORDER BY id DESC LIMIT ?",
+            (sid, RETRIEVAL_SCAN_LIMIT),
         ).fetchall()
+
+    # Recent turns are already supplied separately to the model; don't duplicate them.
+    candidates = rows[RECENT_CONTEXT_RESERVE:]
+    if not candidates:
+        return []
+
+    tokenized = [_terms(row["content"]) for row in candidates]
+    document_frequency = Counter()
+    for terms in tokenized:
+        document_frequency.update(set(terms))
+    document_count = len(candidates)
+    normalized_query = " ".join(_normalize_arabic(query).split())
     scored = []
-    for row in rows:
-        terms = _terms(row["content"])
-        overlap = query_terms & terms
-        if overlap:
-            score = len(overlap) / max(1, len(query_terms) ** 0.5)
-            scored.append((score, row["id"], row["role"], row["content"]))
-    scored.sort(reverse=True)
+    for index, (row, terms) in enumerate(zip(candidates, tokenized)):
+        if not terms:
+            continue
+        normalized_content = " ".join(_normalize_arabic(row["content"]).split())
+        recency = 1.0 - index / max(1, document_count - 1)
+        score = _rank_memory(
+            query_terms, terms, document_frequency, document_count,
+            recency, normalized_query in normalized_content,
+        )
+        if score > 0:
+            scored.append((score, int(row["id"]), row["role"], row["content"]))
+    scored.sort(key=lambda item: (item[0], item[1]), reverse=True)
     return [
-        {"role": role, "content": content, "relevance": round(score, 3)}
-        for score, _id, role, content in scored[:max(1, min(limit, 8))]
+        {"role": role, "content": content, "relevance": round(score, 4)}
+        for score, _id, role, content in scored[:max(1, min(int(limit), 8))]
     ]
 
 
@@ -168,5 +214,3 @@ def session_stats(session_id: str, path: Path | None = None) -> dict:
             (sid,),
         ).fetchone()
     return {"message_count": int(row["count"]), "last_message_at": row["last_message"]}
-
-
