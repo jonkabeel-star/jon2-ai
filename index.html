@@ -139,7 +139,7 @@ function loadSavedState() {
     const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
     if (!raw) { sessionId = crypto.randomUUID(); return; }
     const state = JSON.parse(raw);
-    if (!state || state.version !== 1) return;
+    if (!state || ![1, 2].includes(state.version)) return;
     if (state.lang === "ar" || state.lang === "en") lang = state.lang;
     sessionId = typeof state.sessionId === "string" && /^[0-9a-f-]{36}$/i.test(state.sessionId) ? state.sessionId : crypto.randomUUID();
     if (Array.isArray(state.messages)) {
