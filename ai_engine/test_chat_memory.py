@@ -34,6 +34,13 @@ class ChatMemoryTests(unittest.TestCase):
         self.assertTrue(result)
         self.assertIn("Jon2", result[0]["content"])
 
+    def test_arabic_alef_variants_match_memory_terms(self):
+        sid = "123e4567-e89b-42d3-a456-426614174000"
+        chat_memory.add_message(sid, "user", "إزاي أطور مشروعي بالبايثون؟", self.db)
+        result = chat_memory.relevant_memories(sid, "ازاي اطور مشروعي بالبايثون؟", path=self.db)
+        self.assertTrue(result)
+        self.assertIn("مشروعي", result[0]["content"])
+
     def test_clear_removes_all_session_messages(self):
         sid = "123e4567-e89b-42d3-a456-426614174000"
         chat_memory.add_message(sid, "user", "مرحبا", self.db)
