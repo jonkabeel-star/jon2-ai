@@ -81,6 +81,22 @@ class ApiHealthTests(unittest.TestCase):
                 self.assertEqual(response["session_id"], sid)
                 self.assertEqual(main.memory_status(sid)["message_count"], 2)
 
+    def test_model_profiles_endpoint_is_configuration_only(self):
+        result = main.model_profiles()
+        self.assertEqual(result["status"], "configuration_only")
+        self.assertFalse(result["weights_created"])
+        self.assertGreaterEqual(len(result["profiles"]), 4)
+
+    def test_single_model_profile_endpoint(self):
+        result = main.model_profile("balanced")
+        self.assertEqual(result["profile"]["name"], "balanced")
+        self.assertFalse(result["weights_created"])
+
+    def test_unknown_model_profile_returns_404(self):
+        with self.assertRaises(HTTPException) as caught:
+            main.model_profile("not-a-real-profile")
+        self.assertEqual(caught.exception.status_code, 404)
+
     def test_memory_clear_endpoint(self):
         sid = "123e4567-e89b-42d3-a456-426614174000"
         with tempfile.TemporaryDirectory() as directory:
