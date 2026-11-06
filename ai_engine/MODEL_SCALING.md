@@ -50,3 +50,13 @@ and checkpoint space.
    answers are coherent, useful, and factually acceptable.
 
 A profile is a capacity plan, not a claim that weights have been created.
+
+
+## Training-data scale guard
+
+Selecting any named profile through `train_jon2.py --profile ...` now requires
+at least 10 approved corpus tokens per actual trainable parameter before
+optimization begins. The check uses the tokenizer's actual encoded corpus and
+the instantiated model's actual parameter count. It refuses to train rather
+than duplicating data or silently weakening the requirement. The legacy
+small-model command retains its prior behavior unless a threshold is supplied.
