@@ -90,6 +90,29 @@ def default_20b_config() -> MoE20BConfig:
     return MoE20BConfig()
 
 
+def default_20b_report() -> dict:
+    """Describe the 20B target and storage requirements without creating tensors."""
+    config = default_20b_config()
+    parameters = estimate_moe_parameters(config)
+    active = estimate_active_parameters(config)
+    gib = 1024 ** 3
+    return {
+        "model": "Jon2 Arabic MoE 20B target",
+        "total_parameters": parameters,
+        "active_parameters_per_token_estimate": active,
+        "weights_only_gib": {
+            "bf16_fp16": round(parameters * 2 / gib, 2),
+            "fp32": round(parameters * 4 / gib, 2),
+            "int8_raw_lower_bound": round(parameters / gib, 2),
+            "int4_raw_lower_bound": round(parameters * 0.5 / gib, 2),
+        },
+        "mixed_precision_adam_state_gib_estimate": round(parameters * 18 / gib, 2),
+        "configuration": asdict(config),
+        "weights_created": False,
+        "weights_trained": False,
+    }
+
+
 class RMSNorm(nn.Module):
     def __init__(self, hidden_size: int, eps: float):
         super().__init__()
@@ -260,3 +283,8 @@ class Jon2MoEForCausalLM(nn.Module):
             "weights_trained": False,
             "warning": "A newly initialized model has random weights and cannot chat usefully until trained.",
         }
+
+
+if __name__ == "__main__":
+    import json
+    print(json.dumps(default_20b_report(), indent=2))
