@@ -139,3 +139,19 @@ def _atomic_jsonl(path: Path, rows: list[dict]) -> None:
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
+
+
+def main() -> None:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Build a rights-verified private Jon2 corpus.")
+    parser.add_argument("--manifest", required=True)
+    parser.add_argument("--data-root", required=True)
+    parser.add_argument("--output-dir", required=True)
+    args = parser.parse_args()
+    report = build_corpus(args.manifest, args.data_root, args.output_dir)
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()
