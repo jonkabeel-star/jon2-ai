@@ -1,16 +1,21 @@
 import unittest
 
-import torch
+try:
+    import torch
+except ImportError:  # Lightweight static-check jobs do not install the model runtime.
+    torch = None
 
-from moe_20b import (
-    Jon2MoEForCausalLM,
-    MoE20BConfig,
-    default_20b_config,
-    estimate_active_parameters,
-    estimate_moe_parameters,
-)
+if torch is not None:
+    from moe_20b import (
+        Jon2MoEForCausalLM,
+        MoE20BConfig,
+        default_20b_config,
+        estimate_active_parameters,
+        estimate_moe_parameters,
+    )
 
 
+@unittest.skipIf(torch is None, "PyTorch is not installed in this lightweight test job")
 class Jon2MoEArchitectureTests(unittest.TestCase):
     def test_default_configuration_is_20b_class_without_instantiating_weights(self):
         config = default_20b_config()
