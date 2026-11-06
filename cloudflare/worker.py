@@ -1,4 +1,5 @@
 import json
+from urllib.parse import urlsplit
 from workers import WorkerEntrypoint, Response
 
 ALLOWED_ORIGIN = "https://jonkabeel-star.github.io"
@@ -14,8 +15,7 @@ def json_response(payload, status=200, origin=ALLOWED_ORIGIN):
 
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
-        url = request.url
-        path = url.split("?", 1)[0].rstrip("/") or "/"
+        path = urlsplit(request.url).path.rstrip("/") or "/"
         method = request.method.upper()
         origin = request.headers.get("Origin", "")
 
