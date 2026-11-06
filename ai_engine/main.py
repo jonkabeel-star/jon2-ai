@@ -1,16 +1,18 @@
 import os
+import re
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
 
 from chat_engine import generate_reply, model_is_ready
+import chat_memory
 from external_models.jais2_routes import router as jais2_router
 from compute.routes import router as compute_router
 
 app = FastAPI(
     title="Jon2 AI API",
-    description="API for the original, project-owned Jon2 language model.",
-    version="1.2.0",
+    description="API for the original, project-owned Jon2 language model with persistent conversation memory.",
+    version="1.3.0",
 )
 
 app.include_router(jais2_router)
@@ -24,7 +26,7 @@ app.add_middleware(
         "http://127.0.0.1:5500",
     ],
     allow_credentials=False,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type"],
 )
 
@@ -39,6 +41,10 @@ class ChatRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     message: str = Field(min_length=1, max_length=2000)
     history: list[HistoryMessage] = Field(default_factory=list, max_length=8)
+    session_id: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+    )
 
 
 @app.get("/")
@@ -47,6 +53,7 @@ def home():
         "project": "Jon2 AI",
         "status": "api_online",
         "model": "Jon2 Original Transformer",
+        "memory": "SQLite persistent conversation memory",
         "health": "/api/health",
         "docs": "/docs",
     }
@@ -67,7 +74,6 @@ def _checkpoint_configured() -> bool:
 
 @app.get("/api/health/live")
 def liveness():
-    """Process liveness only; deliberately independent of model readiness."""
     return {"project": "Jon2 AI", "status": "alive"}
 
 
@@ -93,12 +99,12 @@ def health():
         "release_approved": release_approved,
         "model_status": model_status,
         "chat_requires_model_checkpoint": True,
+        "conversation_memory": "sqlite",
     }
 
 
 @app.get("/api/health/ready")
 def readiness():
-    """Readiness for user-facing chat, not merely process liveness."""
     snapshot = health()
     if not snapshot["chat_ready"]:
         raise HTTPException(
@@ -112,6 +118,23 @@ def readiness():
     return {"project": "Jon2 AI", "status": "ready", "chat_ready": True}
 
 
+@app.get("/api/memory/{session_id}")
+def memory_status(session_id: str):
+    try:
+        return {"project": "Jon2 AI", **chat_memory.session_stats(session_id)}
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error))
+
+
+@app.delete("/api/memory/{session_id}")
+def clear_memory(session_id: str):
+    try:
+        chat_memory.clear_session(session_id)
+        return {"project": "Jon2 AI", "cleared": True}
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error))
+
+
 @app.post("/api/chat")
 def chat(request: ChatRequest):
     message = request.message.strip()
@@ -123,8 +146,22 @@ def chat(request: ChatRequest):
             detail="محادثة Jon2 متوقفة حتى اعتماد جودة النموذج بعد المراجعة البشرية.",
         )
     try:
-        reply = generate_reply(message, [item.model_dump() for item in request.history])
-        return {"project": "Jon2 AI", "reply": reply}
+        history = [item.model_dump() for item in request.history]
+        memories = []
+        if request.session_id:
+            # Read context before storing the current turn, preventing duplicate prompt entries.
+            history = chat_memory.recent_messages(request.session_id, limit=8)
+            memories = chat_memory.relevant_memories(request.session_id, message, limit=4)
+            chat_memory.add_message(request.session_id, "user", message)
+        reply = generate_reply(message, history, memories)
+        if request.session_id:
+            chat_memory.add_message(request.session_id, "assistant", reply)
+        return {
+            "project": "Jon2 AI",
+            "reply": reply,
+            "memory_used": bool(memories),
+            "session_id": request.session_id,
+        }
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
     except FileNotFoundError as error:
