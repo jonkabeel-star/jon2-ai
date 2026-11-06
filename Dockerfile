@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir fastapi "uvicorn[standard]" && \
     pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch
 
 COPY ai_engine/ /app/ai_engine/
+COPY index.html /app/index.html
 
 EXPOSE 8000
 
