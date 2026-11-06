@@ -59,6 +59,11 @@ class ApiHealthTests(unittest.TestCase):
                 {"role": "user", "content": "x"} for _ in range(9)
             ])
 
+    def test_root_serves_the_chat_website(self):
+        from fastapi.responses import FileResponse
+        response = main.home()
+        self.assertIsInstance(response, FileResponse)
+
     def test_session_id_must_be_uuid(self):
         with self.assertRaises(ValidationError):
             main.ChatRequest(message="مرحبا", session_id="not-a-uuid")
