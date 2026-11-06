@@ -53,8 +53,19 @@ def load_runtime() -> None:
     _model, _tokenizer, _device = load_model(str(CHECKPOINT_PATH))
 
 
-def build_conversation_prompt(message: str, history=None) -> str:
-    """Build a bounded Arabic dialogue prompt from validated recent turns."""
+def build_conversation_prompt(message: str, history=None, memories=None) -> str:
+    """Build a bounded prompt from recent turns and retrieved past context."""
+    sections = []
+    relevant = []
+    for item in (memories or [])[:4]:
+        role = item.get("role") if isinstance(item, dict) else None
+        content = item.get("content") if isinstance(item, dict) else None
+        if role in {"user", "assistant"} and isinstance(content, str) and content.strip():
+            label = "المستخدم" if role == "user" else "Jon2"
+            relevant.append(f"{label}: {content.strip()[:600]}")
+    if relevant:
+        sections.append("سياق سابق مسترجع من ذاكرة هذه المحادثة (استعمله عند صلته بالسؤال):\n"
+                        + "\n".join(relevant))
     turns = []
     for item in (history or [])[-8:]:
         role = item.get("role") if isinstance(item, dict) else None
@@ -65,17 +76,18 @@ def build_conversation_prompt(message: str, history=None) -> str:
         if not content:
             continue
         label = "المستخدم" if role == "user" else "Jon2"
-        turns.append(f"{label}: {content}")
+        turns.append(f"{label}: {content[:2000]}")
     turns.append(f"المستخدم: {message.strip()}")
-    return "\n".join(turns) + "\nJon2:"
+    sections.append("\n".join(turns) + "\nJon2:")
+    return "\n\n".join(sections)
 
 
-def generate_reply(message: str, history=None) -> str:
+def generate_reply(message: str, history=None, memories=None) -> str:
     if not message or not message.strip():
         raise ValueError("اكتب رسالتك أولًا.")
 
     load_runtime()
-    prompt = build_conversation_prompt(message, history)
+    prompt = build_conversation_prompt(message, history, memories)
     full_text = generate(
         _model,
         _tokenizer,
