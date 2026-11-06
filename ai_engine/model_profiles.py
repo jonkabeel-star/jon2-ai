@@ -54,7 +54,7 @@ def estimate_parameters(*, width: int, layers: int, context: int, vocab_size: in
     return (
         vocab_size * width
         + context * width
-        + layers * (12 * width * width + 17 * width)
+        + layers * (12 * width * width + 13 * width)
         + 2 * width
     )
 
