@@ -1,6 +1,8 @@
 """Regression tests for the FastAPI service and its release gates."""
 import os
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from fastapi import HTTPException
@@ -20,7 +22,7 @@ class ApiHealthTests(unittest.TestCase):
         }, clear=False), patch("main.model_is_ready", return_value=False):
             result = main.health()
         self.assertEqual(result["status"], "online")
-        self.assertEqual(result["api_version"], "1.2.0")
+        self.assertEqual(result["api_version"], "1.3.0")
         self.assertFalse(result["chat_ready"])
         self.assertFalse(result["release_approved"])
         self.assertEqual(result["model_status"], "checkpoint_missing")
@@ -56,6 +58,31 @@ class ApiHealthTests(unittest.TestCase):
             main.ChatRequest(message="مرحبا", history=[
                 {"role": "user", "content": "x"} for _ in range(9)
             ])
+
+    def test_session_id_must_be_uuid(self):
+        with self.assertRaises(ValidationError):
+            main.ChatRequest(message="مرحبا", session_id="not-a-uuid")
+
+    def test_chat_uses_memory_and_persists_both_turns(self):
+        sid = "123e4567-e89b-42d3-a456-426614174000"
+        with tempfile.TemporaryDirectory() as directory:
+            db = str(Path(directory) / "memory.sqlite3")
+            with patch.dict(os.environ, {
+                "JON2_CHAT_RELEASE_APPROVED": "true",
+                "JON2_MEMORY_DB_PATH": db,
+            }, clear=False), patch("main.generate_reply", return_value="أهلًا بك يا صديقي"):
+                response = main.chat(main.ChatRequest(message="مرحبا", session_id=sid))
+                self.assertEqual(response["reply"], "أهلًا بك يا صديقي")
+                self.assertEqual(response["session_id"], sid)
+                self.assertEqual(main.memory_status(sid)["message_count"], 2)
+
+    def test_memory_clear_endpoint(self):
+        sid = "123e4567-e89b-42d3-a456-426614174000"
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.dict(os.environ, {"JON2_MEMORY_DB_PATH": str(Path(directory) / "db.sqlite3")}):
+                main.chat_memory.add_message(sid, "user", "مرحبا")
+                self.assertTrue(main.clear_memory(sid)["cleared"])
+                self.assertEqual(main.memory_status(sid)["message_count"], 0)
 
 
 if __name__ == "__main__":
