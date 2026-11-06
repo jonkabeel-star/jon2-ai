@@ -29,6 +29,11 @@ class InlineScriptParser(HTMLParser):
 
 def check_inline_scripts(html_path: Path) -> int:
     html = html_path.read_text(encoding="utf-8")
+    config_path = html_path.parent / "jon2-config.js"
+    if '<script src="jon2-config.js"></script>' not in html:
+        raise AssertionError("The website must load jon2-config.js before its chat client.")
+    if not config_path.is_file() or "window.JON2_API_BASE_URL" not in config_path.read_text(encoding="utf-8"):
+        raise AssertionError("jon2-config.js must define the public API endpoint setting.")
     parser = InlineScriptParser()
     parser.feed(html)
     parser.close()
