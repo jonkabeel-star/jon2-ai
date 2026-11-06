@@ -60,6 +60,25 @@ class ChatMemoryTests(unittest.TestCase):
         self.assertTrue(result)
         self.assertIn("مشروعي", result[0]["content"])
 
+    def test_add_exchange_persists_both_turns_as_one_exchange(self):
+        chat_memory.add_exchange(
+            self.sid, "سؤال المستخدم", "إجابة Jon2", self.db
+        )
+        self.assertEqual(
+            chat_memory.recent_messages(self.sid, path=self.db),
+            [
+                {"role": "user", "content": "سؤال المستخدم"},
+                {"role": "assistant", "content": "إجابة Jon2"},
+            ],
+        )
+
+    def test_add_exchange_rejects_invalid_assistant_before_writing_user(self):
+        with self.assertRaises(ValueError):
+            chat_memory.add_exchange(self.sid, "سؤال صالح", " ", self.db)
+        self.assertEqual(
+            chat_memory.session_stats(self.sid, self.db)["message_count"], 0
+        )
+
     def test_clear_removes_all_session_messages(self):
         chat_memory.add_message(self.sid, "user", "مرحبا", self.db)
         chat_memory.clear_session(self.sid, self.db)
