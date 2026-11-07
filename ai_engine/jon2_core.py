@@ -332,11 +332,6 @@ def generate(
         # Apply top-k only after UTF-8 filtering. Applying it before filtering
         # can leave every remaining logit at -inf and make softmax return NaN.
         if do_sample and top_k > 0 and valid_count > top_k:
-            candidate_logits = torch.topk(candidate_logits, top_k, dim=-1).values.scatter(
-                -1,
-                torch.topk(candidate_logits, top_k, dim=-1).indices,
-                torch.topk(candidate_logits, top_k, dim=-1).values,
-            ) if False else candidate_logits
             top_values, top_indices = torch.topk(candidate_logits, top_k, dim=-1)
             filtered_logits = torch.full_like(candidate_logits, float("-inf"))
             filtered_logits.scatter_(-1, top_indices, top_values)
