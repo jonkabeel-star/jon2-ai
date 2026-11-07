@@ -283,6 +283,7 @@ def generate(
     utf8_decoder.decode(bytes(generated_bytes), final=False)
     utf8_state = utf8_decoder.getstate()
     prompt_bytes = b"".join(token_bytes[token_id] for token_id in ids)
+    utf8_valid_cache: dict[tuple[bytes, int], tuple[torch.Tensor, int]] = {}
     for _ in range(max_new_chars):
         context = tokens[:, -model.context:]
         logits = model(context)[:, -1, :] / temperature
@@ -305,29 +306,38 @@ def generate(
                     banned.add(generated_ids[index + no_repeat_ngram_size - 1])
             if banned:
                 candidate_logits[0, list(banned)] = float("-inf")
-        # First remove tokens that would corrupt the UTF-8 byte stream.
-        valid_candidates = []
-        for candidate, piece in enumerate(token_bytes):
-            if not torch.isfinite(candidate_logits[0, candidate]):
-                continue
-            try:
-                decoder = codecs.getincrementaldecoder("utf-8")("strict")
-                decoder.setstate(utf8_state)
-                decoder.decode(piece, final=False)
-                valid_candidates.append(candidate)
-            except UnicodeDecodeError:
-                candidate_logits[0, candidate] = float("-inf")
-        if not valid_candidates:
+        # Cache UTF-8-valid token masks by incremental-decoder state.
+        # The decoder state has very few possible values, so this avoids
+        # constructing a decoder for every vocabulary item on every token.
+        state_key = (utf8_state[0], utf8_state[1])
+        cached_validity = utf8_valid_cache.get(state_key)
+        if cached_validity is None:
+            valid_flags = []
+            for piece in token_bytes:
+                try:
+                    decoder = codecs.getincrementaldecoder("utf-8")("strict")
+                    decoder.setstate(utf8_state)
+                    decoder.decode(piece, final=False)
+                    valid_flags.append(True)
+                except UnicodeDecodeError:
+                    valid_flags.append(False)
+            valid_mask = torch.tensor(valid_flags, dtype=torch.bool, device=candidate_logits.device)
+            cached_validity = (valid_mask, sum(valid_flags))
+            utf8_valid_cache[state_key] = cached_validity
+        valid_mask, valid_count = cached_validity
+        if valid_count == 0:
+            break
+        candidate_logits.masked_fill_(~valid_mask.unsqueeze(0), float("-inf"))
+        finite_count = int(torch.isfinite(candidate_logits[0]).sum().item())
+        if finite_count == 0:
             break
 
         # Apply top-k only after UTF-8 filtering. Applying it before filtering
         # can leave every remaining logit at -inf and make softmax return NaN.
-        if do_sample and top_k > 0 and len(valid_candidates) > top_k:
-            valid_logits = candidate_logits[0, valid_candidates]
-            selected_positions = torch.topk(valid_logits, top_k).indices.tolist()
-            selected_candidates = [valid_candidates[index] for index in selected_positions]
+        if do_sample and top_k > 0 and finite_count > top_k:
+            top_values, top_indices = torch.topk(candidate_logits, top_k, dim=-1)
             filtered_logits = torch.full_like(candidate_logits, float("-inf"))
-            filtered_logits[0, selected_candidates] = candidate_logits[0, selected_candidates]
+            filtered_logits.scatter_(-1, top_indices, top_values)
             candidate_logits = filtered_logits
 
         if do_sample:
