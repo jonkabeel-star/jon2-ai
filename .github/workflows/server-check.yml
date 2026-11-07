@@ -13,6 +13,7 @@ on:
       - "server/**"
       - "ai_engine/**"
       - "requirements.txt"
+      - "cloudflare-ts/**"
       - ".github/workflows/server-check.yml"
 
 permissions:
@@ -42,7 +43,7 @@ jobs:
           node-version: "22"
       - name: Install TypeScript Worker preview test dependencies
         working-directory: cloudflare-ts
-        run: npm install --no-package-lock --ignore-scripts
+        run: npm install --no-package-lock
       - name: Test TypeScript Worker preview
         working-directory: cloudflare-ts
         run: npm test
