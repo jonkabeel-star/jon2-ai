@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from jon2_core import read_corpus
+from corpus_reader import read_corpus
 
 
 class JsonlDialogueLoaderTests(unittest.TestCase):
