@@ -1,5 +1,5 @@
 # Jon2 AI — Arabic dialogue candidate pack v1
-# Authored for Jon2 project; candidate only, quarantined pending owner review.
+# Authored for Jon2 project; owner-approved for private experimental research training only.
 # Intended language: Modern Standard Arabic with clear, accessible explanations.
 # Approved scope excludes public-model release and commercial training.
 
