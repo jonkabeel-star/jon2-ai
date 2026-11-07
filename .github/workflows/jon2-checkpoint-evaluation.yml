@@ -1,14 +1,9 @@
 name: Jon2 Saved Checkpoint Evaluation
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/jon2-checkpoint-evaluation.yml"
-      - "ai_engine/jon2_core.py"
-      - "ai_engine/tokenizer.py"
-      - "ai_engine/chat_engine.py"
-      - ".github/workflows/jon2-real-training.yml"
+  workflow_run:
+    workflows: ["Jon2 Real CPU Training"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -16,6 +11,7 @@ permissions:
 
 jobs:
   evaluate-checkpoint:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -152,11 +148,28 @@ jobs:
               )
           PY
 
-      - name: Upload evaluation transcript
+      - name: Generate 40-prompt Arabic human-review report
+        run: |
+          set -euo pipefail
+          mkdir -p training-output
+          PYTHONPATH="$GITHUB_WORKSPACE/ai_engine" python ai_engine/evaluate_model.py \
+            --checkpoint "$JON2_CHECKPOINT_FILE" \
+            --prompts ai_engine/evaluation/prompts_ar.jsonl \
+            --max-new-chars 180 \
+            --temperature 0.8 \
+            --seed 42 \
+            --device cpu \
+            --output training-output/review-report.json 2>&1 | tee training-output/human-review-generation.log
+          test -s training-output/review-report.json
+
+      - name: Upload evaluation transcript and human-review report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: jon2-arabic-checkpoint-evaluation
-          path: jon2-evaluation.txt
+          path: |
+            jon2-evaluation.txt
+            training-output/review-report.json
+            training-output/human-review-generation.log
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 14
