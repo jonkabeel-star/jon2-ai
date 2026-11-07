@@ -1,7 +1,7 @@
 #!/bin/sh
 set -u
 
-CHECKPOINT_PATH="${JON2_CHECKPOINT:-/app/ai_engine/checkpoints/jon2-small.pt}"
+CHECKPOINT_PATH="${JON2_CHECKPOINT:-/app/model-weights/jon2-small.pt}"
 if [ ! -s "$CHECKPOINT_PATH" ] && [ -n "${KAGGLE_API_TOKEN:-}" ]; then
   echo "Jon2: retrieving the private original checkpoint from Kaggle."
   CHECKPOINT_DIR="$(dirname "$CHECKPOINT_PATH")"
