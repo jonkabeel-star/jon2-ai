@@ -41,10 +41,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Stabilize npm dependency installation
-        run: npm install --global npm@10.8.2
-      - name: Clear npm cache
-        run: npm cache clean --force
       - name: Install TypeScript Worker preview test dependencies
         working-directory: cloudflare-ts
         run: npm install --no-package-lock --no-audit --no-fund
