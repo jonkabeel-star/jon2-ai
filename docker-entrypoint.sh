@@ -32,7 +32,27 @@ else
     echo "Jon2: Kaggle CLI version:"
     kaggle --version 2>&1 || true
 
-    echo "Jon2: requesting jon2-small.pt from private dataset."
+    DATASET_ID="jon2kabeel/jon2-private-model-checkpoint"
+    echo "Jon2: checking private dataset access and file listing."
+    kaggle datasets files "$DATASET_ID" --page-size 200 > "$TEMP_DIR/files.log" 2>&1
+    FILES_STATUS=$?
+    echo "Jon2: Kaggle dataset file-list exit code: $FILES_STATUS"
+    if [ -s "$TEMP_DIR/files.log" ]; then
+      echo "Jon2: Kaggle dataset file-list output (credentials redacted):"
+      log_safe_file "$TEMP_DIR/files.log"
+    fi
+    if [ "$FILES_STATUS" -eq 0 ] && ! grep -Fq "jon2-small.pt" "$TEMP_DIR/files.log"; then
+      echo "Jon2 ERROR: Kaggle account can access the dataset, but the exact file jon2-small.pt was not listed."
+      echo "Jon2 diagnosis: check the exact filename shown in the dataset file listing above."
+      DOWNLOAD_STATUS=2
+    else
+      echo "Jon2: requesting jon2-small.pt from private dataset."
+      # Pass the dataset handle positionally for compatibility with Kaggle CLI
+      # releases that differ in how the hidden -d alias is exposed.
+      kaggle datasets download "$DATASET_ID" -f jon2-small.pt \\
+        -p "$TEMP_DIR" --unzip --force > "$TEMP_DIR/download.log" 2>&1
+      DOWNLOAD_STATUS=$?
+    fi
     # Use the explicit dataset-id flag; this avoids CLI positional-argument
     # ambiguity across Kaggle CLI releases.
     kaggle datasets download -d jon2kabeel/jon2-private-model-checkpoint \
