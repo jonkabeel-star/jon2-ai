@@ -15,8 +15,8 @@ def validate_source_approvals(data_dir: Path, manifest_path: Path) -> None:
         raise FileNotFoundError(f"Training data directory not found: {data_dir}")
 
     files = {}
-    for path in data_dir.rglob("*.txt"):
-        if not path.is_file():
+    for path in data_dir.rglob("*"):
+        if not path.is_file() or path.suffix.lower() not in {".txt", ".jsonl"}:
             continue
         if not path.resolve().is_relative_to(root):
             raise PermissionError(f"Training text resolves outside data directory: {path}")
@@ -26,6 +26,39 @@ def validate_source_approvals(data_dir: Path, manifest_path: Path) -> None:
             decoded = raw.decode("utf-8", errors="strict")
         except UnicodeDecodeError as exc:
             raise ValueError(f"Training source is not valid UTF-8: {relative_name}") from exc
+        if path.suffix.lower() == ".jsonl":
+            for line_number, line in enumerate(decoded.splitlines(), start=1):
+                if not line.strip():
+                    continue
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError as exc:
+                    raise ValueError(
+                        f"Invalid JSONL source {relative_name}:{line_number}: {exc.msg}"
+                    ) from exc
+                messages = record.get("messages") if isinstance(record, dict) else None
+                if not isinstance(messages, list) or not messages:
+                    raise ValueError(
+                        f"{relative_name}:{line_number} must contain a non-empty messages list."
+                    )
+                has_assistant = False
+                for message in messages:
+                    if not isinstance(message, dict):
+                        raise ValueError(
+                            f"{relative_name}:{line_number} contains an invalid message object."
+                        )
+                    role = message.get("role")
+                    content = message.get("content")
+                    if role not in {"user", "assistant"} or not isinstance(content, str) or not content.strip():
+                        raise ValueError(
+                            f"{relative_name}:{line_number} messages require user/assistant "
+                            "roles and non-empty string content."
+                        )
+                    has_assistant = has_assistant or role == "assistant"
+                if not has_assistant:
+                    raise ValueError(
+                        f"{relative_name}:{line_number} has no assistant response."
+                    )
         files[relative_name] = {
             "sha256": hashlib.sha256(raw).hexdigest(),
             "character_count": len(decoded),
