@@ -68,6 +68,8 @@ jobs:
                   assert model_health.get("chat_ready") is False, model_health
                   assert model_health.get("release_approved") is False, model_health
                   assert model_health.get("model_status") == "checkpoint_missing", model_health
+                  assert model_health.get("checkpoint_load_status") == "missing", model_health
+                  assert model_health.get("checkpoint_load_error") is None, model_health
                   print("Container liveness and model health passed; chat remains safely blocked.")
                   try:
                       urllib.request.urlopen("http://127.0.0.1:8000/api/health/ready", timeout=5)
