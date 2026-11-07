@@ -97,7 +97,8 @@ def build_conversation_prompt(message: str, history=None, memories=None, tokeniz
             memory_items.pop(0)
             continue
         if len(question) > 8:
-            question = question[-max(8, len(question) // 2):]
+            # Preserve the beginning of the user's request; the suffix may omit its subject.
+            question = question[:max(8, len(question) // 2)]
             continue
         # Last-resort safe prompt still includes a compact form of the question.
         compact = f"سؤال: {question[-4:]}\nJon2:"
@@ -128,10 +129,11 @@ def generate_reply(message: str, history=None, memories=None) -> str:
     answer = full_text[len(prompt):].strip()
     if not answer:
         raise RuntimeError("لم ينتج نموذج Jon2 إجابة.")
-    experimental = os.getenv("JON2_EXPERIMENTAL_CHAT", "false").strip().lower() == "true"
-    if not validate_generated_answer(answer) and not experimental:
+    # Experimental mode must never bypass basic output-integrity checks.
+    # This catches malformed characters and obvious repetition, not semantic quality.
+    if not validate_generated_answer(answer):
         raise RuntimeError(
-            "رفض Jon2 عرض الإجابة لأن ناتج النموذج يحتوي على رموز أو نص مشوّه. "
-            "يلزم تحسين النموذج وإعادة تقييمه قبل الاستخدام."
+            "رفض Jon2 عرض الإجابة لأن ناتج النموذج فشل فحص سلامة النص. "
+            "يلزم تحسين بيانات التدريب وإعادة تقييم النموذج."
         )
     return answer
