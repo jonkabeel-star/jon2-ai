@@ -283,7 +283,7 @@ def chat(request: ChatRequest):
     if not (_chat_release_approved() or _experimental_chat_enabled()):
         raise HTTPException(
             status_code=503,
-            detail="محادثة Jon2 متوقفة حتى تفعيل الوضع التجريبي أو اعتماد جودة النموذج.",
+            detail="محادثة Jon2 متوقفة حتى تفعيل الوضع التجريبي أو اجتياز مراجعة الجودة والمراجعة البشرية.",
         )
     try:
         history = [item.model_dump() for item in request.history]
