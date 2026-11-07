@@ -108,7 +108,7 @@ async function handleChat(request: Request, origin: string): Promise<Response> {
 export default {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
-    const path = url.pathname.replace(/\\/+$/, "") || "/";
+    const path = "/" + url.pathname.split("/").filter(Boolean).join("/");
     const method = request.method.toUpperCase();
     const origin = request.headers.get("Origin") ?? "";
 
