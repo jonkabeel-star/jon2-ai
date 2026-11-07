@@ -4,6 +4,34 @@ set -u
 CHECKPOINT_PATH="${JON2_CHECKPOINT:-/app/model-weights/jon2-small.pt}"
 CHECKPOINT_DIR="$(dirname "$CHECKPOINT_PATH")"
 
+# Some hosting runtimes mount /app as read-only or override image directory
+# permissions. If the configured directory cannot actually accept a file,
+# fall back to the writable temporary filesystem and export the effective path
+# so the API loads the exact file downloaded by this entrypoint.
+if [ ! -s "$CHECKPOINT_PATH" ]; then
+  mkdir -p "$CHECKPOINT_DIR" 2>/dev/null || true
+  WRITE_TEST=""
+  if [ -d "$CHECKPOINT_DIR" ] && [ -w "$CHECKPOINT_DIR" ]; then
+    WRITE_TEST="$(mktemp "$CHECKPOINT_DIR/.jon2-write-test.XXXXXX" 2>/dev/null || true)"
+  fi
+  if [ -z "$WRITE_TEST" ]; then
+    FALLBACK_DIR="${TMPDIR:-/tmp}/jon2-model-weights"
+    mkdir -p "$FALLBACK_DIR" 2>/dev/null || true
+    WRITE_TEST="$(mktemp "$FALLBACK_DIR/.jon2-write-test.XXXXXX" 2>/dev/null || true)"
+    if [ -n "$WRITE_TEST" ]; then
+      rm -f "$WRITE_TEST"
+      CHECKPOINT_PATH="$FALLBACK_DIR/jon2-small.pt"
+      CHECKPOINT_DIR="$FALLBACK_DIR"
+      export JON2_CHECKPOINT="$CHECKPOINT_PATH"
+      echo "Jon2 warning: configured checkpoint directory is not writable; using temporary path: $CHECKPOINT_PATH"
+    else
+      echo "Jon2 ERROR: neither configured checkpoint directory nor temporary fallback is writable."
+    fi
+  else
+    rm -f "$WRITE_TEST"
+  fi
+fi
+
 log_safe_file() {
   # Print diagnostics while masking common Kaggle/Bearer credential formats.
   sed -E \
