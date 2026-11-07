@@ -66,24 +66,24 @@ jobs:
             --approval-manifest ai_engine/training_data/source_approvals.json \
             --output ai_engine/checkpoints/jon2-small.pt \
             --last-checkpoint ai_engine/checkpoints/jon2-last.pt \
-            --steps 1200 \
+            --steps 5000 \
             --batch-size 8 \
-            --context 96 \
+            --context 128 \
             --width 96 \
             --heads 4 \
             --layers 2 \
             --dropout 0.1 \
             --learning-rate 0.0003 \
             --weight-decay 0.1 \
-            --warmup-steps 100 \
+            --warmup-steps 250 \
             --validation-fraction 0.1 \
-            --eval-steps 4 \
-            --eval-every 100 \
-            --patience 5 \
-            --min-delta 0.001 \
+            --eval-steps 16 \
+            --eval-every 250 \
+            --patience 8 \
+            --min-delta 0.0005 \
             --grad-clip 1.0 \
             --minimum-chars 100000 \
-            --tokenizer-vocab-size 384 \
+            --tokenizer-vocab-size 512 \
             --tokenizer-min-frequency 2 \
             --seed 42 \
             --keep-last 2>&1 | tee training-output/training.log
