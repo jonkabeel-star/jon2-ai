@@ -128,7 +128,8 @@ def generate_reply(message: str, history=None, memories=None) -> str:
     answer = full_text[len(prompt):].strip()
     if not answer:
         raise RuntimeError("لم ينتج نموذج Jon2 إجابة.")
-    if not validate_generated_answer(answer):
+    experimental = os.getenv("JON2_EXPERIMENTAL_CHAT", "false").strip().lower() == "true"
+    if not validate_generated_answer(answer) and not experimental:
         raise RuntimeError(
             "رفض Jon2 عرض الإجابة لأن ناتج النموذج يحتوي على رموز أو نص مشوّه. "
             "يلزم تحسين النموذج وإعادة تقييمه قبل الاستخدام."
