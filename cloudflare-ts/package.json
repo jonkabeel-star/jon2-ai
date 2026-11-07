@@ -8,7 +8,6 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "@cloudflare/vitest-plugin": "1.4.6",
     "vitest": "4.1.11"
   }
 }
