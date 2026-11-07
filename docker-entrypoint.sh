@@ -19,7 +19,7 @@ else
     kaggle --version > "$TEMP_DIR/version.log" 2>&1
     VERSION_STATUS=$?
     echo "Jon2: Kaggle CLI version command exit code: $VERSION_STATUS"
-    sed -E 's/(KGAT_[A-Za-z0-9._-]+)/[REDACTED]/g; s/(Bearer )[A-Za-z0-9._-]+/\\1[REDACTED]/g' "$TEMP_DIR/version.log"
+    sed -E 's/(KGAT_[A-Za-z0-9._-]+)/[REDACTED]/g; s/(Bearer )[A-Za-z0-9._-]+/\1[REDACTED]/g' "$TEMP_DIR/version.log"
   else
     echo "Jon2 ERROR: Kaggle CLI executable is missing from the container PATH."
   fi
@@ -30,7 +30,7 @@ else
   DOWNLOAD_STATUS=$?
   echo "Jon2: Kaggle download command exit code: $DOWNLOAD_STATUS"
   echo "Jon2: Kaggle download diagnostic output (credentials redacted):"
-  sed -E 's/(KGAT_[A-Za-z0-9._-]+)/[REDACTED]/g; s/(Bearer )[A-Za-z0-9._-]+/\\1[REDACTED]/g' "$TEMP_DIR/download.log"
+  sed -E 's/(KGAT_[A-Za-z0-9._-]+)/[REDACTED]/g; s/(Bearer )[A-Za-z0-9._-]+/\1[REDACTED]/g' "$TEMP_DIR/download.log"
 
   if [ "$DOWNLOAD_STATUS" -eq 0 ]; then
     DOWNLOADED_FILE="$(find "$TEMP_DIR" -type f -name 'jon2-small.pt' -print -quit)"
@@ -43,7 +43,7 @@ else
       fi
     else
       echo "Jon2 ERROR: Kaggle command succeeded, but jon2-small.pt was not found in the extracted files."
-      find "$TEMP_DIR" -maxdepth 4 -type f -printf '%P (%s bytes)\\n' 2>/dev/null || true
+      find "$TEMP_DIR" -maxdepth 4 -type f -printf '%P (%s bytes)\n' 2>/dev/null || true
     fi
   else
     echo "Jon2 ERROR: private checkpoint download failed; API will start without chat."
