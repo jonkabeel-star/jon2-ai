@@ -1,8 +1,13 @@
 # Jon2 AI Hostless deployment.
-# Deliberately capped at the published free account allowance.
+# The runtime is capped at the published free account allowance.
+# Docker builds are not charged by Hostless; runtime capacity stays free-capped.
 # Do not add databases, workers, replicas, durable volumes, or paid capacity.
 build:
   system: docker
+  min_cpu: 0.5
+  max_cpu: 2
+  min_memory: 512
+  max_memory: 4096
 
 dockerfile_path: "./Dockerfile"
 working_directory: "/"
