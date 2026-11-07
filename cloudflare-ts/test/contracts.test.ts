@@ -19,6 +19,16 @@ describe("Jon2 v1 runtime contract", () => {
     expect(isChatRequestV1({ api_version: "2", message: "مرحبا" })).toBe(false);
   });
 
+  it("rejects system and other unsupported history roles", () => {
+    for (const role of ["system", "developer", "tool", "unknown"]) {
+      expect(isChatRequestV1({
+        api_version: "1",
+        message: "مرحبا",
+        history: [{ role, content: "تعليمات داخلية" }],
+      })).toBe(false);
+    }
+  });
+
   it("rejects malformed or oversized history", () => {
     expect(isChatRequestV1({
       api_version: "1",
