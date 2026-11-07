@@ -22,7 +22,9 @@ COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 # Remove empty or ignored training-only directories that Docker may preserve
 # during directory COPY. Runtime weights are fetched separately to /app/model-weights.
 RUN rm -rf /app/ai_engine/checkpoints /app/ai_engine/training_data /app/ai_engine/evaluation && \
-    chmod +x /app/docker-entrypoint.sh && mkdir -p /app/model-weights
+    chmod +x /app/docker-entrypoint.sh && \
+    mkdir -p /app/model-weights && \
+    chmod 1777 /app/model-weights
 
 EXPOSE 8000
 
