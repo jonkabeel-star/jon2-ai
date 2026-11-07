@@ -37,3 +37,29 @@ The root production wrangler.toml remains unchanged.
 - Runtime transport failures are normalized into safe timeout, authorization, or unavailable errors.
 
 This is a contract and validation layer only. No upstream URL, runtime credential, model selection, or network forwarding is configured. The existing preview `POST /api/chat` remains HTTP 503 until an approved real runtime is available. Do not add secrets to source control.
+
+
+## Optional authenticated Python runtime bridge (preview only)
+
+The TypeScript preview can forward chat requests to the existing Jon2 FastAPI
+runtime. Configure these Cloudflare Worker bindings in the preview environment:
+
+- `JON2_RUNTIME_URL`: HTTPS origin of the separately hosted Python API (for example, `https://your-private-runtime.example`; do not include `/v1/chat`).
+- `JON2_RUNTIME_TOKEN`: a secret of at least 32 characters, matching the Python server's `JON2_RUNTIME_TOKEN`.
+
+The gateway calls `GET /v1/health` for readiness and sends authenticated
+`POST /v1/chat` requests using the Python runtime's `contract_version: "1"`
+schema. The token must be stored as a Cloudflare secret, never in GitHub,
+source files, frontend JavaScript, or a normal non-secret variable.
+
+The Python service still requires all of the following before it can answer:
+a deployed HTTPS runtime, the approved original Jon2 checkpoint at
+`JON2_CHECKPOINT`, `JON2_CHAT_RELEASE_APPROVED=true` only after human
+review of that exact checkpoint, and the same private token in
+`JON2_RUNTIME_TOKEN`. The repository's documented current checkpoint
+previously failed practical Arabic conversation review. Do not approve or expose
+that checkpoint merely to make the connection return success.
+
+This is a preview bridge only. It is not deployed and does not change the
+production Worker. A running, reachable Python host and owner-configured
+Cloudflare bindings are still required for a real end-to-end connection.
