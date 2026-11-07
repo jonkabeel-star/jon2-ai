@@ -13,6 +13,9 @@ WORKDIR /app
 RUN pip install --no-cache-dir fastapi "uvicorn[standard]" "kaggle==2.2.5" six && \
     pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch
 
+# Fail the image build if the Kaggle CLI has a broken import/dependency chain.
+RUN python -c "import six; from kaggle.api.kaggle_api_extended import KaggleApi; print('Kaggle CLI import check passed')"
+
 COPY ai_engine/ /app/ai_engine/
 COPY index.html /app/index.html
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
