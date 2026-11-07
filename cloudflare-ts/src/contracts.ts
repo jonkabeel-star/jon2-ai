@@ -7,7 +7,7 @@
 
 export const JON2_API_VERSION = "1" as const;
 
-export type ChatRole = "system" | "user" | "assistant";
+export type ChatRole = "user" | "assistant";
 
 export interface ChatMessage {
   role: ChatRole;
@@ -45,9 +45,9 @@ export interface ChatErrorV1 {
   request_id?: string;
 }
 
-const MAX_MESSAGE_LENGTH = 12_000;
-const MAX_HISTORY_ITEMS = 40;
-const MAX_HISTORY_CONTENT_LENGTH = 12_000;
+const MAX_MESSAGE_LENGTH = 2_000;
+const MAX_HISTORY_ITEMS = 8;
+const MAX_HISTORY_CONTENT_LENGTH = 2_000;
 
 export function isChatRole(value: unknown): value is ChatRole {
   return value === "system" || value === "user" || value === "assistant";
