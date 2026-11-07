@@ -116,6 +116,12 @@ def health():
         else "release_blocked" if not chat_enabled
         else "checkpoint_available"
     )
+    checkpoint_path = os.getenv(
+        "JON2_CHECKPOINT",
+        os.path.join(os.path.dirname(__file__), "checkpoints", "jon2-small.pt"),
+    )
+    checkpoint_size = os.path.getsize(checkpoint_path) if os.path.isfile(checkpoint_path) else 0
+    checkpoint_readable = os.path.isfile(checkpoint_path) and os.access(checkpoint_path, os.R_OK)
     return {
         "project": "Jon2 AI",
         "status": "online",
@@ -123,6 +129,11 @@ def health():
         "model": "Jon2 Original Transformer",
         "model_loaded": loaded,
         "checkpoint_configured": checkpoint_available,
+        "checkpoint_readable": checkpoint_readable,
+        "checkpoint_size_bytes": checkpoint_size,
+        "checkpoint_path": checkpoint_path,
+        "kaggle_token_present": bool(os.getenv("KAGGLE_API_TOKEN")),
+        "experimental_chat_enabled": _experimental_chat_enabled(),
         "chat_ready": chat_enabled and loaded and checkpoint_available,
         "release_approved": release_approved,
         "experimental_mode": experimental,
