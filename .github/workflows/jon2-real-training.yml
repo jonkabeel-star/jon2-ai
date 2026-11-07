@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "ai_engine/training_data/source_approvals.json"
+      - ".github/workflows/jon2-real-training.yml"
   workflow_dispatch:
 
 permissions:
