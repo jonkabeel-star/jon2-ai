@@ -10,7 +10,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Pin the Kaggle CLI to a known Python 3.11-compatible release.
-RUN pip install --no-cache-dir fastapi "uvicorn[standard]" "kaggle==1.6.17" && \
+RUN pip install --no-cache-dir fastapi "uvicorn[standard]" "kaggle==1.6.17" six && \
     pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch
 
 COPY ai_engine/ /app/ai_engine/
