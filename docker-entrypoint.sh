@@ -49,7 +49,7 @@ else
       echo "Jon2: requesting jon2-small.pt from private dataset."
       # Pass the dataset handle positionally for compatibility with Kaggle CLI
       # releases that differ in how the hidden -d alias is exposed.
-      kaggle datasets download "$DATASET_ID" -f jon2-small.pt \\
+      kaggle datasets download "$DATASET_ID" -f jon2-small.pt \
         -p "$TEMP_DIR" --unzip --force > "$TEMP_DIR/download.log" 2>&1
       DOWNLOAD_STATUS=$?
     fi
