@@ -218,8 +218,9 @@ export default {
       return jsonResponse({
         project: PROJECT,
         status: "online",
-        api_ready: true,
         ...health,
+        api_ready: true,
+        runtime_api_ready: health.api_ready,
         message: health.model_ready
           ? "محرك Jon2 متصل وجاهز."
           : "البوابة تعمل، لكن محرك Jon2 غير جاهز لتوليد الإجابات.",
