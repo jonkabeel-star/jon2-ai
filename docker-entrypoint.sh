@@ -53,12 +53,6 @@ else
         -p "$TEMP_DIR" --unzip --force > "$TEMP_DIR/download.log" 2>&1
       DOWNLOAD_STATUS=$?
     fi
-    # Use the explicit dataset-id flag; this avoids CLI positional-argument
-    # ambiguity across Kaggle CLI releases.
-    kaggle datasets download -d jon2kabeel/jon2-private-model-checkpoint \
-      -f jon2-small.pt -p "$TEMP_DIR" --unzip --force \
-      > "$TEMP_DIR/download.log" 2>&1
-    DOWNLOAD_STATUS=$?
     echo "Jon2: Kaggle download exit code: $DOWNLOAD_STATUS"
     if [ -s "$TEMP_DIR/download.log" ]; then
       echo "Jon2: Kaggle diagnostic output (credentials redacted):"
@@ -116,7 +110,7 @@ PY
         fi
       fi
     else
-      echo "Jon2 ERROR: Kaggle download failed."
+      echo "Jon2 ERROR: Kaggle download failed (exit code $DOWNLOAD_STATUS)."
       if grep -Eqi '401|unauthori[sz]ed|authentication|invalid.*token|api token' "$TEMP_DIR/download.log"; then
         echo "Jon2 diagnosis: Kaggle rejected the configured credential. Check that the token belongs to the dataset owner account and is active."
       elif grep -Eqi '403|forbidden|permission|access denied' "$TEMP_DIR/download.log"; then
