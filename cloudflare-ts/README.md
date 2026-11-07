@@ -25,3 +25,15 @@ Use a supported Node.js LTS release and Wrangler from the project tooling:
 3. Check /api/health and verify that /api/chat returns HTTP 503 until a real model runtime is connected.
 
 The root production wrangler.toml remains unchanged.
+
+## Versioned Python runtime contract
+
+`src/contracts.ts` defines the version 1 JSON contract shared by the TypeScript edge layer and a future approved Python runtime:
+
+- `api_version: "1"` identifies the wire format.
+- Chat requests contain a non-empty `message`, optional role-tagged `history`, and optional `request_id`.
+- Health and chat success/error response types are defined explicitly.
+- Incoming request validation limits message/history sizes and rejects unsupported roles or API versions.
+- Runtime transport failures are normalized into safe timeout, authorization, or unavailable errors.
+
+This is a contract and validation layer only. No upstream URL, runtime credential, model selection, or network forwarding is configured. The existing preview `POST /api/chat` remains HTTP 503 until an approved real runtime is available. Do not add secrets to source control.
