@@ -63,3 +63,5 @@ that checkpoint merely to make the connection return success.
 This is a preview bridge only. It is not deployed and does not change the
 production Worker. A running, reachable Python host and owner-configured
 Cloudflare bindings are still required for a real end-to-end connection.
+
+- In `/api/health`, `api_ready` describes the edge gateway itself; `runtime_api_ready` describes whether the configured Python service is reachable and authenticated/configured. `model_ready` remains the separate model-release readiness signal.
