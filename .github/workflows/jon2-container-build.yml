@@ -12,6 +12,7 @@ on:
   pull_request:
     paths:
       - "Dockerfile"
+      - "docker-entrypoint.sh"
       - ".dockerignore"
       - "ai_engine/**"
       - ".github/workflows/jon2-container-build.yml"
