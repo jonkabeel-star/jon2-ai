@@ -1,9 +1,10 @@
 import os
+import hmac
 import re
 from typing import Literal
 from pathlib import Path
 from fastapi.responses import FileResponse, JSONResponse
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -31,7 +32,7 @@ app.add_middleware(
     ],
     allow_credentials=False,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 
@@ -134,15 +135,38 @@ def runtime_v1_health():
         "contract_version": "1",
         "project": "Jon2 AI",
         "status": "ready" if model_ready else "online",
-        "api_ready": True,
+        "api_ready": len(os.getenv("JON2_RUNTIME_TOKEN", "")) >= 32,
         "model_ready": model_ready,
         "model_status": snapshot["model_status"],
     }
 
 
 @app.post("/v1/chat")
-def runtime_v1_chat(request: RuntimeV1ChatRequest):
+def runtime_v1_chat(
+    request: RuntimeV1ChatRequest,
+    authorization: str | None = Header(default=None),
+):
     """Adapt the versioned contract to the existing guarded Jon2 chat engine."""
+    expected_token = os.getenv("JON2_RUNTIME_TOKEN", "")
+    if len(expected_token) < 32:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "contract_version": "1",
+                "error": "runtime_auth_not_configured",
+                "detail": "The private runtime authentication secret is not configured.",
+            },
+        )
+    supplied_token = authorization.removeprefix("Bearer ").strip() if authorization else ""
+    if not supplied_token or not hmac.compare_digest(expected_token, supplied_token):
+        return JSONResponse(
+            status_code=401,
+            content={
+                "contract_version": "1",
+                "error": "runtime_unauthorized",
+                "detail": "Runtime authentication failed.",
+            },
+        )
     legacy_request = ChatRequest(
         message=request.message,
         history=request.history,
