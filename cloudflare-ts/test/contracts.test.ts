@@ -30,7 +30,7 @@ describe("Jon2 v1 runtime contract", () => {
   });
 
   it("rejects empty history content and unexpected history fields", () => {
-    for (const content of ["", "   ", "\\n\\t"]) {
+    for (const content of ["", "   ", "\n\t"]) {
       expect(isChatRequestV1({
         api_version: "1",
         message: "مرحبا",
