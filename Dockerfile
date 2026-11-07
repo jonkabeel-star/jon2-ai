@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PYTHONPATH=/app/ai_engine \
-    JON2_CHECKPOINT=/app/ai_engine/checkpoints/jon2-small.pt
+    JON2_CHECKPOINT=/app/model-weights/jon2-small.pt
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir fastapi "uvicorn[standard]" kaggle && \
 COPY ai_engine/ /app/ai_engine/
 COPY index.html /app/index.html
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
-RUN chmod +x /app/docker-entrypoint.sh && mkdir -p /app/ai_engine/checkpoints
+RUN chmod +x /app/docker-entrypoint.sh && mkdir -p /app/model-weights
 
 EXPOSE 8000
 
