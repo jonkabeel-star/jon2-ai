@@ -15,7 +15,10 @@ RUN pip install --no-cache-dir fastapi "uvicorn[standard]" kaggle && \
 COPY ai_engine/ /app/ai_engine/
 COPY index.html /app/index.html
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
-RUN chmod +x /app/docker-entrypoint.sh && mkdir -p /app/model-weights
+# Remove empty or ignored training-only directories that Docker may preserve
+# during directory COPY. Runtime weights are fetched separately to /app/model-weights.
+RUN rm -rf /app/ai_engine/checkpoints /app/ai_engine/training_data /app/ai_engine/evaluation && \
+    chmod +x /app/docker-entrypoint.sh && mkdir -p /app/model-weights
 
 EXPOSE 8000
 
