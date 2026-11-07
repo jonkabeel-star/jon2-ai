@@ -328,10 +328,13 @@ def generate(
         if valid_count == 0:
             break
         candidate_logits.masked_fill_(~valid_mask.unsqueeze(0), float("-inf"))
+        finite_count = int(torch.isfinite(candidate_logits[0]).sum().item())
+        if finite_count == 0:
+            break
 
         # Apply top-k only after UTF-8 filtering. Applying it before filtering
         # can leave every remaining logit at -inf and make softmax return NaN.
-        if do_sample and top_k > 0 and valid_count > top_k:
+        if do_sample and top_k > 0 and finite_count > top_k:
             top_values, top_indices = torch.topk(candidate_logits, top_k, dim=-1)
             filtered_logits = torch.full_like(candidate_logits, float("-inf"))
             filtered_logits.scatter_(-1, top_indices, top_values)
