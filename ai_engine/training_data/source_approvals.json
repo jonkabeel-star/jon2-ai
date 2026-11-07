@@ -49,6 +49,16 @@
       "review_date": "2026-11-05",
       "rights_basis": "User explicitly confirmed ownership or authorization to use this source for private experimental Jon2 research training in this conversation.",
       "intended_use": "research_training"
+    },
+    {
+      "file": "original_dialogue_ar_batch_04.txt",
+      "sha256": "94d6601ccbc5478194a6ac81263e2caea6ae17abe075c9d449ba3d98ce17f3b2",
+      "character_count": 16578,
+      "status": "APPROVED",
+      "reviewer": "Repository owner (explicit confirmation in conversation)",
+      "review_date": "2026-11-08",
+      "rights_basis": "The repository owner explicitly approved this original project-authored dialogue pack for private experimental Jon2 research training only on 2026-11-08. No public-model or commercial training use is authorized.",
+      "intended_use": "research_training"
     }
   ]
 }
