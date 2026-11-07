@@ -50,7 +50,7 @@ else
       if [ -z "$DOWNLOADED_FILE" ] || [ ! -s "$DOWNLOADED_FILE" ]; then
         echo "Jon2 ERROR: Kaggle returned success, but jon2-small.pt is absent or empty after extraction."
         echo "Jon2 diagnostic: extracted files:"
-        find "$TEMP_DIR" -maxdepth 5 -type f -exec sh -c 'for f do printf "%s (%s bytes)\\n" "${f#"$1"/}" "$(wc -c < "$f")"; done' sh "$TEMP_DIR" {} + 2>/dev/null || true
+        find "$TEMP_DIR" -maxdepth 5 -type f -print 2>/dev/null || true
       else
         SOURCE_SIZE="$(wc -c < "$DOWNLOADED_FILE" | tr -d ' ')"
         echo "Jon2: downloaded checkpoint size: $SOURCE_SIZE bytes."
