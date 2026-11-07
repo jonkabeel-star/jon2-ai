@@ -6,3 +6,6 @@ transformers
 accelerate
 safetensors
 pillow
+# Required for downloading the private Jon2 checkpoint at runtime.
+kaggle==2.2.5
+six
