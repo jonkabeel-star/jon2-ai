@@ -35,11 +35,19 @@ else
   if [ "$DOWNLOAD_STATUS" -eq 0 ]; then
     DOWNLOADED_FILE="$(find "$TEMP_DIR" -type f -name 'jon2-small.pt' -print -quit)"
     if [ -n "$DOWNLOADED_FILE" ] && [ -s "$DOWNLOADED_FILE" ]; then
-      cp "$DOWNLOADED_FILE" "$CHECKPOINT_PATH"
-      if [ -s "$CHECKPOINT_PATH" ]; then
-        echo "Jon2: private checkpoint downloaded and verified."
+      SOURCE_SIZE="$(wc -c < "$DOWNLOADED_FILE" | tr -d ' ')"
+      echo "Jon2 diagnostic: downloaded checkpoint size is ${SOURCE_SIZE} bytes."
+      if cp "$DOWNLOADED_FILE" "$CHECKPOINT_PATH" 2> "$TEMP_DIR/copy-error.log"; then
+        if [ -s "$CHECKPOINT_PATH" ]; then
+          TARGET_SIZE="$(wc -c < "$CHECKPOINT_PATH" | tr -d ' ')"
+          echo "Jon2: private checkpoint downloaded and verified (${TARGET_SIZE} bytes)."
+        else
+          echo "Jon2 ERROR: copy command succeeded but target file is empty or missing."
+        fi
       else
-        echo "Jon2 ERROR: checkpoint copy failed."
+        COPY_STATUS=$?
+        echo "Jon2 ERROR: checkpoint copy command failed with exit code $COPY_STATUS."
+        sed -E 's/(KGAT_[A-Za-z0-9._-]+)/[REDACTED]/g; s/(Bearer )[A-Za-z0-9._-]+/\\1[REDACTED]/g' "$TEMP_DIR/copy-error.log"
       fi
     else
       echo "Jon2 ERROR: Kaggle command succeeded, but jon2-small.pt was not found in the extracted files."
