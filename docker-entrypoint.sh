@@ -4,60 +4,115 @@ set -u
 CHECKPOINT_PATH="${JON2_CHECKPOINT:-/app/model-weights/jon2-small.pt}"
 CHECKPOINT_DIR="$(dirname "$CHECKPOINT_PATH")"
 
+log_safe_file() {
+  # Print diagnostics while masking common Kaggle/Bearer credential formats.
+  sed -E \
+    -e 's/(KGAT_[A-Za-z0-9._-]+)/[REDACTED]/g' \
+    -e 's/(Bearer )[A-Za-z0-9._-]+/\1[REDACTED]/g' \
+    -e 's/("?(token|key|password)"?[[:space:]]*:[[:space:]]*")[^"]+(")/\1[REDACTED]\3/Ig' \
+    "$1"
+}
+
 if [ -s "$CHECKPOINT_PATH" ]; then
   echo "Jon2: checkpoint already exists; skipping Kaggle download."
 elif [ -z "${KAGGLE_API_TOKEN:-}" ]; then
-  echo "Jon2 ERROR: KAGGLE_API_TOKEN is not present in the production runtime environment."
-  echo "Jon2: API will start in health-only mode; no credential values are printed."
+  echo "Jon2 ERROR: KAGGLE_API_TOKEN is missing; starting in health-only mode."
 else
   echo "Jon2: Kaggle token variable is present (value hidden)."
-  TEMP_DIR="$(mktemp -d)"
-  mkdir -p "$CHECKPOINT_DIR"
-
-  if command -v kaggle >/dev/null 2>&1; then
-    echo "Jon2: Kaggle CLI executable found."
-    kaggle --version > "$TEMP_DIR/version.log" 2>&1
-    VERSION_STATUS=$?
-    echo "Jon2: Kaggle CLI version command exit code: $VERSION_STATUS"
-    sed -E 's/(KGAT_[A-Za-z0-9._-]+)/[REDACTED]/g; s/(Bearer )[A-Za-z0-9._-]+/\1[REDACTED]/g' "$TEMP_DIR/version.log"
+  TEMP_DIR="$(mktemp -d 2>/dev/null)"
+  if [ -z "$TEMP_DIR" ] || [ ! -d "$TEMP_DIR" ]; then
+    echo "Jon2 ERROR: unable to create a temporary directory for the checkpoint download."
+  elif ! mkdir -p "$CHECKPOINT_DIR"; then
+    echo "Jon2 ERROR: cannot create checkpoint directory: $CHECKPOINT_DIR"
+  elif [ ! -w "$CHECKPOINT_DIR" ]; then
+    echo "Jon2 ERROR: checkpoint directory is not writable: $CHECKPOINT_DIR"
+  elif ! command -v kaggle >/dev/null 2>&1; then
+    echo "Jon2 ERROR: Kaggle CLI executable is missing from PATH."
   else
-    echo "Jon2 ERROR: Kaggle CLI executable is missing from the container PATH."
-  fi
+    echo "Jon2: Kaggle CLI version:"
+    kaggle --version 2>&1 || true
 
-  echo "Jon2: checking access and downloading the private checkpoint."
-  kaggle datasets download jon2kabeel/jon2-private-model-checkpoint \
-    -f jon2-small.pt -p "$TEMP_DIR" --unzip --force > "$TEMP_DIR/download.log" 2>&1
-  DOWNLOAD_STATUS=$?
-  echo "Jon2: Kaggle download command exit code: $DOWNLOAD_STATUS"
-  echo "Jon2: Kaggle download diagnostic output (credentials redacted):"
-  sed -E 's/(KGAT_[A-Za-z0-9._-]+)/[REDACTED]/g; s/(Bearer )[A-Za-z0-9._-]+/\1[REDACTED]/g' "$TEMP_DIR/download.log"
+    echo "Jon2: requesting jon2-small.pt from private dataset."
+    # Use the explicit dataset-id flag; this avoids CLI positional-argument
+    # ambiguity across Kaggle CLI releases.
+    kaggle datasets download -d jon2kabeel/jon2-private-model-checkpoint \
+      -f jon2-small.pt -p "$TEMP_DIR" --unzip --force \
+      > "$TEMP_DIR/download.log" 2>&1
+    DOWNLOAD_STATUS=$?
+    echo "Jon2: Kaggle download exit code: $DOWNLOAD_STATUS"
+    if [ -s "$TEMP_DIR/download.log" ]; then
+      echo "Jon2: Kaggle diagnostic output (credentials redacted):"
+      log_safe_file "$TEMP_DIR/download.log"
+    fi
 
-  if [ "$DOWNLOAD_STATUS" -eq 0 ]; then
-    DOWNLOADED_FILE="$(find "$TEMP_DIR" -type f -name 'jon2-small.pt' -print -quit)"
-    if [ -n "$DOWNLOADED_FILE" ] && [ -s "$DOWNLOADED_FILE" ]; then
-      SOURCE_SIZE="$(wc -c < "$DOWNLOADED_FILE" | tr -d ' ')"
-      echo "Jon2 diagnostic: downloaded checkpoint size is ${SOURCE_SIZE} bytes."
-      if cp "$DOWNLOADED_FILE" "$CHECKPOINT_PATH" 2> "$TEMP_DIR/copy-error.log"; then
-        if [ -s "$CHECKPOINT_PATH" ]; then
-          TARGET_SIZE="$(wc -c < "$CHECKPOINT_PATH" | tr -d ' ')"
-          echo "Jon2: private checkpoint downloaded and verified (${TARGET_SIZE} bytes)."
-        else
-          echo "Jon2 ERROR: copy command succeeded but target file is empty or missing."
-        fi
+    if [ "$DOWNLOAD_STATUS" -eq 0 ]; then
+      DOWNLOADED_FILE="$(find "$TEMP_DIR" -type f -name 'jon2-small.pt' -print -quit 2>/dev/null)"
+      if [ -z "$DOWNLOADED_FILE" ] || [ ! -s "$DOWNLOADED_FILE" ]; then
+        echo "Jon2 ERROR: Kaggle returned success, but jon2-small.pt is absent or empty after extraction."
+        echo "Jon2 diagnostic: extracted files:"
+        find "$TEMP_DIR" -maxdepth 5 -type f -exec sh -c 'for f do printf "%s (%s bytes)\\n" "${f#"$1"/}" "$(wc -c < "$f")"; done' sh "$TEMP_DIR" {} + 2>/dev/null || true
       else
+        SOURCE_SIZE="$(wc -c < "$DOWNLOADED_FILE" | tr -d ' ')"
+        echo "Jon2: downloaded checkpoint size: $SOURCE_SIZE bytes."
+        # Copy atomically on the same filesystem as the final checkpoint. The
+        # Python helper reports permission, disk-space, and I/O failures.
+        JON2_SOURCE_FILE="$DOWNLOADED_FILE" JON2_TARGET_FILE="$CHECKPOINT_PATH" python - <<'PY'
+import os
+import shutil
+import sys
+import tempfile
+
+source = os.environ["JON2_SOURCE_FILE"]
+target = os.environ["JON2_TARGET_FILE"]
+try:
+    if not os.path.isfile(source) or os.path.getsize(source) <= 0:
+        raise RuntimeError("downloaded source file is missing or empty")
+    target_dir = os.path.dirname(os.path.abspath(target))
+    os.makedirs(target_dir, exist_ok=True)
+    needed = os.path.getsize(source)
+    free = shutil.disk_usage(target_dir).free
+    if free < needed:
+        raise OSError("insufficient disk space: need %d bytes, have %d bytes free" % (needed, free))
+    fd, temporary = tempfile.mkstemp(prefix=".jon2-checkpoint-", suffix=".tmp", dir=target_dir)
+    try:
+        with os.fdopen(fd, "wb") as out, open(source, "rb") as inp:
+            shutil.copyfileobj(inp, out, length=1024 * 1024)
+            out.flush()
+            os.fsync(out.fileno())
+        if os.path.getsize(temporary) != needed:
+            raise OSError("copied file size does not match downloaded file size")
+        os.replace(temporary, target)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+    print("Jon2: checkpoint copy and size verification succeeded (%d bytes)." % os.path.getsize(target))
+except Exception as exc:
+    print("Jon2 ERROR: checkpoint installation failed: %s: %s" % (type(exc).__name__, exc))
+    sys.exit(1)
+PY
         COPY_STATUS=$?
-        echo "Jon2 ERROR: checkpoint copy command failed with exit code $COPY_STATUS."
-        sed -E 's/(KGAT_[A-Za-z0-9._-]+)/[REDACTED]/g; s/(Bearer )[A-Za-z0-9._-]+/\\1[REDACTED]/g' "$TEMP_DIR/copy-error.log"
+        if [ "$COPY_STATUS" -ne 0 ]; then
+          echo "Jon2 ERROR: checkpoint installation failed with exit code $COPY_STATUS."
+        fi
       fi
     else
-      echo "Jon2 ERROR: Kaggle command succeeded, but jon2-small.pt was not found in the extracted files."
-      find "$TEMP_DIR" -maxdepth 4 -type f -printf '%P (%s bytes)\n' 2>/dev/null || true
+      echo "Jon2 ERROR: Kaggle download failed."
+      if grep -Eqi '401|unauthori[sz]ed|authentication|invalid.*token|api token' "$TEMP_DIR/download.log"; then
+        echo "Jon2 diagnosis: Kaggle rejected the configured credential. Check that the token belongs to the dataset owner account and is active."
+      elif grep -Eqi '403|forbidden|permission|access denied' "$TEMP_DIR/download.log"; then
+        echo "Jon2 diagnosis: the Kaggle account is authenticated but does not have permission to download this private dataset."
+      elif grep -Eqi '404|not found|does not exist' "$TEMP_DIR/download.log"; then
+        echo "Jon2 diagnosis: the dataset id or requested filename was not found."
+      elif grep -Eqi 'no space|disk quota|out of space' "$TEMP_DIR/download.log"; then
+        echo "Jon2 diagnosis: the container ran out of temporary storage during download."
+      else
+        echo "Jon2 diagnosis: inspect the redacted Kaggle diagnostic output above for the exact cause."
+      fi
     fi
-  else
-    echo "Jon2 ERROR: private checkpoint download failed; API will start without chat."
   fi
-
-  rm -rf "$TEMP_DIR"
+  if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
+    rm -rf "$TEMP_DIR"
+  fi
 fi
 
 exec "$@"
