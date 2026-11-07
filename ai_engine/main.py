@@ -8,7 +8,7 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
 
-from chat_engine import generate_reply, model_is_ready
+from chat_engine import generate_reply, model_is_ready, load_runtime
 import chat_memory
 from external_models.jais2_routes import router as jais2_router
 from compute.routes import router as compute_router
@@ -22,6 +22,36 @@ app = FastAPI(
 
 app.include_router(jais2_router)
 app.include_router(compute_router)
+
+_checkpoint_load_status = "not_attempted"
+_checkpoint_load_error: str | None = None
+
+
+def load_checkpoint_at_startup() -> None:
+    """Load a real private checkpoint before reporting model readiness."""
+    global _checkpoint_load_status, _checkpoint_load_error
+    if not _checkpoint_configured():
+        _checkpoint_load_status = "missing"
+        _checkpoint_load_error = None
+        print("Jon2 startup: checkpoint missing; API remains health-only.")
+        return
+    try:
+        load_runtime()
+        _checkpoint_load_status = "loaded"
+        _checkpoint_load_error = None
+        print("Jon2 startup: private checkpoint loaded successfully.")
+    except Exception as error:
+        _checkpoint_load_status = "failed"
+        _checkpoint_load_error = f"{type(error).__name__}: {str(error)[:240]}"
+        print(f"Jon2 startup: checkpoint load failed: {_checkpoint_load_error}")
+
+
+@app.on_event("startup")
+def startup_load_checkpoint() -> None:
+    # Downloading is handled by the container entrypoint before Uvicorn starts.
+    # A missing or invalid private file must not prevent health diagnostics.
+    load_checkpoint_at_startup()
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -132,6 +162,12 @@ def health():
         "checkpoint_readable": checkpoint_readable,
         "checkpoint_size_bytes": checkpoint_size,
         "checkpoint_path": checkpoint_path,
+        "checkpoint_load_status": (
+            "loaded" if loaded else (
+                _checkpoint_load_status if checkpoint_available else "missing"
+            )
+        ),
+        "checkpoint_load_error": _checkpoint_load_error if _checkpoint_load_status == "failed" else None,
         "kaggle_token_present": bool(os.getenv("KAGGLE_API_TOKEN")),
         "experimental_chat_enabled": _experimental_chat_enabled(),
         "chat_ready": chat_enabled and loaded and checkpoint_available,
