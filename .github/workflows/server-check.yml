@@ -6,6 +6,7 @@ on:
       - "server/**"
       - "ai_engine/**"
       - "requirements.txt"
+      - "cloudflare-ts/**"
       - ".github/workflows/server-check.yml"
   pull_request:
     paths:
@@ -39,6 +40,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Install TypeScript Worker preview test dependencies
+        working-directory: cloudflare-ts
+        run: npm install --no-package-lock --ignore-scripts
+      - name: Test TypeScript Worker preview
+        working-directory: cloudflare-ts
+        run: npm test
       - name: Validate JavaScript syntax
         run: |
           node --check server/server.js
