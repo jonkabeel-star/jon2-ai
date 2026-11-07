@@ -6,6 +6,12 @@ async function call(path: string, init: RequestInit = {}): Promise<Response> {
   return worker.fetch(request, {} as never, {} as never);
 }
 
+const validChatRequest = {
+  api_version: "1",
+  message: "مرحبا",
+  history: [{ role: "user", content: "أهلًا" }],
+};
+
 describe("Jon2 TypeScript preview Worker", () => {
   it("reports the preview as alive", async () => {
     const response = await call("/api/health/live");
@@ -26,11 +32,11 @@ describe("Jon2 TypeScript preview Worker", () => {
     expect(body.model_status).toBe("not_connected");
   });
 
-  it("never fabricates a chat response when no model is connected", async () => {
+  it("validates a v1 chat request but never fabricates a response", async () => {
     const response = await call("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: "مرحبا" }),
+      body: JSON.stringify(validChatRequest),
     });
     const body = await response.json() as Record<string, unknown>;
 
@@ -38,6 +44,43 @@ describe("Jon2 TypeScript preview Worker", () => {
     expect(body.error).toBe("model_runtime_not_connected");
     expect(body.chat_ready).toBe(false);
     expect(body).not.toHaveProperty("reply");
+  });
+
+  it("rejects an invalid chat contract before runtime dispatch", async () => {
+    const response = await call("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ api_version: "2", message: "مرحبا" }),
+    });
+    const body = await response.json() as Record<string, unknown>;
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBe("invalid_chat_request");
+    expect(body).not.toHaveProperty("reply");
+  });
+
+  it("rejects malformed JSON", async () => {
+    const response = await call("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{invalid",
+    });
+    const body = await response.json() as Record<string, unknown>;
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBe("invalid_json");
+  });
+
+  it("requires JSON content type", async () => {
+    const response = await call("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: "مرحبا",
+    });
+    const body = await response.json() as Record<string, unknown>;
+
+    expect(response.status).toBe(415);
+    expect(body.error).toBe("unsupported_media_type");
   });
 
   it("rejects unknown routes", async () => {
