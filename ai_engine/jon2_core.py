@@ -7,6 +7,7 @@ text. This small architecture is an educational prototype, not a ChatGPT-scale m
 from __future__ import annotations
 
 import argparse
+import json
 import random
 from pathlib import Path
 
