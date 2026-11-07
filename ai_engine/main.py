@@ -1,7 +1,8 @@
 import os
 import re
+from typing import Literal
 from pathlib import Path
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
@@ -49,6 +50,16 @@ class ChatRequest(BaseModel):
         pattern=r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
     )
 
+
+class RuntimeV1ChatRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    contract_version: Literal["1"]
+    message: str = Field(min_length=1, max_length=2000)
+    history: list[HistoryMessage] = Field(default_factory=list, max_length=8)
+    session_id: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+    )
 
 @app.get("/")
 def home():
@@ -113,6 +124,65 @@ def health():
         "memory_long_term_scan_limit": 200,
     }
 
+
+@app.get("/v1/health")
+def runtime_v1_health():
+    """Expose the versioned runtime contract without implying model readiness."""
+    snapshot = health()
+    model_ready = bool(snapshot["chat_ready"])
+    return {
+        "contract_version": "1",
+        "project": "Jon2 AI",
+        "status": "ready" if model_ready else "online",
+        "api_ready": True,
+        "model_ready": model_ready,
+        "model_status": snapshot["model_status"],
+    }
+
+
+@app.post("/v1/chat")
+def runtime_v1_chat(request: RuntimeV1ChatRequest):
+    """Adapt the versioned contract to the existing guarded Jon2 chat engine."""
+    legacy_request = ChatRequest(
+        message=request.message,
+        history=request.history,
+        session_id=request.session_id,
+    )
+    try:
+        result = chat(legacy_request)
+    except HTTPException as error:
+        detail = error.detail if isinstance(error.detail, str) else "Runtime request failed."
+        error_code = (
+            "model_not_ready" if error.status_code == 503
+            else "invalid_request" if error.status_code == 400
+            else "runtime_error"
+        )
+        return JSONResponse(
+            status_code=error.status_code,
+            content={
+                "contract_version": "1",
+                "error": error_code,
+                "detail": detail,
+            },
+        )
+
+    reply = result.get("reply") if isinstance(result, dict) else None
+    if not isinstance(reply, str) or not reply.strip():
+        return JSONResponse(
+            status_code=503,
+            content={
+                "contract_version": "1",
+                "error": "empty_model_reply",
+                "detail": "The Jon2 runtime did not return a usable reply.",
+            },
+        )
+
+    return {
+        "contract_version": "1",
+        "project": "Jon2 AI",
+        "reply": reply,
+        "session_id": result.get("session_id"),
+    }
 
 @app.get("/api/health/ready")
 def readiness():
