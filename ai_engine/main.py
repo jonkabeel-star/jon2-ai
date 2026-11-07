@@ -84,6 +84,11 @@ def _chat_release_approved() -> bool:
     return os.getenv("JON2_CHAT_RELEASE_APPROVED", "false").strip().lower() == "true"
 
 
+def _experimental_chat_enabled() -> bool:
+    """Allow owner-approved trial replies with an explicit quality warning."""
+    return os.getenv("JON2_EXPERIMENTAL_CHAT", "false").strip().lower() == "true"
+
+
 def _checkpoint_configured() -> bool:
     checkpoint = os.getenv(
         "JON2_CHECKPOINT",
@@ -102,10 +107,13 @@ def health():
     loaded = model_is_ready()
     checkpoint_available = _checkpoint_configured()
     release_approved = _chat_release_approved()
+    experimental = _experimental_chat_enabled() and not release_approved
+    chat_enabled = release_approved or experimental
     model_status = (
         "checkpoint_missing" if not checkpoint_available
-        else "release_blocked" if not release_approved
-        else "ready" if loaded
+        else "ready" if release_approved and loaded
+        else "experimental_ready" if experimental and loaded
+        else "release_blocked" if not chat_enabled
         else "checkpoint_available"
     )
     return {
@@ -115,8 +123,9 @@ def health():
         "model": "Jon2 Original Transformer",
         "model_loaded": loaded,
         "checkpoint_configured": checkpoint_available,
-        "chat_ready": release_approved and loaded and checkpoint_available,
+        "chat_ready": chat_enabled and loaded and checkpoint_available,
         "release_approved": release_approved,
+        "experimental_mode": experimental,
         "model_status": model_status,
         "chat_requires_model_checkpoint": True,
         "conversation_memory": "sqlite",
@@ -271,10 +280,10 @@ def chat(request: ChatRequest):
     message = request.message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
-    if not _chat_release_approved():
+    if not (_chat_release_approved() or _experimental_chat_enabled()):
         raise HTTPException(
             status_code=503,
-            detail="محادثة Jon2 متوقفة حتى اعتماد جودة النموذج بعد المراجعة البشرية.",
+            detail="محادثة Jon2 متوقفة حتى تفعيل الوضع التجريبي أو اعتماد جودة النموذج.",
         )
     try:
         history = [item.model_dump() for item in request.history]
@@ -293,6 +302,7 @@ def chat(request: ChatRequest):
             "reply": reply,
             "memory_used": bool(memories),
             "session_id": request.session_id,
+            "experimental": _experimental_chat_enabled() and not _chat_release_approved(),
         }
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
