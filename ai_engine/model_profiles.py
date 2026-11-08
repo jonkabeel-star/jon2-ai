@@ -84,4 +84,6 @@ def describe_profile(name: str) -> dict:
 
 
 def list_profiles() -> list[dict]:
-    return [describe_profile(name) for name in PROFILES]
+    """Return every profile sorted by its estimated parameter count."""
+    profiles = [describe_profile(name) for name in PROFILES]
+    return sorted(profiles, key=lambda profile: profile["estimated_parameters"])
