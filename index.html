@@ -303,6 +303,7 @@ document.getElementById("form").addEventListener("submit", async event => {
         api_version: "1",
         message: value,
         request_id: crypto.randomUUID(),
+        session_id: sessionId,
         history: chatMessages.slice(0, -1).filter(item => item && typeof item.text === "string" && item.text.trim()).slice(-8).map(item => ({
           role: item.kind === "user" ? "user" : "assistant",
           content: item.text.slice(0, 2000)

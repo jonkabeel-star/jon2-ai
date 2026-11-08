@@ -14,6 +14,7 @@ const validChatRequest = {
   api_version: "1",
   message: "مرحبا",
   history: [{ role: "user", content: "أهلًا" }],
+  session_id: "123e4567-e89b-42d3-a456-426614174000",
 };
 const runtimeEnv = {
   JON2_RUNTIME_URL: "https://python-runtime.example/",
@@ -47,6 +48,7 @@ describe("Jon2 TypeScript preview Worker", () => {
       expect(body.contract_version).toBe("1");
       expect(body.message).toBe("مرحبا");
       expect(body.history).toEqual(validChatRequest.history);
+      expect(body.session_id).toBe(validChatRequest.session_id);
       return new Response(JSON.stringify({ reply: "أهلًا بك." }), {
         status: 200,
         headers: { "Content-Type": "application/json" },

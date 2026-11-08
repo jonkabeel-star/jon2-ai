@@ -47,6 +47,7 @@ def check_inline_scripts(html_path: Path) -> int:
         '"/api/chat"',
         'api_version: "1"',
         "request_id: crypto.randomUUID()",
+        "session_id: sessionId",
         "history: chatMessages.slice(0, -1)",
         "health.model_ready",
         "payload.message",

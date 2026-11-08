@@ -53,6 +53,16 @@ class ApiHealthTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             main.ChatRequest(message="مرحبا", execute="true")
 
+    def test_chat_accepts_frontend_v1_metadata_and_session_id(self):
+        request = main.ChatRequest(
+            api_version="1",
+            request_id="req-123",
+            message="مرحبا",
+            session_id="123e4567-e89b-42d3-a456-426614174000",
+        )
+        self.assertEqual(request.api_version, "1")
+        self.assertEqual(request.request_id, "req-123")
+        self.assertEqual(request.session_id, "123e4567-e89b-42d3-a456-426614174000")
     def test_history_is_bounded_and_role_validated(self):
         with self.assertRaises(ValidationError):
             main.ChatRequest(message="مرحبا", history=[

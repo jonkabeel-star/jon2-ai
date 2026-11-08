@@ -11,6 +11,7 @@ describe("Jon2 v1 runtime contract", () => {
       message: "مرحبا",
       history: [{ role: "user", content: "أهلًا" }],
       request_id: "req-001",
+      session_id: "123e4567-e89b-42d3-a456-426614174000",
     })).toBe(true);
   });
 
@@ -32,6 +33,13 @@ describe("Jon2 v1 runtime contract", () => {
     })).toBe(false);
   });
 
+  it("rejects malformed session IDs", () => {
+    expect(isChatRequestV1({
+      api_version: "1",
+      message: "مرحبا",
+      session_id: "not-a-uuid",
+    })).toBe(false);
+  });
   it("rejects system messages in untrusted conversation history", () => {
     expect(isChatRequestV1({
       api_version: "1",
