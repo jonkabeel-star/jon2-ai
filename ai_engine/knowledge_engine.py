@@ -213,4 +213,4 @@ def format_knowledge_answer(item: dict) -> str:
     source = str(item.get("source_url", "")).strip()
     if not extract or not source.startswith("https://"):
         raise ValueError("Knowledge result is incomplete.")
-    return f"{title}:\n{extract}\n\nالمصدر: {source}"
+    return f"{title}:\n{extract}\n\nالمصدر: ويكيبيديا — {source}\nملاحظة الترخيص: يُرجى مراجعة صفحة المصدر لتفاصيل الإسناد وترخيص المحتوى (CC BY-SA). "
