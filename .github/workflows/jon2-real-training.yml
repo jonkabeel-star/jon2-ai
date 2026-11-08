@@ -5,8 +5,15 @@ on:
     branches: [main]
     paths:
       - "ai_engine/training_data/source_approvals.json"
+      - "ai_engine/training_data/**/*.txt"
+      - "ai_engine/training_data/**/*.jsonl"
       - ".github/workflows/jon2-real-training.yml"
   workflow_dispatch:
+
+# Never run two costly training jobs at the same time. Keep the active run alive.
+concurrency:
+  group: jon2-original-training-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
