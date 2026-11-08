@@ -65,7 +65,11 @@ jobs:
           )
           print("Private Kaggle dataset ID added to version metadata.")
           PY
-          kaggle datasets download -d jon2kabeel/jon2-private-model-checkpoint -p /tmp/jon2-private-dataset --unzip
+          # Download each checkpoint by its exact filename. The bulk dataset
+          # download endpoint intermittently returns Kaggle HTTP 404 even when
+          # dataset metadata and file listings are available.
+          kaggle datasets download jon2kabeel/jon2-private-model-checkpoint -f jon2-small.pt -p /tmp/jon2-private-dataset --unzip
+          kaggle datasets download jon2kabeel/jon2-private-model-checkpoint -f jon2-last.pt -p /tmp/jon2-private-dataset --unzip
           test -s /tmp/jon2-private-dataset/jon2-small.pt
           test -s /tmp/jon2-private-dataset/jon2-last.pt
           mkdir -p ai_engine/checkpoints
