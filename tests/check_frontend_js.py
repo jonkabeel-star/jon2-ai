@@ -45,8 +45,11 @@ def check_inline_scripts(html_path: Path) -> int:
         "window.JON2_API_BASE_URL",
         '"/api/health"',
         '"/api/chat"',
-        "session_id: sessionId",
-        "health.chat_ready",
+        'api_version: "1"',
+        "request_id: crypto.randomUUID()",
+        "history: chatMessages.slice(0, -1)",
+        "health.model_ready",
+        "payload.message",
         "apiNotReadyNote",
         "AbortSignal.timeout",
     )
