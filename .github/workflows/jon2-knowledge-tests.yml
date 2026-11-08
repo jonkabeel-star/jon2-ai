@@ -1,0 +1,37 @@
+name: Jon2 Knowledge Retrieval Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ai_engine/knowledge_engine.py"
+      - "ai_engine/tests/test_knowledge_engine.py"
+      - "ai_engine/main.py"
+      - ".github/workflows/jon2-knowledge-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  knowledge-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Compile knowledge and API modules
+        run: |
+          python -m py_compile ai_engine/knowledge_engine.py ai_engine/main.py
+
+      - name: Run offline knowledge cache tests
+        env:
+          PYTHONPATH: ai_engine
+        run: |
+          python -m unittest discover -s ai_engine/tests -p "test_knowledge_engine.py" -v
