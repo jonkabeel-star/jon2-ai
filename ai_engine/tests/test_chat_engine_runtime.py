@@ -111,6 +111,20 @@ class ChatEngineRuntimeTests(unittest.TestCase):
         self.assertIs(loaded_tokenizer, tokenizer)
         self.assertEqual(device.type, "cpu")
 
+    def test_reply_uses_deterministic_low-noise_generation_settings(self):
+        prompt = "المستخدم: مرحبًا\nJon2:"
+        chat_engine._model = object()
+        chat_engine._tokenizer = object()
+        chat_engine._device = "cpu"
+        with mock.patch.object(chat_engine, "load_runtime"), \
+             mock.patch.object(chat_engine, "generate", return_value=prompt + " أهلًا بك") as generator:
+            answer = chat_engine.generate_reply("مرحبًا")
+        self.assertEqual(answer, "أهلًا بك")
+        self.assertFalse(generator.call_args.kwargs["do_sample"])
+        self.assertEqual(generator.call_args.kwargs["repetition_penalty"], 1.10)
+        self.assertEqual(generator.call_args.kwargs["no_repeat_ngram_size"], 3)
+        self.assertEqual(generator.call_args.kwargs["top_k"], 0)
+
     def test_reply_contains_only_generated_completion(self):
         prompt = "المستخدم: مرحبًا\nJon2:"
         chat_engine._model = object()
