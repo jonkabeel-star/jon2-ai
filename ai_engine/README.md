@@ -72,6 +72,34 @@ python ai_engine/train_jon2.py --data ai_engine/training_data --output ai_engine
 
 Resume validation rejects changed training text, tokenizer/model configuration, or training-plan settings instead of silently continuing a different run. Resume checkpoints are read with PyTorch's restricted `weights_only=True` deserializer; the regression suite verifies the saved optimizer, scheduler, scaler, and RNG metadata can be loaded in this mode. Older checkpoints without complete resume metadata are accepted only through the documented legacy fallback and cannot provide bit-for-bit exact resumption.
 
+## Larger from-scratch Arabic research architecture
+
+The optional `arabic_30m` profile configures a new model with width 512,
+8 attention heads, 8 Transformer layers, a 1,024-token context, and an 8,192
+tokenizer vocabulary. Its exact architecture estimate is 29,938,688 parameters
+(about 0.112 GiB for FP32 weights alone). This is roughly 111 times the
+269,952-parameter checkpoint described in the historical run above.
+
+This is a configuration only: it does not create weights or start training.
+It needs a high-memory GPU, considerably more memory for gradients, optimizer
+states and activations, and a very large approved Arabic corpus. The current
+dialogue files (about 40,000 characters across three JSONL files) are nowhere
+near enough to train this architecture well. The profile's default data-volume
+guard is intentionally conservative; do not lower it to force a run.
+
+To inspect the profile without training:
+
+```bash
+python ai_engine/train_jon2.py --profile arabic_30m --help
+```
+
+A new model must use a separate checkpoint path such as
+`ai_engine/checkpoints/jon2-arabic-30m.pt`. Never load the old small
+checkpoint as if it were compatible with this architecture. Keep the old
+checkpoint intact as a fallback. A larger random-initialized model is not
+automatically more intelligent; it needs much more high-quality data,
+compute, and held-out human evaluation.
+
 ## Optional structured dialogue training
 
 JSONL dialogue files are excluded from training by default. To include them, use
