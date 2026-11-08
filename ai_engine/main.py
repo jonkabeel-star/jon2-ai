@@ -48,6 +48,8 @@ class HistoryMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    api_version: Literal["1"] | None = None
+    request_id: str | None = Field(default=None, max_length=128)
     message: str = Field(min_length=1, max_length=2000)
     history: list[HistoryMessage] = Field(default_factory=list, max_length=8)
     session_id: str | None = Field(
