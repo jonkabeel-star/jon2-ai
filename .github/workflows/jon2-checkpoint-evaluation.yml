@@ -48,8 +48,10 @@ jobs:
           fi
           python -m pip install --upgrade pip six "kaggle>=1.8.0"
           mkdir -p /tmp/jon2-checkpoint
-          kaggle datasets download -d jon2kabeel/jon2-private-model-checkpoint -p /tmp/jon2-checkpoint --unzip
-          CHECKPOINT="$(find /tmp/jon2-checkpoint -type f -name 'jon2-small.pt' -print -quit)"
+          # Fetch only the checkpoint file; bulk dataset downloads have
+          # returned HTTP 404 while the direct file endpoint remains available.
+          kaggle datasets download jon2kabeel/jon2-private-model-checkpoint -f jon2-small.pt -p /tmp/jon2-checkpoint --unzip
+          CHECKPOINT="/tmp/jon2-checkpoint/jon2-small.pt"
           if [ -z "$CHECKPOINT" ]; then
             echo "::error::The private Kaggle dataset does not contain jon2-small.pt."
             exit 1
