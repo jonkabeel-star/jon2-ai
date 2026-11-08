@@ -50,7 +50,7 @@ def split_corpus_blocks(corpus: str, validation_fraction: float, seed: int):
 
 def _training_plan(args):
     names = (
-        "steps", "batch_size", "context", "width", "heads", "layers",
+        "batch_size", "context", "width", "heads", "layers",
         "dropout", "learning_rate", "weight_decay", "warmup_steps",
         "validation_fraction", "eval_steps", "eval_every", "patience",
         "min_delta", "grad_clip", "minimum_chars", "tokenizer_vocab_size",
@@ -186,6 +186,10 @@ def train(args):
         if saved.get("corpus_sha256") and saved["corpus_sha256"] != corpus_sha256:
             raise ValueError("Resume checkpoint was created from different training text.")
         saved_plan = saved.get("training_plan")
+        if saved_plan is not None:
+            # Total target steps may grow between daily continuation cycles.
+            saved_plan = dict(saved_plan)
+            saved_plan.pop("steps", None)
         if saved_plan is not None and saved_plan != _training_plan(args):
             raise ValueError(
                 "Resume training settings differ from the saved run. "
@@ -197,8 +201,13 @@ def train(args):
         start_step = int(saved.get("training_steps", 0))
         best_val = float(saved.get("best_validation_loss", float("inf")))
         evaluations_without_improvement = int(saved.get("evaluations_without_improvement", 0))
+        if args.reset_early_stopping:
+            evaluations_without_improvement = 0
         if evaluations_without_improvement < 0:
             raise ValueError("Resume checkpoint has an invalid early-stopping counter.")
+        if args.additional_steps:
+            args.steps = start_step + args.additional_steps
+            print(f"Daily continuation target: {start_step} + {args.additional_steps} = {args.steps} steps")
         print(
             f"Resuming from step {start_step}; best validation loss={best_val:.4f}; "
             f"evaluations without improvement={evaluations_without_improvement}"
@@ -313,7 +322,9 @@ def main():
     parser.add_argument("--output", default=None, help="Best checkpoint path; profile-specific path is selected by default.")
     parser.add_argument("--last-checkpoint", default=None, help="Resumable checkpoint path; profile-specific path is selected by default.")
     parser.add_argument("--resume", default="")
-    parser.add_argument("--steps", type=int, default=10000)
+    parser.add_argument("--steps", type=int, default=10000, help="Total target steps for a new run.")
+    parser.add_argument("--additional-steps", type=int, default=0, help="When resuming, add this many steps to the saved global step.")
+    parser.add_argument("--reset-early-stopping", action="store_true", help="Reset the no-improvement counter for a new scheduled continuation cycle.")
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--context", type=int, default=128)
     parser.add_argument("--width", type=int, default=128)
@@ -355,6 +366,10 @@ def main():
         )
         print("Profile selection configures a new model; it does not create trained weights.")
 
+    if args.additional_steps < 0:
+        parser.error("additional-steps cannot be negative")
+    if args.additional_steps and not args.resume:
+        parser.error("additional-steps requires --resume")
     if args.minimum_tokens_per_parameter is None:
         args.minimum_tokens_per_parameter = 0.0
     if args.minimum_tokens_per_parameter < 0:
