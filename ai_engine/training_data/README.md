@@ -6,15 +6,15 @@ Only UTF-8 `.txt` and `.jsonl` files with explicit, exact-file source approval m
 
 | File | Purpose | Training status |
 |---|---|---|
-| original_dialogue_ar_batch_01.txt | Original Arabic dialogue batch 01 | **Not approved** — exact-file human review and private approval manifest required |
-| original_dialogue_ar_batch_02.txt | Original Arabic dialogue expansion batch 02 | **Not approved** — exact-file human review and private approval manifest required |
-| original_dialogue_ar_batch_03.txt | Original Arabic dialogue expansion batch 03 | **Not approved** — exact-file human review and private approval manifest required |
+| original_dialogue_ar_batch_01.txt | Original Arabic dialogue expansion batch 01 | **Approved for private experimental research training only** — no public or commercial use |
+| original_dialogue_ar_batch_02.txt | Original Arabic dialogue expansion batch 02 | **Approved for private experimental research training only** — no public or commercial use |
+| original_dialogue_ar_batch_03.txt | Original Arabic dialogue expansion batch 03 | **Approved for private experimental research training only** — no public or commercial use |
 | original_dialogue_ar_batch_04.txt | Original Arabic dialogue expansion batch 04 | **Approved for private experimental research training only** — no public or commercial use |
 | dialogue/jon2_dialogue_expanded.jsonl | Structured Arabic multi-turn dialogue | **Not approved** — exact-file review and private approval manifest required |
 | dialogue/jon2_dialogue_multiturn_stage2.jsonl | Structured Arabic multi-turn dialogue | **Not approved** — exact-file review and private approval manifest required |
 | dialogue/jon2_dialogue_stage2.jsonl | Structured Arabic dialogue | **Not approved** — exact-file review and private approval manifest required |
 
-Only `original_dialogue_ar_batch_04.txt` has an exact-file approval, limited to private experimental research training. The other listed dialogue batches and all JSONL files remain unapproved. A request to create or expand project-authored examples is not a file-specific approval record for the exact bytes, rights basis, or intended deployment. Do not infer approval from a dataset-register entry, a passing automated audit, or the presence of a large character count.
+The exact-file approvals recorded in the private manifest cover `original_dialogue_ar.txt`, `original_dialogue_ar_batch_01.txt`, `original_dialogue_ar_batch_02.txt`, `original_dialogue_ar_batch_03.txt`, `original_dialogue_ar_batch_04.txt`, and `original_seed_ar.txt`, all for private experimental research training only. The three listed JSONL files remain unapproved. A request to create or expand project-authored examples is not a file-specific approval record for the exact bytes, rights basis, or intended deployment. Do not infer approval from a dataset-register entry, a passing automated audit, or the presence of a large character count.
 
 Before any training run, the repository owner must review each exact file for factual accuracy, originality, privacy, quality, and intended use, then create the private `source_approvals.json` manifest with each file's SHA-256, exact Unicode character count, reviewer, review date, rights basis, and intended use. Keep that manifest out of the public repository. The fail-closed approval gate must pass before training.
 
