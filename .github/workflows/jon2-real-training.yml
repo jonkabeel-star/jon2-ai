@@ -2,8 +2,9 @@ name: Jon2 Real CPU Training
 
 on:
   schedule:
-    # GitHub Actions uses UTC; this starts one unattended cycle every 24 hours.
-    - cron: "17 0 * * *"
+    # Recovery schedule: the workflow itself runs consecutive cycles for up to 5.5 hours.
+    # This schedule starts a fresh runner after the previous bounded run has ended.
+    - cron: "17 */6 * * *"
   push:
     branches: [main]
     paths:
@@ -77,42 +78,58 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
 
-      - name: Verify approved source fingerprints and train the original Transformer
+      - name: Run consecutive training cycles and save every cycle to private Kaggle
+        timeout-minutes: 345
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
         run: |
           set -euo pipefail
           mkdir -p ai_engine/checkpoints training-output
-          PYTHONPATH=ai_engine python ai_engine/train_jon2.py \
-            --data ai_engine/training_data \
-            --approval-manifest ai_engine/training_data/source_approvals.json \
-            --output ai_engine/checkpoints/jon2-small.pt \
-            --last-checkpoint ai_engine/checkpoints/jon2-last.pt \
-            --steps 5000 \
-            --resume ai_engine/checkpoints/jon2-last.pt \
-            --additional-steps 5000 \
-            --reset-early-stopping \
-            --batch-size 8 \
-            --context 128 \
-            --width 96 \
-            --heads 4 \
-            --layers 2 \
-            --dropout 0.1 \
-            --learning-rate 0.0003 \
-            --weight-decay 0.1 \
-            --warmup-steps 250 \
-            --validation-fraction 0.1 \
-            --eval-steps 16 \
-            --eval-every 250 \
-            --patience 8 \
-            --min-delta 0.0005 \
-            --grad-clip 1.0 \
-            --minimum-chars 100000 \
-            --tokenizer-vocab-size 512 \
-            --tokenizer-min-frequency 2 \
-            --seed 42 \
-            --keep-last 2>&1 | tee training-output/training.log
-          test -s ai_engine/checkpoints/jon2-small.pt
+          cycle=1
+          started=$SECONDS
+          cycle_window_seconds=19800
+          while (( SECONDS - started < cycle_window_seconds )); do
+            echo "===== JON2 TRAINING CYCLE ${cycle} ====="
+            PYTHONPATH=ai_engine python ai_engine/train_jon2.py \
+              --data ai_engine/training_data \
+              --approval-manifest ai_engine/training_data/source_approvals.json \
+              --output ai_engine/checkpoints/jon2-small.pt \
+              --last-checkpoint ai_engine/checkpoints/jon2-last.pt \
+              --steps 5000 \
+              --resume ai_engine/checkpoints/jon2-last.pt \
+              --additional-steps 5000 \
+              --reset-early-stopping \
+              --batch-size 8 \
+              --context 128 \
+              --width 96 \
+              --heads 4 \
+              --layers 2 \
+              --dropout 0.1 \
+              --learning-rate 0.0003 \
+              --weight-decay 0.1 \
+              --warmup-steps 250 \
+              --validation-fraction 0.1 \
+              --eval-steps 16 \
+              --eval-every 250 \
+              --patience 8 \
+              --min-delta 0.0005 \
+              --grad-clip 1.0 \
+              --minimum-chars 100000 \
+              --tokenizer-vocab-size 512 \
+              --tokenizer-min-frequency 2 \
+              --seed 42 \
+              --keep-last 2>&1 | tee "training-output/training-cycle-${cycle}.log"
+            test -s ai_engine/checkpoints/jon2-small.pt
+            test -s ai_engine/checkpoints/jon2-last.pt
+            cp ai_engine/checkpoints/jon2-small.pt /tmp/jon2-private-dataset/
+            cp ai_engine/checkpoints/jon2-last.pt /tmp/jon2-private-dataset/
+            kaggle datasets version -p /tmp/jon2-private-dataset -m "Jon2 consecutive training cycle ${cycle}"
+            echo "Cycle ${cycle} saved to private Kaggle; starting the next cycle automatically."
+            cycle=$((cycle + 1))
+          done
           sha256sum ai_engine/checkpoints/jon2-small.pt | tee training-output/checkpoint.sha256
-          ls -lh ai_engine/checkpoints/jon2-small.pt
+          ls -lh ai_engine/checkpoints/jon2-small.pt ai_engine/checkpoints/jon2-last.pt
+          echo "Consecutive cycle window ended safely; the six-hour recovery schedule can start the next runner."
 
       - name: Load checkpoint and run real CPU inference smoke test
         run: |
