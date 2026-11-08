@@ -7,7 +7,7 @@ class ModelProfileTests(unittest.TestCase):
     def test_profiles_are_ordered_by_capacity(self):
         counts = [item["estimated_parameters"] for item in list_profiles()]
         self.assertEqual(counts, sorted(counts))
-        self.assertEqual(len(counts), 4)
+        self.assertEqual(len(counts), len(PROFILES))
 
     def test_profile_reports_configuration_not_weights(self):
         result = describe_profile("advanced")
