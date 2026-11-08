@@ -123,8 +123,25 @@ jobs:
             test -s ai_engine/checkpoints/jon2-last.pt
             cp ai_engine/checkpoints/jon2-small.pt /tmp/jon2-private-dataset/
             cp ai_engine/checkpoints/jon2-last.pt /tmp/jon2-private-dataset/
-            kaggle datasets version -p /tmp/jon2-private-dataset -m "Jon2 consecutive training cycle ${cycle}"
-            echo "Cycle ${cycle} saved to private Kaggle; starting the next cycle automatically."
+            save_ok=0
+            for attempt in 1 2 3 4; do
+              echo "Saving cycle ${cycle} to private Kaggle (attempt ${attempt}/4)..."
+              if kaggle datasets version -p /tmp/jon2-private-dataset -m "Jon2 consecutive training cycle ${cycle}" 2>&1 | tee "training-output/kaggle-save-cycle-${cycle}-attempt-${attempt}.log"; then
+                save_ok=1
+                break
+              fi
+              if (( attempt < 4 )); then
+                delay=$((attempt * 60))
+                echo "Kaggle version creation failed; retrying in ${delay} seconds."
+                sleep "${delay}"
+              fi
+            done
+            if (( save_ok == 0 )); then
+              echo "::error::Kaggle rejected all 4 checkpoint-version attempts for cycle ${cycle}. See training-output/kaggle-save-cycle-${cycle}-attempt-*.log."
+              exit 1
+            fi
+            echo "Cycle ${cycle} checkpoint version confirmed by Kaggle; starting the next cycle automatically."
+            sleep 30
             cycle=$((cycle + 1))
           done
           sha256sum ai_engine/checkpoints/jon2-small.pt | tee training-output/checkpoint.sha256
