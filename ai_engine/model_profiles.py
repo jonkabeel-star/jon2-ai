@@ -36,6 +36,11 @@ PROFILES = {
         tokenizer_vocab_size=4096, batch_size=2,
         description="Larger research model; not suitable for an iPhone or a short free CPU session.",
     ),
+    "arabic_30m": ModelProfile(
+        name="arabic_30m", width=512, heads=8, layers=8, context=1024,
+        tokenizer_vocab_size=8192, batch_size=1,
+        description="Approximately 30M-parameter Arabic-focused from-scratch research architecture; requires a high-memory GPU and a very large approved corpus. Configuration only.",
+    ),
     "large_research": ModelProfile(
         name="large_research", width=384, heads=8, layers=10, context=2048,
         tokenizer_vocab_size=8192, batch_size=1,
