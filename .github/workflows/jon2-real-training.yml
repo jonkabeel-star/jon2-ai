@@ -1,6 +1,9 @@
 name: Jon2 Real CPU Training
 
 on:
+  schedule:
+    # GitHub Actions uses UTC; this starts one unattended cycle every 24 hours.
+    - cron: "17 0 * * *"
   push:
     branches: [main]
     paths:
@@ -61,6 +64,13 @@ jobs:
           )
           print("Private Kaggle dataset ID added to version metadata.")
           PY
+          kaggle datasets download -d jon2kabeel/jon2-private-model-checkpoint -p /tmp/jon2-private-dataset --unzip
+          test -s /tmp/jon2-private-dataset/jon2-small.pt
+          test -s /tmp/jon2-private-dataset/jon2-last.pt
+          mkdir -p ai_engine/checkpoints
+          cp /tmp/jon2-private-dataset/jon2-small.pt ai_engine/checkpoints/jon2-small.pt
+          cp /tmp/jon2-private-dataset/jon2-last.pt ai_engine/checkpoints/jon2-last.pt
+          echo "Restored best and resumable checkpoints from private Kaggle storage."
 
       - name: Install CPU-only PyTorch
         run: |
@@ -77,6 +87,9 @@ jobs:
             --output ai_engine/checkpoints/jon2-small.pt \
             --last-checkpoint ai_engine/checkpoints/jon2-last.pt \
             --steps 5000 \
+            --resume ai_engine/checkpoints/jon2-last.pt \
+            --additional-steps 5000 \
+            --reset-early-stopping \
             --batch-size 8 \
             --context 128 \
             --width 96 \
