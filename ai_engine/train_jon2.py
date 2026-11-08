@@ -50,7 +50,7 @@ def split_corpus_blocks(corpus: str, validation_fraction: float, seed: int):
 
 def _training_plan(args):
     names = (
-        "batch_size", "context", "width", "heads", "layers",
+        "steps", "batch_size", "context", "width", "heads", "layers",
         "dropout", "learning_rate", "weight_decay", "warmup_steps",
         "validation_fraction", "eval_steps", "eval_every", "patience",
         "min_delta", "grad_clip", "minimum_chars", "tokenizer_vocab_size",
