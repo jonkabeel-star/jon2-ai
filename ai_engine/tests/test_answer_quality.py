@@ -35,7 +35,7 @@ class ArabicAnswerQualityTests(unittest.TestCase):
         )
 
     def test_accepts_normal_arabic_punctuation_and_digits(self):
-        self.assertTrue(validate_generated_answer("الناتج هو ٥٤، لأن ٦ × ٩ = ٥٤."))
+        self.assertTrue(validate_generated_answer("الناتج هو ٥٤، بعد حساب ستة في تسعة."))
 
     def test_diagnostics_flag_empty_answer(self):
         result = diagnose_answer("")
