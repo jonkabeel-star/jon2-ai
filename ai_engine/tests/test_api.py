@@ -47,7 +47,7 @@ class Jon2ApiTests(unittest.TestCase):
     def test_chat_is_blocked_until_human_release_approval(self):
         with patch.dict(jon2_api.os.environ, {"JON2_CHAT_RELEASE_APPROVED": "false"}), \
              patch.object(jon2_api, "generate_reply") as generate:
-            response = self.client.post("/api/chat", json={"message": "مرحبا"})
+            response = self.client.post("/api/chat", json={"message": "اكتب شرحًا عن الذكاء الاصطناعي"})
         self.assertEqual(response.status_code, 503)
         self.assertIn("مراجعة البشرية", response.json()["detail"])
         generate.assert_not_called()
@@ -63,11 +63,11 @@ class Jon2ApiTests(unittest.TestCase):
         self.assertFalse(payload["release_approved"])
 
     def test_chat_returns_503_when_checkpoint_is_missing(self):
-        with patch.object(
+        with patch.object(jon2_api, "retrieve_knowledge", return_value=None), patch.object(
             jon2_api, "generate_reply",
             side_effect=FileNotFoundError("missing trained checkpoint"),
         ):
-            response = self.client.post("/api/chat", json={"message": "مرحبا"})
+            response = self.client.post("/api/chat", json={"message": "اكتب شرحًا عن الذكاء الاصطناعي"})
         self.assertEqual(response.status_code, 503)
         self.assertIn("missing trained checkpoint", response.json()["detail"])
 
@@ -76,6 +76,7 @@ class Jon2ApiTests(unittest.TestCase):
             response = self.client.post("/api/chat", json={"message": "مرحبا"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["reply"], "أهلًا بك")
+        generate.assert_called_once()
 
     def test_chat_rejects_whitespace_only_message(self):
         with patch.object(jon2_api, "generate_reply") as generate:
