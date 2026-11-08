@@ -112,12 +112,13 @@ def health():
     checkpoint_available = _checkpoint_configured()
     release_approved = _chat_release_approved()
     experimental = _experimental_chat_enabled() and not release_approved
-    chat_enabled = release_approved or experimental
+    # Experimental mode is informational only; the public chat route stays closed
+    # until the explicit human release approval is enabled.
+    chat_enabled = release_approved
     model_status = (
         "checkpoint_missing" if not checkpoint_available
         else "ready" if release_approved and loaded
-        else "experimental_ready" if experimental and loaded
-        else "release_blocked" if not chat_enabled
+        else "release_blocked" if not release_approved
         else "checkpoint_available"
     )
     checkpoint_path = os.getenv(
@@ -299,7 +300,7 @@ def chat(request: ChatRequest):
     if not message:
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
 
-    if not (_chat_release_approved() or _experimental_chat_enabled()):
+    if not _chat_release_approved():
         raise HTTPException(
             status_code=503,
             detail="محادثة Jon2 متوقفة حتى تفعيل الوضع التجريبي أو اجتياز مراجعة الجودة والمراجعة البشرية.",
