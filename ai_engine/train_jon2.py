@@ -190,10 +190,22 @@ def train(args):
             # Total target steps may grow between daily continuation cycles.
             saved_plan = dict(saved_plan)
             saved_plan.pop("steps", None)
-        if saved_plan is not None and saved_plan != _training_plan(args):
+        current_plan = _training_plan(args)
+        if saved_plan is not None and saved_plan != current_plan:
+            saved_keys = set(saved_plan)
+            current_keys = set(current_plan)
+            differences = {
+                key: {
+                    "saved": saved_plan.get(key, "<missing>"),
+                    "current": current_plan.get(key, "<missing>"),
+                }
+                for key in sorted(saved_keys | current_keys)
+                if saved_plan.get(key, "<missing>") != current_plan.get(key, "<missing>")
+            }
+            print("RESUME_PLAN_DIFFERENCES:", differences, flush=True)
             raise ValueError(
                 "Resume training settings differ from the saved run. "
-                "Use the same settings to continue exactly, or start a new run."
+                "The checkpoint is preserved; match the listed settings before resuming."
             )
         model.load_state_dict(saved["model_state"])
         if "optimizer_state" in saved:
