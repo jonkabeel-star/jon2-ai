@@ -45,6 +45,19 @@ class KnowledgeEngineTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             knowledge.store("اختبار", {"title": "عنوان", "extract": "شرح", "source_url": "http://invalid"})
 
+    def test_question_search_strips_arabic_wrapper(self):
+        with patch.object(knowledge, "_fetch_json", side_effect=[
+            {"query": {"search": [{"title": "الذكاء الاصطناعي"}]}},
+            {"extract": "مجال علمي.", "content_urls": {"desktop": {"page": "https://ar.wikipedia.org/wiki/AI"}}},
+        ]) as fetch:
+            result = knowledge._search_wikipedia("ما هو الذكاء الاصطناعي؟")
+        self.assertEqual(result["title"], "الذكاء الاصطناعي")
+        self.assertIn("srsearch=الذكاء", fetch.call_args_list[0].args[0])
+
+    def test_network_failure_is_safe(self):
+        with patch.object(knowledge, "_search_wikipedia", side_effect=TimeoutError("offline")):
+            self.assertIsNone(knowledge.retrieve_knowledge("ما عاصمة مصر؟"))
+
     def test_question_detection(self):
         self.assertTrue(knowledge.looks_like_fact_question("اشرح الذكاء الاصطناعي"))
         self.assertTrue(knowledge.looks_like_fact_question("ما عاصمة مصر؟"))
