@@ -69,8 +69,15 @@ def _fetch_json(url: str) -> dict:
 
 
 def _search_wikipedia(query: str) -> dict | None:
+    # Remove common Arabic question wrappers so the encyclopedia receives a topic.
+    search_query = str(query or "").strip()
+    for prefix in ("ما هو", "ماهي", "ما هي", "من هو", "من هي", "ما معنى", "معنى", "اشرح", "أشرح", "معلومات عن", "ما المقصود"):
+        if _normalize(search_query).startswith(_normalize(prefix) + " "):
+            search_query = search_query[len(prefix):].strip()
+            break
+    search_query = re.sub(r"[؟?!.،,]+$", "", search_query).strip() or str(query).strip()
     params = urlencode({
-        "action": "query", "list": "search", "srsearch": query,
+        "action": "query", "list": "search", "srsearch": search_query,
         "srnamespace": 0, "srlimit": 1, "format": "json",
         "utf8": 1,
     })
