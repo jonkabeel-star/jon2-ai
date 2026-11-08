@@ -152,6 +152,7 @@ async function handleChat(request: Request, origin: string, env: Env): Promise<R
         contract_version: "1",
         message: payload.message,
         history: (payload.history ?? []).slice(-8),
+        session_id: payload.session_id,
       }),
       signal: AbortSignal.timeout(RUNTIME_TIMEOUT_MS),
     });
