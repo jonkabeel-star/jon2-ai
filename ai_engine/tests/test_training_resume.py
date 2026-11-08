@@ -10,7 +10,8 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from train_jon2 import (
-    save_checkpoint, _training_plan, restore_scheduler_state, split_corpus_blocks,
+    save_checkpoint, _training_plan, resume_plan_differences,
+    restore_scheduler_state, split_corpus_blocks,
 )
 from tokenizer import ByteBPETokenizer
 
@@ -109,6 +110,27 @@ class TrainingResumeTests(unittest.TestCase):
         self.assertNotEqual(optimizer_b.param_groups[0]["lr"], expected_lr)
         restore_scheduler_state(schedule_b, optimizer_b, saved_scheduler)
         self.assertAlmostEqual(optimizer_b.param_groups[0]["lr"], expected_lr)
+
+    def test_resume_plan_allows_total_steps_to_increase(self):
+        saved = _training_plan(self.make_args())
+        current_args = self.make_args()
+        current_args.steps = 10000
+        current = _training_plan(current_args)
+        self.assertEqual(resume_plan_differences(saved, current), {})
+
+    def test_resume_plan_still_rejects_real_hyperparameter_changes(self):
+        saved = _training_plan(self.make_args())
+        current_args = self.make_args()
+        current_args.steps = 10000
+        current_args.learning_rate = 0.0003
+        current = _training_plan(current_args)
+        differences = resume_plan_differences(saved, current)
+        self.assertEqual(set(differences), {"learning_rate"})
+        self.assertEqual(differences["learning_rate"]["saved"], 0.001)
+        self.assertEqual(differences["learning_rate"]["current"], 0.0003)
+
+    def test_resume_plan_accepts_legacy_checkpoint_without_plan(self):
+        self.assertEqual(resume_plan_differences(None, _training_plan(self.make_args())), {})
 
     def test_training_plan_captures_schedule_and_data_constraints(self):
         args = self.make_args()
