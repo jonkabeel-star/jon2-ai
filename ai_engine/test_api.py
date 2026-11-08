@@ -77,8 +77,10 @@ class ApiHealthTests(unittest.TestCase):
             with patch.dict(os.environ, {
                 "JON2_CHAT_RELEASE_APPROVED": "true",
                 "JON2_MEMORY_DB_PATH": db,
-            }, clear=False), patch("main.generate_reply", return_value="أهلًا بك يا صديقي"):
-                response = main.chat(main.ChatRequest(message="مرحبا", session_id=sid))
+            }, clear=False), patch("main.local_greeting", return_value=None), patch(
+                "main.looks_like_fact_question", return_value=False
+            ), patch("main.generate_reply", return_value="أهلًا بك يا صديقي"):
+                response = main.chat(main.ChatRequest(message="اشرح فكرة بسيطة", session_id=sid))
                 self.assertEqual(response["reply"], "أهلًا بك يا صديقي")
                 self.assertEqual(response["session_id"], sid)
                 self.assertEqual(main.memory_status(sid)["message_count"], 2)
