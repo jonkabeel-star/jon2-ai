@@ -72,6 +72,28 @@ python ai_engine/train_jon2.py --data ai_engine/training_data --output ai_engine
 
 Resume validation rejects changed training text, tokenizer/model configuration, or training-plan settings instead of silently continuing a different run. Resume checkpoints are read with PyTorch's restricted `weights_only=True` deserializer; the regression suite verifies the saved optimizer, scheduler, scaler, and RNG metadata can be loaded in this mode. Older checkpoints without complete resume metadata are accepted only through the documented legacy fallback and cannot provide bit-for-bit exact resumption.
 
+## Optional structured dialogue training
+
+JSONL dialogue files are excluded from training by default. To include them, use
+`--include-jsonl`; every selected `.txt` and `.jsonl` file must have an exact
+private approval-manifest record bound to its SHA-256 and UTF-8 character count.
+The JSONL reader requires complete user/assistant conversations and keeps each
+conversation as a separate paragraph block for the held-out split.
+
+Example:
+
+```bash
+python ai_engine/train_jon2.py --data ai_engine/training_data --include-jsonl --output ai_engine/checkpoints/jon2-dialogue-v2-best.pt --last-checkpoint ai_engine/checkpoints/jon2-dialogue-v2-last.pt --keep-last
+```
+
+Do not use the old checkpoint as `--resume` after adding JSONL or changing any
+training source. The corpus fingerprint, fitted tokenizer, and training plan
+will differ, so the safe behavior is to create a separately named v2 checkpoint
+and preserve the previous checkpoint unchanged. The three existing dialogue
+JSONL files listed in `training_data/README.md` remain unapproved until each
+exact file has been reviewed and approved privately; the new flag does not
+bypass that gate. Keep evaluation prompts separate from training examples.
+
 ## Evaluate a trained checkpoint
 
 The held-out Arabic prompt set is `evaluation/prompts_ar.jsonl`. It is JSONL, not a `.txt` file, so the training corpus reader does not ingest it.
