@@ -52,8 +52,10 @@ class Jon2ApiTests(unittest.TestCase):
         greeting.assert_not_called()
 
     def test_chat_is_blocked_until_human_release_approval(self):
-        with patch.dict(jon2_api.os.environ, {"JON2_CHAT_RELEASE_APPROVED": "false"}), \
-             patch.object(jon2_api, "generate_reply") as generate:
+        with patch.dict(jon2_api.os.environ, {
+            "JON2_CHAT_RELEASE_APPROVED": "false",
+            "JON2_EXPERIMENTAL_CHAT": "true",
+        }), patch.object(jon2_api, "generate_reply") as generate:
             response = self.client.post("/api/chat", json={"message": "اكتب شرحًا عن الذكاء الاصطناعي"})
         self.assertEqual(response.status_code, 503)
         self.assertIn("مراجعة البشرية", response.json()["detail"])
