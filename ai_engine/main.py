@@ -299,6 +299,12 @@ def chat(request: ChatRequest):
     if not message:
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
 
+    if not (_chat_release_approved() or _experimental_chat_enabled()):
+        raise HTTPException(
+            status_code=503,
+            detail="محادثة Jon2 متوقفة حتى تفعيل الوضع التجريبي أو اجتياز مراجعة الجودة والمراجعة البشرية.",
+        )
+
     # Deterministic greetings and source-backed factual retrieval work without
     # loading the still-experimental language model. This does not train weights.
     greeting = local_greeting(message)
@@ -325,12 +331,6 @@ def chat(request: ChatRequest):
                 "response_mode": "source_retrieval",
             }
 
-
-    if not (_chat_release_approved() or _experimental_chat_enabled()):
-        raise HTTPException(
-            status_code=503,
-            detail="محادثة Jon2 متوقفة حتى تفعيل الوضع التجريبي أو اجتياز مراجعة الجودة والمراجعة البشرية.",
-        )
 
     try:
         history = [item.model_dump() for item in request.history]
