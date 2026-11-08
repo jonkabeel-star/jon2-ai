@@ -15,7 +15,7 @@ class DialogueBatchAuditTests(unittest.TestCase):
         self.assertFalse(is_dialogue_file(Path("original_seed_ar.txt")))
         self.assertFalse(is_dialogue_file(Path("original_dialogue_ar_batch_01.jsonl")))
 
-    def test_all_project_dialogue_batches_are_registered_and_unapproved(self):
+    def test_all_project_dialogue_batches_are_registered_with_correct_approval_status(self):
         repository = Path(__file__).resolve().parents[2]
         training_dir = repository / "ai_engine" / "training_data"
         readme = (training_dir / "README.md").read_text(encoding="utf-8")
@@ -27,7 +27,11 @@ class DialogueBatchAuditTests(unittest.TestCase):
             with self.subTest(batch=batch.name):
                 row = next((line for line in readme.splitlines() if batch.name in line), "")
                 self.assertTrue(row, f"{batch.name} is missing from training_data/README.md")
-                self.assertIn("not approved", row.casefold())
+                is_private_approved = batch.name == "original_dialogue_ar_batch_04.txt"
+                if is_private_approved:
+                    self.assertIn("approved for private experimental research training only", row.casefold())
+                else:
+                    self.assertIn("not approved", row.casefold())
 
                 marker = f"training_data/{batch.name}"
                 position = register.find(marker)
@@ -37,7 +41,10 @@ class DialogueBatchAuditTests(unittest.TestCase):
                 section = register[section_start:section_end if section_end >= 0 else None]
                 status_lines = [line for line in section.splitlines() if line.startswith("- Status:")]
                 self.assertTrue(status_lines, f"{batch.name} has no register status")
-                self.assertIn("NOT APPROVED", status_lines[0].upper())
+                if is_private_approved:
+                    self.assertIn("APPROVED FOR PRIVATE EXPERIMENTAL RESEARCH", status_lines[0].upper())
+                else:
+                    self.assertIn("NOT APPROVED", status_lines[0].upper())
 
     def test_valid_alternating_dialogue_passes(self):
         with tempfile.TemporaryDirectory() as directory:
