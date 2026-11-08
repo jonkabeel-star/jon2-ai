@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+from urllib.parse import parse_qs, urlparse
 
 import knowledge_engine as knowledge
 
@@ -52,7 +53,7 @@ class KnowledgeEngineTests(unittest.TestCase):
         ]) as fetch:
             result = knowledge._search_wikipedia("ما هو الذكاء الاصطناعي؟")
         self.assertEqual(result["title"], "الذكاء الاصطناعي")
-        self.assertIn("srsearch=الذكاء", fetch.call_args_list[0].args[0])
+        self.assertEqual(parse_qs(urlparse(fetch.call_args_list[0].args[0]).query)["srsearch"], ["الذكاء الاصطناعي"])
 
     def test_network_failure_is_safe(self):
         with patch.object(knowledge, "_search_wikipedia", side_effect=TimeoutError("offline")):
