@@ -63,6 +63,22 @@ def _training_plan(args):
     return plan
 
 
+def resume_plan_differences(saved_plan, current_plan):
+    """Compare immutable settings while allowing the total step target to grow."""
+    if saved_plan is None:
+        return {}
+    saved = dict(saved_plan)
+    current = dict(current_plan)
+    # Continuation runs increase the total target; exclude steps on BOTH sides.
+    saved.pop("steps", None)
+    current.pop("steps", None)
+    missing = object()
+    return {
+        key: {"saved": saved.get(key, "<missing>"), "current": current.get(key, "<missing>")}
+        for key in sorted(set(saved) | set(current))
+        if saved.get(key, missing) != current.get(key, missing)
+    }
+
 def restore_scheduler_state(scheduler, optimizer, state):
     """Restore scheduler internals and the optimizer's active learning rate."""
     scheduler.load_state_dict(state)
@@ -186,22 +202,9 @@ def train(args):
         if saved.get("corpus_sha256") and saved["corpus_sha256"] != corpus_sha256:
             raise ValueError("Resume checkpoint was created from different training text.")
         saved_plan = saved.get("training_plan")
-        if saved_plan is not None:
-            # Total target steps may grow between daily continuation cycles.
-            saved_plan = dict(saved_plan)
-            saved_plan.pop("steps", None)
         current_plan = _training_plan(args)
-        if saved_plan is not None and saved_plan != current_plan:
-            saved_keys = set(saved_plan)
-            current_keys = set(current_plan)
-            differences = {
-                key: {
-                    "saved": saved_plan.get(key, "<missing>"),
-                    "current": current_plan.get(key, "<missing>"),
-                }
-                for key in sorted(saved_keys | current_keys)
-                if saved_plan.get(key, "<missing>") != current_plan.get(key, "<missing>")
-            }
+        differences = resume_plan_differences(saved_plan, current_plan)
+        if differences:
             print("RESUME_PLAN_DIFFERENCES:", differences, flush=True)
             raise ValueError(
                 "Resume training settings differ from the saved run. "
