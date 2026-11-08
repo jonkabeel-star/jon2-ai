@@ -80,6 +80,24 @@ class Jon2ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 503)
         self.assertIn("missing trained checkpoint", response.json()["detail"])
 
+    def test_source_backed_knowledge_answer_works_without_model_release(self):
+        item = {
+            "title": "القاهرة",
+            "extract": "القاهرة عاصمة مصر.",
+            "source_url": "https://ar.wikipedia.org/wiki/القاهرة",
+            "cached": False,
+        }
+        with patch.dict(jon2_api.os.environ, {"JON2_CHAT_RELEASE_APPROVED": "false"}), \\
+             patch.object(jon2_api, "retrieve_knowledge", return_value=item) as retrieve, \\
+             patch.object(jon2_api, "generate_reply") as generate:
+            response = self.client.post("/api/chat", json={"message": "ما عاصمة مصر؟"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["response_mode"], "source_retrieval")
+        self.assertIn("القاهرة عاصمة مصر", response.json()["reply"])
+        self.assertEqual(response.json()["knowledge_source"], item["source_url"])
+        retrieve.assert_called_once()
+        generate.assert_not_called()
+
     def test_chat_returns_generated_reply(self):
         with patch.object(jon2_api, "generate_reply", return_value="أهلًا بك"):
             response = self.client.post("/api/chat", json={"message": "مرحبا"})
