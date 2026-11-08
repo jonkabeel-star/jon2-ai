@@ -50,7 +50,7 @@ const MAX_HISTORY_ITEMS = 8;
 const MAX_HISTORY_CONTENT_LENGTH = 2_000;
 
 export function isChatRole(value: unknown): value is ChatRole {
-  return value === "system" || value === "user" || value === "assistant";
+  return value === "user" || value === "assistant";
 }
 
 /** Validate untrusted JSON before it is forwarded to a model runtime. */
