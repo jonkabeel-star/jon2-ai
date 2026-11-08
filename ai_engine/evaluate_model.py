@@ -77,6 +77,9 @@ def main() -> int:
         default=str(Path(__file__).resolve().parent / "evaluation" / "review-report.json"),
     )
     parser.add_argument("--device", default=None, help="Optional torch device, e.g. cpu or cuda")
+    parser.add_argument("--expected-prompt-count", type=int, default=None)
+    parser.add_argument("--training-run-id", default=None)
+    parser.add_argument("--checkpoint-sha256", default=None)
     args = parser.parse_args()
 
     if args.max_new_chars <= 0 or args.temperature <= 0:
@@ -91,6 +94,15 @@ def main() -> int:
         return 2
 
     prompts = load_prompts(Path(args.prompts))
+    if args.expected_prompt_count is not None and len(prompts) != args.expected_prompt_count:
+        raise ValueError(
+            f"Expected exactly {args.expected_prompt_count} held-out prompts, found {len(prompts)}."
+        )
+    if args.checkpoint_sha256 is not None and (
+        len(args.checkpoint_sha256) != 64
+        or any(char not in "0123456789abcdef" for char in args.checkpoint_sha256)
+    ):
+        raise ValueError("checkpoint-sha256 must be a lowercase 64-character SHA-256 digest.")
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(args.seed)
@@ -131,6 +143,8 @@ def main() -> int:
         "evaluation_type": "human_review_required",
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "checkpoint": str(checkpoint),
+        "training_run_id": args.training_run_id,
+        "checkpoint_sha256": args.checkpoint_sha256,
         "device": str(device),
         "seed": args.seed,
         "temperature": args.temperature,
