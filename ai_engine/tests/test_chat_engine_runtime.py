@@ -111,7 +111,7 @@ class ChatEngineRuntimeTests(unittest.TestCase):
         self.assertIs(loaded_tokenizer, tokenizer)
         self.assertEqual(device.type, "cpu")
 
-    def test_reply_uses_deterministic_low-noise_generation_settings(self):
+    def test_reply_uses_deterministic_low_noise_generation_settings(self):
         prompt = "المستخدم: مرحبًا\nJon2:"
         chat_engine._model = object()
         chat_engine._tokenizer = object()
