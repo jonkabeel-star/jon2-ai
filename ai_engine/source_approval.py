@@ -72,7 +72,8 @@ def validate_source_approvals(
         }
 
     if not files:
-        raise FileNotFoundError(f"No .txt training files found in {data_dir}.")
+        expected = ".txt or .jsonl" if include_jsonl else ".txt"
+        raise FileNotFoundError(f"No {expected} training files found in {data_dir}.")
     if not manifest_path.is_file():
         raise PermissionError(
             f"Training blocked: approval manifest not found at {manifest_path}. "
