@@ -10,6 +10,10 @@ from pydantic import BaseModel, Field, ConfigDict
 
 from chat_engine import generate_reply, model_is_ready
 import chat_memory
+from knowledge_engine import (
+    format_knowledge_answer, local_greeting, looks_like_fact_question,
+    retrieve_knowledge,
+)
 from external_models.jais2_routes import router as jais2_router
 from compute.routes import router as compute_router
 from model_profiles import PROFILES, describe_profile, list_profiles
@@ -291,6 +295,33 @@ def chat(request: ChatRequest):
     message = request.message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
+
+    # Deterministic greetings and source-backed factual retrieval work without
+    # loading the still-experimental language model. This does not train weights.
+    greeting = local_greeting(message)
+    if greeting:
+        if request.session_id:
+            chat_memory.add_exchange(request.session_id, message, greeting)
+        return {
+            "project": "Jon2 AI", "reply": greeting, "memory_used": False,
+            "session_id": request.session_id, "knowledge_used": False,
+            "response_mode": "local_greeting",
+        }
+
+    if looks_like_fact_question(message):
+        knowledge = retrieve_knowledge(message)
+        if knowledge:
+            reply = format_knowledge_answer(knowledge)
+            if request.session_id:
+                chat_memory.add_exchange(request.session_id, message, reply)
+            return {
+                "project": "Jon2 AI", "reply": reply, "memory_used": False,
+                "session_id": request.session_id, "knowledge_used": True,
+                "knowledge_cached": bool(knowledge.get("cached")),
+                "knowledge_source": knowledge.get("source_url"),
+                "response_mode": "source_retrieval",
+            }
+
     if not (_chat_release_approved() or _experimental_chat_enabled()):
         raise HTTPException(
             status_code=503,
