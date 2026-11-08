@@ -263,7 +263,7 @@ async function checkApiHealth() {
     });
     if (!response.ok) throw new Error("Health check failed: " + response.status);
     const health = await response.json();
-    apiStatusKey = health.experimental_mode && health.chat_ready ? "experimentalReady" : health.chat_ready ? "modelReady" : "apiOnline";
+    apiStatusKey = health.experimental_mode && health.chat_ready ? "experimentalReady" : health.chat_ready === true || health.model_ready === true ? "modelReady" : health.api_ready === true || health.runtime_api_ready === true ? "apiOnline" : "offline";
     status.textContent = translations[lang][apiStatusKey];
     updateChatNote();
   } catch (error) {
@@ -299,14 +299,24 @@ document.getElementById("form").addEventListener("submit", async event => {
         "Content-Type": "application/json",
         "Accept": "application/json"
       },
-      body: JSON.stringify({ message: value, session_id: sessionId }),
+      body: JSON.stringify({
+        api_version: "1",
+        message: value,
+        request_id: crypto.randomUUID(),
+        history: chatMessages.slice(0, -1).filter(item => item && typeof item.text === "string" && item.text.trim()).slice(-8).map(item => ({
+          role: item.kind === "user" ? "user" : "assistant",
+          content: item.text.slice(0, 2000)
+        }))
+      }),
       signal: AbortSignal.timeout(60000)
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-      const detail = typeof payload.detail === "string"
-        ? payload.detail
-        : translations[lang].requestFailed;
+      const detail = typeof payload.message === "string"
+        ? payload.message
+        : typeof payload.detail === "string"
+          ? payload.detail
+          : translations[lang].requestFailed;
       addMessage(detail, "bot");
       return;
     }
