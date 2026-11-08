@@ -38,7 +38,7 @@ class JsonlCorpusReaderTests(unittest.TestCase):
         corpus = read_corpus(self.root, include_jsonl=True)
         self.assertIn("المستخدم: ما عاصمة مصر؟", corpus)
         self.assertIn("Jon2: عاصمة مصر هي القاهرة.", corpus)
-        self.assertIn("\\n\\n", corpus)
+        self.assertIn("\n\n", corpus)
 
     def test_malformed_jsonl_is_rejected(self):
         (self.root / "dialogue.jsonl").write_text("{bad json}\n", encoding="utf-8")
