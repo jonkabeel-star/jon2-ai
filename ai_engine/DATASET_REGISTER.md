@@ -124,3 +124,35 @@ A 40-prompt held-out evaluation completed in [run 42028581017](https://github.co
 Approval scope is limited to the five exact files above as they existed at approval time. It does not approve later edits, new batches, external datasets, Wikipedia, web-crawled text, or any other source. New or modified training material requires fresh explicit owner approval and rights review. Keep ArabicText-Large, HPLT, and Wikipedia sources NOT APPROVED as recorded above.
 
 Operational decision: keep `JON2_CHAT_RELEASE_APPROVED` false. Do not describe the checkpoint as a functioning conversational assistant. Improve model and data quality before another controlled training run; do not repeat training unchanged merely to produce another checkpoint.
+
+
+## Candidate 8 — Jon2 AI Original Arabic Dialogue Expansion Batch 04
+
+- File: `ai_engine/training_data/original_dialogue_ar_batch_04.txt`
+- Source: project-authored Arabic dialogue pack for clear Modern Standard Arabic explanations, coherence, uncertainty, reasoning, and step-by-step problem solving.
+- Raw file size: 29,323 bytes; Unicode character count: 16,578; SHA-256: `6e4e8178d52f1f3b5019fbd7e516db0ac9eeef369ad8ee22b24c8648cb302928`.
+- Owner review: explicitly approved for private experimental Jon2 research training on 2026-11-08.
+- Intended use: `research_training` only. Public-model and commercial training are not authorized.
+- Status: **APPROVED FOR PRIVATE EXPERIMENTAL RESEARCH TRAINING ONLY**.
+- Handling: the approval applies only to the exact bytes and hash above. Any edit requires a new review and approval record.
+
+## Candidate 9 — Structured Arabic Dialogue JSONL: Expanded
+
+- File: `ai_engine/training_data/dialogue/jon2_dialogue_expanded.jsonl`
+- Current size: 48 conversation records, 122 messages, 10,464 message-content characters.
+- Format: structured user/assistant conversations, including multi-turn examples.
+- Status: **NOT APPROVED** — exact-file human review and private approval manifest required before training.
+
+## Candidate 10 — Structured Arabic Dialogue JSONL: Multi-turn Stage 2
+
+- File: `ai_engine/training_data/dialogue/jon2_dialogue_multiturn_stage2.jsonl`
+- Current size: 22 conversation records, 132 messages, 10,990 message-content characters.
+- Format: structured multi-turn user/assistant conversations.
+- Status: **NOT APPROVED** — exact-file human review and private approval manifest required before training.
+
+## Candidate 11 — Structured Arabic Dialogue JSONL: Stage 2
+
+- File: `ai_engine/training_data/dialogue/jon2_dialogue_stage2.jsonl`
+- Current size: 117 conversation records, 234 messages, 18,744 message-content characters.
+- Format: structured user/assistant question-and-answer conversations.
+- Status: **NOT APPROVED** — exact-file human review and private approval manifest required before training.
