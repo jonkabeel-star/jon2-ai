@@ -58,12 +58,27 @@ jobs:
           metadata = json.loads(Path("/tmp/jon2-private-dataset/dataset-metadata.json").read_text())
           if not isinstance(metadata, dict):
               raise SystemExit("Downloaded Kaggle metadata is not a JSON object.")
-          metadata["id"] = "jon2kabeel/jon2-private-model-checkpoint"
+          dataset_ref = "jon2kabeel/jon2-private-model-checkpoint"
+          # Resolve the numeric Kaggle dataset ID as well as retaining the slug.
+          # This avoids CLI-version differences when parsing version metadata.
+          from kaggle.api.kaggle_api_extended import KaggleApi
+          api = KaggleApi()
+          api.authenticate()
+          dataset = api.dataset_view(dataset_ref)
+          metadata["id"] = dataset_ref
+          numeric_id = getattr(dataset, "id", None) or getattr(dataset, "id_no", None)
+          if numeric_id is not None:
+              metadata["id_no"] = int(numeric_id)
+          if not metadata.get("id") and not metadata.get("id_no"):
+              raise SystemExit("Kaggle dataset metadata has neither id nor id_no.")
           Path("/tmp/jon2-private-dataset/dataset-metadata.json").write_text(
               json.dumps(metadata, ensure_ascii=False, indent=2) + "\n",
               encoding="utf-8",
           )
-          print("Private Kaggle dataset ID added to version metadata.")
+          check = json.loads(Path("/tmp/jon2-private-dataset/dataset-metadata.json").read_text(encoding="utf-8"))
+          if not check.get("id") and not check.get("id_no"):
+              raise SystemExit("Version metadata preflight failed: dataset identifier is missing.")
+          print("Private Kaggle dataset version metadata verified:", check.get("id"), check.get("id_no"))
           PY
           # Download each checkpoint by its exact filename. The bulk dataset
           # download endpoint intermittently returns Kaggle HTTP 404 even when
@@ -80,6 +95,7 @@ jobs:
       - name: Install CPU-only PyTorch
         run: |
           python -m pip install --upgrade pip
+          python -m pip install numpy
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
 
       - name: Run consecutive training cycles and save every cycle to private Kaggle
@@ -204,13 +220,25 @@ jobs:
           metadata = json.loads(p.read_text(encoding="utf-8"))
           if not isinstance(metadata, dict):
               raise SystemExit("Kaggle dataset metadata must be a JSON object.")
-          metadata["id"] = "jon2kabeel/jon2-private-model-checkpoint"
+          dataset_ref = "jon2kabeel/jon2-private-model-checkpoint"
+          from kaggle.api.kaggle_api_extended import KaggleApi
+          api = KaggleApi()
+          api.authenticate()
+          dataset = api.dataset_view(dataset_ref)
+          metadata["id"] = dataset_ref
+          numeric_id = getattr(dataset, "id", None) or getattr(dataset, "id_no", None)
+          if numeric_id is not None:
+              metadata["id_no"] = int(numeric_id)
           metadata.setdefault("title", "Jon2 Private Model Checkpoint")
           metadata.setdefault("description", "Private internal storage for Jon2 AI model checkpoints. Not licensed for public redistribution.")
           if not metadata.get("licenses"):
               metadata["licenses"] = [{"name": "other"}]
+          if not metadata.get("id") and not metadata.get("id_no"):
+              raise SystemExit("Kaggle version metadata is missing id/id_no.")
           p.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-          print("Prepared metadata:", json.dumps(metadata, ensure_ascii=False))
+          verified = json.loads(p.read_text(encoding="utf-8"))
+          assert verified.get("id") or verified.get("id_no"), "dataset identifier missing after write"
+          print("Prepared and verified Kaggle metadata:", verified.get("id"), verified.get("id_no"))
           PY
           kaggle datasets version -p /tmp/jon2-private-dataset -m "Jon2 original Arabic Transformer CPU training"
           echo "Private checkpoint dataset version updated."
