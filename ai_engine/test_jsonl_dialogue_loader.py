@@ -23,7 +23,7 @@ class JsonlDialogueLoaderTests(unittest.TestCase):
                 "\n".join(json.dumps(row, ensure_ascii=False) for row in rows),
                 encoding="utf-8",
             )
-            corpus = read_corpus(root)
+            corpus = read_corpus(root, include_jsonl=True)
 
         self.assertIn("المستخدم: سؤال عربي رقم 0", corpus)
         self.assertIn("Jon2: هذه إجابة عربية واضحة", corpus)
@@ -34,7 +34,7 @@ class JsonlDialogueLoaderTests(unittest.TestCase):
             path = Path(directory) / "dialogue.jsonl"
             path.write_text("{not-json}\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "Invalid JSONL record"):
-                read_corpus(Path(directory))
+                read_corpus(Path(directory), include_jsonl=True)
 
 
 if __name__ == "__main__":
