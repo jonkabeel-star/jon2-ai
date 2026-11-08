@@ -7,6 +7,8 @@ on:
       - "ai_engine/training_data/source_approvals.json"
       - "ai_engine/training_data/**/*.txt"
       - "ai_engine/training_data/**/*.jsonl"
+      - "ai_engine/source_approval.py"
+      - "ai_engine/corpus_reader.py"
       - ".github/workflows/jon2-real-training.yml"
   workflow_dispatch:
 
