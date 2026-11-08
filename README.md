@@ -24,6 +24,14 @@ The chat must remain unavailable until a real Jon2 checkpoint passes the project
 
 For GitHub Pages, edit the single setting in the root `jon2-config.js` file to `window.JON2_API_BASE_URL = "https://YOUR-DEPLOYED-API-HOST";` after the API is deployed. The file is loaded before the chat client, accepts only an HTTPS origin (or localhost HTTP for development), and must contain no credentials or private tokens. Until an owner deploys the API and configures that origin, the GitHub Pages site correctly reports that no backend is connected.
 
+## Source-backed knowledge retrieval
+
+The chat API has a lightweight Arabic greeting path and a source-attributed factual lookup path. Factual lookups use the public Arabic Wikipedia API (with an English-language fallback), save the short extract, title, source URL, retrieval time, and expiry in a local SQLite cache, and reuse fresh entries for seven days. This is retrieval/cache behavior; it does not update the model weights or add retrieved pages to the approved training corpus.
+
+The cache database defaults to `~/.jon2-ai/knowledge.sqlite3`. Set `JON2_KNOWLEDGE_DB_PATH` to choose another writable path. On hosts with an ephemeral filesystem (including typical free web-service instances), cached knowledge may be lost when the service is restarted or redeployed. Durable cross-restart storage requires a persistent volume or managed database.
+
+The API health response reports the retrieval/cache configuration. Offline unit tests run in the `Jon2 Knowledge Retrieval Tests` GitHub Actions workflow. General model chat remains gated by the existing human release approval.
+
 ## Hosting boundaries
 
 GitHub Pages hosts the static website only. It cannot run the Python model, store passwords securely, or act as the production database. The model API needs a separate HTTPS backend and private checkpoint storage. Account services additionally need a persistent database, managed secrets, and a verified email provider.
