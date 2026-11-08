@@ -218,7 +218,7 @@ function speakJon2Arabic(text) {
     return;
   }
   stopJon2Speech();
-  const cleanText = String(text || "").replace(/\\s+/g, " ").trim();
+  const cleanText = String(text || "").replace(/\s+/g, " ").trim();
   if (!cleanText) return;
   const utterance = new SpeechSynthesisUtterance(cleanText);
   utterance.lang = "ar-EG";
