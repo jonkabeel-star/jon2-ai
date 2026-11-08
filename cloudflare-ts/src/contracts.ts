@@ -19,6 +19,7 @@ export interface ChatRequestV1 {
   message: string;
   history?: ChatMessage[];
   request_id?: string;
+  session_id?: string;
 }
 
 export interface RuntimeHealthV1 {
@@ -67,6 +68,10 @@ export function isChatRequestV1(value: unknown): value is ChatRequestV1 {
   if (candidate.request_id !== undefined &&
       (typeof candidate.request_id !== "string" ||
        candidate.request_id.length > 128)) return false;
+
+  if (candidate.session_id !== undefined &&
+      (typeof candidate.session_id !== "string" ||
+       !/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(candidate.session_id))) return false;
 
   if (candidate.history === undefined) return true;
   if (!Array.isArray(candidate.history) ||
