@@ -8,7 +8,7 @@ from pathlib import Path, PurePosixPath
 
 
 def validate_source_approvals(data_dir: Path, manifest_path: Path) -> None:
-    """Require one explicit human approval for every training .txt source."""
+    """Require explicit approval for every .txt source; intentionally ignore .jsonl dialogue files."""
     data_dir = Path(data_dir)
     root = data_dir.resolve()
     if not root.is_dir():
@@ -16,7 +16,7 @@ def validate_source_approvals(data_dir: Path, manifest_path: Path) -> None:
 
     files = {}
     for path in data_dir.rglob("*"):
-        if not path.is_file() or path.suffix.lower() not in {".txt", ".jsonl"}:
+        if not path.is_file() or path.suffix.lower() != ".txt":
             continue
         if not path.resolve().is_relative_to(root):
             raise PermissionError(f"Training text resolves outside data directory: {path}")
@@ -65,7 +65,7 @@ def validate_source_approvals(data_dir: Path, manifest_path: Path) -> None:
         }
 
     if not files:
-        raise FileNotFoundError(f"No training .txt files found in {data_dir}.")
+        raise FileNotFoundError(f"No .txt training files found in {data_dir}.")
     if not manifest_path.is_file():
         raise PermissionError(
             f"Training blocked: approval manifest not found at {manifest_path}. "
