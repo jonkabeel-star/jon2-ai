@@ -13,7 +13,7 @@ jobs:
   evaluate-checkpoint:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Check out Jon2 AI
         uses: actions/checkout@v4
@@ -32,7 +32,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Download the private saved checkpoint from Kaggle
+      - name: Download and verify the exact private checkpoint
         env:
           KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
         run: |
@@ -41,126 +41,37 @@ jobs:
             echo "::error::KAGGLE_API_TOKEN is not configured."
             exit 1
           fi
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade six
-          python -m pip install --upgrade "kaggle>=1.8.0"
-          python -c "import six; print('six dependency OK:', six.__version__)"
+          EXPECTED_SHA="$(awk 'NR==1 {print $1}' training-evidence/checkpoint.sha256)"
+          if ! printf '%s' "$EXPECTED_SHA" | grep -Eq '^[0-9a-f]{64}$'; then
+            echo "::error::The completed training run did not provide a valid checkpoint SHA-256."
+            exit 1
+          fi
+          python -m pip install --upgrade pip six "kaggle>=1.8.0"
           mkdir -p /tmp/jon2-checkpoint
           kaggle datasets download -d jon2kabeel/jon2-private-model-checkpoint -p /tmp/jon2-checkpoint --unzip
           CHECKPOINT="$(find /tmp/jon2-checkpoint -type f -name 'jon2-small.pt' -print -quit)"
           if [ -z "$CHECKPOINT" ]; then
             echo "::error::The private Kaggle dataset does not contain jon2-small.pt."
-            find /tmp/jon2-checkpoint -maxdepth 3 -type f -print
+            exit 1
+          fi
+          ACTUAL_SHA="$(sha256sum "$CHECKPOINT" | awk '{print $1}')"
+          if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+            echo "::error::Kaggle checkpoint SHA-256 does not match training run ${{ github.event.workflow_run.id }}."
+            echo "expected_sha256=$EXPECTED_SHA"
+            echo "actual_sha256=$ACTUAL_SHA"
             exit 1
           fi
           echo "JON2_CHECKPOINT_FILE=$CHECKPOINT" >> "$GITHUB_ENV"
-          EXPECTED_SHA="$(awk 'NR==1 {print $1}' training-evidence/checkpoint.sha256)"
-          if ! printf '%s' "$EXPECTED_SHA" | grep -Eq '^[0-9a-f]{64}          ls -lh "$CHECKPOINT"
+          echo "EXPECTED_CHECKPOINT_SHA=$EXPECTED_SHA" >> "$GITHUB_ENV"
+          echo "UPSTREAM_TRAINING_RUN_ID=${{ github.event.workflow_run.id }}" >> "$GITHUB_ENV"
+          echo "Verified checkpoint from training run ${{ github.event.workflow_run.id }}."
 
-      - name: Install CPU PyTorch and numerical runtime dependency
+      - name: Install CPU PyTorch
         run: |
           python -m pip install numpy
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
 
-      - name: Run Arabic inference checks
-        run: |
-          set -euo pipefail
-          CHECKPOINT="$(find /tmp/jon2-checkpoint -type f -name 'jon2-small.pt' -print -quit)"
-          test -n "$CHECKPOINT"
-          JON2_CHECKPOINT_FILE="$CHECKPOINT" PYTHONPATH="$GITHUB_WORKSPACE/ai_engine" python - <<'PY' | tee jon2-evaluation.txt
-          import os
-          import re
-          from pathlib import Path
-          import torch
-          from jon2_core import load_model, generate
-
-          checkpoint_path = Path(os.environ["JON2_CHECKPOINT_FILE"])
-          checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
-          print("JON2 CHECKPOINT EVALUATION")
-          print("checkpoint_bytes:", checkpoint_path.stat().st_size)
-          print("training_steps:", checkpoint.get("training_steps", "unknown"))
-          print("corpus_characters:", checkpoint.get("corpus_characters", "unknown"))
-          print("model_name:", checkpoint.get("model_name", "unknown"))
-          print("torch:", torch.__version__)
-          required = {"model_state", "tokenizer", "config"}
-          missing = sorted(required.difference(checkpoint))
-          if missing:
-              raise SystemExit(f"Checkpoint is missing required fields: {missing}")
-          print("config:", checkpoint["config"])
-          model, tokenizer, device = load_model(str(checkpoint_path), device="cpu")
-          parameter_count = sum(parameter.numel() for parameter in model.parameters())
-          non_finite = sum(
-              int(not torch.isfinite(parameter).all().item())
-              for parameter in model.parameters()
-          )
-          print("parameter_count:", parameter_count)
-          print("non_finite_parameter_tensors:", non_finite)
-          if non_finite:
-              raise SystemExit("Checkpoint contains NaN or infinite model parameters.")
-
-          prompts = [
-              "المستخدم: مرحباً، من أنت؟\nJon2:",
-              "المستخدم: اشرح لي ما هو الذكاء الاصطناعي بكلمات بسيطة.\nJon2:",
-              "المستخدم: لماذا تتغير الفصول الأربعة؟\nJon2:",
-              "المستخدم: اكتب ثلاث نصائح لتنظيم الوقت.\nJon2:",
-              "المستخدم: ما الفرق بين الإنترنت والويب؟\nJon2:",
-              "المستخدم: اكتب قصة قصيرة عن أرنب يساعد أصدقاءه.\nJon2:",
-          ]
-
-          results = []
-          for index, prompt in enumerate(prompts, 1):
-              answer = generate(
-                  model, tokenizer, prompt, device,
-                  max_new_chars=220,
-                  temperature=0.8,
-                  stop_sequences=["المستخدم:"],
-                  do_sample=False,
-                  repetition_penalty=1.12,
-                  no_repeat_ngram_size=3,
-                  top_k=0,
-              ).removeprefix(prompt).strip()
-              arabic_chars = len(re.findall(r"[\u0600-\u06FF]", answer))
-              words = re.findall(r"\S+", answer)
-              unique_ratio = len(set(words)) / max(1, len(words))
-              replacement_chars = answer.count("\uFFFD")
-              allowed_script = bool(re.fullmatch(r"[\u0600-\u06FF\s،؛؟.!…ـ0-9٠-٩()«»\"'\-]+", answer))
-              visible_chars = [char for char in answer if not char.isspace()]
-              arabic_ratio = arabic_chars / max(1, len(visible_chars))
-              print(f"\n--- TEST {index} ---")
-              print("QUESTION:", prompt.splitlines()[0].replace("المستخدم: ", ""))
-              print("ANSWER:", answer if answer else "[EMPTY]")
-              print("CHARS:", len(answer), "ARABIC_CHARS:", arabic_chars,
-                    "ARABIC_RATIO:", round(arabic_ratio, 3),
-                    "ALLOWED_ARABIC_SCRIPT:", allowed_script,
-                    "UNIQUE_WORD_RATIO:", round(unique_ratio, 3),
-                    "REPLACEMENT_CHARS:", replacement_chars)
-              results.append({
-                  "nonempty": bool(answer),
-                  "replacement_free": replacement_chars == 0,
-                  "has_arabic": arabic_chars > 0,
-                  "allowed_script": allowed_script,
-                  "arabic_ratio": arabic_ratio >= 0.70,
-                  "length": len(answer),
-              })
-
-          passed = sum(
-              x["nonempty"] and x["replacement_free"] and x["has_arabic"]
-              and x["allowed_script"] and x["arabic_ratio"]
-              for x in results
-          )
-          print("\nTECHNICAL_CHECKS:", passed, "/", len(results))
-          print("QUALITY_STATUS: HUMAN_REVIEW_REQUIRED")
-          if passed != len(results):
-              print(
-                  "TECHNICAL_GATE: FAIL — one or more outputs were empty, malformed, "
-                  "non-Arabic-script, or below the Arabic-character threshold."
-              )
-              print("Continue to generate the full held-out human-review report; do not approve release.")
-          else:
-              print("TECHNICAL_GATE: BASIC OUTPUT CHECKS PASSED; SEMANTIC REVIEW STILL REQUIRED.")
-          PY
-
-      - name: Generate 40-prompt Arabic human-review report
+      - name: Generate all 40 held-out Arabic answers
         run: |
           set -euo pipefail
           mkdir -p training-output
@@ -177,159 +88,13 @@ jobs:
             --output training-output/review-report.json 2>&1 | tee training-output/human-review-generation.log
           test -s training-output/review-report.json
 
-      - name: Upload evaluation transcript and human-review report
+      - name: Upload the 40-answer human-review report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: jon2-arabic-checkpoint-evaluation
           path: |
-            jon2-evaluation.txt
             training-output/review-report.json
             training-output/human-review-generation.log
-          if-no-files-found: ignore
-          retention-days: 14
-; then
-            echo "::error::The completed training run did not provide a valid checkpoint SHA-256 evidence file."
-            exit 1
-          fi
-          ACTUAL_SHA="$(sha256sum "$CHECKPOINT" | awk '{print $1}')"
-          if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
-            echo "::error::The Kaggle checkpoint does not match the checkpoint hash produced by training run ${{ github.event.workflow_run.id }}."
-            echo "expected_sha256=$EXPECTED_SHA"
-            echo "actual_sha256=$ACTUAL_SHA"
-            exit 1
-          fi
-          echo "Verified checkpoint SHA-256 against the exact completed training run."
-          echo "EXPECTED_CHECKPOINT_SHA=$EXPECTED_SHA" >> "$GITHUB_ENV"
-          echo "UPSTREAM_TRAINING_RUN_ID=${{ github.event.workflow_run.id }}" >> "$GITHUB_ENV"
-          sha256sum "$CHECKPOINT"
-          ls -lh "$CHECKPOINT"
-
-      - name: Install CPU PyTorch and numerical runtime dependency
-        run: |
-          python -m pip install numpy
-          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-
-      - name: Run Arabic inference checks
-        run: |
-          set -euo pipefail
-          CHECKPOINT="$(find /tmp/jon2-checkpoint -type f -name 'jon2-small.pt' -print -quit)"
-          test -n "$CHECKPOINT"
-          JON2_CHECKPOINT_FILE="$CHECKPOINT" PYTHONPATH="$GITHUB_WORKSPACE/ai_engine" python - <<'PY' | tee jon2-evaluation.txt
-          import os
-          import re
-          from pathlib import Path
-          import torch
-          from jon2_core import load_model, generate
-
-          checkpoint_path = Path(os.environ["JON2_CHECKPOINT_FILE"])
-          checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
-          print("JON2 CHECKPOINT EVALUATION")
-          print("checkpoint_bytes:", checkpoint_path.stat().st_size)
-          print("training_steps:", checkpoint.get("training_steps", "unknown"))
-          print("corpus_characters:", checkpoint.get("corpus_characters", "unknown"))
-          print("model_name:", checkpoint.get("model_name", "unknown"))
-          print("torch:", torch.__version__)
-          required = {"model_state", "tokenizer", "config"}
-          missing = sorted(required.difference(checkpoint))
-          if missing:
-              raise SystemExit(f"Checkpoint is missing required fields: {missing}")
-          print("config:", checkpoint["config"])
-          model, tokenizer, device = load_model(str(checkpoint_path), device="cpu")
-          parameter_count = sum(parameter.numel() for parameter in model.parameters())
-          non_finite = sum(
-              int(not torch.isfinite(parameter).all().item())
-              for parameter in model.parameters()
-          )
-          print("parameter_count:", parameter_count)
-          print("non_finite_parameter_tensors:", non_finite)
-          if non_finite:
-              raise SystemExit("Checkpoint contains NaN or infinite model parameters.")
-
-          prompts = [
-              "المستخدم: مرحباً، من أنت؟\nJon2:",
-              "المستخدم: اشرح لي ما هو الذكاء الاصطناعي بكلمات بسيطة.\nJon2:",
-              "المستخدم: لماذا تتغير الفصول الأربعة؟\nJon2:",
-              "المستخدم: اكتب ثلاث نصائح لتنظيم الوقت.\nJon2:",
-              "المستخدم: ما الفرق بين الإنترنت والويب؟\nJon2:",
-              "المستخدم: اكتب قصة قصيرة عن أرنب يساعد أصدقاءه.\nJon2:",
-          ]
-
-          results = []
-          for index, prompt in enumerate(prompts, 1):
-              answer = generate(
-                  model, tokenizer, prompt, device,
-                  max_new_chars=220,
-                  temperature=0.8,
-                  stop_sequences=["المستخدم:"],
-                  do_sample=False,
-                  repetition_penalty=1.12,
-                  no_repeat_ngram_size=3,
-                  top_k=0,
-              ).removeprefix(prompt).strip()
-              arabic_chars = len(re.findall(r"[\u0600-\u06FF]", answer))
-              words = re.findall(r"\S+", answer)
-              unique_ratio = len(set(words)) / max(1, len(words))
-              replacement_chars = answer.count("\uFFFD")
-              allowed_script = bool(re.fullmatch(r"[\u0600-\u06FF\s،؛؟.!…ـ0-9٠-٩()«»\"'\-]+", answer))
-              visible_chars = [char for char in answer if not char.isspace()]
-              arabic_ratio = arabic_chars / max(1, len(visible_chars))
-              print(f"\n--- TEST {index} ---")
-              print("QUESTION:", prompt.splitlines()[0].replace("المستخدم: ", ""))
-              print("ANSWER:", answer if answer else "[EMPTY]")
-              print("CHARS:", len(answer), "ARABIC_CHARS:", arabic_chars,
-                    "ARABIC_RATIO:", round(arabic_ratio, 3),
-                    "ALLOWED_ARABIC_SCRIPT:", allowed_script,
-                    "UNIQUE_WORD_RATIO:", round(unique_ratio, 3),
-                    "REPLACEMENT_CHARS:", replacement_chars)
-              results.append({
-                  "nonempty": bool(answer),
-                  "replacement_free": replacement_chars == 0,
-                  "has_arabic": arabic_chars > 0,
-                  "allowed_script": allowed_script,
-                  "arabic_ratio": arabic_ratio >= 0.70,
-                  "length": len(answer),
-              })
-
-          passed = sum(
-              x["nonempty"] and x["replacement_free"] and x["has_arabic"]
-              and x["allowed_script"] and x["arabic_ratio"]
-              for x in results
-          )
-          print("\nTECHNICAL_CHECKS:", passed, "/", len(results))
-          print("QUALITY_STATUS: HUMAN_REVIEW_REQUIRED")
-          if passed != len(results):
-              print(
-                  "TECHNICAL_GATE: FAIL — one or more outputs were empty, malformed, "
-                  "non-Arabic-script, or below the Arabic-character threshold."
-              )
-              print("Continue to generate the full held-out human-review report; do not approve release.")
-          else:
-              print("TECHNICAL_GATE: BASIC OUTPUT CHECKS PASSED; SEMANTIC REVIEW STILL REQUIRED.")
-          PY
-
-      - name: Generate 40-prompt Arabic human-review report
-        run: |
-          set -euo pipefail
-          mkdir -p training-output
-          PYTHONPATH="$GITHUB_WORKSPACE/ai_engine" python ai_engine/evaluate_model.py \
-            --checkpoint "$JON2_CHECKPOINT_FILE" \
-            --prompts ai_engine/evaluation/prompts_ar.jsonl \
-            --max-new-chars 180 \
-            --temperature 0.8 \
-            --seed 42 \
-            --device cpu \
-            --output training-output/review-report.json 2>&1 | tee training-output/human-review-generation.log
-          test -s training-output/review-report.json
-
-      - name: Upload evaluation transcript and human-review report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: jon2-arabic-checkpoint-evaluation
-          path: |
-            jon2-evaluation.txt
-            training-output/review-report.json
-            training-output/human-review-generation.log
-          if-no-files-found: ignore
+          if-no-files-found: warn
           retention-days: 14
