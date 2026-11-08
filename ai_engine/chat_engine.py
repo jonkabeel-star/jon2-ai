@@ -123,8 +123,14 @@ def generate_reply(message: str, history=None, memories=None) -> str:
         prompt,
         _device,
         max_new_chars=int(os.getenv("JON2_MAX_NEW_CHARS", "400")),
-        temperature=float(os.getenv("JON2_TEMPERATURE", "0.8")),
+        # Greedy decoding is more stable for this small from-scratch model.
+        # Sampling can turn an already weak language model into visibly broken Arabic.
+        temperature=float(os.getenv("JON2_TEMPERATURE", "1.0")),
         stop_sequences=["المستخدم:"],
+        do_sample=False,
+        repetition_penalty=1.10,
+        no_repeat_ngram_size=3,
+        top_k=0,
     )
     answer = full_text[len(prompt):].strip()
     if not answer:
