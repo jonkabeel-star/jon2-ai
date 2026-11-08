@@ -97,8 +97,10 @@ class Jon2ApiTests(unittest.TestCase):
         generate.assert_not_called()
 
     def test_chat_returns_generated_reply(self):
-        with patch.object(jon2_api, "generate_reply", return_value="أهلًا بك"):
-            response = self.client.post("/api/chat", json={"message": "مرحبا"})
+        with patch.object(jon2_api, "local_greeting", return_value=None), patch.object(
+            jon2_api, "looks_like_fact_question", return_value=False
+        ), patch.object(jon2_api, "generate_reply", return_value="أهلًا بك") as generate:
+            response = self.client.post("/api/chat", json={"message": "اشرح فكرة بسيطة"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["reply"], "أهلًا بك")
         generate.assert_called_once()
