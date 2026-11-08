@@ -152,6 +152,12 @@ behavior, not model quality.
 For a local deployment, configure the variable in the server process environment;
 never commit secrets or a release approval value to the public repository.
 
+## Arabic speech playback in the website
+
+The frontend includes optional Arabic answer playback using the browser's native Web Speech API (speechSynthesis). It requests the ar-EG locale and prefers an installed Egyptian Arabic voice, then falls back to another installed Arabic voice. The user can start or stop playback for each assistant answer.
+
+This is local browser/device speech synthesis, not a Jon2-trained TTS model. Voice availability, accent, pronunciation quality, and playback support depend on the browser and installed system voices. It does not prove fluent speech generation by Jon2 itself, and it does not send answer text to a paid speech API. A dedicated natural-sounding Jon2 voice would require a separate, rights-cleared speech dataset and a separately trained/evaluated TTS system.
+
 ## API endpoints
 
 - `GET /` — API identity and status
