@@ -40,8 +40,10 @@ class ApiHealthTests(unittest.TestCase):
         self.assertFalse(caught.exception.detail["chat_ready"])
 
     def test_chat_is_blocked_without_human_release_approval(self):
-        request = main.ChatRequest(message="مرحبا")
-        with patch.dict(os.environ, {"JON2_CHAT_RELEASE_APPROVED": "false"}, clear=False):
+        request = main.ChatRequest(message="اشرح الذكاء الاصطناعي")
+        with patch.dict(os.environ, {"JON2_CHAT_RELEASE_APPROVED": "false"}, clear=False), patch(
+            "main.local_greeting", return_value=None
+        ), patch("main.looks_like_fact_question", return_value=False):
             with self.assertRaises(HTTPException) as caught:
                 main.chat(request)
         self.assertEqual(caught.exception.status_code, 503)
