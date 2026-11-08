@@ -87,9 +87,7 @@ class Jon2ApiTests(unittest.TestCase):
             "source_url": "https://ar.wikipedia.org/wiki/القاهرة",
             "cached": False,
         }
-        with patch.dict(jon2_api.os.environ, {"JON2_CHAT_RELEASE_APPROVED": "false"}), \\
-             patch.object(jon2_api, "retrieve_knowledge", return_value=item) as retrieve, \\
-             patch.object(jon2_api, "generate_reply") as generate:
+        with patch.dict(jon2_api.os.environ, {"JON2_CHAT_RELEASE_APPROVED": "false"}), patch.object(jon2_api, "retrieve_knowledge", return_value=item) as retrieve, patch.object(jon2_api, "generate_reply") as generate:
             response = self.client.post("/api/chat", json={"message": "ما عاصمة مصر؟"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["response_mode"], "source_retrieval")
