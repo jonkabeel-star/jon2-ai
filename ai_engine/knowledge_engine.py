@@ -193,6 +193,9 @@ def looks_like_fact_question(message: str) -> bool:
     if not value:
         return False
     normalized = _normalize(value)
+    # Personal/session questions belong to conversation memory, not public web search.
+    if normalized.startswith(("ما اسمي", "اسمي", "من انا", "مين انا", "ماذا قلت", "ايه اللي قلته")):
+        return False
     return ("؟" in value or "?" in value or
             any(normalized.startswith(_normalize(prefix)) for prefix in _SEARCH_STARTERS))
 
