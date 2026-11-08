@@ -58,6 +58,9 @@ def _training_plan(args):
     )
     plan = {name: getattr(args, name) for name in names}
     plan["validation_split_algorithm"] = "seeded_paragraph_blocks_v1"
+    # Keep legacy TXT-only checkpoint plans byte-for-byte compatible.
+    if getattr(args, "include_jsonl", False):
+        plan["include_jsonl"] = True
     if getattr(args, "minimum_tokens_per_parameter", 0) > 0:
         plan["minimum_tokens_per_parameter"] = args.minimum_tokens_per_parameter
     return plan
@@ -133,8 +136,10 @@ def train(args):
     amp_enabled = device.type == "cuda" and not args.no_amp
 
     data_dir = Path(args.data)
-    validate_source_approvals(data_dir, Path(args.approval_manifest))
-    corpus = read_corpus(data_dir)
+    validate_source_approvals(
+        data_dir, Path(args.approval_manifest), include_jsonl=args.include_jsonl
+    )
+    corpus = read_corpus(data_dir, include_jsonl=args.include_jsonl)
     args.corpus_characters = len(corpus)
     if len(corpus) < args.minimum_chars:
         raise ValueError(
@@ -332,6 +337,10 @@ def train(args):
 def main():
     parser = argparse.ArgumentParser(description="Train Jon2 with modern training safeguards.")
     parser.add_argument("--data", default="ai_engine/training_data")
+    parser.add_argument(
+        "--include-jsonl", action="store_true",
+        help="Include JSONL dialogues only when every exact file has a private approval-manifest entry.",
+    )
     parser.add_argument("--approval-manifest", default="ai_engine/training_data/source_approvals.json")
     parser.add_argument("--profile", choices=sorted(PROFILES), default="", help="Select a scalable Jon2 architecture preset.")
     parser.add_argument("--output", default=None, help="Best checkpoint path; profile-specific path is selected by default.")
