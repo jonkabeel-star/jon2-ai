@@ -203,6 +203,15 @@ jobs:
           print("QUALITY_STATUS: HUMAN_REVIEW_REQUIRED")
           PY
 
+      - name: Run held-out Arabic quality diagnostics
+        run: |
+          set -euo pipefail
+          PYTHONPATH=ai_engine python ai_engine/evaluate_checkpoint.py \
+            --checkpoint ai_engine/checkpoints/jon2-small.pt \
+            --output training-output/arabic-evaluation.json \
+            --max-new-chars 180
+          echo "Automatic diagnostics completed; semantic quality remains subject to human review."
+
       - name: Store trained weights in the private Kaggle dataset
         if: success()
         env:
