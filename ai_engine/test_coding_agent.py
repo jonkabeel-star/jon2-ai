@@ -128,8 +128,10 @@ class CodingAgentTests(unittest.TestCase):
         from coding_agent import repair_until_green
         with patch("coding_agent.propose", return_value="NO_SAFE_PATCH") as proposer:
             result=repair_until_green("inspect", "model", "host", ".", "image")
-        self.assertEqual(result["outcome"], "no_safe_patch_needed")
-        self.assertTrue(result["passed"])
+        self.assertEqual(result["outcome"], "no_safe_patch_proposed")
+        self.assertFalse(result["passed"])
+        self.assertIsNone(result["tests_passed"])
+        self.assertIn("no sandbox tests", result["test_log"])
         proposer.assert_called_once()
 
     def test_repair_loop_fails_closed_after_bounded_failed_rounds(self):
