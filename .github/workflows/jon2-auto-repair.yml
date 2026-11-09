@@ -78,7 +78,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jon2-auto-repair-report
-          path: auto-repair-output/
+          path: auto-repair-output/report.json
           if-no-files-found: warn
           retention-days: 14
 
