@@ -1,20 +1,35 @@
 # Jon2 Cloud
 
-This is the first real Python edge API layer for Jon2, designed for Cloudflare Workers.
+Jon2's public chat API runs on Cloudflare Workers with a Workers AI binding.
 
-## Current endpoints
+## Endpoints
 
-- `GET /` and `GET /api/health/live`: liveness response.
-- `GET /api/health`: reports edge API status separately from model readiness.
-- `POST /api/chat`: deliberately returns HTTP 503 until a genuine Jon2 model runtime is connected.
+- `GET /` and `GET /api/health/live`: liveness.
+- `GET /api/health`: API and AI-binding configuration status. A successful health response does not replace a real inference test.
+- `POST /api/chat`: sends a bounded Arabic-first conversation to the configured Qwen model and returns a real model response.
 - `OPTIONS`: CORS preflight for the Jon2 GitHub Pages origin and local development.
 
-## Important boundary
+## Model and free allocation
 
-This Worker is an API edge layer, not a model host. Cloudflare Workers Free has strict per-request CPU and memory limits, so this Worker does not load PyTorch, Transformers, model checkpoints, or claim to run inference. The model remains unavailable until a separate compatible runtime is connected and passes review.
+- Model: `@cf/qwen/qwen3.8-27b` through Cloudflare Workers AI.
+- Workers AI Free currently includes 10,000 Neurons per day. Requests fail after the daily free allocation is exhausted; no automatic paid upgrade is configured by this repository.
+- The model is hosted by Cloudflare. It is not the separately trained Jon2 GGUF checkpoint. This is a temporary real-model chat integration while the independent Jon2 model is prepared.
 
-## Deployment
+## Cloudflare setup
 
-Use the Cloudflare Workers dashboard with the repository integration, set the project root/build configuration to this directory, and deploy the Python Worker using the current Cloudflare Python Workers workflow. Do not add secrets or model weights to this directory.
+The repository's `wrangler.toml` declares the Workers AI binding named `AI`. The Worker must be deployed with that binding enabled. If the Cloudflare dashboard uses a GitHub-connected deployment, ensure the project builds from the repository root and uses the root `wrangler.toml`.
 
-The Worker is not yet connected to the public Jon2 website. Do not change `jon2-config.js` until a real deployed Worker URL has been verified.
+Do not put API tokens, account secrets, or model weights in this repository. The Worker does not require a public API token for the binding.
+
+## Safety and limits
+
+- Only the Jon2 GitHub Pages origin and the listed local development origins are accepted by browser CORS.
+- Request messages are limited to 2,000 characters; history is limited to the last 8 messages; generated replies are capped at 500 tokens.
+- A small in-memory per-isolate request guard is best-effort only, not a globally consistent rate limiter.
+- The Cloudflare daily AI free allocation is the hard usage boundary. Monitor usage in the Cloudflare dashboard.
+- Health reports that the binding is configured; only a successful `POST /api/chat` proves inference is working.
+- User messages are not intentionally logged by this Worker.
+
+## Deployment notes
+
+The Worker uses the JavaScript Workers runtime and Workers AI binding. The previous Python health-only Worker remains in `cloudflare/worker.py` for reference but is no longer the configured entry point.
