@@ -2,14 +2,15 @@ name: Jon2 Live Model Operations
 
 on:
   # Legacy duplicate runner is manual-only. The canonical PR pipeline is
-  # jon2-autonomous-execution.yml, which has stricter result gates.
+  # jon2-autonomous-execution.yml. This workflow is evaluation and preflight
+  # only; it must never start training or modify model weights.
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: jon2-live-operations-${{ github.event.pull_request.number || github.ref }}
+  group: jon2-live-operations-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -62,22 +63,33 @@ jobs:
           JON2_CODER_MODEL: qwen2.5-coder:3b
         run: |
           docker info
-          python ai_engine/coding_agent.py \
+          python ai_engine/coding_agent.py \\
             --task "Make one minimal, safe Python-only improvement to the actual system prompt in ai_engine/language_engine.py: require Arabic-only answers, use Egyptian Arabic for Egyptian colloquial prompts and clear Modern Standard Arabic for formal prompts, and forbid unrelated Chinese or foreign-language text. Preserve the public API and model behavior otherwise. Use the supplied current source and return an exact applicable unified diff. Return NO_SAFE_PATCH only if this exact change cannot be made safely. Do not change training, data, rights, CI, deployment, dependencies, or public APIs."
         continue-on-error: true
 
-      - name: Run training gate and train only if every gate passes
+      - name: Run read-only training readiness gate
+        if: always()
         run: |
+          mkdir -p artifacts
           set +e
           python ai_engine/training_gate.py --profile arabic_30m --report artifacts/jon2-training-gate.json
           gate_status=$?
           set -e
-          if [ "$gate_status" -eq 0 ]; then
-            echo "All readiness checks passed; explicitly executing the already-approved gated training path."
-            python ai_engine/training_gate.py --profile arabic_30m --execute --report artifacts/jon2-training-execution.json
-          else
-            echo "Training safely blocked. No data, rights, token-ratio, checkpoint, or GPU gate will be bypassed."
+          if [ ! -f artifacts/jon2-training-gate.json ]; then
+            GATE_STATUS="$gate_status" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("artifacts/jon2-training-gate.json").write_text(json.dumps({
+              "authorized_to_train": False,
+              "training_started": False,
+              "gate_error": True,
+              "gate_exit_code": int(os.environ["GATE_STATUS"]),
+              "reason": "Preflight did not produce a valid gate report; fail closed."
+          }, indent=2) + "\\n", encoding="utf-8")
+          PY
           fi
+          echo "This workflow only prepares and reports training readiness."
+          echo "No training command is run and no checkpoint or model weights are modified."
 
       - name: Upload live evaluation, patch, and training reports
         if: always()
