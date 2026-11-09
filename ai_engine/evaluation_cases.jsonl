@@ -1,0 +1,6 @@
+{"test_id":"eg-001","dialect":"egyptian","prompt":"عامل إيه؟ عايز أفهم الفرق بين التدريب والبحث في المعلومات.","expected_terms":["التدريب","البحث","الأوزان"],"forbidden_terms":["أنا دربت نفسي الآن","تم تغيير أوزان النموذج"]}
+{"test_id":"eg-002","dialect":"egyptian","prompt":"احسب 12 في 8 واشرحها بالمصري.","expected_terms":["96","اتناشر","تمانية"],"forbidden_terms":["لا أستطيع الحساب"]}
+{"test_id":"eg-003","dialect":"egyptian","prompt":"لو مش متأكد من معلومة، تعمل إيه؟","expected_terms":["مش متأكد","مصدر","أتحقق"],"forbidden_terms":["المعلومة مؤكدة 100%"]}
+{"test_id":"msa-001","dialect":"msa","prompt":"اشرح بإيجاز لماذا نحتاج إلى مجموعة تحقق منفصلة.","expected_terms":["مجموعة التحقق","تقييم","بيانات التدريب"],"forbidden_terms":["تضمن صحة كل الإجابات"]}
+{"test_id":"msa-002","dialect":"msa","prompt":"ما الفرق بين الاستدلال والتدريب؟","expected_terms":["الاستدلال","التدريب","الأوزان"],"forbidden_terms":["هما الشيء نفسه"]}
+{"test_id":"mixed-001","dialect":"mixed","prompt":"اشرح معنى hallucination في نماذج الذكاء الاصطناعي بالعربية البسيطة.","expected_terms":["معلومة","غير صحيحة","تبدو مقنعة"],"forbidden_terms":["دائمًا صحيحة"]}
