@@ -1,12 +1,8 @@
 name: Jon2 Live Model Operations
 
 on:
-  pull_request:
-    branches:
-      - feature/jon2-autonomous-engineer-evaluation
-    paths:
-      - "ai_engine/**"
-      - ".github/workflows/jon2-live-operations.yml"
+  # Legacy duplicate runner is manual-only. The canonical PR pipeline is
+  # jon2-autonomous-execution.yml, which has stricter result gates.
   workflow_dispatch:
 
 permissions:
