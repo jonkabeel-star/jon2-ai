@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.jon2_auto_repair import generate_safe_repairs
+from scripts.jon2_auto_repair import diagnose_failure, generate_safe_repairs
 
 
 class SafeRepairTests(unittest.TestCase):
@@ -68,6 +68,17 @@ class SafeRepairTests(unittest.TestCase):
         result = generate_safe_repairs(self.root, self._log(target))
         self.assertEqual(result[0]["status"], "already_imported")
         self.assertEqual(target.read_text(encoding="utf-8").count("import json"), 1)
+
+    def test_classifies_dependency_path_and_function_failures_without_repair(self) -> None:
+        log = (
+            "ModuleNotFoundError: No module named yaml\n"
+            "FileNotFoundError: [Errno 2] missing config.json\n"
+            "TypeError: build() got an unexpected keyword argument mode\n"
+        )
+        findings = diagnose_failure(log)
+        categories = {item["category"] for item in findings}
+        self.assertEqual(categories, {"missing_dependency", "missing_path", "function_signature_mismatch"})
+        self.assertTrue(all(item["action"] == "diagnostic_only" for item in findings))
 
     def test_blocks_syntax_error_target(self) -> None:
         target = self.root / "ai_engine" / "sample.py"
