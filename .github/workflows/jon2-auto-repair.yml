@@ -93,7 +93,7 @@ jobs:
           title = os.environ.get("ISSUE_TITLE", "")
           body = os.environ.get("ISSUE_BODY", "")
           Path("auto-repair-output/issue.log").write_text(
-              f"User-submitted issue title (untrusted): {title}\\n\\n{body}",
+              f"User-submitted issue title (untrusted): {title}\n\n{body}",
               encoding="utf-8",
           )
           PY
