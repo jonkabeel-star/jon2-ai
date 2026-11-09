@@ -1,8 +1,13 @@
 import json
 from urllib.parse import urlsplit
-from workers import WorkerEntrypoint, Response
+from workers import WorkerEntrypoint, Response, fetch
 
 ALLOWED_ORIGIN = "https://jonkabeel-star.github.io"
+GITHUB_DISPATCH_URL = (
+    "https://api.github.com/repos/jonkabeel-star/jon2-ai/"
+    "actions/workflows/jon2-autonomous-builder.yml/dispatches"
+)
+
 
 def json_response(payload, status=200, origin=ALLOWED_ORIGIN):
     headers = {
@@ -13,7 +18,33 @@ def json_response(payload, status=200, origin=ALLOWED_ORIGIN):
     }
     return Response(json.dumps(payload, ensure_ascii=False), status=status, headers=headers)
 
+
 class Default(WorkerEntrypoint):
+    async def scheduled(self, controller, env, ctx):
+        """Dispatch one bounded, read-only brain assessment from the Cloudflare Cron Trigger."""
+        token = getattr(env, "JON2_GITHUB_TOKEN", None)
+        if not token:
+            raise RuntimeError("Missing Cloudflare secret JON2_GITHUB_TOKEN")
+
+        response = await fetch(
+            GITHUB_DISPATCH_URL,
+            method="POST",
+            headers={
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {token}",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "User-Agent": "Jon2-Autonomous-Brain-Builder",
+                "Content-Type": "application/json",
+            },
+            body=json.dumps({"ref": "main"}),
+        )
+        if response.status != 204:
+            # Never log the token or GitHub response body; it may contain account details.
+            raise RuntimeError(
+                f"GitHub workflow dispatch failed with HTTP {response.status}"
+            )
+        print(f"Jon2 autonomous assessment dispatched; cron={controller.cron}")
+
     async def fetch(self, request):
         path = urlsplit(request.url).path.rstrip("/") or "/"
         method = request.method.upper()
