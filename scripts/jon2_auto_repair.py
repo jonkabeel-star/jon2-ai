@@ -308,6 +308,11 @@ def analyze_failed_checks(checks: list[dict]) -> tuple[str, list[dict]]:
     failure_text = collect_failed_check_output(checks)
     return failure_text, diagnose_failure(failure_text) if failure_text else []
 
+
+def should_discover_repository_repairs(*, incident_log_supplied: bool, diagnostic_only: bool) -> bool:
+    """Only autonomous scans without incident input may attempt source repairs."""
+    return not incident_log_supplied and not diagnostic_only
+
 def run_checks(root: Path) -> list[dict]:
     """Run a fixed allowlist of repository checks; never interpret log text as code."""
     output_dir = root / "auto-repair-output"
@@ -394,7 +399,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     # Only an autonomous repository scan may discover and attempt repairs.
     # A supplied incident log remains diagnostic-only when its contents are empty,
     # unavailable, or explicitly marked diagnostic-only.
-    if args.logs is None and not args.diagnostic_only:
+    if should_discover_repository_repairs(incident_log_supplied=args.logs is not None, diagnostic_only=args.diagnostic_only):
         failure_text, discovered_diagnostics = analyze_failed_checks(checks)
         diagnostics = discovered_diagnostics
         if failure_text:
