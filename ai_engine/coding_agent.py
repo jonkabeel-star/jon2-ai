@@ -11,7 +11,12 @@ def propose(task,model,host):
       {"role":"user","content":task}]}).encode()
     req=urllib.request.Request(host.rstrip("/")+"/api/chat",data=data,headers={"Content-Type":"application/json"})
     with urllib.request.urlopen(req,timeout=240) as response: body=json.loads(response.read().decode())
-    return body.get("message",{}).get("content","").strip()
+    content=body.get("message",{}).get("content","").strip()
+    if content.startswith("```"):
+        lines=content.splitlines()
+        if len(lines)>=3 and lines[-1].strip()=="```":
+            content="\n".join(lines[1:-1]).strip()
+    return content
 
 def validate(patch):
     pairs=DIFF.findall(patch)
@@ -49,8 +54,9 @@ def main():
     a=p.parse_args()
     patch=propose(a.task,a.model,a.host)
     if patch=="NO_SAFE_PATCH": raise SystemExit("Model declined to propose a safe patch.")
-    paths=validate(patch); result=sandbox(Path(a.repo).resolve(),patch,a.docker_image)
+    paths=validate(patch)
     out=Path(a.output); out.parent.mkdir(parents=True,exist_ok=True); out.write_text(patch+"\n",encoding="utf-8")
+    result=sandbox(Path(a.repo).resolve(),patch,a.docker_image)
     print(json.dumps({"model":a.model,"changed_paths":paths,**result,"human_review_required":True},ensure_ascii=False,indent=2))
     return 0 if result["tests_passed"] else 2
 if __name__=="__main__": raise SystemExit(main())
