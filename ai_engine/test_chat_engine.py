@@ -34,7 +34,7 @@ class ChatPromptTests(unittest.TestCase):
             history=[{"role": "assistant", "content": "أنت تطور مشروعًا اسمه Jon2."}],
             memories=[{"role": "user", "content": "اسم مشروعي Jon2."}],
             tokenizer=tokenizer,
-            context=256,
+            context=512,
         )
         self.assertIn("Jon2", prompt)
         self.assertIn("ذاكرة سابقة", prompt)
