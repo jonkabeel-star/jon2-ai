@@ -58,7 +58,7 @@ class MultilingualResearchTests(unittest.TestCase):
             item = knowledge._search_wikipedia("¿Qué es la inteligencia artificial?")
         self.assertEqual(item["language"], "es")
         query = parse_qs(urlparse(fetch.call_args_list[0].args[0]).query)
-        self.assertEqual(query["srsearch"], ["¿Qué es la inteligencia artificial?"])
+        self.assertEqual(query["srsearch"], ["¿Qué es la inteligencia artificial"])
 
     def test_question_detection_in_multiple_languages(self):
         self.assertTrue(knowledge.looks_like_fact_question("What is gravity?"))
