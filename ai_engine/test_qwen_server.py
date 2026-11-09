@@ -1,8 +1,12 @@
 import os
+import tempfile
 import unittest
+import uuid
+from pathlib import Path
 from unittest.mock import patch
 
 from qwen_server import build_messages, release_approved
+import chat_memory
 
 
 class QwenRuntimePromptTests(unittest.TestCase):
@@ -30,6 +34,15 @@ class QwenRuntimePromptTests(unittest.TestCase):
     def test_release_gate_requires_explicit_true(self):
         with patch.dict(os.environ, {"JON2_CHAT_RELEASE_APPROVED": "true"}):
             self.assertTrue(release_approved())
+
+    def test_sqlite_memory_persists_complete_exchanges(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / "memory.sqlite3"
+            session_id = str(uuid.uuid4())
+            chat_memory.add_exchange(session_id, "سؤال تجريبي", "إجابة تجريبية", path=db)
+            rows = chat_memory.recent_messages(session_id, limit=8, path=db)
+            self.assertEqual([row["role"] for row in rows], ["user", "assistant"])
+            self.assertEqual(rows[-1]["content"], "إجابة تجريبية")
 
 
 if __name__ == "__main__":
