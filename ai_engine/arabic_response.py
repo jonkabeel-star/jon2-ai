@@ -19,6 +19,7 @@ _SPACE_BEFORE_PUNCTUATION = re.compile(r"\s+([،؛؟.!…])")
 _MULTI_PUNCTUATION = re.compile(r"([،؛؟.!]){2,}")
 _SPACES = re.compile(r"[ \t]{2,}")
 _WORD = re.compile(r"[\u0621-\u064A\u066E-\u06D3]+|[0-9٠-٩]+")
+_SHORT_COMPLETE = {"أهلًا بك", "اهلا بك", "مرحبًا", "مرحبا", "وعليكم السلام", "نعم", "لا", "بالتأكيد", "شكرًا لك", "عفوًا"}
 
 
 def clean_generated_answer(answer: str) -> str:
