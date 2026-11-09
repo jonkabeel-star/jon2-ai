@@ -10,10 +10,28 @@ class FakeTokenizer:
 
 
 class ChatPromptTests(unittest.TestCase):
-    def test_prompt_stays_inside_model_context(self):
+    def test_long_current_question_is_rejected_without_silent_shortening(self):
         tokenizer = FakeTokenizer()
+        question = "اشرح لي الذكاء الاصطناعي " * 20
+        with self.assertRaisesRegex(ValueError, "أطول من نافذة سياق"):
+            build_conversation_prompt(
+                question,
+                history=[
+                    {"role": "user", "content": "سؤال قديم " * 20},
+                    {"role": "assistant", "content": "إجابة قديمة " * 20},
+                ],
+                memories=[
+                    {"role": "user", "content": "ذكرى قديمة " * 20},
+                ],
+                tokenizer=tokenizer,
+                context=128,
+            )
+
+    def test_short_current_question_is_preserved_within_context(self):
+        tokenizer = FakeTokenizer()
+        question = "ما اسم مشروعي؟"
         prompt = build_conversation_prompt(
-            "اشرح لي الذكاء الاصطناعي " * 20,
+            question,
             history=[
                 {"role": "user", "content": "سؤال قديم " * 20},
                 {"role": "assistant", "content": "إجابة قديمة " * 20},
@@ -24,9 +42,9 @@ class ChatPromptTests(unittest.TestCase):
             tokenizer=tokenizer,
             context=128,
         )
-        self.assertLessEqual(len(tokenizer.encode(prompt)), 127)
+        self.assertIn(f"المستخدم: {question}", prompt)
         self.assertIn("Jon2:", prompt)
-        self.assertIn("المستخدم:", prompt)
+        self.assertLessEqual(len(tokenizer.encode(prompt)), 127)
 
     def test_short_prompt_keeps_recent_context_and_memory(self):
         tokenizer = FakeTokenizer()
