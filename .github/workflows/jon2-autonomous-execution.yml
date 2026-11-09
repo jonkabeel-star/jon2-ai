@@ -1,12 +1,8 @@
 name: Jon2 Autonomous Execution
 
 on:
-  push:
-    branches:
-      - feature/jon2-live-evaluation-coding-sandbox
-    paths:
-      - "ai_engine/**"
-      - ".github/workflows/jon2-autonomous-execution.yml"
+  # One canonical pipeline: run once for the PR, or manually on demand.
+  # Avoid a second full Ollama/model download on every feature-branch push.
   pull_request:
     paths:
       - "ai_engine/**"
@@ -17,7 +13,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: jon2-autonomous-execution-${{ github.ref }}
+  # PR and push refs resolve to the same head branch, so duplicate runs serialize.
+  group: jon2-autonomous-execution-${{ github.event.pull_request.head.ref || github.ref }}
   cancel-in-progress: false
 
 jobs:
