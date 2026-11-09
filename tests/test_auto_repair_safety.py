@@ -82,6 +82,19 @@ class SafeRepairTests(unittest.TestCase):
         self.assertEqual(categories, {"missing_dependency", "missing_path", "function_signature_mismatch"})
         self.assertTrue(all(item["action"] == "diagnostic_only" for item in findings))
 
+    def test_discovers_known_errors_from_failed_check_output(self) -> None:
+        from scripts.jon2_auto_repair import analyze_failed_checks
+
+        checks = [
+            {"name": "unit_tests", "passed": False, "output": "ModuleNotFoundError: No module named yaml"},
+            {"name": "compile", "passed": True, "output": "NameError: should_not_be_scanned"},
+        ]
+        failure_text, findings = analyze_failed_checks(checks)
+        self.assertIn("ModuleNotFoundError", failure_text)
+        self.assertNotIn("should_not_be_scanned", failure_text)
+        self.assertEqual(findings[0]["category"], "missing_dependency")
+        self.assertEqual(findings[0]["action"], "diagnostic_only")
+
     def test_failed_validation_can_restore_original_source_bytes(self) -> None:
         target = self.root / "ai_engine" / "sample.py"
         original = b"def run():  \n    return 1\n"
