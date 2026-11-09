@@ -9,11 +9,11 @@ _ARABIC_LETTERS = re.compile(r"[\u0621-\u064A\u066E-\u06D3]")
 
 
 def validate_generated_answer(answer: str) -> bool:
-    """Reject empty, corrupted, mixed-script, or obvious looping output."""
+    """Reject empty, trivially short, corrupted, mixed-script, or looping output."""
     if not isinstance(answer, str):
         return False
     answer = answer.strip()
-    if len(answer) < 2 or len(answer) > 4000:
+    if len(answer) < 4 or len(answer) > 4000:
         return False
     if not _ALLOWED_ANSWER.fullmatch(answer):
         return False
@@ -42,8 +42,6 @@ def validate_generated_answer(answer: str) -> bool:
 
 def diagnose_answer(answer: str) -> dict:
     """Report surface-level warning signals without pretending to judge meaning."""
-    import re
-
     text = answer.strip() if isinstance(answer, str) else ""
     words = re.findall(r"\S+", text)
     visible = [char for char in text if not char.isspace()]
@@ -74,4 +72,3 @@ def diagnose_answer(answer: str) -> dict:
         "surface_warnings": warnings,
         "human_semantic_review_required": True,
     }
-

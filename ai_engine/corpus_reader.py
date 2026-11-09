@@ -1,7 +1,8 @@
 """Read project-owned Arabic training text and optionally structured dialogue.
 
 JSONL dialogue loading is opt-in. The production trainer keeps it disabled until
-each exact JSONL file has a matching source-approval record.
+each exact JSONL file has a matching source-approval record. Corpus-size policy
+belongs to the trainer, not this reader, so small fixtures can test parsing.
 """
 from __future__ import annotations
 
@@ -56,6 +57,7 @@ def read_corpus(folder: Path, include_jsonl: bool = False) -> str:
 
     JSONL is opt-in so unapproved dialogue files cannot silently enter training.
     Each conversation is kept in its own blank-line-delimited block for splitting.
+    Minimum corpus-size checks are enforced by the training entry point.
     """
     folder = Path(folder)
     if not folder.is_dir():
@@ -85,10 +87,4 @@ def read_corpus(folder: Path, include_jsonl: bool = False) -> str:
 
     # Remove exact duplicate blocks without reordering the original examples.
     unique_parts = list(dict.fromkeys(part.strip() for part in parts if part.strip()))
-    corpus = "\n\n".join(unique_parts).strip()
-    if len(corpus) < 1000:
-        raise ValueError(
-            f"Corpus has only {len(corpus)} characters. Add more original or "
-            "properly licensed training text before training."
-        )
-    return corpus
+    return "\n\n".join(unique_parts).strip()
