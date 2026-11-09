@@ -109,7 +109,7 @@ def main():
         return 0
     try:
         paths=validate(patch)
-        out=Path(a.output); out.parent.mkdir(parents=True,exist_ok=True); out.write_text(patch+"\\n",encoding="utf-8")
+        out=Path(a.output); out.parent.mkdir(parents=True,exist_ok=True); out.write_text(patch+"\n",encoding="utf-8")
         result=sandbox(repo,patch,a.docker_image)
         outcome="patch_tested"
     except (ValueError, PermissionError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
