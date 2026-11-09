@@ -65,20 +65,28 @@ class Jon2LanguageEngine:
             },
         ]
         try:
-            input_ids = self.tokenizer.apply_chat_template(
+            encoded = self.tokenizer.apply_chat_template(
                 messages,
                 add_generation_prompt=True,
                 tokenize=True,
+                return_dict=True,
                 return_tensors="pt",
-            ).to(self.device)
+            )
+            input_ids = encoded["input_ids"].to(self.device)
+            attention_mask = encoded.get("attention_mask")
+            if attention_mask is not None:
+                attention_mask = attention_mask.to(self.device)
             with torch.inference_mode():
-                output_ids = self.model.generate(
-                    input_ids,
-                    max_new_tokens=max(64, min(max_words, 500)),
-                    do_sample=False,
-                    repetition_penalty=1.08,
-                    pad_token_id=self.tokenizer.eos_token_id,
-                )
+                generation_args = {
+                    "input_ids": input_ids,
+                    "max_new_tokens": max(64, min(int(max_words), 500)),
+                    "do_sample": False,
+                    "repetition_penalty": 1.08,
+                    "pad_token_id": self.tokenizer.eos_token_id,
+                }
+                if attention_mask is not None:
+                    generation_args["attention_mask"] = attention_mask
+                output_ids = self.model.generate(**generation_args)
             new_tokens = output_ids[0][input_ids.shape[-1]:]
             answer = self.tokenizer.decode(
                 new_tokens,
