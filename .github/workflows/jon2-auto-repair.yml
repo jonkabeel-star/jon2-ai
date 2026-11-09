@@ -147,7 +147,7 @@ jobs:
           print("Repair scope verified. No protected files may be included.")
 
       - name: Open or update a review-only repair pull request
-        if: success()
+        if: success() && github.event_name != 'issues' && github.event_name != 'workflow_run'
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
