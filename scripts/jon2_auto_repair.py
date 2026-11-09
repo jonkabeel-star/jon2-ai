@@ -257,7 +257,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             repair_proposals = [{"status": "no_log", "reason": "The supplied log file was not found."}]
 
     changed = normalize_python_whitespace(root)
-    print(f"Safe whitespace repairs: {len(changed)} file(s)", flush=True)
+    for proposal in repair_proposals:
+        if proposal.get("status") == "patched":
+            target = proposal.get("file")
+            if isinstance(target, str) and target not in changed:
+                changed.append(target)
+    changed.sort()
+    print(f"Safe allowlisted repairs: {len(changed)} file(s)", flush=True)
     for path in changed:
         print(f"  repaired: {path}", flush=True)
 
