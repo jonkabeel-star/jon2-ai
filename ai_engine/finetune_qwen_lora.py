@@ -190,7 +190,7 @@ def prepare_manifest(
         conversations, validation_fraction, test_fraction, seed
     )
     return {
-        "base_model": args.model_name,
+        "base_model": BASE_MODEL,
         "base_model_license": BASE_MODEL_LICENSE,
         "source_files": fingerprints,
         "conversation_count": len(conversations),
