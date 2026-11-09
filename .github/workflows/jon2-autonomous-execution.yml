@@ -127,23 +127,13 @@ jobs:
           }, indent=2) + "\n", encoding="utf-8")
           PY
           fi
-      - name: Execute training only after every gate passes
+      - name: Keep training disabled pending explicit owner approval
         if: always()
         run: |
-          if [ "${{ steps.all-tests.outcome }}" != "success" ]; then
-            echo "Training blocked because the complete safety and evaluator test suite did not pass."
-            exit 0
-          fi
-          if ! python -c "import json; b=json.load(open('artifacts/jon2-benchmark-step-status.json')); c=json.load(open('artifacts/jon2-coding-agent-step-status.json')); n=json.load(open('artifacts/jon2-candidate-step-status.json')); raise SystemExit(0 if b.get('passed') is True and c.get('passed') is True and n.get('passed') is True else 1)"; then
-            echo "Training blocked because production-model evaluation, candidate evaluation, or isolated coding-agent run did not pass."
-            exit 0
-          fi
-          if python -c "import json; r=json.load(open('artifacts/jon2-training-gate.json')); raise SystemExit(0 if r.get('authorized_to_train') is True and r.get('source_approval_passed') is True else 1)"; then
-            echo "All verified rights, data, token-ratio, fresh-checkpoint and CUDA gates passed. Starting training."
-            python ai_engine/training_gate.py --profile arabic_30m --execute --report artifacts/jon2-training-execution.json
-          else
-            echo "Training remains blocked by the read-only preflight. No training was started."
-          fi
+          echo "Training is disabled in autonomous PR CI."
+          echo "This workflow performs read-only training preflight only."
+          echo "No model training, checkpoint creation, or weight modification is permitted here."
+          echo "A separate explicit owner-approved manual action is required before any training."
       - name: Upload evaluation, repair and gate reports
         if: always()
         uses: actions/upload-artifact@v4
