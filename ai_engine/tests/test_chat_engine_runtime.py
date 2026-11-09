@@ -115,12 +115,14 @@ class ChatEngineRuntimeTests(unittest.TestCase):
         chat_engine._model = object()
         chat_engine._tokenizer = object()
         chat_engine._device = "cpu"
-        with mock.patch.object(chat_engine, "load_runtime"), \\
-             mock.patch.object(
+        with (
+            mock.patch.object(chat_engine, "load_runtime"),
+            mock.patch.object(
                  chat_engine,
                  "generate",
                  side_effect=lambda *args, **kwargs: args[2] + " أهلًا بك",
-             ) as generator:
+            ) as generator,
+        ):
             answer = chat_engine.generate_reply("مرحبًا")
         self.assertEqual(answer, "أهلًا بك")
         self.assertFalse(generator.call_args.kwargs["do_sample"])
