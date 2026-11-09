@@ -27,6 +27,16 @@ class CodingAgentTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             validate(patch)
 
+    def test_rejects_parent_directory_traversal(self):
+        patch = VALID.replace("ai_engine/example.py", "ai_engine/../../server/evil.py")
+        with self.assertRaises(PermissionError):
+            validate(patch)
+
+    def test_rejects_absolute_paths(self):
+        patch = VALID.replace("ai_engine/example.py", "/tmp/evil.py")
+        with self.assertRaises(PermissionError):
+            validate(patch)
+
     def test_context_contains_actual_engine_and_excludes_protected_files(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "ai_engine"
