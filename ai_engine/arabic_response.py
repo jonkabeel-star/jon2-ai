@@ -28,7 +28,7 @@ def clean_generated_answer(answer: str) -> str:
     text = unicodedata.normalize("NFC", answer)
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = text.replace("\u200b", "").replace("\ufeff", "")
-    text = text.replace("\ufffd", "")
+    # Keep U+FFFD visible so validation can reject corrupted UTF-8 output.
     text = _ROLE_LINE.sub("", text)
     text = text.strip()
     text = _ROLE_PREFIX.sub("", text).strip()
