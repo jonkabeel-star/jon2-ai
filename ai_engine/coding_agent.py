@@ -107,21 +107,18 @@ def main():
         report_path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
         print(json.dumps(result,ensure_ascii=False,indent=2))
         return 0
-    if not patch.startswith("diff --git "):
-        result={
-            "model":a.model,"outcome":"rejected_model_response","changed_paths":[],
-            "tests_passed":False,"executed_inside_no_network_docker":False,
-            "committed_or_pushed":False,"human_review_required":True,
-            "passed":False,
-            "error":"The local coding model did not return the required unified diff or exact NO_SAFE_PATCH response; no files were changed.",
-        }
-        report_path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\\n",encoding="utf-8")
-        print(json.dumps(result,ensure_ascii=False,indent=2))
-        return 2
-    paths=validate(patch)
-    out=Path(a.output); out.parent.mkdir(parents=True,exist_ok=True); out.write_text(patch+"\n",encoding="utf-8")
-    result=sandbox(repo,patch,a.docker_image)
-    result.update({"model":a.model,"outcome":"patch_tested","changed_paths":paths,
+    try:
+        paths=validate(patch)
+        out=Path(a.output); out.parent.mkdir(parents=True,exist_ok=True); out.write_text(patch+"\\n",encoding="utf-8")
+        result=sandbox(repo,patch,a.docker_image)
+        outcome="patch_tested"
+    except (ValueError, PermissionError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
+        paths=[]
+        outcome="rejected_or_not_sandboxed"
+        result={"tests_passed":False,"test_exit_code":None,
+                "test_log":str(exc),"executed_inside_no_network_docker":False,
+                "committed_or_pushed":False,"passed":False}
+    result.update({"model":a.model,"outcome":outcome,"changed_paths":paths,
                    "human_review_required":True,"passed":result["tests_passed"]})
     report_path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print(json.dumps(result,ensure_ascii=False,indent=2))
