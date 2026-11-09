@@ -90,25 +90,44 @@ class SpeechDatasetTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             validate_speech_manifest(self.manifest, self.audio)
 
-    def test_duplicate_transcripts_are_blocked(self):
+    def test_duplicate_transcripts_for_same_speaker_are_blocked(self):
+        second = self.audio / "second.wav"
+        second.write_bytes(self.wav_path.read_bytes())
+        digest = hashlib.sha256(self.wav_path.read_bytes()).hexdigest()
         self._write_manifest(samples=[
             {
-                "audio": "sample.wav",
-                "sha256": hashlib.sha256(self.wav_path.read_bytes()).hexdigest(),
+                "audio": "sample.wav", "sha256": digest,
                 "text": "مرحبًا بك في اختبار الصوت.",
-                "speaker_id": "speaker_001",
-                "voice_synthesis_consent": True,
+                "speaker_id": "speaker_001", "voice_synthesis_consent": True,
             },
             {
-                "audio": "sample.wav",
-                "sha256": hashlib.sha256(self.wav_path.read_bytes()).hexdigest(),
+                "audio": "second.wav", "sha256": digest,
                 "text": "مرحبًا بك في اختبار الصوت.",
-                "speaker_id": "speaker_002",
-                "voice_synthesis_consent": True,
+                "speaker_id": "speaker_001", "voice_synthesis_consent": True,
             },
         ])
-        with self.assertRaisesRegex(ValueError, "Duplicate audio path"):
+        with self.assertRaisesRegex(ValueError, "same speaker"):
             validate_speech_manifest(self.manifest, self.audio)
+
+    def test_same_transcript_from_different_speakers_is_allowed(self):
+        second = self.audio / "second.wav"
+        second.write_bytes(self.wav_path.read_bytes())
+        digest = hashlib.sha256(self.wav_path.read_bytes()).hexdigest()
+        self._write_manifest(samples=[
+            {
+                "audio": "sample.wav", "sha256": digest,
+                "text": "مرحبًا بك في اختبار الصوت.",
+                "speaker_id": "speaker_001", "voice_synthesis_consent": True,
+            },
+            {
+                "audio": "second.wav", "sha256": digest,
+                "text": "مرحبًا بك في اختبار الصوت.",
+                "speaker_id": "speaker_002", "voice_synthesis_consent": True,
+            },
+        ])
+        report = validate_speech_manifest(self.manifest, self.audio)
+        self.assertEqual(report["sample_count"], 2)
+        self.assertEqual(report["speaker_count_anonymized"], 2)
 
     def test_non_arabic_transcript_is_blocked(self):
         self._write_manifest(samples=[{
