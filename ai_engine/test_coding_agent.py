@@ -37,6 +37,17 @@ class CodingAgentTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             validate(patch)
 
+    def test_rejects_non_python_source_files(self):
+        patch = VALID.replace("ai_engine/example.py", "ai_engine/README.md")
+        with self.assertRaises(PermissionError):
+            validate(patch)
+
+    def test_rejects_malformed_model_response_without_a_diff(self):
+        response = extract_patch("I changed the code. Trust me.")
+        self.assertNotEqual(response, "NO_SAFE_PATCH")
+        with self.assertRaises(ValueError):
+            validate(response)
+
     def test_context_contains_actual_engine_and_excludes_protected_files(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "ai_engine"
