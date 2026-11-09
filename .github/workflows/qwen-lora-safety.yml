@@ -1,0 +1,38 @@
+name: Qwen LoRA Safety Checks
+
+on:
+  pull_request:
+    paths:
+      - "ai_engine/finetune_qwen_lora.py"
+      - "ai_engine/test_qwen_lora_pipeline.py"
+      - "ai_engine/training_data/**"
+      - "ai_engine/requirements-lora.txt"
+      - ".github/workflows/qwen-lora-safety.yml"
+  push:
+    branches:
+      - "feature/qwen25-arabic-lora-pipeline"
+    paths:
+      - "ai_engine/finetune_qwen_lora.py"
+      - "ai_engine/test_qwen_lora_pipeline.py"
+      - "ai_engine/training_data/**"
+      - "ai_engine/requirements-lora.txt"
+      - ".github/workflows/qwen-lora-safety.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  lora-data-and-parser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile training script
+        run: python -m py_compile ai_engine/finetune_qwen_lora.py
+      - name: Run dependency-free tests
+        working-directory: ai_engine
+        run: python -m unittest -v test_qwen_lora_pipeline.py
+      - name: Validate exact approvals and build dry-run split
+        run: python ai_engine/finetune_qwen_lora.py
