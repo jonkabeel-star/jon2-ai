@@ -1,0 +1,8 @@
+# GPU-only fine-tuning dependencies for Qwen3.5-2B.
+# Use a CUDA-enabled Colab runtime. Qwen3.5 requires Transformers v5.
+# Unsloth's Qwen3.5 guide recommends 16-bit LoRA, not 4-bit QLoRA.
+unsloth
+transformers>=5.0,<6
+peft>=0.18,<1
+accelerate>=1.0,<2
+safetensors>=0.4
