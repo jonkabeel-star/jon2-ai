@@ -139,6 +139,3 @@ jobs:
             - Review the workflow run and auto-repair report before merging.
 
             This bot never merges its own pull requests.
-          labels: |
-            automated
-            maintenance
