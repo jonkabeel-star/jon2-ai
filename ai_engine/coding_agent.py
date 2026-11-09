@@ -1,22 +1,61 @@
-"""Local Ollama coding model; patch tests run only in isolated Docker."""
+"""Local Ollama coding model; generated patches are tested only in isolated Docker."""
 from __future__ import annotations
-import argparse,json,os,re,shutil,subprocess,tempfile,urllib.request
+import argparse
+import json
+import os
+import re
+import shutil
+import subprocess
+import tempfile
+import urllib.request
 from pathlib import Path
+
 DENIED={"source_approval.py","preflight_training.py","train_jon2.py","autonomous_builder.py","training_gate.py"}
 DIFF=re.compile(r"^diff --git a/(.+?) b/(.+?)$",re.MULTILINE)
+FENCED_DIFF=re.compile(r"```(?:diff)?\s*\n(.*?)\n```",re.DOTALL|re.IGNORECASE)
 
-def propose(task,model,host):
+def collect_context(repo, limit=40000):
+    """Give the local coding model actual, bounded source context; never read data or weights."""
+    root=Path(repo)/"ai_engine"
+    chunks=[]
+    used=0
+    if not root.is_dir():
+        raise FileNotFoundError("ai_engine directory is missing.")
+    for path in sorted(root.glob("*.py")):
+        if path.name in DENIED or not path.is_file():
+            continue
+        try:
+            source=path.read_text(encoding="utf-8")
+        except (OSError,UnicodeError):
+            continue
+        block=f"\n--- BEGIN {path.as_posix()} ---\n{source[:12000]}\n--- END {path.as_posix()} ---\n"
+        if used+len(block)>limit:
+            break
+        chunks.append(block)
+        used+=len(block)
+    return "".join(chunks)
+
+def extract_patch(content):
+    """Extract only the unified diff, discarding markdown fences and trailing model chatter."""
+    content=(content or "").strip()
+    match=FENCED_DIFF.search(content)
+    if match:
+        content=match.group(1).strip()
+    if content=="NO_SAFE_PATCH" or content.startswith("NO_SAFE_PATCH\n"):
+        return "NO_SAFE_PATCH"
+    start=content.find("diff --git ")
+    if start<0:
+        return content
+    return content[start:].strip()
+
+def propose(task,model,host,repo):
+    context=collect_context(repo)
     data=json.dumps({"model":model,"stream":False,"options":{"temperature":0.1},"messages":[
-      {"role":"system","content":"Return only a unified git diff with diff --git headers. Minimal Python-only change under ai_engine/. Never alter rights gates, training, weights, data, CI, deployment, dependencies, secrets or shell/network behavior. If unsafe return NO_SAFE_PATCH."},
-      {"role":"user","content":task}]}).encode()
+      {"role":"system","content":"You are a careful code repair model. Use only the supplied current source files. Return exactly one valid unified git diff with diff --git headers and correct context, or exactly NO_SAFE_PATCH. Do not use markdown fences or add explanations. Minimal Python-only changes under ai_engine/. Never alter rights gates, training, weights, data, CI, deployment, dependencies, secrets or shell/network behavior."},
+      {"role":"user","content":task+"\n\nCURRENT REPOSITORY SOURCE (authoritative; do not invent files or functions):\n"+context}]}).encode()
     req=urllib.request.Request(host.rstrip("/")+"/api/chat",data=data,headers={"Content-Type":"application/json"})
     with urllib.request.urlopen(req,timeout=240) as response: body=json.loads(response.read().decode())
-    content=body.get("message",{}).get("content","").strip()
-    if content.startswith("```"):
-        lines=content.splitlines()
-        if len(lines)>=3 and lines[-1].strip()=="```":
-            content="\n".join(lines[1:-1]).strip()
-    return content
+    return extract_patch(body.get("message",{}).get("content",""))
 
 def validate(patch):
     pairs=DIFF.findall(patch)
@@ -40,7 +79,7 @@ def sandbox(repo,patch,image):
         if check.returncode: raise ValueError("Patch does not apply: "+check.stderr[-1500:])
         apply=subprocess.run(["git","apply","--recount",str(pf)],cwd=work,capture_output=True,text=True,timeout=30)
         if apply.returncode: raise ValueError("Patch application failed: "+apply.stderr[-1500:])
-        cmd=[docker,"run","--rm","--network","none","--read-only","--cap-drop","ALL","--security-opt","no-new-privileges","--pids-limit","96","--memory","2g","--cpus","2","--tmpfs","/tmp:rw,noexec,nosuid,size=64m","-e","PYTHONDONTWRITEBYTECODE=1","-v",f"{work}:/work:ro","-w","/work/ai_engine",image,"python","-m","unittest","test_quality_evaluator","test_engineer_agent","-v"]
+        cmd=[docker,"run","--rm","--network","none","--read-only","--cap-drop","ALL","--security-opt","no-new-privileges","--pids-limit","96","--memory","2g","--cpus","2","--tmpfs","/tmp:rw,noexec,nosuid,size=64m","-e","PYTHONDONTWRITEBYTECODE=1","-v",f"{work}:/work:ro","-w","/work/ai_engine",image,"python","-m","unittest","test_quality_evaluator","test_engineer_agent","test_coding_agent","-v"]
         test=subprocess.run(cmd,capture_output=True,text=True,timeout=300)
         return {"tests_passed":test.returncode==0,"test_exit_code":test.returncode,"test_log":(test.stdout+"\n"+test.stderr)[-8000:],"executed_inside_no_network_docker":True,"committed_or_pushed":False}
 
@@ -52,11 +91,12 @@ def main():
     p.add_argument("--docker-image",default="python:3.11-slim")
     p.add_argument("--output",default="artifacts/jon2-proposed.patch")
     a=p.parse_args()
-    patch=propose(a.task,a.model,a.host)
+    repo=Path(a.repo).resolve()
+    patch=propose(a.task,a.model,a.host,repo)
     if patch=="NO_SAFE_PATCH": raise SystemExit("Model declined to propose a safe patch.")
     paths=validate(patch)
     out=Path(a.output); out.parent.mkdir(parents=True,exist_ok=True); out.write_text(patch+"\n",encoding="utf-8")
-    result=sandbox(Path(a.repo).resolve(),patch,a.docker_image)
+    result=sandbox(repo,patch,a.docker_image)
     print(json.dumps({"model":a.model,"changed_paths":paths,**result,"human_review_required":True},ensure_ascii=False,indent=2))
     return 0 if result["tests_passed"] else 2
 if __name__=="__main__": raise SystemExit(main())
