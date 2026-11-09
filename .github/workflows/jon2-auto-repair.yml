@@ -37,11 +37,15 @@ jobs:
   diagnose-repair-verify:
     if: >-
       github.repository == 'jonkabeel-star/jon2-ai' &&
-      (github.event_name != 'workflow_run' ||
-       (github.event.workflow_run.conclusion == 'failure' &&
+      (
+       (github.event_name != 'workflow_run' && github.event_name != 'issues') ||
+       (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'auto-repair') ||
+       (github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'failure' &&
         github.event.workflow_run.head_branch == 'main' &&
         github.event.workflow_run.head_repository.full_name == github.repository &&
-        contains(fromJSON('["Jon2 AI Python Checks","Jon2 AI Code Checks","Jon2 AI Container Build","Jon2 Knowledge Retrieval Tests","Jon2 RTL compile and smoke tests","Jais 2 adapter contract checks","Jon2 Arabic 30M — gated training","Jon2 Saved Checkpoint Evaluation","Verify Jon2 Private Checkpoint","Jon2 Private Checkpoint Human Evaluation # UTF-8 sampling regression recheck","Jon2 Real CPU Training","Jon2 AI Kaggle Bridge"]'), github.event.workflow_run.name)))
+        contains(fromJSON('["Jon2 AI Python Checks","Jon2 AI Code Checks","Jon2 AI Container Build","Jon2 Knowledge Retrieval Tests","Jon2 RTL compile and smoke tests","Jais 2 adapter contract checks","Jon2 Arabic 30M — gated training","Jon2 Saved Checkpoint Evaluation","Verify Jon2 Private Checkpoint","Jon2 Private Checkpoint Human Evaluation # UTF-8 sampling regression recheck","Jon2 Real CPU Training","Jon2 AI Kaggle Bridge"]'), github.event.workflow_run.name))
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -76,10 +80,30 @@ jobs:
           mkdir -p auto-repair-output
           gh run view "$SOURCE_RUN_ID" --repo "$GITHUB_REPOSITORY" --log-failed > auto-repair-output/failed.log || true
 
+      - name: Capture an explicitly labeled issue report as untrusted text
+        if: github.event_name == 'issues'
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          mkdir -p auto-repair-output
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          title = os.environ.get("ISSUE_TITLE", "")
+          body = os.environ.get("ISSUE_BODY", "")
+          Path("auto-repair-output/issue.log").write_text(
+              f"User-submitted issue title (untrusted): {title}\\n\\n{body}",
+              encoding="utf-8",
+          )
+          PY
+
       - name: Diagnose the failure, generate a bounded patch, and run the full Python gate
         run: |
           if [ -s auto-repair-output/failed.log ]; then
             python scripts/jon2_auto_repair.py --root . --logs auto-repair-output/failed.log --report auto-repair-output/report.json
+          elif [ -s auto-repair-output/issue.log ]; then
+            python scripts/jon2_auto_repair.py --root . --logs auto-repair-output/issue.log --report auto-repair-output/report.json
           else
             python scripts/jon2_auto_repair.py --root . --report auto-repair-output/report.json
           fi
