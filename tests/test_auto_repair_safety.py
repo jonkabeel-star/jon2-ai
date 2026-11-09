@@ -134,7 +134,7 @@ class SafeRepairTests(unittest.TestCase):
 
     def test_diagnostic_only_mode_does_not_normalize_source_files(self) -> None:
         target = self.root / "ai_engine" / "sample.py"
-        original = b"def run():  \\n    return 1\\n"
+        original = b"def run():  \n    return 1\n"
         target.write_bytes(original)
         changed = normalize_python_whitespace(self.root, enabled=False)
         self.assertEqual(changed, [])
@@ -142,7 +142,7 @@ class SafeRepairTests(unittest.TestCase):
 
     def test_whitespace_normalizer_never_follows_symlinks_outside_scope(self) -> None:
         outside = self.root.parent / (self.root.name + "-outside.py")
-        original = b"x = 1  \\n"
+        original = b"x = 1  \n"
         try:
             outside.write_bytes(original)
             link = self.root / "ai_engine" / "linked.py"
