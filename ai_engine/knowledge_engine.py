@@ -32,15 +32,15 @@ LATIN_SIGNATURES = {
     "nl": {"de", "het", "een", "wie", "wat", "waar", "hoe", "waarom", "met", "voor"},
 }
 SCRIPT_LANGUAGES = (
-    ("ar", re.compile(r"[\\u0600-\\u06ff]")),
-    ("zh", re.compile(r"[\\u4e00-\\u9fff]")),
-    ("ja", re.compile(r"[\\u3040-\\u30ff]")),
-    ("ko", re.compile(r"[\\uac00-\\ud7af]")),
-    ("ru", re.compile(r"[\\u0400-\\u04ff]")),
-    ("hi", re.compile(r"[\\u0900-\\u097f]")),
-    ("th", re.compile(r"[\\u0e00-\\u0e7f]")),
-    ("el", re.compile(r"[\\u0370-\\u03ff]")),
-    ("he", re.compile(r"[\\u0590-\\u05ff]")),
+    ("ar", re.compile(r"[\u0600-\u06ff]")),
+    ("zh", re.compile(r"[\u4e00-\u9fff]")),
+    ("ja", re.compile(r"[\u3040-\u30ff]")),
+    ("ko", re.compile(r"[\uac00-\ud7af]")),
+    ("ru", re.compile(r"[\u0400-\u04ff]")),
+    ("hi", re.compile(r"[\u0900-\u097f]")),
+    ("th", re.compile(r"[\u0e00-\u0e7f]")),
+    ("el", re.compile(r"[\u0370-\u03ff]")),
+    ("he", re.compile(r"[\u0590-\u05ff]")),
 )
 QUESTION_STARTERS = {
     "ar": ("ما هو", "ماهي", "ما هي", "من هو", "من هي", "متى", "اين", "أين", "فين", "ازاي", "إزاي", "كيف", "لماذا", "ليه", "كم", "ما معنى", "معنى", "اشرح", "معلومات عن", "ابحث عن", "ما المقصود", "هل "),
@@ -56,9 +56,9 @@ QUESTION_STARTERS = {
 
 def _normalize(text: str) -> str:
     value = unicodedata.normalize("NFKC", str(text or "")).lower()
-    value = re.sub(r"[\\u064b-\\u065f\\u0670\\u0640]", "", value)
+    value = re.sub(r"[\u064b-\u065f\u0670\u0640]", "", value)
     value = value.translate(str.maketrans({"أ": "ا", "إ": "ا", "آ": "ا", "ى": "ي"}))
-    value = re.sub(r"[^\\w\\u0600-\\u06ff ]+", " ", value)
+    value = re.sub(r"[^\w\u0600-\u06ff ]+", " ", value)
     return " ".join(value.split())
 
 
@@ -205,7 +205,7 @@ def retrieve_knowledge(query: str) -> dict | None:
 _GREETING_RE = re.compile(
     r"^(?:السلام عليكم|السلام عليكو|سلام عليكم|مرحبا|مرحباً|اهلا|أهلا|اهلين|أهلين|هلا|هاي|"
     r"صباح الخير|مساء الخير|ازيك|إزيك|عامل ايه|عامل إيه|كيف حالك|hello|hi|hey|bonjour|hola|hallo)"
-    r"[\\s!！،,.؟?]*$", re.IGNORECASE,
+    r"[\s!！،,.؟?]*$", re.IGNORECASE,
 )
 
 
