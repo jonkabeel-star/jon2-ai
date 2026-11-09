@@ -1,6 +1,6 @@
 # Replace with a domain whose DNS A record points to the Oracle VM public IP.
 # Caddy automatically obtains and renews a Let's Encrypt HTTPS certificate.
-${JON2_DOMAIN} {
+{$JON2_DOMAIN} {
     encode zstd gzip
     reverse_proxy 127.0.0.1:8000
 }
