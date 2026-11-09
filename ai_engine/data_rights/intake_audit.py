@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import unicodedata
 from collections import Counter
@@ -62,7 +63,7 @@ def audit_candidate(candidate: str | Path) -> dict:
     duplicate_excess = sum(count - 1 for count in counts.values() if count > 1)
 
     letters = [char for char in decoded if char.isalpha()]
-    arabic_letters = [char for char in letters if "\u0600" <= char <= "\u06ff"]
+    arabic_letters = [char for char in letters if unicodedata.name(char, "").startswith("ARABIC ")]
     latin_letters = [char for char in letters if "a" <= char.lower() <= "z"]
     phone_matches = []
     for match in PHONE_RE.findall(decoded):
@@ -136,11 +137,24 @@ def _warnings(documents: int, duplicates: int, replacements: int, emails: int, p
     return warnings
 
 
+
+def _ensure_distinct_paths(candidate: str | Path, output: str | Path) -> None:
+    """Prevent a report destination from overwriting the candidate source."""
+    source_path = Path(candidate)
+    output_path = Path(output)
+    if source_path.resolve() == output_path.resolve():
+        raise ValueError("Report output must not be the candidate source file.")
+    if source_path.exists() and output_path.exists() and os.path.samefile(source_path, output_path):
+        raise ValueError("Report output must not be the candidate source file.")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Audit a local Jon2 data candidate without approving or importing it.")
     parser.add_argument("--candidate", required=True, help="Path to a local .txt or .jsonl file.")
     parser.add_argument("--output", default="", help="Optional JSON report path.")
     args = parser.parse_args()
+    if args.output:
+        _ensure_distinct_paths(args.candidate, args.output)
     report = audit_candidate(args.candidate)
     rendered = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
     if args.output:
