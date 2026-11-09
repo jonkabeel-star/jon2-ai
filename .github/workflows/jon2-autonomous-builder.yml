@@ -4,6 +4,13 @@ on:
   schedule:
     - cron: "40 3 * * *"
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "ai_engine/autonomous_builder.py"
+      - "ai_engine/test_autonomous_builder.py"
+      - "ai_engine/preflight_training.py"
+      - "ai_engine/source_approval.py"
+      - ".github/workflows/jon2-autonomous-builder.yml"
   push:
     branches: [main]
     paths:
@@ -66,7 +73,7 @@ jobs:
           fi
 
       - name: Upload metadata-only autonomous assessment
-        if: always() && hashFiles('/tmp/jon2-autonomous-brain-report.json') != ''
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: jon2-autonomous-brain-assessment
