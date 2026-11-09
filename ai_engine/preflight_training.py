@@ -24,7 +24,7 @@ def assess_readiness(
     train_tokens: int,
     validation_tokens: int,
     parameter_count: int,
-    tokenizer_vocab: int,
+    tokenizer_vocab: int | None,
     target_tokenizer_vocab: int,
     context: int,
     minimum_characters: int,
@@ -40,7 +40,7 @@ def assess_readiness(
         blockers.append("training_partition_too_short_for_context")
     if validation_tokens <= context + 1:
         blockers.append("validation_partition_too_short_for_context")
-    if tokenizer_vocab < target_tokenizer_vocab:
+    if tokenizer_vocab is not None and tokenizer_vocab < target_tokenizer_vocab:
         blockers.append("tokenizer_did_not_reach_profile_vocabulary")
     if ratio < minimum_tokens_per_parameter:
         blockers.append("insufficient_tokens_per_parameter")
@@ -58,6 +58,21 @@ def assess_readiness(
         "minimum_tokens_per_parameter": minimum_tokens_per_parameter,
         "context": context,
     }
+
+
+def should_skip_exact_tokenizer(
+    *, probe_tokens: int, target_parameters: int, minimum_tokens_per_parameter: float
+) -> bool:
+    """Skip expensive full-vocabulary BPE when even the probe upper bound fails.
+
+    The 512-vocabulary probe uses the same deterministic initial BPE merges as
+    the target tokenizer. Continuing with more merges cannot increase token
+    count, so probe_tokens / target_parameters is an optimistic upper bound
+    for the target profile's tokens-per-parameter ratio.
+    """
+    if probe_tokens < 0 or target_parameters <= 0 or minimum_tokens_per_parameter < 0:
+        raise ValueError("Probe tokens and threshold must be non-negative; parameters must be positive.")
+    return probe_tokens / target_parameters < minimum_tokens_per_parameter
 
 
 def _language_counts(text: str) -> dict:
@@ -91,25 +106,53 @@ def build_report(
     corpus = read_corpus(data_dir, include_jsonl=include_jsonl)
     profile = describe_profile(profile_name)
     train_text, validation_text = split_corpus_blocks(corpus, 0.1, seed)
-    tokenizer = ByteBPETokenizer.train(
-        train_text,
-        vocab_size=profile["tokenizer_vocab_size"],
-        min_frequency=2,
+    target_parameters = profile["estimated_parameters"]
+    probe_vocab_size = min(profile["tokenizer_vocab_size"], 512)
+    probe_tokenizer = ByteBPETokenizer.train(
+        train_text, vocab_size=probe_vocab_size, min_frequency=2
     )
-    train_tokens = len(tokenizer.encode(train_text))
-    validation_tokens = len(tokenizer.encode(validation_text))
-    actual_parameters = estimate_parameters(
-        width=profile["width"],
-        layers=profile["layers"],
-        context=profile["context"],
-        vocab_size=tokenizer.vocab_size,
+    probe_train_tokens = len(probe_tokenizer.encode(train_text))
+    probe_validation_tokens = len(probe_tokenizer.encode(validation_text))
+    probe_total_tokens = probe_train_tokens + probe_validation_tokens
+
+    exact_tokenizer_skipped = should_skip_exact_tokenizer(
+        probe_tokens=probe_total_tokens,
+        target_parameters=target_parameters,
+        minimum_tokens_per_parameter=minimum_tokens_per_parameter,
     )
+    if exact_tokenizer_skipped:
+        # This is an optimistic upper bound: the target tokenizer starts with
+        # these exact merges and can only merge more byte sequences.
+        train_tokens = probe_train_tokens
+        validation_tokens = probe_validation_tokens
+        parameter_count = target_parameters
+        tokenizer_vocab_actual = None
+        readiness_vocab = None
+        preflight_mode = "read_only_conservative_upper_bound_no_training"
+    else:
+        tokenizer = ByteBPETokenizer.train(
+            train_text,
+            vocab_size=profile["tokenizer_vocab_size"],
+            min_frequency=2,
+        )
+        train_tokens = len(tokenizer.encode(train_text))
+        validation_tokens = len(tokenizer.encode(validation_text))
+        parameter_count = estimate_parameters(
+            width=profile["width"],
+            layers=profile["layers"],
+            context=profile["context"],
+            vocab_size=tokenizer.vocab_size,
+        )
+        tokenizer_vocab_actual = tokenizer.vocab_size
+        readiness_vocab = tokenizer.vocab_size
+        preflight_mode = "read_only_exact_tokenizer_preflight_no_training"
+
     readiness = assess_readiness(
         corpus_characters=len(corpus),
         train_tokens=train_tokens,
         validation_tokens=validation_tokens,
-        parameter_count=actual_parameters,
-        tokenizer_vocab=tokenizer.vocab_size,
+        parameter_count=parameter_count,
+        tokenizer_vocab=readiness_vocab,
         target_tokenizer_vocab=profile["tokenizer_vocab_size"],
         context=profile["context"],
         minimum_characters=minimum_characters,
@@ -117,10 +160,24 @@ def build_report(
     )
     return {
         "report_version": 1,
-        "mode": "read_only_preflight_no_training",
+        "mode": preflight_mode,
         "profile": profile_name,
-        "estimated_profile_parameters_at_target_vocab": profile["estimated_parameters"],
-        "actual_architecture_parameters": actual_parameters,
+        "estimated_profile_parameters_at_target_vocab": target_parameters,
+        "actual_architecture_parameters": parameter_count,
+        "tokenizer_vocab_actual": tokenizer_vocab_actual,
+        "tokenizer_probe": {
+            "vocab_size": probe_tokenizer.vocab_size,
+            "target_vocab_size": profile["tokenizer_vocab_size"],
+            "exact_target_tokenizer_training_skipped": exact_tokenizer_skipped,
+            "probe_total_tokens": probe_total_tokens,
+            "probe_tokens_per_target_parameter": round(
+                probe_total_tokens / max(1, target_parameters), 8
+            ),
+            "interpretation": (
+                "Optimistic upper bound; a larger vocabulary can only reduce or preserve "
+                "the token count for this deterministic merge sequence."
+            ),
+        },
         "language_script_audit": _language_counts(corpus),
         "readiness": readiness,
         "warnings": [
