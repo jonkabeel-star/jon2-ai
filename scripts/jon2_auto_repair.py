@@ -391,7 +391,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     # With no supplied incident log, discover failures by running the fixed check suite.
     checks = run_checks(root)
-    if not external_log_text:
+    # Only an autonomous repository scan may discover and attempt repairs.
+    # A supplied incident log remains diagnostic-only when its contents are empty,
+    # unavailable, or explicitly marked diagnostic-only.
+    if args.logs is None and not args.diagnostic_only:
         failure_text, discovered_diagnostics = analyze_failed_checks(checks)
         diagnostics = discovered_diagnostics
         if failure_text:
