@@ -70,6 +70,18 @@ def _request_ollama_patch(task,model,host,context,previous_invalid=""):
     return extract_patch(body.get("message",{}).get("content",""))
 
 
+def check_patch_applicability(repo,patch):
+    """Check a proposed diff against the current checkout without changing files."""
+    result=subprocess.run(
+        ["git","apply","--recount","--check","-"],
+        cwd=repo,input=patch,capture_output=True,text=True,timeout=30
+    )
+    if result.returncode:
+        detail=(result.stderr or result.stdout or "git apply --check rejected the patch.")[-2000:]
+        raise ValueError("Patch does not apply cleanly to current source: "+detail)
+    return True
+
+
 def propose(task,model,host,repo,max_attempts=2):
     if type(max_attempts) is not int or not 1 <= max_attempts <= 3:
         raise ValueError("max_attempts must be between 1 and 3.")
@@ -81,6 +93,7 @@ def propose(task,model,host,repo,max_attempts=2):
             return patch
         try:
             validate(patch)
+            check_patch_applicability(repo,patch)
             return patch
         except (ValueError,PermissionError) as exc:
             previous_invalid=patch
