@@ -77,7 +77,7 @@ jobs:
           import json, os
           from pathlib import Path
           Path("artifacts/jon2-candidate-step-status.json").write_text(
-              json.dumps({"exit_code": int(os.environ["RESULT"]), "passed": int(os.environ["RESULT"]) == 0}, indent=2) + "\\n",
+              json.dumps({"exit_code": int(os.environ["RESULT"]), "passed": int(os.environ["RESULT"]) == 0}, indent=2) + "\n",
               encoding="utf-8")
           PY
           echo "Candidate benchmark exit code: $result (see artifacts/jon2-candidate-step-status.json)"
@@ -124,7 +124,7 @@ jobs:
               "gate_error": True,
               "gate_exit_code": int(os.environ["GATE_STATUS"]),
               "reason": "Preflight did not produce a valid gate report; fail closed."
-          }, indent=2) + "\\n", encoding="utf-8")
+          }, indent=2) + "\n", encoding="utf-8")
           PY
           fi
       - name: Execute training only after every gate passes
