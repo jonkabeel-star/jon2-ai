@@ -23,8 +23,8 @@ The workflow also runs once daily at 02:23 UTC.
 
 ## Safety and current limits
 
-- Reads a bounded selection of tracked Python/JavaScript/TypeScript source files from `ai_engine/`, `server/`, and `tests/`.
-- May replace at most two existing source files per run; no file creation, deletion, rename, or arbitrary shell execution.
+- Reads a bounded selection of tracked Python/JavaScript/TypeScript source files from `ai_engine/` and read-only test context in `tests/`.
+- May replace at most two existing Python source files under `ai_engine/` per run; test files are read-only context. No file creation, deletion, rename, or arbitrary shell execution.
 - Cannot edit CI workflows, Cloudflare deployment code, CORS, authentication, secrets, model weights, checkpoints, training data, evaluation data, or licensing approvals.
 - Runs the repository's existing fixed verification suite before opening a pull request.
 - Never pushes to `main`, merges a pull request, deploys a release, or changes Cloudflare settings.
