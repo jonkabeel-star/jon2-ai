@@ -11,6 +11,7 @@ does not use Render, a temporary notebook URL, or a hosted AI inference API.
   `/opt/jon2/models`.
 - The browser calls the API over HTTPS. The API calls the local llama.cpp
   process over loopback only.
+- Conversation history is stored in SQLite on the persistent `/opt/jon2/data` volume.
 - The original 269,952-parameter Jon2 prototype remains preserved for research;
   it is not used as the public assistant because its Arabic output failed the
   held-out quality review.
