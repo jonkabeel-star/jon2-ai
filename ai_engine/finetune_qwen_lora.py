@@ -1,0 +1,382 @@
+"""Rights-gated Qwen2.5 Arabic LoRA fine-tuning for Jon2 AI.
+
+Dry-run is the default. Real optimizer steps require --execute and CUDA.
+This creates a separate PEFT adapter; it never overwrites Jon2's original checkpoint.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import random
+import re
+from pathlib import Path
+from typing import Any
+
+BASE_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
+BASE_MODEL_LICENSE = "Apache-2.0"
+USER_LABELS = ("المستخدم:", "User:")
+ASSISTANT_LABELS = ("Jon2:", "المساعد:", "Assistant:")
+
+
+def sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def load_approved_dialogue_files(data_dir: Path, manifest_path: Path) -> tuple[list[Path], dict[str, str]]:
+    """Require exact SHA-256 + character-count approval for every TXT file."""
+    data_dir = Path(data_dir)
+    manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+    entries = manifest.get("approved_sources")
+    if not isinstance(entries, list) or not entries:
+        raise ValueError("Approval manifest has no approved_sources entries.")
+
+    approved: dict[str, dict[str, Any]] = {}
+    for entry in entries:
+        if not isinstance(entry, dict) or entry.get("status") != "APPROVED":
+            continue
+        name = entry.get("file")
+        if not isinstance(name, str) or Path(name).name != name:
+            raise ValueError("Approval manifest contains an unsafe file name.")
+        if entry.get("intended_use") != "research_training":
+            raise ValueError(f"{name}: intended_use must be research_training.")
+        if not isinstance(entry.get("reviewer"), str) or not entry["reviewer"].strip():
+            raise ValueError(f"{name}: reviewer is required.")
+        if not isinstance(entry.get("rights_basis"), str) or not entry["rights_basis"].strip():
+            raise ValueError(f"{name}: rights_basis is required.")
+        if name in approved:
+            raise ValueError(f"Duplicate approval entry for {name}.")
+        approved[name] = entry
+
+    files = sorted(data_dir.glob("*.txt"))
+    if not files:
+        raise FileNotFoundError(f"No .txt files found in {data_dir}.")
+    actual_names = {p.name for p in files}
+    if actual_names != set(approved):
+        missing = sorted(actual_names - set(approved))
+        stale = sorted(set(approved) - actual_names)
+        raise ValueError(f"Approval manifest/file mismatch; unapproved={missing}, missing_files={stale}.")
+
+    fingerprints: dict[str, str] = {}
+    dialogue_files: list[Path] = []
+    for path in files:
+        raw = path.read_bytes()
+        text = raw.decode("utf-8", errors="strict")
+        entry = approved[path.name]
+        digest = sha256_bytes(raw)
+        if entry.get("sha256") != digest:
+            raise ValueError(f"{path.name}: SHA-256 differs from the approved version.")
+        if entry.get("character_count") != len(text):
+            raise ValueError(f"{path.name}: character_count differs from the approved version.")
+        fingerprints[path.name] = digest
+        # Narrative seed text is approved, but is not a user/assistant SFT pair.
+        if path.name.startswith("original_dialogue_ar") or path.name.startswith("dialogue_ar"):
+            dialogue_files.append(path)
+
+    if not dialogue_files:
+        raise ValueError("No approved original_dialogue_ar*.txt files found for supervised fine-tuning.")
+    return dialogue_files, fingerprints
+
+
+def parse_dialogue_text(text: str, source_name: str = "<memory>") -> list[list[dict[str, str]]]:
+    """Parse blank-line-separated, alternating Arabic user/Jon2 dialogue blocks."""
+    conversations: list[list[dict[str, str]]] = []
+    for block_number, block in enumerate(re.split(r"\n\s*\n", text.strip()), 1):
+        messages: list[dict[str, str]] = []
+        for raw_line in block.splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            matched = False
+            for label in USER_LABELS:
+                if line.startswith(label):
+                    messages.append({"role": "user", "content": line[len(label):].strip()})
+                    matched = True
+                    break
+            if matched:
+                continue
+            for label in ASSISTANT_LABELS:
+                if line.startswith(label):
+                    messages.append({"role": "assistant", "content": line[len(label):].strip()})
+                    matched = True
+                    break
+            if not matched:
+                raise ValueError(f"{source_name}: unrecognized dialogue line in block {block_number}: {line[:80]!r}")
+        if not messages:
+            continue
+        if len(messages) < 2 or len(messages) % 2:
+            raise ValueError(f"{source_name}: block {block_number} must contain complete user/assistant turns.")
+        for index, message in enumerate(messages):
+            expected = "user" if index % 2 == 0 else "assistant"
+            if message["role"] != expected or not message["content"]:
+                raise ValueError(f"{source_name}: block {block_number} must alternate non-empty user/assistant turns.")
+        conversations.append(messages)
+    return conversations
+
+
+def collect_conversations(files: list[Path]) -> list[list[dict[str, str]]]:
+    all_conversations: list[list[dict[str, str]]] = []
+    seen: set[tuple[tuple[str, str], ...]] = set()
+    for path in files:
+        parsed = parse_dialogue_text(path.read_text(encoding="utf-8", errors="strict"), path.name)
+        for conversation in parsed:
+            key = tuple((m["role"], m["content"]) for m in conversation)
+            if key not in seen:
+                seen.add(key)
+                all_conversations.append(conversation)
+    if not all_conversations:
+        raise ValueError("No complete dialogue conversations were found.")
+    return all_conversations
+
+
+def split_conversations(
+    conversations: list[list[dict[str, str]]], validation_fraction: float = 0.1, seed: int = 42
+) -> tuple[list[list[dict[str, str]]], list[list[dict[str, str]]]]:
+    if not 0.05 <= validation_fraction <= 0.3:
+        raise ValueError("validation_fraction must be between 0.05 and 0.30.")
+    if len(conversations) < 20:
+        raise ValueError(f"Need at least 20 distinct conversations; found {len(conversations)}.")
+    indices = list(range(len(conversations)))
+    random.Random(seed).shuffle(indices)
+    val_count = max(1, round(len(indices) * validation_fraction))
+    val_set = set(indices[:val_count])
+    train = [item for i, item in enumerate(conversations) if i not in val_set]
+    validation = [item for i, item in enumerate(conversations) if i in val_set]
+    if not train or not validation:
+        raise ValueError("Training/validation split is empty.")
+    return train, validation
+
+
+def count_assistant_examples(conversations: list[list[dict[str, str]]]) -> int:
+    return sum(1 for conversation in conversations for message in conversation if message["role"] == "assistant")
+
+
+def prepare_manifest(data_dir: Path, approval_manifest: Path, validation_fraction: float, seed: int) -> dict[str, Any]:
+    files, fingerprints = load_approved_dialogue_files(data_dir, approval_manifest)
+    conversations = collect_conversations(files)
+    train, validation = split_conversations(conversations, validation_fraction, seed)
+    return {
+        "base_model": BASE_MODEL,
+        "base_model_license": BASE_MODEL_LICENSE,
+        "source_files": fingerprints,
+        "conversation_count": len(conversations),
+        "assistant_training_examples": count_assistant_examples(conversations),
+        "train_conversations": len(train),
+        "validation_conversations": len(validation),
+        "train_assistant_examples": count_assistant_examples(train),
+        "validation_assistant_examples": count_assistant_examples(validation),
+        "validation_fraction": validation_fraction,
+        "split_seed": seed,
+        "training_method": "supervised_fine_tuning_with_peft_lora",
+        "adapter_only": True,
+        "human_review_required": True,
+        "public_release_approved": False,
+    }
+
+
+def build_tokenized_examples(conversations, tokenizer, max_length: int):
+    """Mask prompt tokens so the loss updates only assistant responses."""
+    rows = []
+    for conversation in conversations:
+        for end in range(1, len(conversation), 2):
+            history = conversation[:end]
+            target = conversation[: end + 1]
+            prompt_ids = tokenizer.apply_chat_template(
+                history, tokenize=True, add_generation_prompt=True
+            )
+            full_ids = tokenizer.apply_chat_template(
+                target, tokenize=True, add_generation_prompt=False
+            )
+            if hasattr(prompt_ids, "tolist"):
+                prompt_ids = prompt_ids.tolist()
+            if hasattr(full_ids, "tolist"):
+                full_ids = full_ids.tolist()
+            if isinstance(prompt_ids, list) and prompt_ids and isinstance(prompt_ids[0], list):
+                prompt_ids = prompt_ids[0]
+            if isinstance(full_ids, list) and full_ids and isinstance(full_ids[0], list):
+                full_ids = full_ids[0]
+            if len(full_ids) > max_length:
+                full_ids = full_ids[-max_length:]
+                prompt_length = max(0, len(prompt_ids) - (len(tokenizer.apply_chat_template(
+                    target, tokenize=True, add_generation_prompt=False
+                )) - max_length))
+            else:
+                prompt_length = len(prompt_ids)
+            prompt_length = min(prompt_length, len(full_ids))
+            if prompt_length >= len(full_ids):
+                continue
+            labels = [-100] * prompt_length + full_ids[prompt_length:]
+            rows.append({
+                "input_ids": full_ids,
+                "attention_mask": [1] * len(full_ids),
+                "labels": labels,
+            })
+    if not rows:
+        raise ValueError("No assistant response tokens remain after tokenization/truncation.")
+    return rows
+
+
+def run_training(args) -> int:
+    manifest = prepare_manifest(
+        Path(args.data), Path(args.approval_manifest), args.validation_fraction, args.seed
+    )
+    print(json.dumps(manifest, ensure_ascii=False, indent=2), flush=True)
+    if not args.execute:
+        print("DRY RUN ONLY: no model loaded, no optimizer steps, and no weights changed.")
+        return 0
+    if not args.allow_cpu:
+        try:
+            import torch
+        except ImportError as exc:
+            raise RuntimeError("Install ai_engine/requirements-lora.txt before training.") from exc
+        if not torch.cuda.is_available():
+            raise RuntimeError("CUDA GPU is required. Use a GPU runtime such as Colab; CPU training is disabled by default.")
+    else:
+        import torch
+
+    from transformers import AutoModelForCausalLM, AutoTokenizer, DataCollatorForSeq2Seq, Trainer, TrainingArguments
+    from peft import LoraConfig, TaskType, get_peft_model
+
+    files, fingerprints = load_approved_dialogue_files(Path(args.data), Path(args.approval_manifest))
+    conversations = collect_conversations(files)
+    train_conversations, validation_conversations = split_conversations(
+        conversations, args.validation_fraction, args.seed
+    )
+    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=False)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    model = AutoModelForCausalLM.from_pretrained(
+        BASE_MODEL,
+        torch_dtype=(torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+                     else torch.float16 if torch.cuda.is_available() else torch.float32),
+        trust_remote_code=False,
+    )
+    model.config.use_cache = False
+    model.gradient_checkpointing_enable()
+    model.enable_input_require_grads()
+    lora = LoraConfig(
+        task_type=TaskType.CAUSAL_LM,
+        r=args.lora_rank,
+        lora_alpha=args.lora_alpha,
+        lora_dropout=args.lora_dropout,
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+        bias="none",
+    )
+    model = get_peft_model(model, lora)
+    model.print_trainable_parameters()
+
+    train_rows = build_tokenized_examples(train_conversations, tokenizer, args.max_length)
+    val_rows = build_tokenized_examples(validation_conversations, tokenizer, args.max_length)
+
+    class Rows(torch.utils.data.Dataset):
+        def __init__(self, rows):
+            self.rows = rows
+        def __len__(self):
+            return len(self.rows)
+        def __getitem__(self, index):
+            return self.rows[index]
+
+    output_dir = Path(args.output)
+    if output_dir.exists() and any(output_dir.iterdir()):
+        raise FileExistsError(f"Output adapter directory is not empty: {output_dir}")
+    training_args = TrainingArguments(
+        output_dir=str(output_dir),
+        num_train_epochs=args.epochs,
+        max_steps=args.max_steps,
+        learning_rate=args.learning_rate,
+        per_device_train_batch_size=args.batch_size,
+        per_device_eval_batch_size=args.batch_size,
+        gradient_accumulation_steps=args.gradient_accumulation,
+        warmup_ratio=0.05,
+        weight_decay=0.01,
+        logging_steps=10,
+        eval_strategy="steps",
+        eval_steps=args.eval_steps,
+        save_strategy="steps",
+        save_steps=args.eval_steps,
+        save_total_limit=2,
+        load_best_model_at_end=True,
+        metric_for_best_model="eval_loss",
+        greater_is_better=False,
+        fp16=torch.cuda.is_available() and not torch.cuda.is_bf16_supported(),
+        bf16=torch.cuda.is_available() and torch.cuda.is_bf16_supported(),
+        gradient_checkpointing=True,
+        optim="adamw_torch",
+        report_to="none",
+        seed=args.seed,
+        data_seed=args.seed,
+        remove_unused_columns=False,
+    )
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=Rows(train_rows),
+        eval_dataset=Rows(val_rows),
+        data_collator=DataCollatorForSeq2Seq(
+            tokenizer=tokenizer, model=model, padding=True, label_pad_token_id=-100
+        ),
+    )
+    result = trainer.train()
+    trainer.save_model(str(output_dir))
+    tokenizer.save_pretrained(str(output_dir))
+    final_eval = trainer.evaluate()
+    metadata = {
+        **manifest,
+        "source_files": fingerprints,
+        "train_result": result.metrics,
+        "final_evaluation": final_eval,
+        "lora_rank": args.lora_rank,
+        "lora_alpha": args.lora_alpha,
+        "lora_dropout": args.lora_dropout,
+        "max_length": args.max_length,
+        "epochs": args.epochs,
+        "max_steps": args.max_steps,
+        "learning_rate": args.learning_rate,
+        "adapter_directory": str(output_dir),
+        "optimizer_steps_completed": trainer.state.global_step,
+        "best_checkpoint": trainer.state.best_model_checkpoint,
+        "training_completed": True,
+        "human_review_required": True,
+        "public_release_approved": False,
+    }
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "jon2_lora_training_metadata.json").write_text(
+        json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    print(json.dumps(metadata, ensure_ascii=False, indent=2), flush=True)
+    return 0
+
+
+def build_parser():
+    parser = argparse.ArgumentParser(description="Rights-gated Qwen2.5 LoRA fine-tuning for Jon2.")
+    parser.add_argument("--data", default="ai_engine/training_data")
+    parser.add_argument("--approval-manifest", default="ai_engine/training_data/source_approvals.json")
+    parser.add_argument("--output", default="artifacts/jon2-qwen25-05b-lora")
+    parser.add_argument("--validation-fraction", type=float, default=0.1)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--max-length", type=int, default=1024)
+    parser.add_argument("--epochs", type=float, default=3.0)
+    parser.add_argument("--max-steps", type=int, default=-1)
+    parser.add_argument("--batch-size", type=int, default=2)
+    parser.add_argument("--gradient-accumulation", type=int, default=8)
+    parser.add_argument("--eval-steps", type=int, default=50)
+    parser.add_argument("--learning-rate", type=float, default=2e-4)
+    parser.add_argument("--lora-rank", type=int, default=8)
+    parser.add_argument("--lora-alpha", type=int, default=16)
+    parser.add_argument("--lora-dropout", type=float, default=0.05)
+    parser.add_argument("--allow-cpu", action="store_true", help="Explicitly allow very slow CPU experimentation.")
+    parser.add_argument("--execute", action="store_true", help="Actually load Qwen and perform optimizer steps; default is dry-run.")
+    return parser
+
+
+def main():
+    args = build_parser().parse_args()
+    if args.max_length < 128 or args.batch_size < 1 or args.gradient_accumulation < 1:
+        raise SystemExit("max-length must be >=128 and batch/gradient-accumulation must be positive.")
+    if args.epochs <= 0 or args.learning_rate <= 0 or args.lora_rank < 1 or args.lora_alpha < 1:
+        raise SystemExit("epochs, learning rate, LoRA rank, and alpha must be positive.")
+    return run_training(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
