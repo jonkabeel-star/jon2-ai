@@ -80,6 +80,29 @@ class CodingAgentTests(unittest.TestCase):
         self.assertEqual(result, "still malformed")
         self.assertEqual(request.call_count, 2)
 
+    def test_rejects_diff_that_does_not_match_current_source(self):
+        import subprocess
+        from coding_agent import check_patch_applicability
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "ai_engine").mkdir()
+            (root / "ai_engine" / "example.py").write_text("different = 9\\n", encoding="utf-8")
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            with self.assertRaisesRegex(ValueError, "does not apply cleanly"):
+                check_patch_applicability(root, VALID)
+
+    def test_accepts_diff_that_matches_current_source_without_modifying_it(self):
+        import subprocess
+        from coding_agent import check_patch_applicability
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "ai_engine").mkdir()
+            target = root / "ai_engine" / "example.py"
+            target.write_text("old = 1\\n", encoding="utf-8")
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            self.assertTrue(check_patch_applicability(root, VALID))
+            self.assertEqual(target.read_text(encoding="utf-8"), "old = 1\\n")
+
     def test_context_contains_actual_engine_and_excludes_protected_files(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "ai_engine"
