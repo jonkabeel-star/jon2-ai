@@ -1,16 +1,9 @@
 name: Jon2 Autonomous Brain Builder
 
 on:
+  # The canonical autonomous-execution workflow now owns the complete build.
+  # Keep this older planning workflow available only for deliberate manual use.
   workflow_dispatch:
-  pull_request:
-    paths:
-      - "ai_engine/**"
-      - ".github/workflows/jon2-autonomous-builder.yml"
-  push:
-    branches: [main]
-    paths:
-      - "ai_engine/**"
-      - ".github/workflows/jon2-autonomous-builder.yml"
 
 permissions:
   contents: read
