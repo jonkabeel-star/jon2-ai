@@ -15,7 +15,7 @@ This repository contains the website interface, an early original-model prototyp
 - [Original data policy](ai_engine/ORIGINAL_DATA_POLICY.md) — requirements for training text and asset permissions.
 - [Dataset register](ai_engine/DATASET_REGISTER.md) — current dataset approval decisions.
 - [Original model API guide](ai_engine/README.md) — local API, training safeguards, and evaluation instructions.
-- [Backend deployment notes](ai_engine/DEPLOYMENT.md) — CPU-only container build, health checks, and safe release configuration.
+- [Oracle ARM64 deployment](deploy/oracle/README.md) — persistent local Qwen inference on an Always Free-capable CPU VM.\n- [Backend deployment notes](ai_engine/DEPLOYMENT.md) — original Jon2 CPU container and release gates.\n- [Qwen3.5-2B training guide](ai_engine/QWEN_LORA_TRAINING.md) — rights-gated GPU LoRA training and private GGUF export.
 
 ## Website chat connection
 
@@ -48,3 +48,20 @@ The source-approval workflow intentionally blocks training unless every exact so
 The Node.js API gateway is in `server/server.js`. Initial account routes, email verification, password reset, and Argon2id/session handling are in `server/auth.js`; dependencies are listed in `server/package.json`, and required environment settings are documented in `server/.env.example`. The PostgreSQL schema and migration command are in `server/db/schema.sql` and `server/migrate.js`.
 
 These are implementation files only. No live database, SMTP provider, backend deployment, same-site custom domain, or end-to-end security test has been configured. The static website is not yet connected to the account API. Do not expose it as a public multi-user service until the launch gates in the blueprint are complete.
+
+
+## Current Qwen Arabic model path
+
+The research training path now targets `Qwen/Qwen3.5-2B` with Unsloth and
+Transformers v5. It is a separate adapter-based model, not a replacement of
+the original project-owned Jon2 checkpoint. Real training still requires a
+CUDA GPU and an explicit `--execute` command; dry-run remains the default.
+
+For CPU deployment, `ai_engine/qwen_server.py` wraps a local llama.cpp server
+and expects a privately stored Q4_K_M GGUF model. `Dockerfile.oracle` and
+`docker-compose.oracle.yml` prepare an ARM64 deployment. The runtime stays
+locked unless `JON2_CHAT_RELEASE_APPROVED=true`, the GGUF is present, and the
+local model server becomes healthy.
+
+The Oracle deployment files prepare the service but do not provision an
+Oracle account or VM. No Qwen adapter/GGUF has been trained or deployed yet.
