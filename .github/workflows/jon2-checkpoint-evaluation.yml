@@ -90,6 +90,22 @@ jobs:
             --output training-output/review-report.json 2>&1 | tee training-output/human-review-generation.log
           test -s training-output/review-report.json
 
+      - name: Generate Egyptian colloquial Arabic answers for human review
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE/ai_engine" python ai_engine/evaluate_model.py \
+            --checkpoint "$JON2_CHECKPOINT_FILE" \
+            --prompts ai_engine/evaluation/prompts_egyptian_ar.jsonl \
+            --max-new-chars 180 \
+            --temperature 0.8 \
+            --seed 42 \
+            --device cpu \
+            --expected-prompt-count 20 \
+            --training-run-id "$UPSTREAM_TRAINING_RUN_ID" \
+            --checkpoint-sha256 "$EXPECTED_CHECKPOINT_SHA" \
+            --output training-output/egyptian-review-report.json 2>&1 | tee training-output/egyptian-human-review-generation.log
+          test -s training-output/egyptian-review-report.json
+
       - name: Upload the 40-answer human-review report
         if: always()
         uses: actions/upload-artifact@v4
@@ -98,5 +114,7 @@ jobs:
           path: |
             training-output/review-report.json
             training-output/human-review-generation.log
+            training-output/egyptian-review-report.json
+            training-output/egyptian-human-review-generation.log
           if-no-files-found: warn
           retention-days: 14
