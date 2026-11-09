@@ -86,7 +86,7 @@ class CodingAgentTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "ai_engine").mkdir()
-            (root / "ai_engine" / "example.py").write_text("different = 9\\n", encoding="utf-8")
+            (root / "ai_engine" / "example.py").write_text("different = 9\n", encoding="utf-8")
             subprocess.run(["git", "init", "-q"], cwd=root, check=True)
             with self.assertRaisesRegex(ValueError, "does not apply cleanly"):
                 check_patch_applicability(root, VALID)
@@ -98,10 +98,10 @@ class CodingAgentTests(unittest.TestCase):
             root = Path(tmp)
             (root / "ai_engine").mkdir()
             target = root / "ai_engine" / "example.py"
-            target.write_text("old = 1\\n", encoding="utf-8")
+            target.write_text("old = 1\n", encoding="utf-8")
             subprocess.run(["git", "init", "-q"], cwd=root, check=True)
             self.assertTrue(check_patch_applicability(root, VALID))
-            self.assertEqual(target.read_text(encoding="utf-8"), "old = 1\\n")
+            self.assertEqual(target.read_text(encoding="utf-8"), "old = 1\n")
 
     def test_context_contains_actual_engine_and_excludes_protected_files(self):
         with tempfile.TemporaryDirectory() as tmp:
