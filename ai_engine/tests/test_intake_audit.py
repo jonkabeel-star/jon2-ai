@@ -76,7 +76,7 @@ class IntakeAuditTests(unittest.TestCase):
     def test_arabic_extended_letters_are_counted(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "extended.txt"
-            path.write_text("\\u0750\\u08a0\\u0870", encoding="utf-8")
+            path.write_text("\u0750\u08a0\u0870", encoding="utf-8")
             report = audit_candidate(path)
         self.assertEqual(report["language_signals"]["arabic_letters"], 3)
 
