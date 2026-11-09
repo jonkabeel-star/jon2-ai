@@ -58,6 +58,28 @@ class CodingAgentTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate(response)
 
+    def test_retries_once_after_malformed_model_response(self):
+        from unittest.mock import patch
+        with patch("coding_agent._request_ollama_patch", side_effect=["not a diff", VALID.strip()]) as request:
+            result = __import__("coding_agent").propose("fix a bug", "local-model", "http://localhost:11434", ".")
+        self.assertEqual(result, VALID.strip())
+        self.assertEqual(request.call_count, 2)
+        self.assertEqual(request.call_args.args[4], "not a diff")
+
+    def test_stops_retrying_when_model_declines_safe_patch(self):
+        from unittest.mock import patch
+        with patch("coding_agent._request_ollama_patch", return_value="NO_SAFE_PATCH") as request:
+            result = __import__("coding_agent").propose("inspect", "local-model", "http://localhost:11434", ".")
+        self.assertEqual(result, "NO_SAFE_PATCH")
+        self.assertEqual(request.call_count, 1)
+
+    def test_retry_count_is_bounded(self):
+        from unittest.mock import patch
+        with patch("coding_agent._request_ollama_patch", return_value="still malformed") as request:
+            result = __import__("coding_agent").propose("inspect", "local-model", "http://localhost:11434", ".", max_attempts=2)
+        self.assertEqual(result, "still malformed")
+        self.assertEqual(request.call_count, 2)
+
     def test_context_contains_actual_engine_and_excludes_protected_files(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "ai_engine"
