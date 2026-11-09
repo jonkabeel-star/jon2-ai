@@ -11,6 +11,13 @@ on:
   schedule:
     - cron: "23 3 * * *"
   workflow_dispatch:
+  workflow_run:
+    workflows:
+      - "Jon2 AI Python Checks"
+      - "Jon2 AI Code Checks"
+      - "Jon2 AI Container Build"
+    types: [completed]
+    branches: [main]
 
 concurrency:
   group: jon2-auto-repair-${{ github.ref }}
@@ -22,7 +29,13 @@ permissions:
 
 jobs:
   diagnose-repair-verify:
-    if: github.repository == 'jonkabeel-star/jon2-ai'
+    if: >-
+      github.repository == 'jonkabeel-star/jon2-ai' &&
+      (github.event_name != 'workflow_run' ||
+       (github.event.workflow_run.conclusion == 'failure' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_repository.full_name == github.repository &&
+        contains(fromJSON('["Jon2 AI Python Checks","Jon2 AI Code Checks","Jon2 AI Container Build"]'), github.event.workflow_run.name)))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -43,8 +56,22 @@ jobs:
           python -m pip install numpy fastapi httpx
           python -m pip install --index-url https://download.pytorch.org/whl/cpu torch
 
-      - name: Diagnose, apply safe repairs, and run the full Python gate
-        run: python scripts/jon2_auto_repair.py --root . --report auto-repair-output/report.json
+      - name: Download logs from the failed trusted main-branch workflow
+        if: github.event_name == 'workflow_run'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          mkdir -p auto-repair-output
+          gh run view "$SOURCE_RUN_ID" --repo "$GITHUB_REPOSITORY" --log-failed > auto-repair-output/failed.log || true
+
+      - name: Diagnose the failure, generate a bounded patch, and run the full Python gate
+        run: |
+          if [ -s auto-repair-output/failed.log ]; then
+            python scripts/jon2_auto_repair.py --root . --logs auto-repair-output/failed.log --report auto-repair-output/report.json
+          else
+            python scripts/jon2_auto_repair.py --root . --report auto-repair-output/report.json
+          fi
 
       - name: Upload diagnostic report even when a check fails
         if: always()
@@ -70,11 +97,12 @@ jobs:
           body: |
             ## Automated repair report
 
-            Jon2 Auto Repair applied whitespace-only Python source normalization
-            and ran the repository's Python tests and data audits.
+            Jon2 Auto Repair analyzed trusted workflow failure logs when available,
+            applied only an exact allowlisted missing-standard-library-import patch
+            (or safe whitespace normalization), and reran the repository checks.
 
             - All configured checks passed before this pull request was opened.
-            - Only whitespace and final-newline changes are permitted.
+            - Any code patch is limited to an exact missing standard-library import rule.
             - Model checkpoints, training data, secrets, and deployment settings are not modified.
             - Human review is required before merge.
           labels: |
