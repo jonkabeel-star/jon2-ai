@@ -5,7 +5,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.jon2_auto_repair import (\n    diagnose_failure, generate_safe_repairs, restore_snapshot, snapshot_repair_scope,\n)
+from scripts.jon2_auto_repair import (
+    diagnose_failure, generate_safe_repairs, restore_snapshot, snapshot_repair_scope,
+)
 
 
 class SafeRepairTests(unittest.TestCase):
@@ -85,7 +87,7 @@ class SafeRepairTests(unittest.TestCase):
         original = b"def run():  \n    return 1\n"
         target.write_bytes(original)
         snapshot = snapshot_repair_scope(self.root)
-        target.write_text("import json\\ndef run():\\n    return 1\\n", encoding="utf-8")
+        target.write_text("import json\ndef run():\n    return 1\n", encoding="utf-8")
         restored = restore_snapshot(snapshot)
         self.assertEqual(target.read_bytes(), original)
         self.assertEqual(restored, [str(target)])
@@ -94,8 +96,8 @@ class SafeRepairTests(unittest.TestCase):
         allowed = self.root / "ai_engine" / "sample.py"
         protected = self.root / "ai_engine" / "models" / "weights.py"
         protected.parent.mkdir()
-        allowed.write_text("x = 1\\n", encoding="utf-8")
-        protected.write_text("secret = 1\\n", encoding="utf-8")
+        allowed.write_text("x = 1\n", encoding="utf-8")
+        protected.write_text("secret = 1\n", encoding="utf-8")
         snapshot = snapshot_repair_scope(self.root)
         self.assertIn(allowed.resolve(), snapshot)
         self.assertNotIn(protected.resolve(), snapshot)
