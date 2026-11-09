@@ -33,7 +33,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install "transformers>=4.45,<5" accelerate safetensors
+          python -m pip install "transformers>=4.45,<5" accelerate safetensors fastapi "uvicorn[standard]"
       - name: Install and start Ollama
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
@@ -44,35 +44,74 @@ jobs:
           done
           cat /tmp/ollama.log
           exit 1
-      - name: Download local open-weight judge and coding models
-        run: |
-          ollama pull qwen2.5:3b
-          ollama pull qwen2.5-coder:1.5b
+      - name: Download semantic judge model
+        run: ollama pull qwen2.5:3b
       - name: Run actual Jon2 Arabic model benchmark and semantic evaluation
         continue-on-error: true
         run: |
+          mkdir -p artifacts
+          set +e
           python ai_engine/run_model_benchmark.py --semantic
+          result=$?
+          set -e
+          RESULT="$result" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("artifacts/jon2-benchmark-step-status.json").write_text(
+              json.dumps({"exit_code": int(os.environ["RESULT"]), "passed": int(os.environ["RESULT"]) == 0}, indent=2) + "\n",
+              encoding="utf-8")
+          PY
+          echo "Benchmark process exit code: $result (see artifacts/jon2-benchmark-step-status.json)"
+      - name: Free judge model memory and fetch coding model
+        run: |
+          ollama stop qwen2.5:3b || true
+          ollama rm qwen2.5:3b || true
+          ollama pull qwen2.5-coder:1.5b
       - name: Run local coding agent and isolated Docker patch tests
         continue-on-error: true
         run: |
+          mkdir -p artifacts
+          set +e
           python ai_engine/coding_agent.py --repo . --task "Inspect the current Jon2 AI Python engine. Propose only a minimal, demonstrably safe bug fix if one is needed; otherwise return NO_SAFE_PATCH."
+          result=$?
+          set -e
+          RESULT="$result" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("artifacts/jon2-coding-agent-step-status.json").write_text(
+              json.dumps({"exit_code": int(os.environ["RESULT"]), "passed": int(os.environ["RESULT"]) == 0}, indent=2) + "\n",
+              encoding="utf-8")
+          PY
+          echo "Coding-agent process exit code: $result (see artifacts/jon2-coding-agent-step-status.json)"
       - name: Run all safety and evaluator unit tests
+        run: python -m unittest discover -s ai_engine -p "test_*.py" -v
+      - name: Evaluate training readiness; execute only if every verified gate passes
         run: |
-          python -m unittest discover -s ai_engine -p "test_*.py" -v
-      - name: Evaluate training readiness; execute only if every gate passes
-        continue-on-error: true
-        run: |
+          mkdir -p artifacts
           set +e
           python ai_engine/training_gate.py --profile arabic_30m --report artifacts/jon2-training-gate.json
           gate_status=$?
           set -e
-          if [ "$gate_status" -eq 0 ] && python -c "import json; r=json.load(open('artifacts/jon2-training-gate.json')); raise SystemExit(0 if r.get('authorized_to_train') is True else 1)"; then
-            echo "All rights, data, token-ratio, fresh-checkpoint and CUDA gates passed. Starting explicitly gated training."
+          if [ ! -f artifacts/jon2-training-gate.json ]; then
+            GATE_STATUS="$gate_status" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("artifacts/jon2-training-gate.json").write_text(json.dumps({
+              "authorized_to_train": False,
+              "training_started": False,
+              "gate_error": True,
+              "gate_exit_code": int(os.environ["GATE_STATUS"]),
+              "reason": "Preflight did not produce a valid gate report; fail closed."
+          }, indent=2) + "\n", encoding="utf-8")
+          PY
+          fi
+          if [ "$gate_status" -eq 0 ] && python -c "import json; r=json.load(open('artifacts/jon2-training-gate.json')); raise SystemExit(0 if r.get('authorized_to_train') is True and r.get('source_approval_passed') is True else 1)"; then
+            echo "All verified rights, data, token-ratio, fresh-checkpoint and CUDA gates passed. Starting explicitly authorized training."
             python ai_engine/training_gate.py --profile arabic_30m --execute --report artifacts/jon2-training-execution.json
           else
             echo "Training remains blocked. No training was started."
           fi
-      - name: Upload evaluation and repair reports
+      - name: Upload evaluation, repair and gate reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
