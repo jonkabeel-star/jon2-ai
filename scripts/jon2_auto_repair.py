@@ -91,6 +91,9 @@ def snapshot_repair_scope(root: Path) -> dict[Path, bytes]:
         if not base.is_dir():
             continue
         for path in sorted(base.rglob("*.py")):
+            # Snapshot only real files, never symlinks (even links pointing back into the repo).
+            if path.is_symlink():
+                continue
             try:
                 resolved = path.resolve()
                 relative = resolved.relative_to(root.resolve())
@@ -99,7 +102,7 @@ def snapshot_repair_scope(root: Path) -> dict[Path, bytes]:
             if (
                 relative.parts
                 and relative.parts[0] in {"ai_engine", "tests"}
-                and not any(part in PROTECTED_PATH_PARTS for part in relative.parts)
+                and not any(part in {".git", "__pycache__", ".venv", "venv"} | PROTECTED_PATH_PARTS for part in relative.parts)
                 and resolved.is_file()
             ):
                 snapshot[resolved] = resolved.read_bytes()
