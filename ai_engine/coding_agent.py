@@ -130,9 +130,51 @@ def sandbox(repo,patch,image):
         if check.returncode: raise ValueError("Patch does not apply: "+check.stderr[-1500:])
         apply=subprocess.run(["git","apply","--recount",str(pf)],cwd=work,capture_output=True,text=True,timeout=30)
         if apply.returncode: raise ValueError("Patch application failed: "+apply.stderr[-1500:])
-        cmd=[docker,"run","--rm","--network","none","--read-only","--cap-drop","ALL","--security-opt","no-new-privileges","--pids-limit","96","--memory","2g","--cpus","2","--tmpfs","/tmp:rw,noexec,nosuid,size=64m","-e","PYTHONDONTWRITEBYTECODE=1","-v",f"{work}:/work:ro","-w","/work/ai_engine",image,"sh","-lc","python -c \"import ast,pathlib; files=list(pathlib.Path('.').rglob('*.py')); [ast.parse(p.read_text(encoding='utf-8'), filename=str(p)) for p in files]; print('Syntax OK:', len(files), 'files')\" && python -m unittest test_quality_evaluator test_engineer_agent test_coding_agent -v"]
+        cmd=[docker,"run","--rm","--network","none","--read-only","--cap-drop","ALL","--security-opt","no-new-privileges","--pids-limit","96","--memory","2g","--cpus","2","--tmpfs","/tmp:rw,noexec,nosuid,size=64m","-e","PYTHONDONTWRITEBYTECODE=1","-v",f"{work}:/work:ro","-w","/work/ai_engine",image,"sh","-lc","python -c \"import ast,pathlib; files=list(pathlib.Path('.').rglob('*.py')); [ast.parse(p.read_text(encoding='utf-8'), filename=str(p)) for p in files]; print('Syntax OK:', len(files), 'files')\" && python -m unittest discover -s . -p "test_*.py" -v"]
         test=subprocess.run(cmd,capture_output=True,text=True,timeout=300)
         return {"tests_passed":test.returncode==0,"test_exit_code":test.returncode,"test_log":(test.stdout+"\n"+test.stderr)[-8000:],"executed_inside_no_network_docker":True,"committed_or_pushed":False}
+
+def repair_until_green(task,model,host,repo,image,max_rounds=2):
+    """Bounded self-repair: each candidate is validated and tested in a fresh sandbox."""
+    if type(max_rounds) is not int or not 1 <= max_rounds <= 3:
+        raise ValueError("max_rounds must be between 1 and 3.")
+    history=[]
+    current_task=task
+    for round_number in range(1,max_rounds+1):
+        patch=propose(current_task,model,host,repo)
+        if patch=="NO_SAFE_PATCH":
+            if not history:
+                return {"outcome":"no_safe_patch_needed","changed_paths":[],"tests_passed":None,
+                        "executed_inside_no_network_docker":False,"committed_or_pushed":False,
+                        "passed":True,"history":[]}
+            return {"outcome":"repair_declined_after_failure","changed_paths":[],"tests_passed":False,
+                    "executed_inside_no_network_docker":False,"committed_or_pushed":False,
+                    "passed":False,"history":history,"test_log":"Model declined a further repair after a failed candidate."}
+        try:
+            paths=validate(patch)
+            check_patch_applicability(repo,patch)
+            result=sandbox(repo,patch,image)
+        except (ValueError,PermissionError,RuntimeError,OSError,subprocess.SubprocessError) as exc:
+            result={"tests_passed":False,"test_exit_code":None,"test_log":str(exc),
+                    "executed_inside_no_network_docker":False,"committed_or_pushed":False}
+            paths=[]
+        history.append({"round":round_number,"changed_paths":paths,
+                        "tests_passed":result["tests_passed"],"test_exit_code":result.get("test_exit_code"),
+                        "test_log":result.get("test_log","")[-8000:]})
+        if result["tests_passed"]:
+            result.update({"outcome":"patch_tested","changed_paths":paths,"passed":True,
+                           "history":history,"patch":patch})
+            return result
+        current_task=(task+"\n\nAUTOMATIC REPAIR FEEDBACK: The previous candidate failed the isolated full Python test suite. "
+                      "Do not repeat the same change. Diagnose the failure and propose one minimal corrective diff, "
+                      "or return NO_SAFE_PATCH if no safe correction is justified.\n"
+                      "FAILED TEST LOG:\n"+result.get("test_log","")[-6000:])
+    last=history[-1]
+    return {"outcome":"repair_attempts_exhausted","changed_paths":last["changed_paths"],
+            "tests_passed":False,"test_exit_code":last["test_exit_code"],
+            "test_log":last["test_log"],"executed_inside_no_network_docker":True,
+            "committed_or_pushed":False,"passed":False,"history":history}
+
 
 def main():
     p=argparse.ArgumentParser()
@@ -142,17 +184,23 @@ def main():
     p.add_argument("--docker-image",default="python:3.11-slim")
     p.add_argument("--output",default="artifacts/jon2-proposed.patch")
     p.add_argument("--report",default="artifacts/jon2-coding-agent-report.json")
+    p.add_argument("--max-repair-rounds",type=int,default=2)
     a=p.parse_args()
     repo=Path(a.repo).resolve()
     report_path=Path(a.report)
     report_path.parent.mkdir(parents=True,exist_ok=True)
-    patch=propose(a.task,a.model,a.host,repo)
-    if patch=="NO_SAFE_PATCH":
-        result={"model":a.model,"outcome":"no_safe_patch_needed","changed_paths":[],
-                "tests_passed":None,"executed_inside_no_network_docker":False,
-                "committed_or_pushed":False,"human_review_required":True,
-                "passed":True,"note":"The coding model explicitly declined to propose a change."}
-        report_path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+    try:
+        result=repair_until_green(a.task,a.model,a.host,repo,a.docker_image,a.max_repair_rounds)
+        patch=result.pop("patch",None)
+        if patch and result.get("tests_passed") is True:
+            out=Path(a.output); out.parent.mkdir(parents=True,exist_ok=True)
+            out.write_text(patch+"\n",encoding="utf-8")
+        result.update({"model":a.model,"human_review_required":True})
+    except (ValueError,PermissionError,RuntimeError,OSError,subprocess.SubprocessError) as exc:
+        result={"model":a.model,"outcome":"rejected_or_not_sandboxed","changed_paths":[],
+                "tests_passed":False,"test_log":str(exc),"executed_inside_no_network_docker":False,
+                "committed_or_pushed":False,"human_review_required":True,"passed":False}
+    report_path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
         print(json.dumps(result,ensure_ascii=False,indent=2))
         return 0
     try:
