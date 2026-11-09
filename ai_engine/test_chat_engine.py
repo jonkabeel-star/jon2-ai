@@ -38,7 +38,7 @@ class ChatPromptTests(unittest.TestCase):
         )
         self.assertIn("Jon2", prompt)
         self.assertIn("ذاكرة سابقة", prompt)
-        self.assertIn("أجب بالعربية الواضحة", prompt)
+        self.assertIn("أجب بعربية سهلة وواضحة", prompt)
 
     def test_empty_question_is_rejected(self):
         with self.assertRaises(ValueError):
