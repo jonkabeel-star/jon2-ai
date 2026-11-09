@@ -90,13 +90,26 @@ def main():
     p.add_argument("--host",default=os.getenv("OLLAMA_HOST","http://127.0.0.1:11434"))
     p.add_argument("--docker-image",default="python:3.11-slim")
     p.add_argument("--output",default="artifacts/jon2-proposed.patch")
+    p.add_argument("--report",default="artifacts/jon2-coding-agent-report.json")
     a=p.parse_args()
     repo=Path(a.repo).resolve()
+    report_path=Path(a.report)
+    report_path.parent.mkdir(parents=True,exist_ok=True)
     patch=propose(a.task,a.model,a.host,repo)
-    if patch=="NO_SAFE_PATCH": raise SystemExit("Model declined to propose a safe patch.")
+    if patch=="NO_SAFE_PATCH":
+        result={"model":a.model,"outcome":"no_safe_patch_needed","changed_paths":[],
+                "tests_passed":None,"executed_inside_no_network_docker":False,
+                "committed_or_pushed":False,"human_review_required":True,
+                "passed":True,"note":"The coding model explicitly declined to propose a change."}
+        report_path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\\n",encoding="utf-8")
+        print(json.dumps(result,ensure_ascii=False,indent=2))
+        return 0
     paths=validate(patch)
-    out=Path(a.output); out.parent.mkdir(parents=True,exist_ok=True); out.write_text(patch+"\n",encoding="utf-8")
+    out=Path(a.output); out.parent.mkdir(parents=True,exist_ok=True); out.write_text(patch+"\\n",encoding="utf-8")
     result=sandbox(repo,patch,a.docker_image)
-    print(json.dumps({"model":a.model,"changed_paths":paths,**result,"human_review_required":True},ensure_ascii=False,indent=2))
+    result.update({"model":a.model,"outcome":"patch_tested","changed_paths":paths,
+                   "human_review_required":True,"passed":result["tests_passed"]})
+    report_path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\\n",encoding="utf-8")
+    print(json.dumps(result,ensure_ascii=False,indent=2))
     return 0 if result["tests_passed"] else 2
 if __name__=="__main__": raise SystemExit(main())
