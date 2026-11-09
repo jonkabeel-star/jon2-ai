@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.jon2_auto_repair import diagnose_failure, generate_safe_repairs
+from scripts.jon2_auto_repair import (\n    diagnose_failure, generate_safe_repairs, restore_snapshot, snapshot_repair_scope,\n)
 
 
 class SafeRepairTests(unittest.TestCase):
@@ -79,6 +79,26 @@ class SafeRepairTests(unittest.TestCase):
         categories = {item["category"] for item in findings}
         self.assertEqual(categories, {"missing_dependency", "missing_path", "function_signature_mismatch"})
         self.assertTrue(all(item["action"] == "diagnostic_only" for item in findings))
+
+    def test_failed_validation_can_restore_original_source_bytes(self) -> None:
+        target = self.root / "ai_engine" / "sample.py"
+        original = b"def run():  \n    return 1\n"
+        target.write_bytes(original)
+        snapshot = snapshot_repair_scope(self.root)
+        target.write_text("import json\\ndef run():\\n    return 1\\n", encoding="utf-8")
+        restored = restore_snapshot(snapshot)
+        self.assertEqual(target.read_bytes(), original)
+        self.assertEqual(restored, [str(target)])
+
+    def test_snapshot_excludes_protected_model_and_training_paths(self) -> None:
+        allowed = self.root / "ai_engine" / "sample.py"
+        protected = self.root / "ai_engine" / "models" / "weights.py"
+        protected.parent.mkdir()
+        allowed.write_text("x = 1\\n", encoding="utf-8")
+        protected.write_text("secret = 1\\n", encoding="utf-8")
+        snapshot = snapshot_repair_scope(self.root)
+        self.assertIn(allowed.resolve(), snapshot)
+        self.assertNotIn(protected.resolve(), snapshot)
 
     def test_blocks_syntax_error_target(self) -> None:
         target = self.root / "ai_engine" / "sample.py"
