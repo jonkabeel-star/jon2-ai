@@ -21,7 +21,7 @@ from urllib.request import Request, urlopen
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field\n\nimport chat_memory
 
 MODEL_PATH = Path(os.getenv("JON2_GGUF_PATH", "/models/jon2-qwen35-2b-q4_k_m.gguf"))
 LLAMA_SERVER_BIN = os.getenv("LLAMA_SERVER_BIN", "llama-server")
@@ -143,7 +143,7 @@ class ChatRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     message: str = Field(min_length=1, max_length=2000)
     history: list[HistoryMessage] = Field(default_factory=list, max_length=MAX_HISTORY)
-    session_id: str | None = Field(default=None, max_length=64)
+    session_id: uuid.UUID | None = None
 
 
 @app.get("/")
