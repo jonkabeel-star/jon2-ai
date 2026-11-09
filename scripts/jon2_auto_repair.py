@@ -9,7 +9,9 @@ change can be proposed as a pull request.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -64,6 +66,133 @@ def normalize_python_whitespace(root: Path) -> list[str]:
     return changed
 
 
+
+# Exact, reviewable repairs for a small allowlist of missing standard-library imports.
+# This is deliberately not an unrestricted code generator.
+SAFE_IMPORTS: dict[str, str] = {
+    "json": "import json",
+    "re": "import re",
+    "math": "import math",
+    "os": "import os",
+    "sys": "import sys",
+    "Path": "from pathlib import Path",
+    "Counter": "from collections import Counter",
+    "defaultdict": "from collections import defaultdict",
+    "datetime": "from datetime import datetime",
+    "timezone": "from datetime import timezone",
+}
+NAME_ERROR = re.compile(r"NameError:\s*name ['\"]([A-Za-z_][A-Za-z0-9_]*)['\"] is not defined")
+TRACEBACK_FILE = re.compile(r'File ["\']([^"\']+\.py)["\']')
+
+
+def _repo_python_file(root: Path, raw_path: str) -> Path | None:
+    """Resolve only existing Python files beneath ai_engine/."""
+    candidate = Path(raw_path)
+    options = [candidate] if candidate.is_absolute() else [root / candidate]
+    if candidate.is_absolute():
+        parts = candidate.parts
+        for index, part in enumerate(parts):
+            if part == "ai_engine":
+                options.append(root.joinpath(*parts[index:]))
+    for option in options:
+        try:
+            resolved = option.resolve()
+            relative = resolved.relative_to(root.resolve())
+        except (OSError, ValueError):
+            continue
+        if relative.parts and relative.parts[0] == "ai_engine" and resolved.is_file() and resolved.suffix == ".py":
+            return resolved
+    return None
+
+
+def _imported_names(tree: ast.Module) -> set[str]:
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            names.update(alias.asname or alias.name.split(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            names.update(alias.asname or alias.name for alias in node.names)
+    return names
+
+
+def _import_insertion_line(tree: ast.Module, lines: list[str]) -> int:
+    """Return a zero-based insertion point after module docstring/future imports."""
+    line = 0
+    body = list(tree.body)
+    if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, (ast.Str, ast.Constant)):
+        if isinstance(body[0].value, ast.Constant) and isinstance(body[0].value.value, str):
+            line = body[0].end_lineno or body[0].lineno
+        elif isinstance(body[0].value, ast.Str):
+            line = body[0].end_lineno or body[0].lineno
+    for node in body:
+        if isinstance(node, ast.ImportFrom) and node.module == "__future__":
+            line = max(line, node.end_lineno or node.lineno)
+    # Preserve shebang and encoding declarations when no module docstring exists.
+    while line < min(2, len(lines)) and (
+        lines[line].startswith("#!") or "coding" in lines[line]
+    ):
+        line += 1
+    return line
+
+
+def generate_safe_repairs(root: Path, log_text: str) -> list[dict]:
+    """Turn a recognized NameError into a minimal import-only patch."""
+    match = NAME_ERROR.search(log_text)
+    if not match:
+        return [{"status": "no_safe_rule", "reason": "No allowlisted NameError signature found."}]
+    missing_name = match.group(1)
+    import_line = SAFE_IMPORTS.get(missing_name)
+    if not import_line:
+        return [{
+            "status": "unsupported",
+            "reason": "The missing symbol is not in the standard-library import allowlist.",
+            "symbol": missing_name,
+        }]
+
+    trace_files = TRACEBACK_FILE.findall(log_text)
+    target = next(
+        (resolved for raw in reversed(trace_files) if (resolved := _repo_python_file(root, raw)) is not None),
+        None,
+    )
+    if target is None:
+        return [{
+            "status": "unsupported",
+            "reason": "No traceback file under ai_engine/ could be resolved.",
+            "symbol": missing_name,
+        }]
+
+    source = target.read_text(encoding="utf-8")
+    try:
+        tree = ast.parse(source, filename=str(target))
+    except SyntaxError as exc:
+        return [{
+            "status": "blocked",
+            "reason": "The target file has a syntax error; import insertion is not safe.",
+            "file": target.relative_to(root).as_posix(),
+            "line": exc.lineno,
+        }]
+    if missing_name in _imported_names(tree):
+        return [{
+            "status": "already_imported",
+            "reason": "The missing symbol is already imported; no patch was applied.",
+            "file": target.relative_to(root).as_posix(),
+            "symbol": missing_name,
+        }]
+
+    lines = source.splitlines(keepends=True)
+    insertion = _import_insertion_line(tree, lines)
+    newline = "\r\n" if "\r\n" in source else "\n"
+    lines.insert(insertion, import_line + newline)
+    target.write_text("".join(lines), encoding="utf-8", newline="")
+    return [{
+        "status": "patched",
+        "rule": "missing_standard_library_import",
+        "file": target.relative_to(root).as_posix(),
+        "symbol": missing_name,
+        "patch": import_line,
+        "line": insertion + 1,
+    }]
+
 def run_checks(root: Path) -> list[dict]:
     """Run a fixed allowlist of repository checks; never interpret log text as code."""
     output_dir = root / "auto-repair-output"
@@ -112,11 +241,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path.cwd())
     parser.add_argument("--report", type=Path, default=Path("auto-repair-output/report.json"))
+    parser.add_argument("--logs", type=Path, help="Path to a failed GitHub Actions log; logs are parsed as data only.")
     args = parser.parse_args(argv)
     root = args.root.resolve()
     report_path = (root / args.report).resolve()
     if not (root / "ai_engine").is_dir() or not (root / "tests").is_dir():
         parser.error("--root must point to the Jon2 repository root")
+
+    repair_proposals: list[dict] = []
+    if args.logs:
+        log_path = args.logs if args.logs.is_absolute() else root / args.logs
+        if log_path.is_file():
+            repair_proposals = generate_safe_repairs(root, log_path.read_text(encoding="utf-8", errors="replace"))
+        else:
+            repair_proposals = [{"status": "no_log", "reason": "The supplied log file was not found."}]
 
     changed = normalize_python_whitespace(root)
     print(f"Safe whitespace repairs: {len(changed)} file(s)", flush=True)
@@ -127,11 +265,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     report = {
         "tool": "Jon2 Auto Repair Engine",
         "version": 1,
-        "repair_policy": "whitespace_only_python_source",
+        "repair_policy": "allowlisted_import_repairs_and_python_whitespace",
+        "repair_proposals": repair_proposals,
         "changed_files": changed,
         "checks": checks,
         "all_checks_passed": bool(checks) and all(item["passed"] for item in checks),
-        "automatic_code_rewrites": False,
+        "automatic_code_rewrites": any(item.get("status") == "patched" for item in repair_proposals),
         "model_checkpoint_changes": False,
         "direct_push": False,
         "human_review": "required_before_merge",
