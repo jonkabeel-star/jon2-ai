@@ -271,10 +271,10 @@ def collect_failed_check_output(checks: list[dict]) -> str:
     for item in checks:
         if not item.get("passed"):
             sections.append(
-                f"=== FAILED CHECK: {item.get('name', 'unknown')} ===\\n"
+                f"=== FAILED CHECK: {item.get('name', 'unknown')} ===\n"
                 f"{str(item.get('output', ''))[-30000:]}"
             )
-    return "\\n".join(sections)
+    return "\n".join(sections)
 
 
 def analyze_failed_checks(checks: list[dict]) -> tuple[str, list[dict]]:
