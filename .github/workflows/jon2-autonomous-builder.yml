@@ -1,0 +1,75 @@
+name: Jon2 Autonomous Brain Builder
+
+on:
+  schedule:
+    - cron: "40 3 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "ai_engine/autonomous_builder.py"
+      - "ai_engine/preflight_training.py"
+      - "ai_engine/source_approval.py"
+      - "ai_engine/model_profiles.py"
+      - "ai_engine/training_data/**"
+      - ".github/workflows/jon2-autonomous-builder.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jon2-autonomous-brain-builder
+  cancel-in-progress: false
+
+jobs:
+  inspect-and-plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install CPU PyTorch for the existing read-only preflight
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu torch
+
+      - name: Test autonomous builder safety
+        working-directory: ai_engine
+        run: python -m unittest test_autonomous_builder -v
+
+      - name: Inspect corpus approvals and plan next brain-building tasks
+        id: builder
+        run: |
+          set +e
+          python ai_engine/autonomous_builder.py \
+            --root . \
+            --data ai_engine/training_data \
+            --approval-manifest ai_engine/training_data/source_approvals.json \
+            --profile arabic_30m \
+            --report /tmp/jon2-autonomous-brain-report.json
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo "readiness=ready_for_owner_training_approval" >> "$GITHUB_OUTPUT"
+          elif [ "$status" -eq 2 ]; then
+            echo "readiness=blocked" >> "$GITHUB_OUTPUT"
+            echo "Jon2 training remains safely blocked; see the report artifact."
+          else
+            echo "::error::Autonomous brain assessment failed unexpectedly (exit $status)."
+            exit "$status"
+          fi
+
+      - name: Upload metadata-only autonomous assessment
+        if: always() && hashFiles('/tmp/jon2-autonomous-brain-report.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: jon2-autonomous-brain-assessment
+          path: /tmp/jon2-autonomous-brain-report.json
+          if-no-files-found: warn
+          retention-days: 14
