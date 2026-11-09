@@ -77,7 +77,8 @@ class ChatEngineRuntimeTests(unittest.TestCase):
             "تابع من فضلك",
             [{"role": "user", "content": previous}],
         )
-        self.assertIn(previous, prompt)
+        # Prompt construction strips surrounding whitespace but preserves all message text.
+        self.assertIn(previous.strip(), prompt)
 
     def test_conversation_prompt_uses_only_last_eight_turns(self):
         history = [
