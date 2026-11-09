@@ -122,6 +122,18 @@ JSONL files listed in `training_data/README.md` remain unapproved until each
 exact file has been reviewed and approved privately; the new flag does not
 bypass that gate. Keep evaluation prompts separate from training examples.
 
+## Read-only training preflight (run before any 30M training)
+
+Before allocating a GPU or starting training, inspect the exact approved corpus, the held-out split, the tokenizer vocabulary actually learned, and the parameter count implied by that vocabulary:
+
+```bash
+python ai_engine/preflight_training.py --profile arabic_30m --data ai_engine/training_data --approval-manifest ai_engine/training_data/source_approvals.json --output ai_engine/evaluation/arabic-30m-preflight.json
+```
+
+This command is read-only: it validates the exact-file approval manifest, builds the trainer's deterministic paragraph split, trains only a temporary in-memory tokenizer, and reports actual train/validation token counts, actual parameter count, tokens per parameter, and broad script counts. It does not create weights, alter checkpoints, approve sources, or start training. Exit code 2 means one or more readiness blockers remain. Script counts cannot distinguish Modern Standard Arabic from Egyptian dialect; dialect coverage still needs human annotation. The default 10 tokens-per-parameter gate mirrors the current `arabic_30m` trainer safeguard and must not be lowered to force a run.
+
+Run the preflight report and resolve every blocker before launching a costly training workflow. Keep the historical small checkpoint untouched and use the profile-specific checkpoint paths for a new architecture.
+
 ## Evaluate a trained checkpoint
 
 The held-out Arabic prompt set is `evaluation/prompts_ar.jsonl`. It is JSONL, not a `.txt` file, so the training corpus reader does not ingest it.
