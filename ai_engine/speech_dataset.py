@@ -63,7 +63,7 @@ def validate_speech_manifest(manifest_path: Path, audio_root: Path) -> dict:
         raise ValueError("Speech manifest must contain a non-empty samples list.")
 
     listed = set()
-    transcripts = set()
+    transcript_speaker_pairs = set()
     speakers = set()
     total_seconds = 0.0
     sample_rates = set()
@@ -93,13 +93,19 @@ def validate_speech_manifest(manifest_path: Path, audio_root: Path) -> dict:
         if not _ARABIC.search(transcript):
             raise ValueError(f"Speech sample {name} does not contain Arabic script.")
         normalized = _normalize_transcript(transcript)
-        if normalized in transcripts:
-            raise ValueError(f"Duplicate normalized transcript in speech manifest: {name}")
-        transcripts.add(normalized)
-
         speaker_id = sample.get("speaker_id")
         if not isinstance(speaker_id, str) or not _SPEAKER_ID.fullmatch(speaker_id):
             raise ValueError(f"Speech sample {name} requires an anonymized speaker_id.")
+        if sample.get("voice_synthesis_consent") is not True:
+            raise PermissionError(
+                f"Speech sample {name} lacks explicit consent for synthetic voice training."
+            )
+        transcript_speaker = (normalized, speaker_id)
+        if transcript_speaker in transcript_speaker_pairs:
+            raise ValueError(
+                f"Duplicate normalized transcript for the same speaker: {name}"
+            )
+        transcript_speaker_pairs.add(transcript_speaker)
         speakers.add(speaker_id)
 
         try:
@@ -123,8 +129,8 @@ def validate_speech_manifest(manifest_path: Path, audio_root: Path) -> dict:
 
     discovered = {
         path.relative_to(audio_root).as_posix()
-        for path in audio_root.rglob("*.wav")
-        if path.is_file()
+        for path in audio_root.rglob("*")
+        if path.is_file() and path.suffix.lower() == ".wav"
     }
     unlisted = sorted(discovered - listed)
     if unlisted:
