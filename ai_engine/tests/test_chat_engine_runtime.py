@@ -69,7 +69,7 @@ class ChatEngineRuntimeTests(unittest.TestCase):
         self.assertTrue(prompt.startswith("تعليمات: أجب بالعربية الواضحة"))
         self.assertIn("المستخدم: اسمي سامح", prompt)
         self.assertIn("Jon2: أهلًا سامح", prompt)
-        self.assertTrue(prompt.endswith("المستخدم: ما اسمي؟\\nJon2:"))
+        self.assertTrue(prompt.endswith("المستخدم: ما اسمي؟\nJon2:"))
 
     def test_conversation_prompt_uses_only_last_eight_turns(self):
         history = [
