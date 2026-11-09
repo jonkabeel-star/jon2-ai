@@ -147,7 +147,7 @@ def health():
         "model_status": model_status,
         "chat_requires_model_checkpoint": True,
         "conversation_memory": "sqlite",
-        "knowledge_retrieval": "wikipedia_ar_with_en_fallback",
+        "knowledge_retrieval": "wikipedia_multilingual_with_english_fallback",
         "knowledge_cache": "sqlite",
         "knowledge_cache_ttl_seconds": 604800,
         "memory_retrieval": "arabic_normalized_bm25_lexical",
