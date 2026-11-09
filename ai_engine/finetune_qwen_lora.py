@@ -13,7 +13,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-BASE_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
+BASE_MODEL = "Qwen/Qwen3.5-2B"
 BASE_MODEL_LICENSE = "Apache-2.0"
 USER_LABELS = ("المستخدم:", "User:")
 ASSISTANT_LABELS = ("Jon2:", "المساعد:", "Assistant:")
@@ -190,7 +190,7 @@ def prepare_manifest(
         conversations, validation_fraction, test_fraction, seed
     )
     return {
-        "base_model": BASE_MODEL,
+        "base_model": args.model_name,
         "base_model_license": BASE_MODEL_LICENSE,
         "source_files": fingerprints,
         "conversation_count": len(conversations),
@@ -257,49 +257,63 @@ def run_training(args) -> int:
         Path(args.data), Path(args.approval_manifest), args.validation_fraction,
         args.test_fraction, args.seed
     )
+    manifest["base_model"] = args.model_name
+    manifest["base_model_license"] = "Apache-2.0"
     print(json.dumps(manifest, ensure_ascii=False, indent=2), flush=True)
     if not args.execute or args.dry_run:
         print("DRY RUN ONLY: no model loaded, no optimizer steps, and no weights changed.")
         return 0
-    if not args.allow_cpu:
-        try:
-            import torch
-        except ImportError as exc:
-            raise RuntimeError("Install ai_engine/requirements-lora.txt before training.") from exc
-        if not torch.cuda.is_available():
-            raise RuntimeError("CUDA GPU is required. Use a GPU runtime such as Colab; CPU training is disabled by default.")
-    else:
-        import torch
 
-    from transformers import AutoModelForCausalLM, AutoTokenizer, DataCollatorForSeq2Seq, Trainer, TrainingArguments
-    from peft import LoraConfig, TaskType, get_peft_model
+    try:
+        import torch
+        from unsloth import FastLanguageModel
+        from transformers import DataCollatorForSeq2Seq, Trainer, TrainingArguments
+    except ImportError as exc:
+        raise RuntimeError(
+            "Install ai_engine/requirements-lora.txt in a supported GPU training runtime."
+        ) from exc
+
+    if not torch.cuda.is_available():
+        raise RuntimeError(
+            "A CUDA GPU is required for Qwen3.5-2B LoRA training. "
+            "CPU training is intentionally disabled for this production-oriented run."
+        )
 
     files, fingerprints = load_approved_dialogue_files(Path(args.data), Path(args.approval_manifest))
     conversations = collect_conversations(files)
     train_conversations, validation_conversations, test_conversations = split_conversations(
         conversations, args.validation_fraction, args.test_fraction, args.seed
     )
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=False)
+
+    # Qwen3.5 uses a hybrid Gated-DeltaNet/attention architecture. Use the
+    # maintained Unsloth loader rather than the older AutoModelForCausalLM path.
+    # Keep the base in 16-bit; QLoRA 4-bit is not recommended for this family.
+    model, tokenizer = FastLanguageModel.from_pretrained(
+        model_name=args.model_name,
+        max_seq_length=args.max_length,
+        load_in_4bit=False,
+        load_in_16bit=True,
+        full_finetuning=False,
+    )
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
-    model = AutoModelForCausalLM.from_pretrained(
-        BASE_MODEL,
-        torch_dtype=(torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported()
-                     else torch.float16 if torch.cuda.is_available() else torch.float32),
-        trust_remote_code=False,
-    )
-    model.config.use_cache = False
-    model.gradient_checkpointing_enable()
-    model.enable_input_require_grads()
-    lora = LoraConfig(
-        task_type=TaskType.CAUSAL_LM,
+
+    model = FastLanguageModel.get_peft_model(
+        model,
         r=args.lora_rank,
+        target_modules=[
+            "q_proj", "k_proj", "v_proj", "o_proj",
+            "gate_proj", "up_proj", "down_proj",
+        ],
         lora_alpha=args.lora_alpha,
         lora_dropout=args.lora_dropout,
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
         bias="none",
+        use_gradient_checkpointing="unsloth",
+        random_state=args.seed,
+        max_seq_length=args.max_length,
     )
-    model = get_peft_model(model, lora)
+    if hasattr(model, "config"):
+        model.config.use_cache = False
     model.print_trainable_parameters()
 
     train_rows = build_tokenized_examples(train_conversations, tokenizer, args.max_length)
@@ -334,8 +348,8 @@ def run_training(args) -> int:
         load_best_model_at_end=True,
         metric_for_best_model="eval_loss",
         greater_is_better=False,
-        fp16=torch.cuda.is_available() and not torch.cuda.is_bf16_supported(),
-        bf16=torch.cuda.is_available() and torch.cuda.is_bf16_supported(),
+        fp16=not torch.cuda.is_bf16_supported(),
+        bf16=torch.cuda.is_bf16_supported(),
         gradient_checkpointing=True,
         optim="adamw_torch",
         report_to="none",
@@ -357,8 +371,17 @@ def run_training(args) -> int:
     tokenizer.save_pretrained(str(output_dir))
     validation_eval = trainer.evaluate(eval_dataset=Rows(val_rows), metric_key_prefix="validation")
     final_test_eval = trainer.evaluate(eval_dataset=Rows(test_rows), metric_key_prefix="test")
+
+    gguf_dir = None
+    if args.export_gguf:
+        gguf_dir = output_dir / "gguf"
+        model.save_pretrained_gguf(
+            str(gguf_dir), tokenizer, quantization_method=args.gguf_quantization
+        )
+
     metadata = {
         **manifest,
+        "base_model": args.model_name,
         "source_files": fingerprints,
         "train_result": result.metrics,
         "validation_evaluation": validation_eval,
@@ -371,6 +394,8 @@ def run_training(args) -> int:
         "max_steps": args.max_steps,
         "learning_rate": args.learning_rate,
         "adapter_directory": str(output_dir),
+        "gguf_directory": str(gguf_dir) if gguf_dir else None,
+        "gguf_quantization": args.gguf_quantization if gguf_dir else None,
         "optimizer_steps_completed": trainer.state.global_step,
         "best_checkpoint": trainer.state.best_model_checkpoint,
         "training_completed": True,
@@ -386,29 +411,29 @@ def run_training(args) -> int:
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(description="Rights-gated Qwen2.5 LoRA fine-tuning for Jon2.")
+    parser = argparse.ArgumentParser(description="Rights-gated Qwen3.5-2B Arabic LoRA fine-tuning for Jon2.")
+    parser.add_argument("--model-name", default=BASE_MODEL)
     parser.add_argument("--data", default="ai_engine/training_data")
     parser.add_argument("--approval-manifest", default="ai_engine/training_data/source_approvals.json")
-    parser.add_argument("--output", default="artifacts/jon2-qwen25-05b-lora")
+    parser.add_argument("--output", default="artifacts/jon2-qwen35-2b-lora")
     parser.add_argument("--validation-fraction", type=float, default=0.1)
     parser.add_argument("--test-fraction", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max-length", type=int, default=1024)
     parser.add_argument("--epochs", type=float, default=3.0)
     parser.add_argument("--max-steps", type=int, default=-1)
-    parser.add_argument("--batch-size", type=int, default=2)
+    parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--gradient-accumulation", type=int, default=8)
-    parser.add_argument("--eval-steps", type=int, default=50)
-    parser.add_argument("--learning-rate", type=float, default=2e-4)
-    parser.add_argument("--lora-rank", type=int, default=8)
+    parser.add_argument("--learning-rate", type=float, default=1e-4)
+    parser.add_argument("--lora-rank", type=int, default=16)
     parser.add_argument("--lora-alpha", type=int, default=16)
-    parser.add_argument("--lora-dropout", type=float, default=0.05)
-    parser.add_argument("--allow-cpu", action="store_true", help="Explicitly allow very slow CPU experimentation.")
+    parser.add_argument("--lora-dropout", type=float, default=0.0)
+    parser.add_argument("--export-gguf", action="store_true", help="Also export a Q4_K_M GGUF for the CPU inference server.")
+    parser.add_argument("--gguf-quantization", default="q4_k_m", choices=["q4_k_m", "q5_k_m", "q8_0", "f16"])
     run_mode = parser.add_mutually_exclusive_group()
-    run_mode.add_argument("--execute", action="store_true", help="Actually load Qwen and perform optimizer steps.")
+    run_mode.add_argument("--execute", action="store_true", help="Actually load Qwen3.5 and perform optimizer steps.")
     run_mode.add_argument("--dry-run", action="store_true", help="Validate rights, data, and split only; this is also the default.")
     return parser
-
 
 def main():
     args = build_parser().parse_args()
