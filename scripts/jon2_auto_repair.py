@@ -3,7 +3,7 @@
 
 The engine never executes commands from logs, never edits outside ai_engine/
 for code repairs, and never changes model weights, training data, secrets, or
-deployment workflows. Only verified allowlisted source repairs may be committed directly.
+deployment workflows. Only verified allowlisted source repairs may be proposed in a review-only pull request.
 """
 from __future__ import annotations
 
