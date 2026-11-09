@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - "ai_engine/**"
+      - "scripts/**/*.py"
+      - "tests/test_auto_repair.py"
+      - "tests/test_error_diagnostics.py"
       - "index.html"
       - "tests/check_frontend_js.py"
       - ".github/workflows/jon2-code-checks.yml"
@@ -30,8 +33,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Compile Python source
-        run: python -m compileall -q ai_engine
+      - name: Compile Python source and repair diagnostics
+        run: python -m compileall -q ai_engine scripts tests
+      - name: Test Auto Repair diagnostics
+        run: python -m unittest tests.test_error_diagnostics -v
+      - name: Test Auto Repair safety rules
+        run: python -m unittest tests.test_auto_repair -v
       - name: Test source approval gate
         working-directory: ai_engine
         run: python -m unittest discover -s tests -p 'test_source_approval.py' -v
