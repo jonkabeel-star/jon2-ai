@@ -144,9 +144,10 @@ def repair_until_green(task,model,host,repo,image,max_rounds=2):
         patch=propose(current_task,model,host,repo)
         if patch=="NO_SAFE_PATCH":
             if not history:
-                return {"outcome":"no_safe_patch_needed","changed_paths":[],"tests_passed":None,
+                return {"outcome":"no_safe_patch_proposed","changed_paths":[],"tests_passed":None,
+                        "test_exit_code":None,"test_log":"No patch was proposed; no sandbox tests were executed.",
                         "executed_inside_no_network_docker":False,"committed_or_pushed":False,
-                        "passed":True,"history":[]}
+                        "passed":False,"history":[]}
             return {"outcome":"repair_declined_after_failure","changed_paths":[],"tests_passed":False,
                     "executed_inside_no_network_docker":False,"committed_or_pushed":False,
                     "passed":False,"history":history,"test_log":"Model declined a further repair after a failed candidate."}
