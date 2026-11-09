@@ -12,8 +12,10 @@ services:
       - "127.0.0.1:8000:8000"
     volumes:
       - /opt/jon2/models:/models:ro
+      - /opt/jon2/data:/data
     environment:
       JON2_GGUF_PATH: /models/jon2-qwen35-2b-q4_k_m.gguf
+      JON2_MEMORY_DB_PATH: /data/memory.sqlite3
       JON2_CHAT_RELEASE_APPROVED: ${JON2_CHAT_RELEASE_APPROVED:-false}
       JON2_ALLOWED_ORIGINS: ${JON2_ALLOWED_ORIGINS:-https://jonkabeel-star.github.io}
       JON2_CONTEXT_SIZE: ${JON2_CONTEXT_SIZE:-4096}
