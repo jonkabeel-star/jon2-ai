@@ -24,9 +24,9 @@ class TrainingWorkflowSafetyTests(unittest.TestCase):
 
     def test_checkpoints_get_run_specific_names_and_sha256_manifest(self):
         text = WORKFLOW.read_text(encoding="utf-8")
-        self.assertIn("jon2-legacy-\${run_stamp}-best.pt", text)
-        self.assertIn("jon2-legacy-\${run_stamp}-resume.pt", text)
-        self.assertIn("jon2-checkpoint-manifest-\${stamp}.json", text)
+        self.assertIn("jon2-legacy-" + "$" + "{" + "run_stamp}-best.pt", text)
+        self.assertIn("jon2-legacy-" + "$" + "{" + "run_stamp}-resume.pt", text)
+        self.assertIn("jon2-checkpoint-manifest-" + "$" + "{" + "stamp}.json", text)
         self.assertIn('"sha256": hashlib.sha256(raw).hexdigest()', text)
         self.assertIn("checkpoint-resume.sha256", text)
 

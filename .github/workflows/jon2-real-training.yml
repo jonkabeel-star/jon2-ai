@@ -226,7 +226,7 @@ jobs:
                   "training_line": "legacy_original_transformer",
                   "warning": "Not the arabic_30m profile.",
                   "files": entries,
-              }, ensure_ascii=False, indent=2) + "\\n",
+              }, ensure_ascii=False, indent=2) + "\n",
               encoding="utf-8",
           )
           PY
