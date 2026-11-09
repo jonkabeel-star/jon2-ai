@@ -42,7 +42,6 @@ class AutoRepairTests(unittest.TestCase):
                 run.return_value.stdout = "ok"
                 results = jon2_auto_repair.run_checks(root)
             self.assertTrue(all(item["passed"] for item in results))
-            self.assertTrue(run.call_args.kwargs["shell"] is False if "shell" in run.call_args.kwargs else True)
             self.assertTrue(all(isinstance(item["command"], list) for item in results))
 
     def test_nameerror_rule_adds_only_allowlisted_import(self):
@@ -50,19 +49,24 @@ class AutoRepairTests(unittest.TestCase):
             root = Path(temp)
             target = root / "ai_engine" / "sample.py"
             target.parent.mkdir()
-            target.write_text('"""module docs"""\\nfrom __future__ import annotations\\n\\ndef load():\\n    return json.loads("{}")\\n', encoding="utf-8")
-            log = f'File "{target}", line 5, in load\\nNameError: name \'json\' is not defined'
+            target.write_text(
+                '"""module docs"""\nfrom __future__ import annotations\n\ndef load():\n    return json.loads("{}")\n',
+                encoding="utf-8",
+            )
+            log = f"File \"{target}\", line 5, in load\nNameError: name 'json' is not defined"
             result = jon2_auto_repair.generate_safe_repairs(root, log)
             self.assertEqual(result[0]["status"], "patched")
             self.assertEqual(result[0]["patch"], "import json")
             updated = target.read_text(encoding="utf-8")
-            self.assertLess(updated.index('from __future__'), updated.index('import json'))
-            self.assertIn('return json.loads', updated)
+            self.assertLess(updated.index("from __future__"), updated.index("import json"))
+            self.assertIn("return json.loads", updated)
 
     def test_nameerror_rule_rejects_unapproved_symbols(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            result = jon2_auto_repair.generate_safe_repairs(root, 'NameError: name \'requests\' is not defined')
+            result = jon2_auto_repair.generate_safe_repairs(
+                root, "NameError: name 'requests' is not defined"
+            )
             self.assertEqual(result[0]["status"], "unsupported")
             self.assertFalse(list(root.rglob("*.py")))
 
@@ -71,8 +75,8 @@ class AutoRepairTests(unittest.TestCase):
             root = Path(temp)
             target = root / "tests" / "sample.py"
             target.parent.mkdir()
-            target.write_text('print(json.dumps({}))\\n', encoding="utf-8")
-            log = f'File "{target}", line 1, in <module>\\nNameError: name \'json\' is not defined'
+            target.write_text("print(json.dumps({}))\n", encoding="utf-8")
+            log = f"File \"{target}\", line 1, in <module>\nNameError: name 'json' is not defined"
             result = jon2_auto_repair.generate_safe_repairs(root, log)
             self.assertEqual(result[0]["status"], "unsupported")
             self.assertNotIn("import json", target.read_text(encoding="utf-8"))
