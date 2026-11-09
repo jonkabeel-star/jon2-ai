@@ -11,7 +11,6 @@ import json
 import os
 import shutil
 import subprocess
-import time
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -21,7 +20,9 @@ from urllib.request import Request, urlopen
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, ConfigDict, Field\n\nimport chat_memory
+from pydantic import BaseModel, ConfigDict, Field
+
+import chat_memory
 
 MODEL_PATH = Path(os.getenv("JON2_GGUF_PATH", "/models/jon2-qwen35-2b-q4_k_m.gguf"))
 LLAMA_SERVER_BIN = os.getenv("LLAMA_SERVER_BIN", "llama-server")
@@ -91,6 +92,7 @@ def start_model_process() -> subprocess.Popen | None:
 async def lifespan(app: FastAPI):
     app.state.model_process = None
     app.state.model_error = None
+    chat_memory.initialize()
     if release_approved() and MODEL_PATH.is_file():
         try:
             app.state.model_process = start_model_process()
@@ -192,11 +194,10 @@ def chat(request: ChatRequest):
             status_code=503,
             detail="محادثة Jon2 لم تُفعّل بعد. يلزم وجود نموذج GGUF وتشغيله واجتياز مراجعة الجودة.",
         )
-    session_id = request.session_id or str(uuid.uuid4())
-    messages = build_messages(
-        request.message,
-        [item.model_dump() for item in request.history],
-    )
+    session_id = str(request.session_id or uuid.uuid4())
+    stored_history = chat_memory.recent_messages(session_id, limit=MAX_HISTORY)
+    history = stored_history or [item.model_dump() for item in request.history]
+    messages = build_messages(request.message, history)
     payload = json.dumps({
         "model": "jon2-qwen-arabic",
         "messages": messages,
@@ -219,6 +220,7 @@ def chat(request: ChatRequest):
             raise ValueError("empty model response")
     except (HTTPError, URLError, TimeoutError, ValueError, KeyError, IndexError) as error:
         raise HTTPException(status_code=503, detail="تعذر الحصول على إجابة من نموذج Jon2 المحلي.") from error
+    chat_memory.add_exchange(session_id, request.message, reply.strip())
     return {
         "project": "Jon2 AI",
         "reply": reply.strip(),
