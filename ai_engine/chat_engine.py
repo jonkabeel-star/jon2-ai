@@ -7,7 +7,7 @@ are deliberately lazy so the API health service can start on small hosts.
 import os
 from pathlib import Path
 
-from answer_quality import validate_generated_answer
+from arabic_response import (\n    clean_generated_answer, diagnose_arabic_answer, validate_arabic_answer,\n)
 
 CHECKPOINT_PATH = Path(
     os.getenv(
@@ -132,14 +132,17 @@ def generate_reply(message: str, history=None, memories=None) -> str:
         no_repeat_ngram_size=3,
         top_k=0,
     )
-    answer = full_text[len(prompt):].strip()
+    answer = clean_generated_answer(full_text[len(prompt):])
     if not answer:
         raise RuntimeError("لم ينتج نموذج Jon2 إجابة.")
-    # Experimental mode must never bypass basic output-integrity checks.
-    # This catches malformed characters and obvious repetition, not semantic quality.
-    if not validate_generated_answer(answer):
+
+    # These checks reject visibly corrupted or looping output. They do not
+    # certify meaning, factuality, grammar, or instruction-following.
+    report = diagnose_arabic_answer(answer, question=message)
+    if not validate_arabic_answer(answer, question=message):
+        print(f"Jon2 Arabic answer rejected: {report}")
         raise RuntimeError(
-            "رفض Jon2 عرض الإجابة لأن ناتج النموذج فشل فحص سلامة النص. "
-            "يلزم تحسين بيانات التدريب وإعادة تقييم النموذج."
+            "لم أعرض الإجابة لأن صياغة النموذج لم تجتز فحص وضوح النص العربي. "
+            "حاول تبسيط السؤال؛ وما زالت جودة المعنى تحتاج إلى تقييم بشري."
         )
     return answer
