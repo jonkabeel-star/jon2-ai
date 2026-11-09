@@ -1,0 +1,95 @@
+name: Jon2 Live Model Operations
+
+on:
+  pull_request:
+    branches:
+      - feature/jon2-autonomous-engineer-evaluation
+    paths:
+      - "ai_engine/**"
+      - ".github/workflows/jon2-live-operations.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jon2-live-operations-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  live-model-evaluation-and-sandbox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout proposed Jon2 branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Jon2 runtime dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch transformers accelerate safetensors
+
+      - name: Install and start local Ollama runtime
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          (ollama serve > /tmp/ollama.log 2>&1 &)
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:11434/api/tags >/dev/null
+
+      - name: Download open-weight semantic and coding models
+        run: |
+          ollama pull qwen2.5:3b
+          ollama pull qwen2.5-coder:1.5b
+
+      - name: Run real Jon2 Arabic model benchmark with semantic judging
+        env:
+          OLLAMA_HOST: http://127.0.0.1:11434
+          JON2_JUDGE_MODEL: qwen2.5:3b
+        run: |
+          python ai_engine/run_model_benchmark.py --semantic
+        continue-on-error: true
+
+      - name: Run coding model and isolated Docker patch tests
+        env:
+          OLLAMA_HOST: http://127.0.0.1:11434
+          JON2_CODER_MODEL: qwen2.5-coder:1.5b
+        run: |
+          docker info
+          python ai_engine/coding_agent.py \
+            --task "Inspect the Jon2 AI engine for one narrowly scoped, demonstrably useful Python bug fix. Return NO_SAFE_PATCH if no safe, testable fix exists. Do not change training, data, rights, CI, deployment, dependencies, or public APIs."
+        continue-on-error: true
+
+      - name: Run training gate and train only if every gate passes
+        run: |
+          set +e
+          python ai_engine/training_gate.py --profile arabic_30m --report artifacts/jon2-training-gate.json
+          gate_status=$?
+          set -e
+          if [ "$gate_status" -eq 0 ]; then
+            echo "All readiness checks passed; explicitly executing the already-approved gated training path."
+            python ai_engine/training_gate.py --profile arabic_30m --execute --report artifacts/jon2-training-execution.json
+          else
+            echo "Training safely blocked. No data, rights, token-ratio, checkpoint, or GPU gate will be bypassed."
+          fi
+
+      - name: Upload live evaluation, patch, and training reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jon2-live-operations-results
+          path: |
+            artifacts/
+            /tmp/ollama.log
+          if-no-files-found: warn
+          retention-days: 14
