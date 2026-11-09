@@ -48,12 +48,14 @@ def build_messages(message: str, history: list[dict] | None = None) -> list[dict
         "إذا لم تعرف الإجابة فقل ذلك بوضوح. لا تكرر السؤال ولا تكمل دور المستخدم."
     )
     messages = [{"role": "system", "content": system}]
-    for item in (history or [])[-MAX_HISTORY:]:
+    valid_history = []
+    for item in history or []:
         if not isinstance(item, dict):
             continue
         role, content = item.get("role"), item.get("content")
         if role in {"user", "assistant"} and isinstance(content, str) and content.strip():
-            messages.append({"role": role, "content": content.strip()[:2000]})
+            valid_history.append({"role": role, "content": content.strip()[:2000]})
+    messages.extend(valid_history[-MAX_HISTORY:])
     messages.append({"role": "user", "content": message.strip()})
     return messages
 
