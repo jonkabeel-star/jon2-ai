@@ -81,7 +81,6 @@ SAFE_IMPORTS: dict[str, str] = {
     "Path": "from pathlib import Path",
     "Counter": "from collections import Counter",
     "defaultdict": "from collections import defaultdict",
-    "datetime": "from datetime import datetime",
     "timezone": "from datetime import timezone",
 }
 NAME_ERROR = re.compile(r"NameError:\s*name ['\"]([A-Za-z_][A-Za-z0-9_]*)['\"] is not defined")
@@ -154,7 +153,9 @@ def generate_safe_repairs(root: Path, log_text: str) -> list[dict]:
             "symbol": missing_name,
         }]
 
-    trace_files = TRACEBACK_FILE.findall(log_text)
+    # Use the traceback immediately preceding this NameError. CI logs may contain multiple failures.
+    preceding_log = log_text[:match.start()]
+    trace_files = TRACEBACK_FILE.findall(preceding_log)
     target = next(
         (resolved for raw in reversed(trace_files) if (resolved := _repo_python_file(root, raw)) is not None),
         None,
