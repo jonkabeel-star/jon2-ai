@@ -54,7 +54,7 @@ def load_runtime() -> None:
 
 
 def build_conversation_prompt(message: str, history=None, memories=None, tokenizer=None, context=None) -> str:
-    """Build a prompt that fits the checkpoint's actual token context."""
+    """Build a concise Arabic-first prompt without silently changing the question."""
     question = str(message).strip()
     if not question:
         raise ValueError("اكتب رسالتك أولًا.")
@@ -78,16 +78,15 @@ def build_conversation_prompt(message: str, history=None, memories=None, tokeniz
             label = "المستخدم" if role == "user" else "Jon2"
             turns.append(f"{label}: {content[-90:]}")
 
-    # Reserve the final token for the model's answer marker. Drop oldest
-    # context first; only shorten the current question if it alone is too long.
     token_limit = max(8, int(context or getattr(_model, "context", 128)))
+    instruction = "تعليمات: أجب بالعربية الواضحة، مباشرةً، ولا تخمّن."
     while True:
-        sections = []
+        sections = [instruction]
         if memory_items:
-            sections.append("ذاكرة سابقة:\n" + "\n".join(memory_items))
-        dialogue = list(turns) + [f"المستخدم: {question}\nJon2:"]
-        sections.append("\n".join(dialogue))
-        prompt = "\n".join(sections)
+            sections.append("ذاكرة سابقة:\\n" + "\\n".join(memory_items))
+        dialogue = list(turns) + [f"المستخدم: {question}\\nJon2:"]
+        sections.append("\\n".join(dialogue))
+        prompt = "\\n".join(sections)
         if tokenizer is None or len(tokenizer.encode(prompt)) <= token_limit - 1:
             return prompt
         if turns:
@@ -96,16 +95,13 @@ def build_conversation_prompt(message: str, history=None, memories=None, tokeniz
         if memory_items:
             memory_items.pop(0)
             continue
-        if len(question) > 8:
-            # Preserve the beginning of the user's request; the suffix may omit its subject.
-            question = question[:max(8, len(question) // 2)]
-            continue
-        # Last-resort safe prompt still includes a compact form of the question.
-        compact = f"سؤال: {question[-4:]}\nJon2:"
-        if len(tokenizer.encode(compact)) > token_limit - 1:
-            raise ValueError("نافذة سياق النموذج أصغر من أن تستوعب السؤال.")
-        return compact
 
+        # Truncating a question can remove a negation, condition, or key constraint.
+        # Reject it clearly instead of generating an answer to a different question.
+        raise ValueError(
+            "السؤال أطول من سعة السياق الحالية لنموذج Jon2. "
+            "اختصر السؤال مع الحفاظ على المطلوب والشروط، ثم أرسله مرة أخرى."
+        )
 
 def generate_reply(message: str, history=None, memories=None) -> str:
     if not message or not message.strip():
