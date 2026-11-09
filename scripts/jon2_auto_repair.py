@@ -114,7 +114,12 @@ def restore_snapshot(snapshot: dict[Path, bytes]) -> list[str]:
     restored: list[str] = []
     for path, original in snapshot.items():
         try:
-            if path.is_file() and path.read_bytes() != original:
+            # Recreate a snapshotted file if a future bounded repair removes it.
+            if path.is_symlink():
+                restored.append(f"RESTORE_FAILED:{path}")
+                continue
+            if not path.exists() or not path.is_file() or path.read_bytes() != original:
+                path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_bytes(original)
                 restored.append(str(path))
         except OSError:
