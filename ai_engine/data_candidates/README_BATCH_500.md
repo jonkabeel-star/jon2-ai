@@ -6,7 +6,7 @@
 - Status: **candidate only**. Every JSONL record has `review_status: candidate_only` and `training_eligible: false`.
 - Storage: `ai_engine/data_candidates/`, deliberately outside `ai_engine/training_data/`.
 - This file is not an approval record, does not change any rights manifest, and must not be used for training until the owner has reviewed the content and explicitly approves a separately versioned batch.
-- Automated checks performed at creation: 500 records, unique user prompts, non-empty Arabic user and assistant text, consistent candidate-only flags, and valid JSON serialization.
+- Automated checks on the revised batch: 500 records; 500 unique IDs, 500 unique user prompts, and 500 unique assistant responses; 20 topics with 25 examples each; no empty messages; Arabic text present in every user and assistant message; consistent candidate-only flags; and valid JSONL serialization.
 - Human review still required for factual accuracy, naturalness, repetition, dialect balance, and suitability for the intended model.
 
 ## Review guidance
