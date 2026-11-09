@@ -60,6 +60,25 @@ jobs:
               encoding="utf-8")
           PY
           echo "Benchmark process exit code: $result (see artifacts/jon2-benchmark-step-status.json)"
+      - name: Download stronger local Arabic candidate
+        run: ollama pull qwen2.5:1.5b
+      - name: Benchmark stronger local candidate without replacing production
+        id: candidate
+        continue-on-error: true
+        run: |
+          mkdir -p artifacts
+          set +e
+          python ai_engine/run_ollama_candidate_benchmark.py --model qwen2.5:1.5b --judge-model qwen2.5:3b
+          result=$?
+          set -e
+          RESULT="$result" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("artifacts/jon2-candidate-step-status.json").write_text(
+              json.dumps({"exit_code": int(os.environ["RESULT"]), "passed": int(os.environ["RESULT"]) == 0}, indent=2) + "\\n",
+              encoding="utf-8")
+          PY
+          echo "Candidate benchmark exit code: $result (see artifacts/jon2-candidate-step-status.json)"
       - name: Free judge model memory and fetch coding model
         run: |
           ollama stop qwen2.5:3b || true
@@ -108,8 +127,8 @@ jobs:
       - name: Execute training only after every gate passes
         if: always()
         run: |
-          if ! python -c "import json; b=json.load(open('artifacts/jon2-benchmark-step-status.json')); c=json.load(open('artifacts/jon2-coding-agent-step-status.json')); raise SystemExit(0 if b.get('passed') is True and c.get('passed') is True else 1)"; then
-            echo "Training blocked because real-model benchmark or isolated coding-agent run did not pass."
+          if ! python -c "import json; b=json.load(open('artifacts/jon2-benchmark-step-status.json')); c=json.load(open('artifacts/jon2-coding-agent-step-status.json')); n=json.load(open('artifacts/jon2-candidate-step-status.json')); raise SystemExit(0 if b.get('passed') is True and c.get('passed') is True and n.get('passed') is True else 1)"; then
+            echo "Training blocked because production-model evaluation, candidate evaluation, or isolated coding-agent run did not pass."
             exit 0
           fi
           if python -c "import json; r=json.load(open('artifacts/jon2-training-gate.json')); raise SystemExit(0 if r.get('authorized_to_train') is True and r.get('source_approval_passed') is True else 1)"; then
@@ -136,7 +155,7 @@ jobs:
           import json
           from pathlib import Path
           failures = []
-          for name in ("jon2-benchmark-step-status.json", "jon2-coding-agent-step-status.json"):
+          for name in ("jon2-benchmark-step-status.json", "jon2-candidate-step-status.json", "jon2-coding-agent-step-status.json"):
               path = Path("artifacts") / name
               if not path.exists():
                   failures.append(name + ": missing status report")
@@ -147,5 +166,5 @@ jobs:
           if failures:
               print("\n".join(failures))
               raise SystemExit(1)
-          print("Both live model evaluation and isolated coding-agent run passed.")
+          print("Production model, stronger candidate, and isolated coding-agent checks all passed.")
           PY
