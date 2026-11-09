@@ -7,7 +7,7 @@ from pathlib import Path
 
 from scripts.jon2_auto_repair import (
     analyze_incident_log, diagnose_failure, generate_safe_repairs, normalize_python_whitespace,
-    restore_snapshot, snapshot_repair_scope,
+    restore_snapshot, snapshot_repair_scope, should_discover_repository_repairs,
 )
 
 
@@ -146,6 +146,12 @@ class SafeRepairTests(unittest.TestCase):
         result = generate_safe_repairs(self.root, self._log(target))
         self.assertEqual(result[0]["status"], "blocked")
         self.assertEqual(target.read_text(encoding="utf-8"), "def broken(:\n")
+
+    def test_external_or_diagnostic_incidents_never_trigger_repository_repairs(self) -> None:
+        self.assertFalse(should_discover_repository_repairs(incident_log_supplied=True, diagnostic_only=False))
+        self.assertFalse(should_discover_repository_repairs(incident_log_supplied=True, diagnostic_only=True))
+        self.assertFalse(should_discover_repository_repairs(incident_log_supplied=False, diagnostic_only=True))
+        self.assertTrue(should_discover_repository_repairs(incident_log_supplied=False, diagnostic_only=False))
 
     def test_diagnostic_only_mode_does_not_normalize_source_files(self) -> None:
         target = self.root / "ai_engine" / "sample.py"
