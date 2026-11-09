@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "Dockerfile"
+      - "docker-entrypoint.sh"
       - ".dockerignore"
       - "ai_engine/**"
       - ".github/workflows/jon2-container-build.yml"
