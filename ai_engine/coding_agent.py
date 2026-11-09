@@ -196,13 +196,13 @@ def main():
         if patch and result.get("tests_passed") is True:
             output=Path(args.output)
             output.parent.mkdir(parents=True,exist_ok=True)
-            output.write_text(patch+"\\n",encoding="utf-8")
+            output.write_text(patch+"\n",encoding="utf-8")
         result.update({"model":args.model,"human_review_required":True})
     except (ValueError,PermissionError,RuntimeError,OSError,subprocess.SubprocessError) as exc:
         result={"model":args.model,"outcome":"rejected_or_not_sandboxed","changed_paths":[],
                 "tests_passed":False,"test_log":str(exc),"executed_inside_no_network_docker":False,
                 "committed_or_pushed":False,"human_review_required":True,"passed":False}
-    report_path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\\n",encoding="utf-8")
+    report_path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print(json.dumps(result,ensure_ascii=False,indent=2))
     return 0 if result.get("passed") is True else 2
 
