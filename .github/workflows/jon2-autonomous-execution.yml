@@ -104,6 +104,7 @@ jobs:
           PY
           echo "Coding-agent process exit code: $result (see artifacts/jon2-coding-agent-step-status.json)"
       - name: Run all safety and evaluator unit tests
+        id: all-tests
         run: python -m unittest discover -s ai_engine -p "test_*.py" -v
       - name: Always run read-only training readiness gate
         if: always()
@@ -129,6 +130,10 @@ jobs:
       - name: Execute training only after every gate passes
         if: always()
         run: |
+          if [ "${{ steps.all-tests.outcome }}" != "success" ]; then
+            echo "Training blocked because the complete safety and evaluator test suite did not pass."
+            exit 0
+          fi
           if ! python -c "import json; b=json.load(open('artifacts/jon2-benchmark-step-status.json')); c=json.load(open('artifacts/jon2-coding-agent-step-status.json')); n=json.load(open('artifacts/jon2-candidate-step-status.json')); raise SystemExit(0 if b.get('passed') is True and c.get('passed') is True and n.get('passed') is True else 1)"; then
             echo "Training blocked because production-model evaluation, candidate evaluation, or isolated coding-agent run did not pass."
             exit 0
