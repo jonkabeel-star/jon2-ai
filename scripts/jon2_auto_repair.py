@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Safe, test-gated maintenance for Jon2 AI.
+"""Analyze trusted CI failures and apply only exact, test-gated safe repairs.
 
-Only applies whitespace-only changes to tracked-scope Python source. It never
-executes commands found in logs, changes model weights, deletes files, or
-pushes directly to the default branch. The workflow decides whether a tested
-change can be proposed as a pull request.
+The engine never executes commands from logs, never edits outside ai_engine/
+for code repairs, and never changes model weights, training data, secrets, or
+deployment workflows. Proposed changes go to a pull request for human review.
 """
 from __future__ import annotations
 
