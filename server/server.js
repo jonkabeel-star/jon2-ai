@@ -8,6 +8,7 @@
 const http = require("http");
 const crypto = require("crypto");
 const auth = require("./auth");
+const releaseGate = require("./release-gate");
 
 const PORT = Number(process.env.PORT) || 3000;
 const AI_MODEL_URL = (process.env.AI_MODEL_URL || "").trim();
@@ -148,6 +149,8 @@ const server = http.createServer(async (req, res) => {
       status: "online",
       aiEngine: AI_MODEL_URL ? "configured" : "not_connected",
       authentication: auth.configured() ? "configured_not_yet_security_reviewed" : "not_configured",
+      chatReleaseApproved: releaseGate.isChatReleaseApproved(),
+      chatEnabled: releaseGate.isChatReleaseApproved() && Boolean(AI_MODEL_URL),
       publicLaunchReady: false
     });
   }
@@ -262,6 +265,9 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.pathname === "/api/chat" && req.method === "POST") {
+    const releaseBlock = releaseGate.getChatReleaseBlock();
+    if (releaseBlock) return send(res, releaseBlock.status, releaseBlock.body);
+
     try {
       const session = await auth.currentSession(req);
       if (!session) return send(res, 401, { error: "سجّل الدخول لاستخدام أدوات Jon2 AI." });

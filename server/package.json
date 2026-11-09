@@ -6,8 +6,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js && node --check auth.js",
-    "migrate": "node migrate.js"
+    "check": "node --check server.js && node --check auth.js && node --check release-gate.js && node --test release-gate.test.js",
+    "migrate": "node migrate.js",
+    "test": "node --test release-gate.test.js"
   },
   "engines": {
     "node": ">=22"
