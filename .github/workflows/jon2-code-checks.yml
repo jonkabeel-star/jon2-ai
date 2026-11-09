@@ -5,8 +5,10 @@ on:
     branches: [main]
     paths:
       - "ai_engine/**"
+      - "server/**"
       - "index.html"
-      - "tests/check_frontend_js.py"
+      - "jon2-config.js"
+      - "tests/**"
       - ".github/workflows/jon2-code-checks.yml"
   pull_request:
     paths:
@@ -41,3 +43,6 @@ jobs:
           node-version: "22"
       - name: Check static website JavaScript syntax
         run: python tests/check_frontend_js.py index.html
+
+      - name: Check Node.js API server and release-gate tests
+        run: npm run check --prefix server
