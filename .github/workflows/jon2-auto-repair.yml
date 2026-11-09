@@ -103,7 +103,7 @@ jobs:
           if [ -s auto-repair-output/failed.log ]; then
             python scripts/jon2_auto_repair.py --root . --logs auto-repair-output/failed.log --report auto-repair-output/report.json
           elif [ -s auto-repair-output/issue.log ]; then
-            python scripts/jon2_auto_repair.py --root . --logs auto-repair-output/issue.log --report auto-repair-output/report.json
+            python scripts/jon2_auto_repair.py --root . --logs auto-repair-output/issue.log --diagnostic-only --report auto-repair-output/report.json
           else
             python scripts/jon2_auto_repair.py --root . --report auto-repair-output/report.json
           fi
