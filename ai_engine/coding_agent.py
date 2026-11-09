@@ -63,7 +63,10 @@ def validate(patch):
     paths=[]
     for old,new in pairs:
         p=Path(new)
-        if old!=new or not new.startswith("ai_engine/") or not new.endswith(".py") or p.name in DENIED or any(x in {".git","training_data","checkpoints","models","__pycache__",".venv"} for x in p.parts):
+        if (old!=new or p.is_absolute() or ".." in p.parts
+                or len(p.parts)<2 or p.parts[0]!="ai_engine"
+                or not new.endswith(".py") or p.name in DENIED
+                or any(x in {".git","training_data","checkpoints","models","__pycache__",".venv"} for x in p.parts)):
             raise PermissionError("Protected or out-of-scope patch path: "+new)
         paths.append(new)
     return sorted(set(paths))
