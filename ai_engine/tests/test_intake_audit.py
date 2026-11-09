@@ -35,7 +35,7 @@ class IntakeAuditTests(unittest.TestCase):
     def test_invalid_utf8_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "candidate.txt"
-            path.write_bytes(b"\\xff\\xfe")
+            path.write_bytes(bytes([0xff, 0xfe]))
             with self.assertRaises(UnicodeDecodeError):
                 audit_candidate(path)
 
