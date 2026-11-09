@@ -39,6 +39,7 @@ class SpeechDatasetTests(unittest.TestCase):
             "sha256": hashlib.sha256(raw).hexdigest(),
             "text": "مرحبًا بك في اختبار الصوت.",
             "speaker_id": "speaker_001",
+            "voice_synthesis_consent": True,
         }
         manifest = {
             "status": "APPROVED",
@@ -72,6 +73,18 @@ class SpeechDatasetTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             validate_speech_manifest(self.manifest, self.audio)
 
+    def test_voice_synthesis_requires_explicit_consent(self):
+        raw = self.wav_path.read_bytes()
+        self._write_manifest(samples=[{
+            "audio": "sample.wav",
+            "sha256": hashlib.sha256(raw).hexdigest(),
+            "text": "مرحبًا بك في اختبار الصوت.",
+            "speaker_id": "speaker_001",
+            "voice_synthesis_consent": False,
+        }])
+        with self.assertRaises(PermissionError):
+            validate_speech_manifest(self.manifest, self.audio)
+
     def test_audio_hash_mismatch_is_blocked(self):
         self.wav_path.write_bytes(self.wav_path.read_bytes() + b"changed")
         with self.assertRaises(PermissionError):
@@ -84,12 +97,14 @@ class SpeechDatasetTests(unittest.TestCase):
                 "sha256": hashlib.sha256(self.wav_path.read_bytes()).hexdigest(),
                 "text": "مرحبًا بك في اختبار الصوت.",
                 "speaker_id": "speaker_001",
+                "voice_synthesis_consent": True,
             },
             {
                 "audio": "sample.wav",
                 "sha256": hashlib.sha256(self.wav_path.read_bytes()).hexdigest(),
                 "text": "مرحبًا بك في اختبار الصوت.",
                 "speaker_id": "speaker_002",
+                "voice_synthesis_consent": True,
             },
         ])
         with self.assertRaisesRegex(ValueError, "Duplicate audio path"):
