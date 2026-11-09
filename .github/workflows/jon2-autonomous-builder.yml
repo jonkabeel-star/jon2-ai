@@ -5,7 +5,10 @@ on:
   pull_request:
     paths:
       - "ai_engine/autonomous_builder.py"
-      - "ai_engine/test_autonomous_builder.py"
+      - "ai_engine/engineer_agent.py"
+      - "ai_engine/quality_evaluator.py"
+      - "ai_engine/evaluation_cases.jsonl"
+      - "ai_engine/test_*.py"
       - "ai_engine/preflight_training.py"
       - "ai_engine/source_approval.py"
       - ".github/workflows/jon2-autonomous-builder.yml"
@@ -13,6 +16,9 @@ on:
     branches: [main]
     paths:
       - "ai_engine/autonomous_builder.py"
+      - "ai_engine/engineer_agent.py"
+      - "ai_engine/quality_evaluator.py"
+      - "ai_engine/evaluation_cases.jsonl"
       - "ai_engine/preflight_training.py"
       - "ai_engine/source_approval.py"
       - "ai_engine/model_profiles.py"
@@ -39,18 +45,22 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install CPU PyTorch for the existing read-only preflight
+      - name: Test autonomous safety and Arabic evaluation
+        working-directory: ai_engine
+        run: |
+          python -m unittest test_autonomous_builder test_quality_evaluator test_engineer_agent -v
+
+      - name: Inspect language engine and produce engineering plan
+        run: |
+          python ai_engine/engineer_agent.py \
+            --root . \
+            --cases ai_engine/evaluation_cases.jsonl \
+            --output /tmp/jon2-engineering-plan.json
+
+      - name: Run source and training readiness assessment
         run: |
           python -m pip install --upgrade pip
           python -m pip install --index-url https://download.pytorch.org/whl/cpu torch
-
-      - name: Test autonomous builder safety
-        working-directory: ai_engine
-        run: python -m unittest test_autonomous_builder -v
-
-      - name: Inspect corpus approvals and plan next brain-building tasks
-        id: builder
-        run: |
           set +e
           python ai_engine/autonomous_builder.py \
             --root . \
@@ -61,20 +71,20 @@ jobs:
           status=$?
           set -e
           if [ "$status" -eq 0 ]; then
-            echo "readiness=ready_for_owner_training_approval" >> "$GITHUB_OUTPUT"
+            echo "Preflight passed; owner approval is still required."
           elif [ "$status" -eq 2 ]; then
-            echo "readiness=blocked" >> "$GITHUB_OUTPUT"
-            echo "Jon2 training remains safely blocked; see the report artifact."
+            echo "Training safely blocked; see report."
           else
-            echo "::error::Autonomous brain assessment failed unexpectedly (exit $status)."
             exit "$status"
           fi
 
-      - name: Upload metadata-only autonomous assessment
+      - name: Upload metadata-only plans
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: jon2-autonomous-brain-assessment
-          path: /tmp/jon2-autonomous-brain-report.json
+          name: jon2-autonomous-engineering-assessment
+          path: |
+            /tmp/jon2-engineering-plan.json
+            /tmp/jon2-autonomous-brain-report.json
           if-no-files-found: warn
           retention-days: 14
