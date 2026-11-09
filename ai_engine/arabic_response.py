@@ -14,7 +14,7 @@ _ALLOWED = re.compile(
     r"^[\u0600-\u06FF\s،؛؟.!…ـ0-9٠-٩()«»\"'\-–—:]+$"
 )
 _ROLE_PREFIX = re.compile(r"^(?:Jon2|المساعد|المستخدم)\s*[:：]\s*", re.IGNORECASE)
-_ROLE_LINE = re.compile(r"(?m)^\\s*(?:المستخدم|Jon2|المساعد)\\s*[:：]\\s*")
+_ROLE_LINE = re.compile(r"(?m)^\s*(?:المستخدم|Jon2|المساعد)\s*[:：]\s*")
 _SPACE_BEFORE_PUNCTUATION = re.compile(r"\s+([،؛؟.!…])")
 _MULTI_PUNCTUATION = re.compile(r"([،؛؟.!]){2,}")
 _SPACES = re.compile(r"[ \t]{2,}")
