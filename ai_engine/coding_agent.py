@@ -12,6 +12,7 @@ from pathlib import Path
 
 DENIED={"source_approval.py","preflight_training.py","train_jon2.py","autonomous_builder.py","training_gate.py"}
 DIFF=re.compile(r"^diff --git a/(.+?) b/(.+?)$",re.MULTILINE)
+STANDARD_DIFF=re.compile(r"^--- a/(.+?)\r?\n\+\+\+ b/(.+?)$",re.MULTILINE)
 FENCED_DIFF=re.compile(r"```(?:diff)?\s*\n(.*?)\n```",re.DOTALL|re.IGNORECASE)
 
 def collect_context(repo, limit=40000):
@@ -43,10 +44,12 @@ def extract_patch(content):
         content=match.group(1).strip()
     if content=="NO_SAFE_PATCH" or content.startswith("NO_SAFE_PATCH\n"):
         return "NO_SAFE_PATCH"
-    start=content.find("diff --git ")
-    if start<0:
+    git_start=content.find("diff --git ")
+    standard_start=content.find("--- a/")
+    starts=[x for x in (git_start,standard_start) if x>=0]
+    if not starts:
         return content
-    return content[start:].strip()
+    return content[min(starts):].strip()
 
 def propose(task,model,host,repo):
     context=collect_context(repo)
@@ -59,7 +62,10 @@ def propose(task,model,host,repo):
 
 def validate(patch):
     pairs=DIFF.findall(patch)
-    if not pairs: raise ValueError("No valid unified git diff returned.")
+    if not pairs:
+        # Some coding models emit standard unified diffs without git headers.
+        pairs=STANDARD_DIFF.findall(patch)
+    if not pairs: raise ValueError("No valid unified diff returned.")
     paths=[]
     for old,new in pairs:
         p=Path(new)
