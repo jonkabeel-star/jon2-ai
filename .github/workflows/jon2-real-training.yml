@@ -1,20 +1,15 @@
 name: Jon2 Real CPU Training
 
 on:
-  schedule:
-    # Recovery schedule: the workflow itself runs consecutive cycles for up to 5.5 hours.
-    # This schedule starts a fresh runner after the previous bounded run has ended.
-    - cron: "17 */6 * * *"
-  push:
-    branches: [main]
-    paths:
-      - "ai_engine/training_data/source_approvals.json"
-      - "ai_engine/training_data/**/*.txt"
-      - "ai_engine/training_data/**/*.jsonl"
-      - "ai_engine/source_approval.py"
-      - "ai_engine/corpus_reader.py"
-      - ".github/workflows/jon2-real-training.yml"
+  # Training is intentionally manual-only. A run must be explicitly confirmed
+  # with the exact input checked by the job condition below.
   workflow_dispatch:
+    inputs:
+      confirm_legacy_training:
+        description: "Type RUN_LEGACY_269K_EXPERIMENT only after reviewing the current checkpoint and corpus."
+        required: true
+        default: "NO"
+        type: string
 
 # Never run two costly training jobs at the same time. Keep the active run alive.
 concurrency:
@@ -26,6 +21,7 @@ permissions:
 
 jobs:
   train-original-jon2:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.confirm_legacy_training == 'RUN_LEGACY_269K_EXPERIMENT' }}
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
@@ -143,6 +139,47 @@ jobs:
             test -s ai_engine/checkpoints/jon2-last.pt
             cp ai_engine/checkpoints/jon2-small.pt /tmp/jon2-private-dataset/
             cp ai_engine/checkpoints/jon2-last.pt /tmp/jon2-private-dataset/
+            # Preserve immutable, run-specific checkpoint copies and provenance
+            # before updating the private dataset's latest-file aliases.
+            export JON2_TRAINING_CYCLE="${cycle}"
+            run_stamp="${GITHUB_RUN_ID:-local}-attempt-${GITHUB_RUN_ATTEMPT:-1}-cycle-${cycle}"
+            cp ai_engine/checkpoints/jon2-small.pt "/tmp/jon2-private-dataset/jon2-legacy-${run_stamp}-best.pt"
+            cp ai_engine/checkpoints/jon2-last.pt "/tmp/jon2-private-dataset/jon2-legacy-${run_stamp}-resume.pt"
+            python - "${run_stamp}" <<'PY'
+            import hashlib
+            import json
+            import os
+            import sys
+            from pathlib import Path
+
+            root = Path("/tmp/jon2-private-dataset")
+            stamp = sys.argv[1]
+            files = {}
+            for label, name in (
+                ("best", f"jon2-legacy-{stamp}-best.pt"),
+                ("resume", f"jon2-legacy-{stamp}-resume.pt"),
+            ):
+                path = root / name
+                raw = path.read_bytes()
+                files[label] = {
+                    "filename": name,
+                    "size_bytes": len(raw),
+                    "sha256": hashlib.sha256(raw).hexdigest(),
+                }
+            manifest = {
+                "format": "jon2-checkpoint-manifest-v1",
+                "training_line": "legacy_original_transformer",
+                "warning": "This workflow is not the arabic_30m profile and does not produce a 30M model.",
+                "github_run_id": os.environ.get("GITHUB_RUN_ID"),
+                "github_run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
+                "github_sha": os.environ.get("GITHUB_SHA"),
+                "cycle": int(os.environ.get("JON2_TRAINING_CYCLE", "0") or 0),
+                "files": files,
+            }
+            destination = root / f"jon2-checkpoint-manifest-{stamp}.json"
+            destination.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            print(json.dumps(manifest, ensure_ascii=False, indent=2))
+            PY
             save_ok=0
             for attempt in 1 2 3 4; do
               echo "Saving cycle ${cycle} to private Kaggle (attempt ${attempt}/4)..."
@@ -165,8 +202,36 @@ jobs:
             cycle=$((cycle + 1))
           done
           sha256sum ai_engine/checkpoints/jon2-small.pt | tee training-output/checkpoint.sha256
+          sha256sum ai_engine/checkpoints/jon2-last.pt | tee training-output/checkpoint-resume.sha256
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          entries = {}
+          for label, filename in (
+              ("best", "ai_engine/checkpoints/jon2-small.pt"),
+              ("resume", "ai_engine/checkpoints/jon2-last.pt"),
+          ):
+              path = Path(filename)
+              raw = path.read_bytes()
+              entries[label] = {
+                  "filename": path.name,
+                  "size_bytes": len(raw),
+                  "sha256": hashlib.sha256(raw).hexdigest(),
+              }
+          Path("training-output/checkpoint-manifest.json").write_text(
+              json.dumps({
+                  "format": "jon2-checkpoint-manifest-v1",
+                  "training_line": "legacy_original_transformer",
+                  "warning": "Not the arabic_30m profile.",
+                  "files": entries,
+              }, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
           ls -lh ai_engine/checkpoints/jon2-small.pt ai_engine/checkpoints/jon2-last.pt
-          echo "Consecutive cycle window ended safely; the six-hour recovery schedule can start the next runner."
+          echo "Consecutive cycle window ended safely. No automatic follow-up training is configured."
 
       - name: Load checkpoint and run real CPU inference smoke test
         run: |

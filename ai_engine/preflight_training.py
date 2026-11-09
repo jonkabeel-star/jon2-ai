@@ -1,8 +1,9 @@
 """Read-only readiness report for a proposed Jon2 training run.
 
 This command validates source approvals, builds the same deterministic corpus
-split/tokenizer as the trainer, and reports actual token/parameter counts.
-It never creates model weights, changes checkpoints, or starts training.
+split/tokenizer as the trainer, and reports measured token counts plus
+configuration-derived parameter estimates. It never creates model weights,
+changes checkpoints, or starts training.
 """
 from __future__ import annotations
 
@@ -23,7 +24,7 @@ def assess_readiness(
     corpus_characters: int,
     train_tokens: int,
     validation_tokens: int,
-    parameter_count: int,
+    estimated_parameter_count: int,
     tokenizer_vocab: int | None,
     target_tokenizer_vocab: int,
     context: int,
@@ -32,7 +33,7 @@ def assess_readiness(
 ) -> dict:
     """Return explicit blockers without weakening any trainer safeguards."""
     total_tokens = train_tokens + validation_tokens
-    ratio = total_tokens / max(1, parameter_count)
+    ratio = total_tokens / max(1, estimated_parameter_count)
     blockers = []
     if corpus_characters < minimum_characters:
         blockers.append("corpus_below_minimum_characters")
@@ -51,10 +52,10 @@ def assess_readiness(
         "training_tokens": train_tokens,
         "validation_tokens": validation_tokens,
         "total_tokens": total_tokens,
-        "parameter_count_actual": parameter_count,
+        "estimated_parameter_count": estimated_parameter_count,
         "tokenizer_vocab_actual": tokenizer_vocab,
         "tokenizer_vocab_target": target_tokenizer_vocab,
-        "tokens_per_parameter": round(ratio, 6),
+        "tokens_per_estimated_parameter": round(ratio, 6),
         "minimum_tokens_per_parameter": minimum_tokens_per_parameter,
         "context": context,
     }
@@ -106,7 +107,7 @@ def build_report(
     corpus = read_corpus(data_dir, include_jsonl=include_jsonl)
     profile = describe_profile(profile_name)
     train_text, validation_text = split_corpus_blocks(corpus, 0.1, seed)
-    target_parameters = profile["estimated_parameters"]
+    estimated_target_parameters = profile["estimated_parameters"]
     probe_vocab_size = min(profile["tokenizer_vocab_size"], 512)
     probe_tokenizer = ByteBPETokenizer.train(
         train_text, vocab_size=probe_vocab_size, min_frequency=2
@@ -117,7 +118,7 @@ def build_report(
 
     exact_tokenizer_skipped = should_skip_exact_tokenizer(
         probe_tokens=probe_total_tokens,
-        target_parameters=target_parameters,
+        target_parameters=estimated_target_parameters,
         minimum_tokens_per_parameter=minimum_tokens_per_parameter,
     )
     if exact_tokenizer_skipped:
@@ -125,7 +126,7 @@ def build_report(
         # these exact merges and can only merge more byte sequences.
         train_tokens = probe_train_tokens
         validation_tokens = probe_validation_tokens
-        parameter_count = target_parameters
+        estimated_parameter_count = estimated_target_parameters
         tokenizer_vocab_actual = None
         readiness_vocab = None
         preflight_mode = "read_only_conservative_upper_bound_no_training"
@@ -137,7 +138,7 @@ def build_report(
         )
         train_tokens = len(tokenizer.encode(train_text))
         validation_tokens = len(tokenizer.encode(validation_text))
-        parameter_count = estimate_parameters(
+        estimated_parameter_count = estimate_parameters(
             width=profile["width"],
             layers=profile["layers"],
             context=profile["context"],
@@ -151,7 +152,7 @@ def build_report(
         corpus_characters=len(corpus),
         train_tokens=train_tokens,
         validation_tokens=validation_tokens,
-        parameter_count=parameter_count,
+        estimated_parameter_count=estimated_parameter_count,
         tokenizer_vocab=readiness_vocab,
         target_tokenizer_vocab=profile["tokenizer_vocab_size"],
         context=profile["context"],
@@ -159,19 +160,19 @@ def build_report(
         minimum_tokens_per_parameter=minimum_tokens_per_parameter,
     )
     return {
-        "report_version": 1,
+        "report_version": 2,
         "mode": preflight_mode,
         "profile": profile_name,
-        "estimated_profile_parameters_at_target_vocab": target_parameters,
-        "actual_architecture_parameters": parameter_count,
+        "estimated_profile_parameters_at_target_vocab": estimated_target_parameters,
+        "estimated_architecture_parameters": estimated_parameter_count,
         "tokenizer_vocab_actual": tokenizer_vocab_actual,
         "tokenizer_probe": {
             "vocab_size": probe_tokenizer.vocab_size,
             "target_vocab_size": profile["tokenizer_vocab_size"],
             "exact_target_tokenizer_training_skipped": exact_tokenizer_skipped,
             "probe_total_tokens": probe_total_tokens,
-            "probe_tokens_per_target_parameter": round(
-                probe_total_tokens / max(1, target_parameters), 8
+            "probe_tokens_per_estimated_parameter": round(
+                probe_total_tokens / max(1, estimated_target_parameters), 8
             ),
             "interpretation": (
                 "Optimistic upper bound; a larger vocabulary can only reduce or preserve "
@@ -181,6 +182,7 @@ def build_report(
         "language_script_audit": _language_counts(corpus),
         "readiness": readiness,
         "warnings": [
+            "Parameter counts are architecture estimates from configuration; this preflight does not instantiate a model or inspect trained weights.",
             "Script counts do not identify MSA versus Egyptian dialect.",
             "Token counts and validation loss do not prove semantic understanding.",
             "A human must review source quality, factuality, privacy, and rights.",
