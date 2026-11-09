@@ -87,13 +87,10 @@ jobs:
           echo "Coding-agent process exit code: $result (see artifacts/jon2-coding-agent-step-status.json)"
       - name: Run all safety and evaluator unit tests
         run: python -m unittest discover -s ai_engine -p "test_*.py" -v
-      - name: Evaluate training readiness; execute only if every verified gate passes
+      - name: Always run read-only training readiness gate
+        if: always()
         run: |
           mkdir -p artifacts
-          if ! python -c "import json; b=json.load(open('artifacts/jon2-benchmark-step-status.json')); c=json.load(open('artifacts/jon2-coding-agent-step-status.json')); raise SystemExit(0 if b.get('passed') is True and c.get('passed') is True else 1)"; then
-            echo "Training blocked because real-model benchmark or isolated coding-agent run did not pass."
-            exit 0
-          fi
           set +e
           python ai_engine/training_gate.py --profile arabic_30m --report artifacts/jon2-training-gate.json
           gate_status=$?
@@ -108,14 +105,21 @@ jobs:
               "gate_error": True,
               "gate_exit_code": int(os.environ["GATE_STATUS"]),
               "reason": "Preflight did not produce a valid gate report; fail closed."
-          }, indent=2) + "\n", encoding="utf-8")
+          }, indent=2) + "\\n", encoding="utf-8")
           PY
           fi
-          if [ "$gate_status" -eq 0 ] && python -c "import json; r=json.load(open('artifacts/jon2-training-gate.json')); raise SystemExit(0 if r.get('authorized_to_train') is True and r.get('source_approval_passed') is True else 1)"; then
-            echo "All verified rights, data, token-ratio, fresh-checkpoint and CUDA gates passed. Starting explicitly authorized training."
+      - name: Execute training only after every gate passes
+        if: always()
+        run: |
+          if ! python -c "import json; b=json.load(open('artifacts/jon2-benchmark-step-status.json')); c=json.load(open('artifacts/jon2-coding-agent-step-status.json')); raise SystemExit(0 if b.get('passed') is True and c.get('passed') is True else 1)"; then
+            echo "Training blocked because real-model benchmark or isolated coding-agent run did not pass."
+            exit 0
+          fi
+          if python -c "import json; r=json.load(open('artifacts/jon2-training-gate.json')); raise SystemExit(0 if r.get('authorized_to_train') is True and r.get('source_approval_passed') is True else 1)"; then
+            echo "All verified rights, data, token-ratio, fresh-checkpoint and CUDA gates passed. Starting training."
             python ai_engine/training_gate.py --profile arabic_30m --execute --report artifacts/jon2-training-execution.json
           else
-            echo "Training remains blocked. No training was started."
+            echo "Training remains blocked by the read-only preflight. No training was started."
           fi
       - name: Upload evaluation, repair and gate reports
         if: always()
