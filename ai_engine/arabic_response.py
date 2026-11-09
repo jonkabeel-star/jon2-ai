@@ -106,14 +106,17 @@ def diagnose_arabic_answer(answer: str, question: str | None = None) -> dict:
 def validate_arabic_answer(answer: str, question: str | None = None) -> bool:
     """Fail closed on malformed, non-Arabic, or obviously looping output."""
     text = clean_generated_answer(answer)
-    if len(text) < 12 or len(text) > 4000:
-        return False
-    if not _ALLOWED.fullmatch(text):
+    if not text or len(text) > 4000 or not _ALLOWED.fullmatch(text):
         return False
 
     visible = [char for char in text if not char.isspace()]
     arabic_count = len(_ARABIC_LETTERS.findall(text))
     if arabic_count / max(1, len(visible)) < 0.70:
+        return False
+    # A small set of complete conversational replies is valid despite being short.
+    if text in _SHORT_COMPLETE:
+        return True
+    if len(text) < 12:
         return False
 
     report = diagnose_arabic_answer(text, question)
