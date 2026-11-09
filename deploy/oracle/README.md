@@ -44,8 +44,9 @@ paid service for this guide. Oracle may report temporary out-of-capacity errors.
 Create a persistent directory on the VM:
 
 ```bash
-sudo mkdir -p /opt/jon2/models
-sudo chown -R "$USER":"$USER" /opt/jon2
+sudo mkdir -p /opt/jon2/models /opt/jon2/data
+sudo chown -R 10001:10001 /opt/jon2/data
+sudo chown -R "$USER":"$USER" /opt/jon2/models
 ```
 
 Copy the privately generated GGUF file into that directory using a secure
@@ -65,7 +66,7 @@ docker compose -f docker-compose.oracle.yml build
 docker compose -f docker-compose.oracle.yml up -d
 ```
 
-The API is intentionally bound to loopback on port 8000. Put Caddy or another
+The API is intentionally bound to loopback on port 8000. The SQLite memory directory must be writable by container UID 10001. Put Caddy or another
 HTTPS reverse proxy in front of it; do not expose port 8000 directly to the
 public internet. Configure DNS for a domain pointing to the VM and use
 `deploy/oracle/Caddyfile` as the reverse-proxy site block.
