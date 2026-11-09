@@ -59,7 +59,7 @@ class PromptSafetyTests(unittest.TestCase):
             tokenizer=self.CharacterCountingTokenizer(),
             context=256,
         )
-        self.assertIn("أجب بالعربية الواضحة", prompt)
+        self.assertIn("أجب بعربية سهلة وواضحة", prompt)
         self.assertIn("اشرح الطاقة الشمسية", prompt)
 
     def test_long_question_is_rejected_instead_of_silently_truncated(self):
