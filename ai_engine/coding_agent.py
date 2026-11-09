@@ -51,14 +51,43 @@ def extract_patch(content):
         return content
     return content[min(starts):].strip()
 
-def propose(task,model,host,repo):
-    context=collect_context(repo)
-    data=json.dumps({"model":model,"stream":False,"options":{"temperature":0.1},"messages":[
-      {"role":"system","content":"You are a careful code repair model. Use only the supplied current source files. Return exactly one valid unified git diff with diff --git headers and correct context, or exactly NO_SAFE_PATCH. Do not use markdown fences or add explanations. Minimal Python-only changes under ai_engine/. Never alter rights gates, training, weights, data, CI, deployment, dependencies, secrets or shell/network behavior."},
-      {"role":"user","content":task+"\n\nCURRENT REPOSITORY SOURCE (authoritative; do not invent files or functions):\n"+context}]}).encode()
+def _request_ollama_patch(task,model,host,context,previous_invalid=""):
+    system=("You are a careful code repair model. Use only the supplied current source files. "
+            "Return exactly one valid unified git diff with diff --git headers, ---/+++ paths, "
+            "and correct @@ hunk context, or exactly NO_SAFE_PATCH. No markdown fences, JSON, "
+            "or explanations. Minimal Python-only changes under ai_engine/. Never alter rights "
+            "gates, training, weights, data, CI, deployment, dependencies, secrets, or shell/network behavior.")
+    user=task+"\\n\\nCURRENT REPOSITORY SOURCE (authoritative; do not invent files or functions):\\n"+context
+    if previous_invalid:
+        user += ("\\n\\nYour previous response was rejected because it was not a valid unified git diff. "
+                 "Try once more with correct paths and hunk syntax. If no safe minimal fix is justified, "
+                 "return exactly NO_SAFE_PATCH. Previous rejected response (do not copy blindly):\\n"
+                 + previous_invalid[:6000])
+    data=json.dumps({"model":model,"stream":False,"options":{"temperature":0.0},"messages":[
+      {"role":"system","content":system},{"role":"user","content":user}]}).encode()
     req=urllib.request.Request(host.rstrip("/")+"/api/chat",data=data,headers={"Content-Type":"application/json"})
     with urllib.request.urlopen(req,timeout=240) as response: body=json.loads(response.read().decode())
     return extract_patch(body.get("message",{}).get("content",""))
+
+
+def propose(task,model,host,repo,max_attempts=2):
+    if type(max_attempts) is not int or not 1 <= max_attempts <= 3:
+        raise ValueError("max_attempts must be between 1 and 3.")
+    context=collect_context(repo)
+    previous_invalid=""
+    for attempt in range(1,max_attempts+1):
+        patch=_request_ollama_patch(task,model,host,context,previous_invalid)
+        if patch=="NO_SAFE_PATCH":
+            return patch
+        try:
+            validate(patch)
+            return patch
+        except (ValueError,PermissionError) as exc:
+            previous_invalid=patch
+            print(f"Coding model response {attempt}/{max_attempts} rejected: {exc}",flush=True)
+            if attempt==max_attempts:
+                return patch
+    return previous_invalid
 
 def validate(patch):
     pairs=DIFF.findall(patch)
@@ -88,7 +117,7 @@ def sandbox(repo,patch,image):
         if check.returncode: raise ValueError("Patch does not apply: "+check.stderr[-1500:])
         apply=subprocess.run(["git","apply","--recount",str(pf)],cwd=work,capture_output=True,text=True,timeout=30)
         if apply.returncode: raise ValueError("Patch application failed: "+apply.stderr[-1500:])
-        cmd=[docker,"run","--rm","--network","none","--read-only","--cap-drop","ALL","--security-opt","no-new-privileges","--pids-limit","96","--memory","2g","--cpus","2","--tmpfs","/tmp:rw,noexec,nosuid,size=64m","-e","PYTHONDONTWRITEBYTECODE=1","-v",f"{work}:/work:ro","-w","/work/ai_engine",image,"python","-m","unittest","test_quality_evaluator","test_engineer_agent","test_coding_agent","-v"]
+        cmd=[docker,"run","--rm","--network","none","--read-only","--cap-drop","ALL","--security-opt","no-new-privileges","--pids-limit","96","--memory","2g","--cpus","2","--tmpfs","/tmp:rw,noexec,nosuid,size=64m","-e","PYTHONDONTWRITEBYTECODE=1","-v",f"{work}:/work:ro","-w","/work/ai_engine",image,"sh","-lc","python -c \"import ast,pathlib; files=list(pathlib.Path('.').rglob('*.py')); [ast.parse(p.read_text(encoding='utf-8'), filename=str(p)) for p in files]; print('Syntax OK:', len(files), 'files')\" && python -m unittest test_quality_evaluator test_engineer_agent test_coding_agent -v"]
         test=subprocess.run(cmd,capture_output=True,text=True,timeout=300)
         return {"tests_passed":test.returncode==0,"test_exit_code":test.returncode,"test_log":(test.stdout+"\n"+test.stderr)[-8000:],"executed_inside_no_network_docker":True,"committed_or_pushed":False}
 
