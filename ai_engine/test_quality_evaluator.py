@@ -32,7 +32,7 @@ class ArabicQualityEvaluatorTests(unittest.TestCase):
     def test_reports_dialect_groups_without_inference(self):
         report = evaluate_dataset([self.case], {"eg-1": "التدريب والأوزان"})
         self.assertEqual(report["by_dialect"]["egyptian"]["case_count"], 1)
-        self.assertTrue(any("not inferred" in item for item in report["limitations"]))
+        self.assertTrue(any("Dialect label is supplied" in item for item in report["limitations"]))
 
     def test_rejects_duplicate_case_ids(self):
         with self.assertRaises(ValueError):
