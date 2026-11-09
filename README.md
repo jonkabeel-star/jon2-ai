@@ -8,6 +8,7 @@ This repository contains the website interface, an early original-model prototyp
 
 ## Start here
 
+- [Jon2 Auto Repair](AUTO_REPAIR.md) — safe automated maintenance, diagnostics, test-gated repair pull requests, and manual run instructions.
 - [Public platform blueprint](PUBLIC_PLATFORM_BLUEPRINT.md) — architecture, secure accounts, AI tools, video workflow, YouTube approvals, and AdSense readiness.
 - [Build plan](JON2_AI_BUILD_PLAN.md) — staged implementation plan.
 - [Authentication setup](server/AUTH_SETUP.md) — account API endpoints, required secrets, database migration, and deployment gates.
