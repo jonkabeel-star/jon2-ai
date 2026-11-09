@@ -188,6 +188,12 @@ def ready():
     return {"project": "Jon2 AI", "status": "ready", "chat_ready": True}
 
 
+@app.delete("/api/memory/{session_id}")
+def clear_memory(session_id: uuid.UUID):
+    chat_memory.clear_session(str(session_id))
+    return {"project": "Jon2 AI", "cleared": True}
+
+
 @app.post("/api/chat")
 def chat(request: ChatRequest):
     snapshot = health()
