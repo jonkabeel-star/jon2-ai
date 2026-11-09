@@ -101,7 +101,7 @@ def build_report(
     seed: int = 42,
 ) -> dict:
     """Run read-only corpus, approval, tokenizer, and architecture preflight."""
-    validate_source_approvals(
+    approval_validation = validate_source_approvals(
         data_dir, approval_manifest, include_jsonl=include_jsonl
     )
     corpus = read_corpus(data_dir, include_jsonl=include_jsonl)
@@ -163,6 +163,7 @@ def build_report(
         "report_version": 2,
         "mode": preflight_mode,
         "profile": profile_name,
+        "source_approval_validation": approval_validation,
         "estimated_profile_parameters_at_target_vocab": estimated_target_parameters,
         "estimated_architecture_parameters": estimated_parameter_count,
         "tokenizer_vocab_actual": tokenizer_vocab_actual,

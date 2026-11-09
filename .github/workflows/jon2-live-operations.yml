@@ -1,0 +1,103 @@
+name: Jon2 Live Model Operations
+
+on:
+  # Legacy duplicate runner is manual-only. The canonical PR pipeline is
+  # jon2-autonomous-execution.yml. This workflow is evaluation and preflight
+  # only; it must never start training or modify model weights.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jon2-live-operations-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  live-model-evaluation-and-sandbox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout proposed Jon2 branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Jon2 runtime dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch "transformers>=4.45,<5" accelerate safetensors
+
+      - name: Install and start local Ollama runtime
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          (ollama serve > /tmp/ollama.log 2>&1 &)
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:11434/api/tags >/dev/null
+
+      - name: Download open-weight semantic and coding models
+        run: |
+          ollama pull qwen2.5:3b
+          ollama pull qwen2.5-coder:3b
+
+      - name: Run real Jon2 Arabic model benchmark with semantic judging
+        env:
+          OLLAMA_HOST: http://127.0.0.1:11434
+          JON2_JUDGE_MODEL: qwen2.5:3b
+        run: |
+          python ai_engine/run_model_benchmark.py --semantic
+        continue-on-error: true
+
+      - name: Run coding model and isolated Docker patch tests
+        env:
+          OLLAMA_HOST: http://127.0.0.1:11434
+          JON2_CODER_MODEL: qwen2.5-coder:3b
+        run: |
+          docker info
+          python ai_engine/coding_agent.py \
+            --task "Make one minimal, safe Python-only improvement to the actual system prompt in ai_engine/language_engine.py: require Arabic-only answers, use Egyptian Arabic for Egyptian colloquial prompts and clear Modern Standard Arabic for formal prompts, and forbid unrelated Chinese or foreign-language text. Preserve the public API and model behavior otherwise. Use the supplied current source and return an exact applicable unified diff. Return NO_SAFE_PATCH only if this exact change cannot be made safely. Do not change training, data, rights, CI, deployment, dependencies, or public APIs."
+        continue-on-error: true
+
+      - name: Run read-only training readiness gate
+        if: always()
+        run: |
+          mkdir -p artifacts
+          set +e
+          python ai_engine/training_gate.py --profile arabic_30m --report artifacts/jon2-training-gate.json
+          gate_status=$?
+          set -e
+          if [ ! -f artifacts/jon2-training-gate.json ]; then
+            GATE_STATUS="$gate_status" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("artifacts/jon2-training-gate.json").write_text(json.dumps({
+              "authorized_to_train": False,
+              "training_started": False,
+              "gate_error": True,
+              "gate_exit_code": int(os.environ["GATE_STATUS"]),
+              "reason": "Preflight did not produce a valid gate report; fail closed."
+          }, indent=2) + "\n", encoding="utf-8")
+          PY
+          fi
+          echo "This workflow only prepares and reports training readiness."
+          echo "No training command is run and no checkpoint or model weights are modified."
+
+      - name: Upload live evaluation, patch, and training reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jon2-live-operations-results
+          path: |
+            artifacts/
+            /tmp/ollama.log
+          if-no-files-found: warn
+          retention-days: 14

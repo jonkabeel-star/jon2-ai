@@ -1,0 +1,167 @@
+name: Jon2 Autonomous Execution
+
+on:
+  # One canonical pipeline: run once for the PR, or manually on demand.
+  # Avoid a second full Ollama/model download on every feature-branch push.
+  pull_request:
+    paths:
+      - "ai_engine/**"
+      - ".github/workflows/jon2-autonomous-execution.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # PR and push refs resolve to the same head branch, so duplicate runs serialize.
+  group: jon2-autonomous-execution-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  real-model-and-repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Jon2 runtime dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install "transformers>=4.45,<5" accelerate safetensors fastapi "uvicorn[standard]" httpx
+      - name: Install and start Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          (ollama serve > /tmp/ollama.log 2>&1 &)
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/ollama.log
+          exit 1
+      - name: Download semantic judge model
+        run: ollama pull qwen2.5:3b
+      - name: Run actual Jon2 Arabic model benchmark and semantic evaluation
+        id: benchmark
+        continue-on-error: true
+        run: |
+          mkdir -p artifacts
+          set +e
+          python ai_engine/run_model_benchmark.py --semantic
+          result=$?
+          set -e
+          RESULT="$result" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("artifacts/jon2-benchmark-step-status.json").write_text(
+              json.dumps({"exit_code": int(os.environ["RESULT"]), "passed": int(os.environ["RESULT"]) == 0}, indent=2) + "\n",
+              encoding="utf-8")
+          PY
+          echo "Benchmark process exit code: $result (see artifacts/jon2-benchmark-step-status.json)"
+      - name: Release semantic judge memory before candidate inference
+        run: ollama stop qwen2.5:3b || true
+      - name: Download stronger local Arabic candidate
+        run: ollama pull qwen2.5:1.5b
+      - name: Benchmark stronger local candidate without replacing production
+        id: candidate
+        continue-on-error: true
+        run: |
+          mkdir -p artifacts
+          set +e
+          python ai_engine/run_ollama_candidate_benchmark.py --model qwen2.5:1.5b --judge-model qwen2.5:3b
+          result=$?
+          set -e
+          RESULT="$result" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("artifacts/jon2-candidate-step-status.json").write_text(
+              json.dumps({"exit_code": int(os.environ["RESULT"]), "passed": int(os.environ["RESULT"]) == 0}, indent=2) + "\n",
+              encoding="utf-8")
+          PY
+          echo "Candidate benchmark exit code: $result (see artifacts/jon2-candidate-step-status.json)"
+      - name: Free judge model memory and fetch coding model
+        run: |
+          ollama stop qwen2.5:3b || true
+          ollama rm qwen2.5:3b || true
+          ollama pull qwen2.5-coder:1.5b
+      - name: Run local coding agent and isolated Docker patch tests
+        id: coding
+        continue-on-error: true
+        run: |
+          mkdir -p artifacts
+          set +e
+          python ai_engine/coding_agent.py --repo . --task "Inspect the current Jon2 AI Python engine. Propose only a minimal, demonstrably safe bug fix if one is needed; otherwise return NO_SAFE_PATCH."
+          result=$?
+          set -e
+          RESULT="$result" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("artifacts/jon2-coding-agent-step-status.json").write_text(
+              json.dumps({"exit_code": int(os.environ["RESULT"]), "passed": int(os.environ["RESULT"]) == 0}, indent=2) + "\n",
+              encoding="utf-8")
+          PY
+          echo "Coding-agent process exit code: $result (see artifacts/jon2-coding-agent-step-status.json)"
+      - name: Run all safety and evaluator unit tests
+        id: all-tests
+        run: python -m unittest discover -s ai_engine -p "test_*.py" -v
+      - name: Always run read-only training readiness gate
+        if: always()
+        run: |
+          mkdir -p artifacts
+          set +e
+          python ai_engine/training_gate.py --profile arabic_30m --report artifacts/jon2-training-gate.json
+          gate_status=$?
+          set -e
+          if [ ! -f artifacts/jon2-training-gate.json ]; then
+            GATE_STATUS="$gate_status" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("artifacts/jon2-training-gate.json").write_text(json.dumps({
+              "authorized_to_train": False,
+              "training_started": False,
+              "gate_error": True,
+              "gate_exit_code": int(os.environ["GATE_STATUS"]),
+              "reason": "Preflight did not produce a valid gate report; fail closed."
+          }, indent=2) + "\n", encoding="utf-8")
+          PY
+          fi
+      - name: Keep training disabled pending explicit owner approval
+        if: always()
+        run: |
+          echo "Training is disabled in autonomous PR CI."
+          echo "This workflow performs read-only training preflight only."
+          echo "No model training, checkpoint creation, or weight modification is permitted here."
+          echo "A separate explicit owner-approved manual action is required before any training."
+      - name: Upload evaluation, repair and gate reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jon2-autonomous-execution-${{ github.run_id }}
+          path: |
+            artifacts/
+            /tmp/ollama.log
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Fail visibly if model evaluation or isolated repair did not pass
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          failures = []
+          for name in ("jon2-benchmark-step-status.json", "jon2-candidate-step-status.json", "jon2-coding-agent-step-status.json"):
+              path = Path("artifacts") / name
+              if not path.exists():
+                  failures.append(name + ": missing status report")
+                  continue
+              result = json.loads(path.read_text(encoding="utf-8"))
+              if result.get("passed") is not True:
+                  failures.append(name + ": process did not pass (exit=" + str(result.get("exit_code")) + ")")
+          if failures:
+              print("\n".join(failures))
+              raise SystemExit(1)
+          print("Production model, stronger candidate, and isolated coding-agent checks all passed.")
+          PY

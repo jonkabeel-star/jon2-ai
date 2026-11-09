@@ -132,3 +132,4 @@ def validate_source_approvals(
                 f"Training blocked: {name} has no valid intended_use approval."
             )
     print(f"Source approval gate: PASS ({len(files)} text files explicitly approved).")
+    return {"passed": True, "approved_file_count": len(files), "validated_files": sorted(files)}
