@@ -61,6 +61,9 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: bot/jon2-auto-repair
+          add-paths: |
+            ai_engine/
+            tests/
           delete-branch: true
           commit-message: "Apply verified safe Jon2 maintenance repairs"
           title: "Jon2 Auto Repair: verified safe maintenance"
