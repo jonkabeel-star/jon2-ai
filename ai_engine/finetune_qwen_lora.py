@@ -17,6 +17,11 @@ BASE_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
 BASE_MODEL_LICENSE = "Apache-2.0"
 USER_LABELS = ("المستخدم:", "User:")
 ASSISTANT_LABELS = ("Jon2:", "المساعد:", "Assistant:")
+EMAIL_RE = re.compile(r"\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b", re.IGNORECASE)
+EGYPT_MOBILE_RE = re.compile(r"(?<!\\d)(?:\\+?20|0)?1[0125]\\d{8,9}(?!\\d)")
+SECRET_RE = re.compile(
+    r"(?i)\\b(?:api[_-]?key|access[_-]?token|secret|password)\\s*[:=]\\s*['\\"]?[A-Za-z0-9_./+\\-=]{12,}"
+)
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -44,6 +49,8 @@ def load_approved_dialogue_files(data_dir: Path, manifest_path: Path) -> tuple[l
             raise ValueError(f"{name}: reviewer is required.")
         if not isinstance(entry.get("rights_basis"), str) or not entry["rights_basis"].strip():
             raise ValueError(f"{name}: rights_basis is required.")
+        if not isinstance(entry.get("review_date"), str) or not entry["review_date"].strip():
+            raise ValueError(f"{name}: review_date is required.")
         if name in approved:
             raise ValueError(f"Duplicate approval entry for {name}.")
         approved[name] = entry
@@ -78,6 +85,16 @@ def load_approved_dialogue_files(data_dir: Path, manifest_path: Path) -> tuple[l
     return dialogue_files, fingerprints
 
 
+def validate_message_content(content: str, source_name: str, block_number: int) -> None:
+    """Reject likely personal contact details and credential-like strings."""
+    if EMAIL_RE.search(content):
+        raise ValueError(f"{source_name}: possible email address in block {block_number}.")
+    if EGYPT_MOBILE_RE.search(content):
+        raise ValueError(f"{source_name}: possible Egyptian mobile number in block {block_number}.")
+    if SECRET_RE.search(content):
+        raise ValueError(f"{source_name}: possible credential or secret in block {block_number}.")
+
+
 def parse_dialogue_text(text: str, source_name: str = "<memory>") -> list[list[dict[str, str]]]:
     """Parse blank-line-separated, alternating Arabic user/Jon2 dialogue blocks."""
     conversations: list[list[dict[str, str]]] = []
@@ -110,6 +127,7 @@ def parse_dialogue_text(text: str, source_name: str = "<memory>") -> list[list[d
             expected = "user" if index % 2 == 0 else "assistant"
             if message["role"] != expected or not message["content"]:
                 raise ValueError(f"{source_name}: block {block_number} must alternate non-empty user/assistant turns.")
+            validate_message_content(message["content"], source_name, block_number)
         conversations.append(messages)
     return conversations
 
@@ -130,31 +148,49 @@ def collect_conversations(files: list[Path]) -> list[list[dict[str, str]]]:
 
 
 def split_conversations(
-    conversations: list[list[dict[str, str]]], validation_fraction: float = 0.1, seed: int = 42
-) -> tuple[list[list[dict[str, str]]], list[list[dict[str, str]]]]:
-    if not 0.05 <= validation_fraction <= 0.3:
-        raise ValueError("validation_fraction must be between 0.05 and 0.30.")
+    conversations: list[list[dict[str, str]]],
+    validation_fraction: float = 0.1,
+    test_fraction: float = 0.1,
+    seed: int = 42,
+) -> tuple[list[list[dict[str, str]]], list[list[dict[str, str]]], list[list[dict[str, str]]]]:
+    if not 0.05 <= validation_fraction <= 0.2:
+        raise ValueError("validation_fraction must be between 0.05 and 0.20.")
+    if not 0.05 <= test_fraction <= 0.2:
+        raise ValueError("test_fraction must be between 0.05 and 0.20.")
+    if validation_fraction + test_fraction >= 0.5:
+        raise ValueError("validation_fraction + test_fraction must be below 0.5.")
     if len(conversations) < 20:
         raise ValueError(f"Need at least 20 distinct conversations; found {len(conversations)}.")
     indices = list(range(len(conversations)))
     random.Random(seed).shuffle(indices)
-    val_count = max(1, round(len(indices) * validation_fraction))
-    val_set = set(indices[:val_count])
-    train = [item for i, item in enumerate(conversations) if i not in val_set]
-    validation = [item for i, item in enumerate(conversations) if i in val_set]
-    if not train or not validation:
-        raise ValueError("Training/validation split is empty.")
-    return train, validation
+    test_count = max(1, round(len(indices) * test_fraction))
+    validation_count = max(1, round(len(indices) * validation_fraction))
+    test_set = set(indices[:test_count])
+    validation_set = set(indices[test_count:test_count + validation_count])
+    train = [item for i, item in enumerate(conversations) if i not in test_set and i not in validation_set]
+    validation = [item for i, item in enumerate(conversations) if i in validation_set]
+    test = [item for i, item in enumerate(conversations) if i in test_set]
+    if not train or not validation or not test:
+        raise ValueError("Train, validation, and final test splits must all be non-empty.")
+    return train, validation, test
 
 
 def count_assistant_examples(conversations: list[list[dict[str, str]]]) -> int:
     return sum(1 for conversation in conversations for message in conversation if message["role"] == "assistant")
 
 
-def prepare_manifest(data_dir: Path, approval_manifest: Path, validation_fraction: float, seed: int) -> dict[str, Any]:
+def prepare_manifest(
+    data_dir: Path,
+    approval_manifest: Path,
+    validation_fraction: float,
+    test_fraction: float,
+    seed: int,
+) -> dict[str, Any]:
     files, fingerprints = load_approved_dialogue_files(data_dir, approval_manifest)
     conversations = collect_conversations(files)
-    train, validation = split_conversations(conversations, validation_fraction, seed)
+    train, validation, test = split_conversations(
+        conversations, validation_fraction, test_fraction, seed
+    )
     return {
         "base_model": BASE_MODEL,
         "base_model_license": BASE_MODEL_LICENSE,
@@ -163,9 +199,12 @@ def prepare_manifest(data_dir: Path, approval_manifest: Path, validation_fractio
         "assistant_training_examples": count_assistant_examples(conversations),
         "train_conversations": len(train),
         "validation_conversations": len(validation),
+        "test_conversations": len(test),
         "train_assistant_examples": count_assistant_examples(train),
         "validation_assistant_examples": count_assistant_examples(validation),
+        "test_assistant_examples": count_assistant_examples(test),
         "validation_fraction": validation_fraction,
+        "test_fraction": test_fraction,
         "split_seed": seed,
         "training_method": "supervised_fine_tuning_with_peft_lora",
         "adapter_only": True,
@@ -217,7 +256,8 @@ def build_tokenized_examples(conversations, tokenizer, max_length: int):
 
 def run_training(args) -> int:
     manifest = prepare_manifest(
-        Path(args.data), Path(args.approval_manifest), args.validation_fraction, args.seed
+        Path(args.data), Path(args.approval_manifest), args.validation_fraction,
+        args.test_fraction, args.seed
     )
     print(json.dumps(manifest, ensure_ascii=False, indent=2), flush=True)
     if not args.execute:
@@ -238,8 +278,8 @@ def run_training(args) -> int:
 
     files, fingerprints = load_approved_dialogue_files(Path(args.data), Path(args.approval_manifest))
     conversations = collect_conversations(files)
-    train_conversations, validation_conversations = split_conversations(
-        conversations, args.validation_fraction, args.seed
+    train_conversations, validation_conversations, test_conversations = split_conversations(
+        conversations, args.validation_fraction, args.test_fraction, args.seed
     )
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=False)
     if tokenizer.pad_token is None:
@@ -266,6 +306,7 @@ def run_training(args) -> int:
 
     train_rows = build_tokenized_examples(train_conversations, tokenizer, args.max_length)
     val_rows = build_tokenized_examples(validation_conversations, tokenizer, args.max_length)
+    test_rows = build_tokenized_examples(test_conversations, tokenizer, args.max_length)
 
     class Rows(torch.utils.data.Dataset):
         def __init__(self, rows):
@@ -289,10 +330,8 @@ def run_training(args) -> int:
         warmup_ratio=0.05,
         weight_decay=0.01,
         logging_steps=10,
-        eval_strategy="steps",
-        eval_steps=args.eval_steps,
-        save_strategy="steps",
-        save_steps=args.eval_steps,
+        eval_strategy="epoch",
+        save_strategy="epoch",
         save_total_limit=2,
         load_best_model_at_end=True,
         metric_for_best_model="eval_loss",
@@ -318,12 +357,14 @@ def run_training(args) -> int:
     result = trainer.train()
     trainer.save_model(str(output_dir))
     tokenizer.save_pretrained(str(output_dir))
-    final_eval = trainer.evaluate()
+    validation_eval = trainer.evaluate(eval_dataset=Rows(val_rows), metric_key_prefix="validation")
+    final_test_eval = trainer.evaluate(eval_dataset=Rows(test_rows), metric_key_prefix="test")
     metadata = {
         **manifest,
         "source_files": fingerprints,
         "train_result": result.metrics,
-        "final_evaluation": final_eval,
+        "validation_evaluation": validation_eval,
+        "final_held_out_test_evaluation": final_test_eval,
         "lora_rank": args.lora_rank,
         "lora_alpha": args.lora_alpha,
         "lora_dropout": args.lora_dropout,
@@ -352,6 +393,7 @@ def build_parser():
     parser.add_argument("--approval-manifest", default="ai_engine/training_data/source_approvals.json")
     parser.add_argument("--output", default="artifacts/jon2-qwen25-05b-lora")
     parser.add_argument("--validation-fraction", type=float, default=0.1)
+    parser.add_argument("--test-fraction", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max-length", type=int, default=1024)
     parser.add_argument("--epochs", type=float, default=3.0)
