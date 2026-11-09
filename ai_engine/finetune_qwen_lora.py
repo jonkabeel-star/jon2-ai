@@ -196,10 +196,9 @@ def build_tokenized_examples(conversations, tokenizer, max_length: int):
             if isinstance(full_ids, list) and full_ids and isinstance(full_ids[0], list):
                 full_ids = full_ids[0]
             if len(full_ids) > max_length:
-                full_ids = full_ids[-max_length:]
-                prompt_length = max(0, len(prompt_ids) - (len(tokenizer.apply_chat_template(
-                    target, tokenize=True, add_generation_prompt=False
-                )) - max_length))
+                overflow = len(full_ids) - max_length
+                full_ids = full_ids[overflow:]
+                prompt_length = max(0, len(prompt_ids) - overflow)
             else:
                 prompt_length = len(prompt_ids)
             prompt_length = min(prompt_length, len(full_ids))
