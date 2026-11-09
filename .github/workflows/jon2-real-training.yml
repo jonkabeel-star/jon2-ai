@@ -1,4 +1,4 @@
-name: Jon2 Legacy Original CPU Training (Manual Approval Gate)
+name: Jon2 Real CPU Training
 
 on:
   # Training is intentionally manual-only. A run must be explicitly confirmed
@@ -177,7 +177,7 @@ jobs:
                 "files": files,
             }
             destination = root / f"jon2-checkpoint-manifest-{stamp}.json"
-            destination.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+            destination.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             print(json.dumps(manifest, ensure_ascii=False, indent=2))
             PY
             save_ok=0
@@ -201,7 +201,7 @@ jobs:
             sleep 30
             cycle=$((cycle + 1))
           done
-          sha256sum ai_engine/checkpoints/jon2-small.pt | tee training-output/checkpoint-best.sha256
+          sha256sum ai_engine/checkpoints/jon2-small.pt | tee training-output/checkpoint.sha256
           sha256sum ai_engine/checkpoints/jon2-last.pt | tee training-output/checkpoint-resume.sha256
           python - <<'PY'
           import hashlib

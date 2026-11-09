@@ -37,3 +37,35 @@ The five approved files are the only sources covered by the current training app
 ## Hardware boundary
 
 The RTL design and its Icarus Verilog simulations are a separate engineering track. No physical FPGA board, ASIC, GPU, or local AI compute hardware has been created or programmed by these training runs. GitHub-hosted CPU runners supplied the compute for the training cycle.
+
+
+## Verified readiness update — 2026-11-09
+
+### 30M profile preflight
+
+The latest successful Python Checks workflow on draft branch `work/egyptian-arabic-foundation-v2` is [42542396281](https://github.com/jonkabeel-star/jon2-ai/actions/runs/42542396281), commit `00da8afc90da770259e2750af969f7ac6d3a6043`. It ran the `arabic_30m` preflight only; it did not instantiate or train a 30M model.
+
+- Measured corpus inventory from the read-only preflight: 305,406 characters.
+- 512-vocabulary probe: 193,403 tokens total (an optimistic upper bound for the larger target tokenizer).
+- `arabic_30m` configuration estimate: 29,938,688 parameters. This is a configuration-derived estimate, not trained weights.
+- At the configured minimum of 10 tokens per estimated parameter, the rough gate would require 299,386,880 approved tokens. The current probe is about 0.00646 tokens per estimated parameter and fails by a very large margin.
+- Readiness: **NOT READY**. The exact 8,192-token tokenizer fit was skipped because even the optimistic probe bound could not meet the corpus-scale gate.
+- The 80-turn Egyptian draft and 30 held-out Egyptian prompts are separate and are not counted as approved training tokens.
+
+Do not launch 30M training. Do not lower the token/parameter gate or duplicate text to pass it. The 30M profile still needs a suitable high-memory GPU environment and a verified, resumable, profile-specific checkpoint workflow.
+
+### Checkpoint evidence and limitations
+
+The historical original model checkpoint contains 269,952 actual parameters and completed 1,200 optimizer steps. The private Kaggle dataset previously verified the two legacy checkpoint files; the recorded sizes were 3,285,607 bytes (`jon2-small.pt`) and 3,285,488 bytes (`jon2-last.pt`). The captured SHA-256 is available for the best checkpoint only: `acbae28e4acc4dc060194df466f65a72410792f5b0fec7ff9bdd939244b9c43f`. A matching recorded SHA-256 for the resumable checkpoint was not present in the available evidence.
+
+No 30M checkpoint exists. Do not confuse the legacy 269,952-parameter checkpoint with the 30M profile.
+
+### Automation safety
+
+The legacy CPU training workflow on `main` currently has schedule and push triggers and writes fixed latest checkpoint filenames. This is not a 30M training workflow. A proposed safety PR changes it to manual-only with an exact confirmation input and adds run-specific checkpoint copies plus SHA-256 manifests. Until that PR is reviewed and merged, the existing main-branch workflow definition remains unchanged.
+
+A previously observed legacy workflow run `42538599326` remained in `pending` with no job records at the time of inspection. No active job was visible in the connector snapshot; this is not proof that the queue has been cancelled. The connector does not expose a cancel action here. Do not dispatch another training run.
+
+### Human review
+
+No human review or release approval is recorded for the current checkpoint. The 40-prompt historical evaluation was explicitly marked for human review and showed incoherent Arabic. The release flag must remain false.
