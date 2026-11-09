@@ -3,6 +3,7 @@ set -u
 
 CHECKPOINT_PATH="${JON2_CHECKPOINT:-/app/model-weights/jon2-small.pt}"
 CHECKPOINT_DIR="$(dirname "$CHECKPOINT_PATH")"
+CHECKPOINT_FILENAME="$(basename "$CHECKPOINT_PATH")"
 
 # Some hosting runtimes mount /app as read-only or override image directory
 # permissions. If the configured directory cannot actually accept a file,
@@ -20,7 +21,7 @@ if [ ! -s "$CHECKPOINT_PATH" ]; then
     WRITE_TEST="$(mktemp "$FALLBACK_DIR/.jon2-write-test.XXXXXX" 2>/dev/null || true)"
     if [ -n "$WRITE_TEST" ]; then
       rm -f "$WRITE_TEST"
-      CHECKPOINT_PATH="$FALLBACK_DIR/jon2-small.pt"
+      CHECKPOINT_PATH="$FALLBACK_DIR/$CHECKPOINT_FILENAME"
       CHECKPOINT_DIR="$FALLBACK_DIR"
       export JON2_CHECKPOINT="$CHECKPOINT_PATH"
       echo "Jon2 warning: configured checkpoint directory is not writable; using temporary path: $CHECKPOINT_PATH"
@@ -69,15 +70,15 @@ else
       echo "Jon2: Kaggle dataset file-list output (credentials redacted):"
       log_safe_file "$TEMP_DIR/files.log"
     fi
-    if [ "$FILES_STATUS" -eq 0 ] && ! grep -Fq "jon2-small.pt" "$TEMP_DIR/files.log"; then
-      echo "Jon2 ERROR: Kaggle account can access the dataset, but the exact file jon2-small.pt was not listed."
+    if [ "$FILES_STATUS" -eq 0 ] && ! grep -Fq "$CHECKPOINT_FILENAME" "$TEMP_DIR/files.log"; then
+      echo "Jon2 ERROR: Kaggle account can access the dataset, but the exact checkpoint file $CHECKPOINT_FILENAME was not listed."
       echo "Jon2 diagnosis: check the exact filename shown in the dataset file listing above."
       DOWNLOAD_STATUS=2
     else
-      echo "Jon2: requesting jon2-small.pt from private dataset."
+      echo "Jon2: requesting $CHECKPOINT_FILENAME from private dataset."
       # Pass the dataset handle positionally for compatibility with Kaggle CLI
       # releases that differ in how the hidden -d alias is exposed.
-      kaggle datasets download "$DATASET_ID" -f jon2-small.pt \
+      kaggle datasets download "$DATASET_ID" -f "$CHECKPOINT_FILENAME" \
         -p "$TEMP_DIR" --unzip --force > "$TEMP_DIR/download.log" 2>&1
       DOWNLOAD_STATUS=$?
     fi
@@ -88,9 +89,9 @@ else
     fi
 
     if [ "$DOWNLOAD_STATUS" -eq 0 ]; then
-      DOWNLOADED_FILE="$(find "$TEMP_DIR" -type f -name 'jon2-small.pt' -print -quit 2>/dev/null)"
+      DOWNLOADED_FILE="$(find "$TEMP_DIR" -type f -name "$CHECKPOINT_FILENAME" -print -quit 2>/dev/null)"
       if [ -z "$DOWNLOADED_FILE" ] || [ ! -s "$DOWNLOADED_FILE" ]; then
-        echo "Jon2 ERROR: Kaggle returned success, but jon2-small.pt is absent or empty after extraction."
+        echo "Jon2 ERROR: Kaggle returned success, but $CHECKPOINT_FILENAME is absent or empty after extraction."
         echo "Jon2 diagnostic: extracted files:"
         find "$TEMP_DIR" -maxdepth 5 -type f -print 2>/dev/null || true
       else
