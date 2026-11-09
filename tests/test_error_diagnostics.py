@@ -39,7 +39,7 @@ TypeError: expected str, got None
         self.assertFalse(result["automatic_repair_allowed"])
 
     def test_bounds_failed_test_list(self):
-        log = "\\n".join(f"FAIL: test_case_{i}" for i in range(75))
+        log = "\n".join(f"FAIL: test_case_{i}" for i in range(75))
         result = analyze_failure_log(log)
         self.assertEqual(len(result["failed_tests"]), 50)
 
