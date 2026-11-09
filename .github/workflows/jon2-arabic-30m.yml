@@ -193,13 +193,16 @@ jobs:
           import sys
           import torch
           checkpoint = torch.load(sys.argv[1], map_location="cpu", weights_only=True)
-          state = checkpoint.get("model_state")
-          if not isinstance(state, dict):
-              raise SystemExit("Checkpoint has no model_state.")
-          count = sum(value.numel() for value in state.values() if hasattr(value, "numel"))
-          finite = all(torch.isfinite(value).all().item() for value in state.values() if hasattr(value, "is_floating_point") and value.is_floating_point())
-          print("checkpoint_parameter_tensors_total:", count)
-          print("all_floating_weights_finite:", finite)
+          from jon2_core import Jon2Transformer
+          from tokenizer import ByteBPETokenizer
+          tokenizer = ByteBPETokenizer.from_dict(checkpoint["tokenizer"])
+          model = Jon2Transformer(vocab_size=tokenizer.vocab_size, **checkpoint["config"])
+          model.load_state_dict(checkpoint["model_state"])
+          parameters = list(model.parameters())
+          count = sum(parameter.numel() for parameter in parameters)
+          finite = all(torch.isfinite(parameter).all().item() for parameter in parameters)
+          print("instantiated_model_parameters:", count)
+          print("all_parameters_finite:", finite)
           if not finite:
               raise SystemExit("Non-finite model weights detected.")
           if not (25_000_000 <= count <= 35_000_000):
