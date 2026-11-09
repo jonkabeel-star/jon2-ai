@@ -31,9 +31,9 @@ def sandbox(repo,patch,image):
         root=Path(tmp); work=root/"work"; work.mkdir()
         shutil.copytree(repo/"ai_engine",work/"ai_engine",ignore=shutil.ignore_patterns("__pycache__","*.pyc","training_data","checkpoints","models"))
         pf=root/"patch.diff"; pf.write_text(patch,encoding="utf-8")
-        check=subprocess.run(["git","apply","--check",str(pf)],cwd=work,capture_output=True,text=True,timeout=30)
+        check=subprocess.run(["git","apply","--recount","--check",str(pf)],cwd=work,capture_output=True,text=True,timeout=30)
         if check.returncode: raise ValueError("Patch does not apply: "+check.stderr[-1500:])
-        apply=subprocess.run(["git","apply",str(pf)],cwd=work,capture_output=True,text=True,timeout=30)
+        apply=subprocess.run(["git","apply","--recount",str(pf)],cwd=work,capture_output=True,text=True,timeout=30)
         if apply.returncode: raise ValueError("Patch application failed: "+apply.stderr[-1500:])
         cmd=[docker,"run","--rm","--network","none","--read-only","--cap-drop","ALL","--security-opt","no-new-privileges","--pids-limit","96","--memory","2g","--cpus","2","--tmpfs","/tmp:rw,noexec,nosuid,size=64m","-e","PYTHONDONTWRITEBYTECODE=1","-v",f"{work}:/work:ro","-w","/work/ai_engine",image,"python","-m","unittest","test_quality_evaluator","test_engineer_agent","-v"]
         test=subprocess.run(cmd,capture_output=True,text=True,timeout=300)
