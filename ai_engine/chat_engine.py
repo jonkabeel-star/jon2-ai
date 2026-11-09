@@ -1,4 +1,4 @@
-""""Runtime for the original Jon2 language model.
+"""Runtime for the original Jon2 language model.
 
 No pretrained third-party model or hosted AI API is loaded. The model must
 first be trained and saved as a Jon2 checkpoint. Heavy PyTorch/model imports
@@ -84,10 +84,10 @@ def build_conversation_prompt(message: str, history=None, memories=None, tokeniz
     while True:
         sections = []
         if memory_items:
-            sections.append("ذاكرة سابقة:\\n" + "\\n".join(memory_items))
-        dialogue = list(turns) + [f"المستخدم: {question}\\nJon2:"]
-        sections.append("\\n".join(dialogue))
-        prompt = "\\n".join(sections)
+            sections.append("ذاكرة سابقة:\n" + "\n".join(memory_items))
+        dialogue = list(turns) + [f"المستخدم: {question}\nJon2:"]
+        sections.append("\n".join(dialogue))
+        prompt = "\n".join(sections)
         if tokenizer is None or len(tokenizer.encode(prompt)) <= token_limit - 1:
             return prompt
         if turns:
