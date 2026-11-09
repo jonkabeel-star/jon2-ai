@@ -251,16 +251,8 @@ document.getElementById("language").addEventListener("click", () => {
   saveState();
 });
 
-document.getElementById("clear").addEventListener("click", async () => {
+document.getElementById("clear").addEventListener("click", () => {
   stopJon2Speech();
-  const oldSession = sessionId;
-  if (API_BASE_URL && oldSession) {
-    try {
-      await fetch(API_BASE_URL + "/api/memory/" + encodeURIComponent(oldSession), { method: "DELETE" });
-    } catch (error) {
-      console.warn("Jon2 memory could not be cleared on the server.", error);
-    }
-  }
   sessionId = crypto.randomUUID();
   chatMessages = [];
   addMessage(translations[lang].welcome, "bot");
