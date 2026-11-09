@@ -17,10 +17,11 @@ from pathlib import Path
 from typing import Sequence
 
 from jon2_error_diagnostics import analyze_failure_log
+from jon2_safe_repair_rules import analyze_safe_repair_options
 
 
 CHECKS: tuple[tuple[str, tuple[str, ...], tuple[int, ...]], ...] = (
-    ("python_compile", (sys.executable, "-m", "compileall", "-q", "ai_engine", "tests"), (0,)),
+    ("python_compile", (sys.executable, "-m", "compileall", "-q", "ai_engine", "scripts", "tests"), (0,)),
     ("root_tests", (sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"), (0,)),
     ("engine_tests", (sys.executable, "-m", "unittest", "discover", "-s", "ai_engine", "-p", "test_*.py", "-v"), (0,)),
     ("runtime_tests", (sys.executable, "-m", "unittest", "discover", "-s", "ai_engine/tests", "-t", ".", "-p", "test_*.py", "-v"), (0,)),
@@ -268,9 +269,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     checks = run_checks(root)
     report = {
         "tool": "Jon2 Auto Repair Engine",
-        "version": 2,
+        "version": 3,
         "repair_policy": "allowlisted_import_repairs_and_python_whitespace_with_structured_diagnostics",
         "failure_diagnostics": failure_diagnostics,
+        "safe_repair_options": analyze_safe_repair_options(root, log_text) if args.logs and log_path.is_file() else {},
         "repair_proposals": repair_proposals,
         "changed_files": changed,
         "checks": checks,
