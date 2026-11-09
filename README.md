@@ -15,7 +15,10 @@ This repository contains the website interface, an early original-model prototyp
 - [Original data policy](ai_engine/ORIGINAL_DATA_POLICY.md) — requirements for training text and asset permissions.
 - [Dataset register](ai_engine/DATASET_REGISTER.md) — current dataset approval decisions.
 - [Original model API guide](ai_engine/README.md) — local API, training safeguards, and evaluation instructions.
-- [Oracle ARM64 deployment](deploy/oracle/README.md) — persistent local Qwen inference on an Always Free-capable CPU VM.\n- [Backend deployment notes](ai_engine/DEPLOYMENT.md) — original Jon2 CPU container and release gates.\n- [Qwen3.5-2B training guide](ai_engine/QWEN_LORA_TRAINING.md) — rights-gated GPU LoRA training and private GGUF export.\n- [Google Colab training notebook](notebooks/Jon2_Qwen35_Arabic_Training.ipynb) — guided GPU setup, rights dry-run, training, and Drive output.
+- [Oracle ARM64 deployment](deploy/oracle/README.md) — persistent local Qwen inference on an Always Free-capable CPU VM.
+- [Backend deployment notes](ai_engine/DEPLOYMENT.md) — original Jon2 CPU container and release gates.
+- [Qwen3.5-2B training guide](ai_engine/QWEN_LORA_TRAINING.md) — rights-gated GPU LoRA training and private GGUF export.
+- [Google Colab training notebook](notebooks/Jon2_Qwen35_Arabic_Training.ipynb) — guided GPU setup, rights dry-run, training, and Drive output.
 
 ## Website chat connection
 
