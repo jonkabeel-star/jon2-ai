@@ -62,3 +62,36 @@ jobs:
 
       - name: Build privacy-conscious dataset inventory
         run: python ai_engine/dataset_inventory.py --data ai_engine/training_data
+
+      - name: Preflight arabic_30m readiness without training
+        id: arabic-30m-preflight
+        run: |
+          set +e
+          mkdir -p training-output
+          python ai_engine/preflight_training.py \
+            --profile arabic_30m \
+            --data ai_engine/training_data \
+            --approval-manifest ai_engine/training_data/source_approvals.json \
+            --output training-output/arabic-30m-preflight.json
+          status=$?
+          set -e
+          if [ "$status" -eq 2 ]; then
+            echo "RESULT=BLOCKED" >> "$GITHUB_OUTPUT"
+            echo "30M training is correctly blocked by the readiness safeguards."
+          elif [ "$status" -eq 0 ]; then
+            echo "RESULT=READY" >> "$GITHUB_OUTPUT"
+            echo "Preflight passed. This is not authorization to start training."
+          else
+            echo "::error::Preflight crashed or encountered an unexpected error (exit $status)."
+            exit "$status"
+          fi
+          cat training-output/arabic-30m-preflight.json
+
+      - name: Upload 30M preflight report
+        if: always() && hashFiles('training-output/arabic-30m-preflight.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: jon2-arabic-30m-preflight
+          path: training-output/arabic-30m-preflight.json
+          if-no-files-found: error
+          retention-days: 14
