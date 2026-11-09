@@ -16,6 +16,8 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
+from jon2_error_diagnostics import analyze_failure_log
+
 
 CHECKS: tuple[tuple[str, tuple[str, ...], tuple[int, ...]], ...] = (
     ("python_compile", (sys.executable, "-m", "compileall", "-q", "ai_engine", "tests"), (0,)),
@@ -248,10 +250,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--root must point to the Jon2 repository root")
 
     repair_proposals: list[dict] = []
+    failure_diagnostics: dict = {"diagnoses": [], "failed_tests": [], "recognized_error_types": 0, "log_content_executed": False, "automatic_repair_allowed": False}
     if args.logs:
         log_path = args.logs if args.logs.is_absolute() else root / args.logs
         if log_path.is_file():
-            repair_proposals = generate_safe_repairs(root, log_path.read_text(encoding="utf-8", errors="replace"))
+            log_text = log_path.read_text(encoding="utf-8", errors="replace")
+            repair_proposals = generate_safe_repairs(root, log_text)
+            failure_diagnostics = analyze_failure_log(log_text)
         else:
             repair_proposals = [{"status": "no_log", "reason": "The supplied log file was not found."}]
 
@@ -263,8 +268,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     checks = run_checks(root)
     report = {
         "tool": "Jon2 Auto Repair Engine",
-        "version": 1,
-        "repair_policy": "allowlisted_import_repairs_and_python_whitespace",
+        "version": 2,
+        "repair_policy": "allowlisted_import_repairs_and_python_whitespace_with_structured_diagnostics",
+        "failure_diagnostics": failure_diagnostics,
         "repair_proposals": repair_proposals,
         "changed_files": changed,
         "checks": checks,
