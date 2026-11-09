@@ -87,9 +87,21 @@ class Jon2Transformer(nn.Module):
 
 
 def _batch(data: torch.Tensor, context: int, batch_size: int, device):
-    starts = torch.randint(0, len(data) - context - 1, (batch_size,))
-    x = torch.stack([data[i:i + context] for i in starts]).to(device)
-    y = torch.stack([data[i + 1:i + context + 1] for i in starts]).to(device)
+    """Sample next-token windows with vectorized indexing (no Python slice loop)."""
+    if context <= 0 or batch_size <= 0:
+        raise ValueError("context and batch_size must be positive")
+    if data.ndim != 1 or len(data) <= context + 1:
+        raise ValueError("training data must be a 1D tensor longer than context + 1")
+
+    # Keep sampling/indexing beside the source tensor, then transfer only the
+    # completed mini-batch to the compute device.
+    starts = torch.randint(
+        0, len(data) - context - 1, (batch_size,), device=data.device
+    )
+    offsets = torch.arange(context, device=data.device)
+    indices = starts[:, None] + offsets[None, :]
+    x = data[indices].to(device, non_blocking=True)
+    y = data[indices + 1].to(device, non_blocking=True)
     return x, y
 
 
