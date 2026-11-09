@@ -47,6 +47,7 @@ jobs:
       - name: Download semantic judge model
         run: ollama pull qwen2.5:3b
       - name: Run actual Jon2 Arabic model benchmark and semantic evaluation
+        id: benchmark
         continue-on-error: true
         run: |
           mkdir -p artifacts
@@ -68,6 +69,7 @@ jobs:
           ollama rm qwen2.5:3b || true
           ollama pull qwen2.5-coder:1.5b
       - name: Run local coding agent and isolated Docker patch tests
+        id: coding
         continue-on-error: true
         run: |
           mkdir -p artifacts
@@ -88,6 +90,10 @@ jobs:
       - name: Evaluate training readiness; execute only if every verified gate passes
         run: |
           mkdir -p artifacts
+          if ! python -c "import json; b=json.load(open('artifacts/jon2-benchmark-step-status.json')); c=json.load(open('artifacts/jon2-coding-agent-step-status.json')); raise SystemExit(0 if b.get('passed') is True and c.get('passed') is True else 1)"; then
+            echo "Training blocked because real-model benchmark or isolated coding-agent run did not pass."
+            exit 0
+          fi
           set +e
           python ai_engine/training_gate.py --profile arabic_30m --report artifacts/jon2-training-gate.json
           gate_status=$?
@@ -121,3 +127,24 @@ jobs:
             /tmp/ollama.log
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Fail visibly if model evaluation or isolated repair did not pass
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          failures = []
+          for name in ("jon2-benchmark-step-status.json", "jon2-coding-agent-step-status.json"):
+              path = Path("artifacts") / name
+              if not path.exists():
+                  failures.append(name + ": missing status report")
+                  continue
+              result = json.loads(path.read_text(encoding="utf-8"))
+              if result.get("passed") is not True:
+                  failures.append(name + ": process did not pass (exit=" + str(result.get("exit_code")) + ")")
+          if failures:
+              print("\n".join(failures))
+              raise SystemExit(1)
+          print("Both live model evaluation and isolated coding-agent run passed.")
+          PY
