@@ -5,7 +5,8 @@ on:
     branches: [main]
     paths:
       - "ai_engine/knowledge_engine.py"
-      - "ai_engine/tests/test_knowledge_engine.py"\n      - "ai_engine/tests/test_multilingual_research.py"
+      - "ai_engine/tests/test_knowledge_engine.py"
+      - "ai_engine/tests/test_multilingual_research.py"
       - "ai_engine/main.py"
       - ".github/workflows/jon2-knowledge-tests.yml"
   workflow_dispatch:
@@ -34,4 +35,5 @@ jobs:
         env:
           PYTHONPATH: ai_engine
         run: |
-          python -m unittest discover -s ai_engine/tests -p "test_knowledge_engine.py" -v\n          python -m unittest discover -s ai_engine/tests -p "test_multilingual_research.py" -v
+          python -m unittest discover -s ai_engine/tests -p "test_knowledge_engine.py" -v
+          python -m unittest discover -s ai_engine/tests -p "test_multilingual_research.py" -v
