@@ -107,6 +107,43 @@ class CodingAgentTests(unittest.TestCase):
             self.assertTrue(check_patch_applicability(root, VALID))
             self.assertEqual(target.read_text(encoding="utf-8"), "old = 1\n")
 
+    def test_repair_loop_retries_after_failed_sandbox_then_passes(self):
+        from unittest.mock import patch
+        from coding_agent import repair_until_green
+        with patch("coding_agent.propose", side_effect=[VALID.strip(), VALID.strip()]) as proposer, \
+             patch("coding_agent.sandbox", side_effect=[
+                 {"tests_passed": False, "test_exit_code": 1, "test_log": "AssertionError", "executed_inside_no_network_docker": True},
+                 {"tests_passed": True, "test_exit_code": 0, "test_log": "OK", "executed_inside_no_network_docker": True}
+             ]) as runner:
+            result=repair_until_green("repair", "model", "host", ".", "image", max_rounds=2)
+        self.assertTrue(result["passed"])
+        self.assertEqual(len(result["history"]), 2)
+        self.assertEqual(proposer.call_count, 2)
+        self.assertIn("AssertionError", proposer.call_args.args[0])
+        self.assertEqual(runner.call_count, 2)
+
+    def test_repair_loop_stops_when_no_patch_needed(self):
+        from unittest.mock import patch
+        from coding_agent import repair_until_green
+        with patch("coding_agent.propose", return_value="NO_SAFE_PATCH") as proposer:
+            result=repair_until_green("inspect", "model", "host", ".", "image")
+        self.assertEqual(result["outcome"], "no_safe_patch_needed")
+        self.assertTrue(result["passed"])
+        proposer.assert_called_once()
+
+    def test_repair_loop_fails_closed_after_bounded_failed_rounds(self):
+        from unittest.mock import patch
+        from coding_agent import repair_until_green
+        with patch("coding_agent.propose", return_value=VALID.strip()) as proposer, \
+             patch("coding_agent.sandbox", return_value={
+                 "tests_passed": False, "test_exit_code": 1, "test_log": "still failing",
+                 "executed_inside_no_network_docker": True
+             }):
+            result=repair_until_green("repair", "model", "host", ".", "image", max_rounds=2)
+        self.assertFalse(result["passed"])
+        self.assertEqual(result["outcome"], "repair_attempts_exhausted")
+        self.assertEqual(proposer.call_count, 2)
+
     def test_context_contains_actual_engine_and_excludes_protected_files(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "ai_engine"
