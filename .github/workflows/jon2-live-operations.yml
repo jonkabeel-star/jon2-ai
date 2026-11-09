@@ -50,7 +50,7 @@ jobs:
       - name: Download open-weight semantic and coding models
         run: |
           ollama pull qwen2.5:3b
-          ollama pull qwen2.5-coder:1.5b
+          ollama pull qwen2.5-coder:3b
 
       - name: Run real Jon2 Arabic model benchmark with semantic judging
         env:
@@ -63,7 +63,7 @@ jobs:
       - name: Run coding model and isolated Docker patch tests
         env:
           OLLAMA_HOST: http://127.0.0.1:11434
-          JON2_CODER_MODEL: qwen2.5-coder:1.5b
+          JON2_CODER_MODEL: qwen2.5-coder:3b
         run: |
           docker info
           python ai_engine/coding_agent.py \
