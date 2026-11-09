@@ -4,10 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "ai_engine/**/*.py"
-      - "tests/**/*.py"
-      - "scripts/jon2_auto_repair.py"
-      - ".github/workflows/jon2-auto-repair.yml"
+      - "**"
   schedule:
     - cron: "23 3 * * *"
   workflow_dispatch:
@@ -25,7 +22,6 @@ concurrency:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   diagnose-repair-verify:
@@ -49,6 +45,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
 
       - name: Install CPU test dependencies
         run: |
@@ -82,29 +82,44 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Open a repair pull request only after every check passes
+      - name: Commit only verified safe repairs directly to main
         if: success()
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: bot/jon2-auto-repair
-          add-paths: |
-            ai_engine/
-            tests/
-          delete-branch: true
-          commit-message: "Apply verified safe Jon2 maintenance repairs"
-          title: "Jon2 Auto Repair: verified safe maintenance"
-          body: |
-            ## Automated repair report
-
-            Jon2 Auto Repair analyzed trusted workflow failure logs when available,
-            applied only an exact allowlisted missing-standard-library-import patch
-            (or safe whitespace normalization), and reran the repository checks.
-
-            - All configured checks passed before this pull request was opened.
-            - Any code patch is limited to an exact missing standard-library import rule.
-            - Model checkpoints, training data, secrets, and deployment settings are not modified.
-            - Human review is required before merge.
-          labels: |
-            automated
-            maintenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t changed_files < <(python - <<'PY'
+          import json
+          from pathlib import PurePosixPath
+          report = json.load(open("auto-repair-output/report.json", encoding="utf-8"))
+          allowed_roots = {"ai_engine", "tests"}
+          protected = {"training_data", "checkpoints", "evaluation", "models", "secrets"}
+          for name in report.get("changed_files", []):
+              path = PurePosixPath(name)
+              if (not path.parts or path.parts[0] not in allowed_roots
+                  or path.suffix != ".py"
+                  or any(part in protected for part in path.parts)
+                  or path.is_absolute() or ".." in path.parts):
+                  raise SystemExit("Refusing unsafe changed path: " + name)
+              print(name)
+          for proposal in report.get("repair_proposals", []):
+              if proposal.get("status") == "patched":
+                  path = PurePosixPath(proposal.get("file", ""))
+                  if (not path.parts or path.parts[0] != "ai_engine"
+                      or path.suffix != ".py"
+                      or any(part in protected for part in path.parts)):
+                      raise SystemExit("Refusing unsafe repair proposal path.")
+          PY
+          )
+          if [ "${#changed_files[@]}" -eq 0 ]; then
+            echo "No allowlisted code changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "${changed_files[@]}"
+          if git diff --cached --quiet; then
+            echo "No staged changes."
+            exit 0
+          fi
+          git commit -m "Apply verified safe Jon2 auto-repair"
+          git push origin HEAD:main
