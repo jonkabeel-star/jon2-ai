@@ -67,3 +67,17 @@ The held-out suite now contains 40 prompts. The additional cases test:
 - calibrated uncertainty when a sentence admits more than one reading.
 
 These are evaluation questions, not training examples. Keep them held out. Score whether the model explains ambiguity instead of guessing, distinguishes literal from figurative meaning, and uses the surrounding sentence to interpret words. A larger prompt set improves test coverage but does not itself improve the model; only training on permitted, high-quality data and subsequent evaluation can do that.
+
+
+## Egyptian colloquial Arabic review
+
+A separate held-out set, `evaluation/prompts_egyptian_ar.jsonl`, tests 20 Egyptian colloquial prompts. It covers everyday phrasing, common spelling variation, short arithmetic, correction requests, clarification, negation, ambiguous words, context references, and uncertainty about recent events.
+
+For each answer, additionally record:
+- Did the model infer the intended meaning without changing the request?
+- Was the Arabic natural and understandable?
+- Did it preserve important details and previous context?
+- Did it ask for clarification when the request was genuinely ambiguous?
+- Did it avoid claiming it understands every dialect or spelling pattern?
+
+Do not train on this evaluation file. Keep it held out so it can measure generalization rather than memorization.
