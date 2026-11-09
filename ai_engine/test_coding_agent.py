@@ -111,6 +111,7 @@ class CodingAgentTests(unittest.TestCase):
         from unittest.mock import patch
         from coding_agent import repair_until_green
         with patch("coding_agent.propose", side_effect=[VALID.strip(), VALID.strip()]) as proposer, \
+             patch("coding_agent.check_patch_applicability", return_value=True), \
              patch("coding_agent.sandbox", side_effect=[
                  {"tests_passed": False, "test_exit_code": 1, "test_log": "AssertionError", "executed_inside_no_network_docker": True},
                  {"tests_passed": True, "test_exit_code": 0, "test_log": "OK", "executed_inside_no_network_docker": True}
@@ -135,6 +136,7 @@ class CodingAgentTests(unittest.TestCase):
         from unittest.mock import patch
         from coding_agent import repair_until_green
         with patch("coding_agent.propose", return_value=VALID.strip()) as proposer, \
+             patch("coding_agent.check_patch_applicability", return_value=True), \
              patch("coding_agent.sandbox", return_value={
                  "tests_passed": False, "test_exit_code": 1, "test_log": "still failing",
                  "executed_inside_no_network_docker": True
