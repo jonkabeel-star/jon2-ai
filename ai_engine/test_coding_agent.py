@@ -13,11 +13,11 @@ VALID = """diff --git a/ai_engine/example.py b/ai_engine/example.py
 
 class CodingAgentTests(unittest.TestCase):
     def test_extracts_fenced_diff_and_discards_trailing_model_text(self):
-        raw = "```diff\\n" + VALID + "```\\nNO_SAFE_PATCH"
+        raw = "```diff\n" + VALID + "```\nNO_SAFE_PATCH"
         self.assertEqual(extract_patch(raw), VALID.strip())
 
     def test_extracts_plain_diff_after_preamble(self):
-        self.assertEqual(extract_patch("Here is the patch:\\n" + VALID), VALID.strip())
+        self.assertEqual(extract_patch("Here is the patch:\n" + VALID), VALID.strip())
 
     def test_no_safe_patch_is_preserved(self):
         self.assertEqual(extract_patch("NO_SAFE_PATCH"), "NO_SAFE_PATCH")
