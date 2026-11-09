@@ -1,0 +1,246 @@
+name: Jon2 Arabic 30M — gated training
+
+on:
+  workflow_dispatch:
+    inputs:
+      approve_training:
+        description: "Set true only after reviewing the latest successful preflight report. Training runs only if every gate passes."
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jon2-arabic-30m-training
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Rights and data readiness preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      ready: ${{ steps.readiness.outputs.ready }}
+    steps:
+      - name: Check out source and approved corpus
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install CPU PyTorch for tokenizer and corpus checks
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Run read-only Arabic 30M preflight
+        id: readiness
+        shell: bash
+        run: |
+          set +e
+          mkdir -p training-output
+          PYTHONPATH=ai_engine python ai_engine/preflight_training.py \
+            --profile arabic_30m \
+            --data ai_engine/training_data \
+            --approval-manifest ai_engine/training_data/source_approvals.json \
+            --minimum-tokens-per-parameter 10 \
+            --output training-output/arabic-30m-preflight.json \
+            2>&1 | tee training-output/arabic-30m-preflight.log
+          result=${PIPESTATUS[0]}
+          set -e
+          if [ ! -s training-output/arabic-30m-preflight.json ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::error::Preflight did not produce a readiness report."
+            exit 1
+          fi
+          ready=$(python -c 'import json; print("true" if json.load(open("training-output/arabic-30m-preflight.json", encoding="utf-8"))["readiness"]["ready"] else "false")')
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+          echo "30M preflight readiness: $ready"
+          if [ "$result" -ne 0 ] || [ "$ready" != "true" ]; then
+            echo "::error::Training blocked. Resolve every preflight blocker and review data rights before retrying."
+            exit 1
+          fi
+
+      - name: Preserve non-sensitive preflight report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jon2-arabic-30m-preflight-${{ github.run_id }}
+          path: training-output/
+          if-no-files-found: warn
+          retention-days: 30
+
+  train-30m:
+    name: Train approved Arabic 30M model
+    needs: preflight
+    if: ${{ needs.preflight.result == 'success' && needs.preflight.outputs.ready == 'true' && inputs.approve_training == true }}
+    runs-on: [self-hosted, linux, x64, gpu]
+    timeout-minutes: 720
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_DATASET: jon2kabeel/jon2-private-model-checkpoint
+    steps:
+      - name: Check out the exact preflighted source revision
+        uses: actions/checkout@v4
+
+      - name: Verify approved corpus again and confirm GPU
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${KAGGLE_API_TOKEN:-}" || { echo "::error::KAGGLE_API_TOKEN is required for private checkpoint storage."; exit 1; }
+          PYTHONPATH=ai_engine python - <<'PY'
+          import torch
+          from pathlib import Path
+          from source_approval import validate_source_approvals
+          validate_source_approvals(
+              Path("ai_engine/training_data"),
+              Path("ai_engine/training_data/source_approvals.json"),
+          )
+          if not torch.cuda.is_available():
+              raise SystemExit("A CUDA GPU is required; refusing to run 30M training on CPU.")
+          props = torch.cuda.get_device_properties(0)
+          memory_gib = props.total_memory / (1024 ** 3)
+          print("GPU:", props.name)
+          print("GPU memory GiB:", round(memory_gib, 2))
+          if memory_gib < 8:
+              raise SystemExit("At least 8 GiB GPU memory is required for this training profile.")
+          PY
+
+      - name: Verify private checkpoint destination
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade kaggle==2.2.5
+          python - <<'PY'
+          from kaggle.api.kaggle_api_extended import KaggleApi
+          api = KaggleApi()
+          api.authenticate()
+          dataset = api.dataset_view("jon2kabeel/jon2-private-model-checkpoint")
+          private = getattr(dataset, "is_private", None)
+          if private is not True:
+              raise SystemExit("Checkpoint destination is not confirmed private; training is blocked.")
+          print("Private checkpoint destination verified.")
+          PY
+
+      - name: Train from scratch using the exact Arabic 30M profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ai_engine/checkpoints training-output
+          best="ai_engine/checkpoints/jon2-arabic-30m-${GITHUB_RUN_ID}-best.pt"
+          last="ai_engine/checkpoints/jon2-arabic-30m-${GITHUB_RUN_ID}-resume.pt"
+          PYTHONPATH=ai_engine python ai_engine/train_jon2.py \
+            --profile arabic_30m \
+            --data ai_engine/training_data \
+            --approval-manifest ai_engine/training_data/source_approvals.json \
+            --output "$best" \
+            --last-checkpoint "$last" \
+            --steps 10000 \
+            --learning-rate 0.0003 \
+            --weight-decay 0.1 \
+            --warmup-steps 500 \
+            --validation-fraction 0.1 \
+            --eval-steps 16 \
+            --eval-every 250 \
+            --patience 8 \
+            --min-delta 0.0005 \
+            --grad-clip 1.0 \
+            --minimum-chars 100000 \
+            --minimum-tokens-per-parameter 10 \
+            --seed 42 \
+            --keep-last \
+            2>&1 | tee training-output/arabic-30m-training.log
+          test -s "$best"
+          test -s "$last"
+          python - "$best" "$last" <<'PY'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+          entries = {}
+          for label, filename in (("best", sys.argv[1]), ("resume", sys.argv[2])):
+              path = Path(filename)
+              raw = path.read_bytes()
+              entries[label] = {
+                  "filename": path.name,
+                  "size_bytes": len(raw),
+                  "sha256": hashlib.sha256(raw).hexdigest(),
+              }
+          manifest = {
+              "format": "jon2-checkpoint-manifest-v1",
+              "profile": "arabic_30m",
+              "training_status": "completed_training_run_pending_human_quality_review",
+              "github_run_id": __import__("os").environ.get("GITHUB_RUN_ID"),
+              "github_sha": __import__("os").environ.get("GITHUB_SHA"),
+              "files": entries,
+          }
+          Path("training-output/checkpoint-manifest.json").write_text(
+              json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(manifest, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Verify trained checkpoint parameter count and finite weights
+        run: |
+          set -euo pipefail
+          python - "ai_engine/checkpoints/jon2-arabic-30m-${GITHUB_RUN_ID}-best.pt" <<'PY'
+          import sys
+          import torch
+          checkpoint = torch.load(sys.argv[1], map_location="cpu", weights_only=True)
+          state = checkpoint.get("model_state")
+          if not isinstance(state, dict):
+              raise SystemExit("Checkpoint has no model_state.")
+          count = sum(value.numel() for value in state.values() if hasattr(value, "numel"))
+          finite = all(torch.isfinite(value).all().item() for value in state.values() if hasattr(value, "is_floating_point") and value.is_floating_point())
+          print("checkpoint_parameter_tensors_total:", count)
+          print("all_floating_weights_finite:", finite)
+          if not finite:
+              raise SystemExit("Non-finite model weights detected.")
+          if not (25_000_000 <= count <= 35_000_000):
+              raise SystemExit(f"Checkpoint parameter count outside expected 30M band: {count}")
+          PY
+
+      - name: Save immutable run-specific checkpoints to private Kaggle version
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/jon2-private-version
+          cp "ai_engine/checkpoints/jon2-arabic-30m-${GITHUB_RUN_ID}-best.pt" /tmp/jon2-private-version/
+          cp "ai_engine/checkpoints/jon2-arabic-30m-${GITHUB_RUN_ID}-resume.pt" /tmp/jon2-private-version/
+          cp training-output/checkpoint-manifest.json /tmp/jon2-private-version/
+          kaggle datasets metadata "$KAGGLE_DATASET" -p /tmp/jon2-private-version
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from kaggle.api.kaggle_api_extended import KaggleApi
+          root = Path("/tmp/jon2-private-version")
+          metadata_path = root / "dataset-metadata.json"
+          metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+          api = KaggleApi()
+          api.authenticate()
+          dataset = api.dataset_view("jon2kabeel/jon2-private-model-checkpoint")
+          if getattr(dataset, "is_private", None) is not True:
+              raise SystemExit("Kaggle dataset privacy could not be confirmed.")
+          metadata["id"] = "jon2kabeel/jon2-private-model-checkpoint"
+          numeric_id = getattr(dataset, "id", None) or getattr(dataset, "id_no", None)
+          if numeric_id is not None:
+              metadata["id_no"] = int(numeric_id)
+          metadata["title"] = metadata.get("title") or "Jon2 Private Model Checkpoint"
+          metadata["description"] = "Private, versioned storage for Jon2 AI research checkpoints. Not licensed for public redistribution."
+          metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          PY
+          kaggle datasets version -p /tmp/jon2-private-version -m "Jon2 Arabic 30M run ${GITHUB_RUN_ID}; immutable named checkpoints"
+
+      - name: Upload non-sensitive training evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jon2-arabic-30m-evidence-${{ github.run_id }}
+          path: training-output/
+          if-no-files-found: warn
+          retention-days: 30
