@@ -101,12 +101,13 @@ jobs:
           PY
 
       - name: Diagnose the failure, generate a bounded patch, and run the full Python gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          if [ -s auto-repair-output/failed.log ]; then
-            # External workflow logs are evidence for diagnosis only. The original
-            # failing workflow is not guaranteed to be reproducible by this local gate.
+          if [ "$EVENT_NAME" = "workflow_run" ]; then
+            # Even when log download fails, this remains diagnostic-only.
             python scripts/jon2_auto_repair.py --root . --logs auto-repair-output/failed.log --diagnostic-only --report auto-repair-output/report.json
-          elif [ -s auto-repair-output/issue.log ]; then
+          elif [ "$EVENT_NAME" = "issues" ]; then
             python scripts/jon2_auto_repair.py --root . --logs auto-repair-output/issue.log --diagnostic-only --report auto-repair-output/report.json
           else
             python scripts/jon2_auto_repair.py --root . --report auto-repair-output/report.json
