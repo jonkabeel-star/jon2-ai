@@ -60,6 +60,8 @@ jobs:
               encoding="utf-8")
           PY
           echo "Benchmark process exit code: $result (see artifacts/jon2-benchmark-step-status.json)"
+      - name: Release semantic judge memory before candidate inference
+        run: ollama stop qwen2.5:3b || true
       - name: Download stronger local Arabic candidate
         run: ollama pull qwen2.5:1.5b
       - name: Benchmark stronger local candidate without replacing production
