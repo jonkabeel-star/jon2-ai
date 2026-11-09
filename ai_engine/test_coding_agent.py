@@ -19,6 +19,16 @@ class CodingAgentTests(unittest.TestCase):
     def test_extracts_plain_diff_after_preamble(self):
         self.assertEqual(extract_patch("Here is the patch:\n" + VALID), VALID.strip())
 
+    def test_extracts_standard_unified_diff_without_git_headers(self):
+        standard = "--- a/ai_engine/example.py\n+++ b/ai_engine/example.py\n@@ -1 +1 @@\n-old = 1\n+new = 2"
+        self.assertEqual(extract_patch("Patch follows:\n" + standard), standard)
+        self.assertEqual(validate(standard), ["ai_engine/example.py"])
+
+    def test_standard_unified_diff_still_rejects_path_traversal(self):
+        standard = "--- a/ai_engine/example.py\n+++ b/ai_engine/../../server/evil.py\n@@ -1 +1 @@\n-old = 1\n+new = 2"
+        with self.assertRaises(PermissionError):
+            validate(standard)
+
     def test_no_safe_patch_is_preserved(self):
         self.assertEqual(extract_patch("NO_SAFE_PATCH"), "NO_SAFE_PATCH")
 
