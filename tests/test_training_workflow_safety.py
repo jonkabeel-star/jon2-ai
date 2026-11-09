@@ -26,7 +26,7 @@ class TrainingWorkflowSafetyTests(unittest.TestCase):
         text = WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("jon2-legacy-" + "$" + "{" + "run_stamp}-best.pt", text)
         self.assertIn("jon2-legacy-" + "$" + "{" + "run_stamp}-resume.pt", text)
-        self.assertIn("jon2-checkpoint-manifest-" + "$" + "{" + "stamp}.json", text)
+        self.assertIn("jon2-checkpoint-manifest-{stamp}.json", text)
         self.assertIn('"sha256": hashlib.sha256(raw).hexdigest()', text)
         self.assertIn("checkpoint-resume.sha256", text)
 
