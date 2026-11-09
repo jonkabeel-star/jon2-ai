@@ -66,10 +66,18 @@ class ChatEngineRuntimeTests(unittest.TestCase):
                 {"role": "assistant", "content": "أهلًا سامح"},
             ],
         )
-        self.assertTrue(prompt.startswith("تعليمات: أجب بالعربية الواضحة"))
+        self.assertTrue(prompt.startswith("تعليمات: أجب بعربية سهلة وواضحة."))
         self.assertIn("المستخدم: اسمي سامح", prompt)
         self.assertIn("Jon2: أهلًا سامح", prompt)
         self.assertTrue(prompt.endswith("المستخدم: ما اسمي؟\nJon2:"))
+
+    def test_conversation_prompt_preserves_complete_recent_messages(self):
+        previous = "هذه رسالة سابقة مهمة " * 20
+        prompt = chat_engine.build_conversation_prompt(
+            "تابع من فضلك",
+            [{"role": "user", "content": previous}],
+        )
+        self.assertIn(previous, prompt)
 
     def test_conversation_prompt_uses_only_last_eight_turns(self):
         history = [
