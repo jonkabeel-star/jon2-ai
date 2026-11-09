@@ -73,10 +73,6 @@ jobs:
           delete-branch: false
           add-paths: |
             ai_engine/**/*.py
-            server/**/*.py
-            server/**/*.js
-            server/**/*.mjs
-            tests/**/*.py
           commit-message: "[skip ci] Propose reviewed Jon2 AI improvement"
           title: "Jon2 Developer Agent: proposed engineering improvement"
           body: |
