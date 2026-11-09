@@ -16,6 +16,12 @@ on:
       - "Jon2 Knowledge Retrieval Tests"
       - "Jon2 RTL compile and smoke tests"
       - "Jais 2 adapter contract checks"
+      - "Jon2 Arabic 30M — gated training"
+      - "Jon2 Saved Checkpoint Evaluation"
+      - "Verify Jon2 Private Checkpoint"
+      - "Jon2 Private Checkpoint Human Evaluation # UTF-8 sampling regression recheck"
+      - "Jon2 Real CPU Training"
+      - "Jon2 AI Kaggle Bridge"
     types: [completed]
     branches: [main]
 
@@ -34,7 +40,7 @@ jobs:
        (github.event.workflow_run.conclusion == 'failure' &&
         github.event.workflow_run.head_branch == 'main' &&
         github.event.workflow_run.head_repository.full_name == github.repository &&
-        contains(fromJSON('["Jon2 AI Python Checks","Jon2 AI Code Checks","Jon2 AI Container Build","Jon2 Knowledge Retrieval Tests","Jon2 RTL compile and smoke tests","Jais 2 adapter contract checks"]'), github.event.workflow_run.name)))
+        contains(fromJSON('["Jon2 AI Python Checks","Jon2 AI Code Checks","Jon2 AI Container Build","Jon2 Knowledge Retrieval Tests","Jon2 RTL compile and smoke tests","Jais 2 adapter contract checks","Jon2 Arabic 30M — gated training","Jon2 Saved Checkpoint Evaluation","Verify Jon2 Private Checkpoint","Jon2 Private Checkpoint Human Evaluation # UTF-8 sampling regression recheck","Jon2 Real CPU Training","Jon2 AI Kaggle Bridge"]'), github.event.workflow_run.name)))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
