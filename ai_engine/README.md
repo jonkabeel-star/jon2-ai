@@ -124,15 +124,15 @@ bypass that gate. Keep evaluation prompts separate from training examples.
 
 ## Read-only training preflight (run before any 30M training)
 
-Before allocating a GPU or starting training, inspect the exact approved corpus, the held-out split, the tokenizer vocabulary actually learned, and the parameter count implied by that vocabulary:
+Before allocating a GPU or starting training, inspect the exact approved corpus, the held-out split, the tokenizer vocabulary, and the parameter count for the selected profile:
 
 ```bash
 python ai_engine/preflight_training.py --profile arabic_30m --data ai_engine/training_data --approval-manifest ai_engine/training_data/source_approvals.json --output ai_engine/evaluation/arabic-30m-preflight.json
 ```
 
-This command is read-only: it validates the exact-file approval manifest, builds the trainer's deterministic paragraph split, trains only a temporary in-memory tokenizer, and reports actual train/validation token counts, actual parameter count, tokens per parameter, and broad script counts. It does not create weights, alter checkpoints, approve sources, or start training. Exit code 2 means one or more readiness blockers remain. Script counts cannot distinguish Modern Standard Arabic from Egyptian dialect; dialect coverage still needs human annotation. The default 10 tokens-per-parameter gate mirrors the current `arabic_30m` trainer safeguard and must not be lowered to force a run.
+This command is read-only: it validates the exact-file approval manifest and uses the same deterministic paragraph split as the trainer. It first measures a 512-vocabulary BPE probe. If even that optimistic token-count upper bound cannot meet the profile's data-to-parameter guard, it skips the much slower full-vocabulary tokenizer and reports that the 30M profile is blocked. If the upper bound could pass, it trains the exact target tokenizer in memory and reports its measured counts. It never creates weights, alters checkpoints, approves sources, or starts training. Exit code 2 means one or more readiness blockers remain. Script counts cannot distinguish Modern Standard Arabic from Egyptian dialect; dialect coverage still needs human annotation. The default 10 tokens-per-parameter gate mirrors the current `arabic_30m` trainer safeguard and must not be lowered to force a run.
 
-Run the preflight report and resolve every blocker before launching a costly training workflow. Keep the historical small checkpoint untouched and use the profile-specific checkpoint paths for a new architecture.
+The Python Checks workflow now runs this preflight automatically and stores the JSON report as the `jon2-arabic-30m-preflight` artifact. A blocked result is expected when the corpus is too small; an unexpected execution error still fails CI. Resolve every blocker before launching a costly training workflow. Keep the historical small checkpoint untouched and use the profile-specific checkpoint paths for a new architecture.
 
 ## Evaluate a trained checkpoint
 
