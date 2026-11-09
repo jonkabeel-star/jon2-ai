@@ -11,6 +11,7 @@ import json
 import os
 import shutil
 import subprocess
+import threading
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -30,6 +31,7 @@ LLAMA_SERVER_HOST = "127.0.0.1"
 LLAMA_SERVER_PORT = int(os.getenv("LLAMA_SERVER_PORT", "8081"))
 LLAMA_SERVER_URL = f"http://{LLAMA_SERVER_HOST}:{LLAMA_SERVER_PORT}"
 MAX_HISTORY = 8
+REQUEST_SLOT = threading.BoundedSemaphore(1)
 
 
 def release_approved() -> bool:
@@ -212,15 +214,20 @@ def chat(request: ChatRequest):
         headers={"Content-Type": "application/json"},
         method="POST",
     )
+    if not REQUEST_SLOT.acquire(blocking=False):
+        raise HTTPException(status_code=429, detail="Jon2 مشغول حاليًا. حاول مرة أخرى بعد قليل.")
     try:
-        with urlopen(upstream, timeout=180) as response:
-            result = json.loads(response.read().decode("utf-8"))
-        reply = result["choices"][0]["message"]["content"]
-        if not isinstance(reply, str) or not reply.strip():
-            raise ValueError("empty model response")
-    except (HTTPError, URLError, TimeoutError, ValueError, KeyError, IndexError) as error:
-        raise HTTPException(status_code=503, detail="تعذر الحصول على إجابة من نموذج Jon2 المحلي.") from error
-    chat_memory.add_exchange(session_id, request.message, reply.strip())
+        try:
+            with urlopen(upstream, timeout=180) as response:
+                result = json.loads(response.read().decode("utf-8"))
+            reply = result["choices"][0]["message"]["content"]
+            if not isinstance(reply, str) or not reply.strip():
+                raise ValueError("empty model response")
+        except (HTTPError, URLError, TimeoutError, ValueError, KeyError, IndexError) as error:
+            raise HTTPException(status_code=503, detail="تعذر الحصول على إجابة من نموذج Jon2 المحلي.") from error
+        chat_memory.add_exchange(session_id, request.message, reply.strip())
+    finally:
+        REQUEST_SLOT.release()
     return {
         "project": "Jon2 AI",
         "reply": reply.strip(),
