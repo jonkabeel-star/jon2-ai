@@ -35,4 +35,4 @@ jobs:
         working-directory: ai_engine
         run: python -m unittest -v test_qwen_lora_pipeline.py
       - name: Validate exact approvals and build dry-run split
-        run: python ai_engine/finetune_qwen_lora.py
+        run: python ai_engine/finetune_qwen_lora.py --dry-run
