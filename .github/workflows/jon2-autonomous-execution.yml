@@ -1,0 +1,84 @@
+name: Jon2 Autonomous Execution
+
+on:
+  push:
+    branches:
+      - feature/jon2-live-evaluation-coding-sandbox
+    paths:
+      - "ai_engine/**"
+      - ".github/workflows/jon2-autonomous-execution.yml"
+  pull_request:
+    paths:
+      - "ai_engine/**"
+      - ".github/workflows/jon2-autonomous-execution.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jon2-autonomous-execution-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  real-model-and-repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Jon2 runtime dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install "transformers>=4.45,<5" accelerate safetensors
+      - name: Install and start Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          (ollama serve > /tmp/ollama.log 2>&1 &)
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/ollama.log
+          exit 1
+      - name: Download local open-weight judge and coding models
+        run: |
+          ollama pull qwen2.5:3b
+          ollama pull qwen2.5-coder:1.5b
+      - name: Run actual Jon2 Arabic model benchmark and semantic evaluation
+        continue-on-error: true
+        run: |
+          python ai_engine/run_model_benchmark.py --semantic
+      - name: Run local coding agent and isolated Docker patch tests
+        continue-on-error: true
+        run: |
+          python ai_engine/coding_agent.py --repo . --task "Inspect the current Jon2 AI Python engine. Propose only a minimal, demonstrably safe bug fix if one is needed; otherwise return NO_SAFE_PATCH."
+      - name: Run all safety and evaluator unit tests
+        run: |
+          python -m unittest discover -s ai_engine -p "test_*.py" -v
+      - name: Evaluate training readiness; execute only if every gate passes
+        continue-on-error: true
+        run: |
+          set +e
+          python ai_engine/training_gate.py --profile arabic_30m --report artifacts/jon2-training-gate.json
+          gate_status=$?
+          set -e
+          if [ "$gate_status" -eq 0 ] && python -c "import json; r=json.load(open('artifacts/jon2-training-gate.json')); raise SystemExit(0 if r.get('authorized_to_train') is True else 1)"; then
+            echo "All rights, data, token-ratio, fresh-checkpoint and CUDA gates passed. Starting explicitly gated training."
+            python ai_engine/training_gate.py --profile arabic_30m --execute --report artifacts/jon2-training-execution.json
+          else
+            echo "Training remains blocked. No training was started."
+          fi
+      - name: Upload evaluation and repair reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jon2-autonomous-execution-${{ github.run_id }}
+          path: |
+            artifacts/
+            /tmp/ollama.log
+          if-no-files-found: warn
+          retention-days: 14
