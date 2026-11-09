@@ -69,6 +69,42 @@ def normalize_python_whitespace(root: Path) -> list[str]:
     return changed
 
 
+def snapshot_repair_scope(root: Path) -> dict[Path, bytes]:
+    """Capture original bytes for every eligible Python source before mutation."""
+    snapshot: dict[Path, bytes] = {}
+    for base in (root / "ai_engine", root / "tests"):
+        if not base.is_dir():
+            continue
+        for path in sorted(base.rglob("*.py")):
+            try:
+                resolved = path.resolve()
+                relative = resolved.relative_to(root.resolve())
+            except (OSError, ValueError):
+                continue
+            if (
+                relative.parts
+                and relative.parts[0] in {"ai_engine", "tests"}
+                and not any(part in PROTECTED_PATH_PARTS for part in relative.parts)
+                and resolved.is_file()
+            ):
+                snapshot[resolved] = resolved.read_bytes()
+    return snapshot
+
+
+def restore_snapshot(snapshot: dict[Path, bytes]) -> list[str]:
+    """Restore original source bytes after any failed validation check."""
+    restored: list[str] = []
+    for path, original in snapshot.items():
+        try:
+            if path.is_file() and path.read_bytes() != original:
+                path.write_bytes(original)
+                restored.append(str(path))
+        except OSError:
+            # A failed restore is surfaced in the report rather than hidden.
+            restored.append(f"RESTORE_FAILED:{path}")
+    return sorted(restored)
+
+
 
 # Exact, reviewable repairs for a small allowlist of missing standard-library imports.
 # This is deliberately not an unrestricted code generator.
@@ -282,6 +318,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not (root / "ai_engine").is_dir() or not (root / "tests").is_dir():
         parser.error("--root must point to the Jon2 repository root")
 
+    # Keep a byte-for-byte recovery point before either whitespace cleanup or code repair.
+    original_snapshot = snapshot_repair_scope(root)
     repair_proposals: list[dict] = []
     diagnostics: list[dict] = []
     if args.logs:
@@ -305,6 +343,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"  repaired: {path}", flush=True)
 
     checks = run_checks(root)
+    all_checks_passed = bool(checks) and all(item["passed"] for item in checks)
+    rolled_back_files: list[str] = []
+    if not all_checks_passed:
+        rolled_back_files = restore_snapshot(original_snapshot)
+        print(f"Validation failed; rolled back {len(rolled_back_files)} source file(s).", flush=True)
+
     report = {
         "tool": "Jon2 Auto Repair Engine",
         "version": 1,
@@ -314,8 +358,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         "repair_proposals": repair_proposals,
         "diagnostics": diagnostics,
         "changed_files": changed,
+        "rolled_back_files": rolled_back_files,
+        "changes_retained": all_checks_passed and bool(changed),
         "checks": checks,
-        "all_checks_passed": bool(checks) and all(item["passed"] for item in checks),
+        "all_checks_passed": all_checks_passed,
         "automatic_code_rewrites": any(item.get("status") == "patched" for item in repair_proposals),
         "model_checkpoint_changes": False,
         "direct_push": False,
