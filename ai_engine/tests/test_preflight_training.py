@@ -16,7 +16,7 @@ class TrainingPreflightTests(unittest.TestCase):
             corpus_characters=500_000,
             train_tokens=160_000_000,
             validation_tokens=40_000_000,
-            parameter_count=20_000_000,
+            estimated_parameter_count=20_000_000,
             tokenizer_vocab=8192,
             target_tokenizer_vocab=8192,
             context=1024,
@@ -78,12 +78,17 @@ class TrainingPreflightTests(unittest.TestCase):
                 minimum_tokens_per_parameter=1.0,
             )
 
-    def test_reports_actual_parameter_count_not_profile_label(self):
+    def test_reports_estimate_without_claiming_trained_weights(self):
         args = self.base()
-        args["parameter_count"] = 19_000_000
+        args["estimated_parameter_count"] = 19_000_000
         result = assess_readiness(**args)
-        self.assertEqual(result["parameter_count_actual"], 19_000_000)
-        self.assertAlmostEqual(result["tokens_per_parameter"], 200_000_000 / 19_000_000, places=5)
+        self.assertEqual(result["estimated_parameter_count"], 19_000_000)
+        self.assertNotIn("parameter_count_actual", result)
+        self.assertAlmostEqual(
+            result["tokens_per_estimated_parameter"],
+            200_000_000 / 19_000_000,
+            places=5,
+        )
 
 
 if __name__ == "__main__":
