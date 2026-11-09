@@ -1,9 +1,10 @@
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
 
-from data_rights.intake_audit import audit_candidate
+from data_rights.intake_audit import _ensure_distinct_paths, audit_candidate
 
 
 class IntakeAuditTests(unittest.TestCase):
@@ -71,6 +72,35 @@ class IntakeAuditTests(unittest.TestCase):
                 self.skipTest("Symlinks unavailable on this platform.")
             with self.assertRaisesRegex(ValueError, "symlink"):
                 audit_candidate(link)
+
+    def test_arabic_extended_letters_are_counted(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "extended.txt"
+            path.write_text("\\u0750\\u08a0\\u0870", encoding="utf-8")
+            report = audit_candidate(path)
+        self.assertEqual(report["language_signals"]["arabic_letters"], 3)
+
+    def test_report_cannot_overwrite_candidate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "candidate.txt"
+            original = "بيانات أصلية"
+            path.write_text(original, encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "must not be the candidate"):
+                _ensure_distinct_paths(path, path)
+            self.assertEqual(path.read_text(encoding="utf-8"), original)
+
+    def test_report_cannot_overwrite_hard_link_to_candidate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / "candidate.txt"
+            alias = root / "report.json"
+            path.write_text("نص عربي", encoding="utf-8")
+            try:
+                os.link(path, alias)
+            except (OSError, NotImplementedError):
+                self.skipTest("Hard links unavailable on this platform.")
+            with self.assertRaisesRegex(ValueError, "must not be the candidate"):
+                _ensure_distinct_paths(path, alias)
 
     def test_candidate_does_not_approve_training(self):
         with tempfile.TemporaryDirectory() as tmp:
