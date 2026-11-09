@@ -81,15 +81,30 @@ class AutoRepairTests(unittest.TestCase):
             self.assertEqual(result[0]["status"], "unsupported")
             self.assertNotIn("import json", target.read_text(encoding="utf-8"))
 
-    def test_check_stops_after_first_failure(self):
+    def test_check_runs_all_checks_after_a_failure_for_complete_diagnostics(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             with patch.object(jon2_auto_repair.subprocess, "run") as run:
                 run.return_value.returncode = 1
                 run.return_value.stdout = "failure"
                 results = jon2_auto_repair.run_checks(root)
-            self.assertEqual(len(results), 1)
-            self.assertFalse(results[0]["passed"])
+            self.assertEqual(len(results), len(jon2_auto_repair.CHECKS))
+            self.assertTrue(all(not item["passed"] for item in results))
+            self.assertEqual(run.call_count, len(jon2_auto_repair.CHECKS))
+
+    def test_protected_training_and_model_paths_are_never_normalized_or_patched(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for folder in ("training_data", "checkpoints", "evaluation", "models", "secrets"):
+                target = root / "ai_engine" / folder / "sample.py"
+                target.parent.mkdir(parents=True)
+                target.write_bytes(b"value = 1  \\n")
+                changed = jon2_auto_repair.normalize_python_whitespace(root)
+                self.assertNotIn(target.relative_to(root).as_posix(), changed)
+                log = f"File \\"{target}\\", line 1, in <module>\\nNameError: name 'json' is not defined"
+                result = jon2_auto_repair.generate_safe_repairs(root, log)
+                self.assertNotEqual(result[0]["status"], "patched")
+                self.assertEqual(target.read_bytes(), b"value = 1  \\n")
 
 
 if __name__ == "__main__":
