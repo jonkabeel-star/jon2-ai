@@ -27,3 +27,9 @@ This remains **machine-assisted candidate text**, not a human-reviewed gold data
 ## Review and rights safeguards
 
 Reject or edit any example that is repetitive, vague, inaccurate, unnatural, or too generic. Keep reviewed content separate from training inputs. Do not modify `approved_sources.json`, `source_approvals.json`, training manifests, checkpoints, or training workflows as part of this review. No example in this batch is approved for training.
+
+## Follow-up language review — 2026-11-09
+
+A targeted review found that several question families reused broad response frames across topics. Sixty answers were rewritten (20 each for beginner-start, avoiding overcomplication, and recovery-after-failure prompts) with advice specific to their topic. The revised examples cover different practical actions for time planning, reading, writing, critical thinking, account security, backups, personal finance, customer service, teamwork, problem solving, experiments, reuse, food safety, arithmetic, respectful communication, storytelling, programming, file management, and news verification.
+
+A new regression test requires 20 distinct answers within each of those three question families and rejects the known generic boilerplate. This is a narrow editorial safeguard, not a semantic-quality or factual-accuracy certification. The batch remains machine-assisted, candidate-only, and not approved for training.
