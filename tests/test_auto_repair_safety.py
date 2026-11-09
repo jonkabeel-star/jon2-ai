@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 from scripts.jon2_auto_repair import (
-    diagnose_failure, generate_safe_repairs, restore_snapshot, snapshot_repair_scope,
+    analyze_incident_log, diagnose_failure, generate_safe_repairs, restore_snapshot, snapshot_repair_scope,
 )
 
 
@@ -33,6 +33,15 @@ class SafeRepairTests(unittest.TestCase):
         result = generate_safe_repairs(self.root, self._log(target))
         self.assertEqual(result[0]["status"], "patched")
         self.assertEqual(target.read_text(encoding="utf-8").splitlines()[1], "import json")
+
+    def test_untrusted_issue_report_is_diagnostic_only(self) -> None:
+        target = self.root / "ai_engine" / "sample.py"
+        original = "def run():\\n    return json.dumps({})\\n"
+        target.write_text(original, encoding="utf-8")
+        diagnostics, proposals = analyze_incident_log(self.root, self._log(target), allow_repairs=False)
+        self.assertTrue(diagnostics)
+        self.assertEqual(proposals[0]["status"], "diagnostic_only")
+        self.assertEqual(target.read_text(encoding="utf-8"), original)
 
     def test_does_not_guess_ambiguous_datetime_import(self) -> None:
         target = self.root / "ai_engine" / "sample.py"
