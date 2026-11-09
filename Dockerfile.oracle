@@ -1,0 +1,41 @@
+# Oracle Cloud Ampere A1 (ARM64) CPU inference image.
+# Build with Docker on an ARM64 host; no GPU or paid AI API is used.
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential cmake git libcurl4-openssl-dev libgomp1 \
+    python3 python3-venv python3-pip ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Build llama.cpp from upstream so the image includes current Qwen3.5 GGUF support.
+# Pin LLAMA_CPP_REF to a tested commit/tag before a production release.
+ARG LLAMA_CPP_REF=master
+RUN git clone https://github.com/ggml-org/llama.cpp /tmp/llama.cpp && \
+    git -C /tmp/llama.cpp checkout ${LLAMA_CPP_REF} && \
+    cmake -S /tmp/llama.cpp -B /tmp/llama.cpp/build \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=/usr/local \
+      -DGGML_NATIVE=OFF \
+      -DGGML_CUDA=OFF \
+      -DGGML_OPENMP=ON && \
+    cmake --build /tmp/llama.cpp/build --config Release --target llama-server -j2 && \
+    cmake --install /tmp/llama.cpp/build && \
+    rm -rf /tmp/llama.cpp
+
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:/usr/local/bin:${PATH}"
+RUN pip install --upgrade pip && pip install "fastapi>=0.115,<1" "uvicorn[standard]>=0.30,<1"
+
+WORKDIR /app
+COPY ai_engine/qwen_server.py /app/qwen_server.py
+RUN mkdir -p /models && useradd --system --uid 10001 --create-home jon2 && \
+    chown -R jon2:jon2 /app /models
+USER jon2
+
+EXPOSE 8000
+CMD ["uvicorn", "qwen_server:app", "--host", "0.0.0.0", "--port", "8000"]
