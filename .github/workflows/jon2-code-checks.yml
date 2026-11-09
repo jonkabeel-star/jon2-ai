@@ -15,6 +15,10 @@ on:
   pull_request:
     paths:
       - "ai_engine/**"
+      - "scripts/**/*.py"
+      - "tests/test_auto_repair.py"
+      - "tests/test_error_diagnostics.py"
+      - "tests/test_safe_repair_rules.py"
       - "index.html"
       - "tests/check_frontend_js.py"
       - ".github/workflows/jon2-code-checks.yml"
@@ -38,7 +42,9 @@ jobs:
         run: python -m compileall -q ai_engine scripts tests
       - name: Test Auto Repair diagnostics
         run: python -m unittest discover -s tests -p 'test_error_diagnostics.py' -v
-      - name: Test bounded path, symbol and dependency suggestions\n        run: python -m unittest discover -s tests -p 'test_safe_repair_rules.py' -v\n      - name: Test Auto Repair safety rules
+      - name: Test bounded path, symbol and dependency suggestions
+        run: python -m unittest discover -s tests -p 'test_safe_repair_rules.py' -v
+      - name: Test Auto Repair safety rules
         run: python -m unittest discover -s tests -p 'test_auto_repair.py' -v
       - name: Test source approval gate
         working-directory: ai_engine
