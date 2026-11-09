@@ -17,7 +17,7 @@ class JsonlCorpusReaderTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
         (self.root / "base.txt").write_text(
-            "مقدمة عربية أصلية.\n\nفقرة ثانية مستقلة.", encoding="utf-8"
+            "مقدمة عربية أصلية.\n\nفقرة ثانية مستقلة.\n\n" * 40, encoding="utf-8"
         )
         (self.root / "dialogue.jsonl").write_text(
             json.dumps({"messages": [
