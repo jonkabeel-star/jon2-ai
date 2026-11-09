@@ -33,6 +33,7 @@ RUN pip install --upgrade pip && pip install "fastapi>=0.115,<1" "uvicorn[standa
 
 WORKDIR /app
 COPY ai_engine/qwen_server.py /app/qwen_server.py
+COPY ai_engine/chat_memory.py /app/chat_memory.py
 RUN mkdir -p /models && useradd --system --uid 10001 --create-home jon2 && \
     chown -R jon2:jon2 /app /models
 USER jon2
