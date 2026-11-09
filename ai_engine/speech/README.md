@@ -32,8 +32,8 @@ containing:
   and intended use;
 - status APPROVED only after a human rights review;
 - speaker_identification_allowed set to false;
-- each WAV's relative path, SHA-256, Arabic transcript, and anonymized speaker
-  ID.
+- each WAV's relative path, SHA-256, Arabic transcript, anonymized speaker
+  ID, and explicit voice-synthesis consent.
 
 The validator accepts mono 16-bit PCM WAV files sampled at 16–48 kHz, 0.5–20
 seconds per clip. It rejects changed/unlisted files, duplicate paths or
