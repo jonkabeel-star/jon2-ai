@@ -103,7 +103,9 @@ jobs:
       - name: Diagnose the failure, generate a bounded patch, and run the full Python gate
         run: |
           if [ -s auto-repair-output/failed.log ]; then
-            python scripts/jon2_auto_repair.py --root . --logs auto-repair-output/failed.log --report auto-repair-output/report.json
+            # External workflow logs are evidence for diagnosis only. The original
+            # failing workflow is not guaranteed to be reproducible by this local gate.
+            python scripts/jon2_auto_repair.py --root . --logs auto-repair-output/failed.log --diagnostic-only --report auto-repair-output/report.json
           elif [ -s auto-repair-output/issue.log ]; then
             python scripts/jon2_auto_repair.py --root . --logs auto-repair-output/issue.log --diagnostic-only --report auto-repair-output/report.json
           else
