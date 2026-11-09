@@ -39,7 +39,7 @@ A reviewer must read the actual generated answers. Reviewing prompts alone, a re
 
 ## Release gate
 
-The FastAPI code currently defaults `JON2_CHAT_RELEASE_APPROVED` to `false` and blocks `/api/chat` until that flag is explicitly true. Existing API tests verify that behavior. Keep it false.
+The FastAPI code defaults `JON2_CHAT_RELEASE_APPROVED` to `false` and blocks `/api/chat` until that flag is explicitly true. The Node API gateway now applies the same fail-closed check before session handling, so authenticated users are blocked too; its health response reports the gate state. Node release-gate unit tests are included in `npm run check`. Keep the flag false in every deployment environment.
 
 Do not set `JON2_CHAT_RELEASE_APPROVED=true`, enable general chat, or publish a model release as part of this work. A release requires the owner to inspect the exact checkpoint and complete human review first. The environment value of any deployed hosting service is not readable from this repository audit, so verify it in the hosting dashboard before any future launch.
 
@@ -61,3 +61,8 @@ For every case, record:
 | Decision | Pass / Fail / Needs discussion |
 
 Do not fill this worksheet with generated or inferred scores. It is a human record.
+
+
+## Additional gateway enforcement
+
+A repository review found that the Node gateway previously relied on login and CSRF but did not independently enforce `JON2_CHAT_RELEASE_APPROVED`. The safety branch adds a shared, dependency-free release-gate helper and a route check before authentication/model proxying. This closes the alternate API-entry-point gap without changing any deployed environment variable. The default remains disabled.
