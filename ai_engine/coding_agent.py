@@ -130,7 +130,7 @@ def sandbox(repo,patch,image):
         if check.returncode: raise ValueError("Patch does not apply: "+check.stderr[-1500:])
         apply=subprocess.run(["git","apply","--recount",str(pf)],cwd=work,capture_output=True,text=True,timeout=30)
         if apply.returncode: raise ValueError("Patch application failed: "+apply.stderr[-1500:])
-        cmd=[docker,"run","--rm","--network","none","--read-only","--cap-drop","ALL","--security-opt","no-new-privileges","--pids-limit","96","--memory","2g","--cpus","2","--tmpfs","/tmp:rw,noexec,nosuid,size=64m","-e","PYTHONDONTWRITEBYTECODE=1","-v",f"{work}:/work:ro","-w","/work/ai_engine",image,"sh","-lc","python -c \"import ast,pathlib; files=list(pathlib.Path('.').rglob('*.py')); [ast.parse(p.read_text(encoding='utf-8'), filename=str(p)) for p in files]; print('Syntax OK:', len(files), 'files')\" && python -m unittest discover -s . -p "test_*.py" -v"]
+        cmd=[docker,"run","--rm","--network","none","--read-only","--cap-drop","ALL","--security-opt","no-new-privileges","--pids-limit","96","--memory","2g","--cpus","2","--tmpfs","/tmp:rw,noexec,nosuid,size=64m","-e","PYTHONDONTWRITEBYTECODE=1","-v",f"{work}:/work:ro","-w","/work/ai_engine",image,"sh","-lc","python -c \"import ast,pathlib; files=list(pathlib.Path('.').rglob('*.py')); [ast.parse(p.read_text(encoding='utf-8'), filename=str(p)) for p in files]; print('Syntax OK:', len(files), 'files')\" && python -m unittest discover -s . -p 'test_*.py' -v"]
         test=subprocess.run(cmd,capture_output=True,text=True,timeout=300)
         return {"tests_passed":test.returncode==0,"test_exit_code":test.returncode,"test_log":(test.stdout+"\n"+test.stderr)[-8000:],"executed_inside_no_network_docker":True,"committed_or_pushed":False}
 
