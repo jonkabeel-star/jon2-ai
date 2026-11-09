@@ -23,7 +23,9 @@ def run(cases_path, answers_path, report_path, semantic=False, judge_model=None)
     if semantic:
         for case in cases: judged[str(case["test_id"])]=judge_answer(case,answers[str(case["test_id"])],model=judge_model)
     passed=bool(semantic) and all(x["passed"] for x in judged.values())
-    report={"model_name":engine.model_name,"benchmark_cases":len(cases),"real_model_answers_generated":True,"lexical_screening":lexical,"semantic_judging_enabled":semantic,"semantic_judge_results":judged,"semantic_passed":passed,"release_or_training_approval":False,"human_review_required":True}
+    fallback="حدث خطأ أثناء توليد الإجابة. حاول مرة أخرى."
+    generated=sum(1 for answer in answers.values() if answer and answer != fallback)
+    report={"model_name":engine.model_name,"benchmark_cases":len(cases),"real_model_answers_generated":generated == len(cases),"successful_generations":generated,"lexical_screening":lexical,"semantic_judging_enabled":semantic,"semantic_judge_results":judged,"semantic_passed":passed,"release_or_training_approval":False,"human_review_required":True}
     rendered=json.dumps(report,ensure_ascii=False,indent=2)+"\n"
     rp=Path(report_path); rp.parent.mkdir(parents=True,exist_ok=True); rp.write_text(rendered,encoding="utf-8")
     print(rendered); return report
