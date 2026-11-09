@@ -19,6 +19,8 @@ from typing import Sequence
 
 CHECKS: tuple[tuple[str, tuple[str, ...], tuple[int, ...]], ...] = (
     ("python_compile", (sys.executable, "-m", "compileall", "-q", "ai_engine", "tests"), (0,)),
+    ("frontend_js_syntax", (sys.executable, "tests/check_frontend_js.py", "index.html"), (0,)),
+    ("node_server_checks", ("npm", "run", "check", "--prefix", "server"), (0,)),
     ("root_tests", (sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"), (0,)),
     ("engine_tests", (sys.executable, "-m", "unittest", "discover", "-s", "ai_engine", "-p", "test_*.py", "-v"), (0,)),
     ("runtime_tests", (sys.executable, "-m", "unittest", "discover", "-s", "ai_engine/tests", "-t", ".", "-p", "test_*.py", "-v"), (0,)),
@@ -232,7 +234,6 @@ def run_checks(root: Path) -> list[dict]:
         print(f"[{'PASS' if result['passed'] else 'FAIL'}] {name}", flush=True)
         if not result["passed"]:
             print(result["output"], flush=True)
-            break
     return results
 
 
@@ -264,7 +265,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     report = {
         "tool": "Jon2 Auto Repair Engine",
         "version": 1,
-        "repair_policy": "allowlisted_import_repairs_and_python_whitespace",
+        "repair_policy": "allowlisted_standard_library_imports_and_python_whitespace_only",
+        "coverage": ["python", "frontend_inline_javascript", "node_server_syntax_and_release_gate_tests"],
+        "unsupported_failures_are_diagnostic_only": True,
         "repair_proposals": repair_proposals,
         "changed_files": changed,
         "checks": checks,
