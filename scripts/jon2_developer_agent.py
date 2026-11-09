@@ -16,23 +16,24 @@ MAX_CONTEXT_CHARS = 48_000
 MAX_FILE_CHARS = 16_000
 MAX_TOTAL_OUTPUT = 28_000
 MAX_FILES = 2
-ALLOWED_ROOTS = {"ai_engine", "server", "tests"}
+READ_ROOTS = {"ai_engine", "tests"}
+WRITE_ROOTS = {"ai_engine"}
 FORBIDDEN_PARTS = {
     "training_data", "checkpoints", "evaluation", "models", "secrets",
     "weights", "__pycache__", "node_modules", ".git",
 }
-ALLOWED_SUFFIXES = {".py", ".js", ".mjs", ".cjs", ".ts"}
+ALLOWED_SUFFIXES = {".py"}
 SYSTEM_PROMPT = """You are Jon2 Developer Agent, a cautious senior software engineer working on the Jon2 AI repository.
 Inspect the supplied repository context and choose at most ONE small, high-value, self-contained engineering improvement.
 Return ONLY valid JSON with this exact shape:
 {"summary":"short explanation in English","files":[{"path":"existing/repository/file.py","content":"complete replacement file content"}]}
 Rules:
 - Replace at most two EXISTING source files. Do not create, delete, rename, or move files.
-- Only edit source files under ai_engine/, server/, or tests/. The caller enforces this.
+- You may edit existing Python source files under ai_engine/ only. Tests are read-only context and must never be changed.
 - Do not edit authentication, authorization, cryptography, billing, secrets, deployment, CI workflows, CORS, model weights, datasets, checkpoints, evaluation prompts, or licensing/approval files.
 - Do not add external dependencies or network calls.
 - Preserve existing behavior and public interfaces unless a small bug fix requires otherwise.
-- Add or improve focused tests when appropriate, but only within tests/.
+- Do not edit tests. If a change would require a test change, return no proposal and explain why.
 - Do not claim tests were run. Do not include markdown fences or text outside JSON.
 - If no clearly safe, testable improvement is justified by the context, return {"summary":"No safe change identified; more repository context or a human decision is needed.","files":[]}.
 - File content must be complete, not a diff or partial snippet.
@@ -51,7 +52,7 @@ def tracked_context(root: Path) -> tuple[list[dict], str]:
     total = 0
     for name in listing:
         path = PurePosixPath(name)
-        if not path.parts or path.parts[0] not in ALLOWED_ROOTS:
+        if not path.parts or path.parts[0] not in READ_ROOTS:
             continue
         if path.suffix.lower() not in ALLOWED_SUFFIXES:
             continue
@@ -144,7 +145,8 @@ def validate_and_apply(root: Path, proposal: dict) -> list[str]:
             fail("A proposed file path or content was invalid.")
         rel = PurePosixPath(name)
         if (rel.is_absolute() or ".." in rel.parts or not rel.parts
-            or rel.parts[0] not in ALLOWED_ROOTS
+            or rel.parts[0] not in WRITE_ROOTS
+            or rel.name.startswith("test_")
             or rel.suffix.lower() not in ALLOWED_SUFFIXES
             or any(part in FORBIDDEN_PARTS for part in rel.parts)
             or name in seen):
