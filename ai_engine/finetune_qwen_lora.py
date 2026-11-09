@@ -20,8 +20,6 @@ ASSISTANT_LABELS = ("Jon2:", "المساعد:", "Assistant:")
 EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
 EGYPT_MOBILE_RE = re.compile(r"(?<!\d)(?:\+?20|0)?1[0125]\d{8,9}(?!\d)")
 SECRET_RE = re.compile(r"(?i)\b(?:api[_-]?key|access[_-]?token|secret|password)\s*[:=]\s*['\"]?[A-Za-z0-9_./+\-=]{12,}")
-    r"(?i)\\b(?:api[_-]?key|access[_-]?token|secret|password)\\s*[:=]\\s*['\\"]?[A-Za-z0-9_./+\\-=]{12,}"
-)
 
 
 def sha256_bytes(data: bytes) -> str:
