@@ -24,7 +24,8 @@ model and data licenses before any distribution or commercial use.
   conversations.
 - Candidate JSONL files remain excluded; this path does not read them.
 - Exact duplicate conversations are removed.
-- A deterministic conversation-level validation split is held out.
+- Likely email addresses, Egyptian mobile numbers, and credential-like strings are rejected before tokenization.
+- A deterministic conversation-level split creates separate train, validation, and final test sets; the final test set is not used for checkpoint selection.
 - Loss is applied to assistant response tokens; user prompt tokens are masked.
 - Training is dry-run by default. No model is loaded until \`--execute\` is set.
 - A CUDA GPU is required by default. CPU mode needs an explicit opt-in.
@@ -40,7 +41,7 @@ python ai_engine/finetune_qwen_lora.py
 \`\`\`
 
 The second command is a read-only dry-run. It prints approved source hashes,
-conversation counts, train/validation counts, and the model/license identity.
+conversation counts, train/validation/test counts, source hashes, and the model/license identity.
 
 Only after checking that report, start real fine-tuning:
 
