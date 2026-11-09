@@ -36,7 +36,7 @@ class SafeRepairTests(unittest.TestCase):
 
     def test_untrusted_issue_report_is_diagnostic_only(self) -> None:
         target = self.root / "ai_engine" / "sample.py"
-        original = "def run():\\n    return json.dumps({})\\n"
+        original = "def run():\n    return json.dumps({})\n"
         target.write_text(original, encoding="utf-8")
         diagnostics, proposals = analyze_incident_log(self.root, self._log(target), allow_repairs=False)
         self.assertTrue(diagnostics)
