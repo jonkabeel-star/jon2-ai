@@ -3,7 +3,7 @@ name: Qwen LoRA Safety Checks
 on:
   pull_request:
     paths:
-      - "ai_engine/finetune_qwen_lora.py"
+      - "ai_engine/finetune_qwen_lora.py"\n      - "ai_engine/qwen_server.py"\n      - "ai_engine/test_qwen_server.py"\n      - "Dockerfile.oracle"\n      - "docker-compose.oracle.yml"\n      - "deploy/oracle/**"
       - "ai_engine/test_qwen_lora_pipeline.py"
       - "ai_engine/training_data/**"
       - "ai_engine/requirements-lora.txt"
@@ -34,5 +34,5 @@ jobs:
       - name: Run dependency-free tests
         working-directory: ai_engine
         run: python -m unittest -v test_qwen_lora_pipeline.py
-      - name: Validate exact approvals and build dry-run split
+      - name: Test local Qwen runtime gate and prompt construction\n        working-directory: ai_engine\n        run: python -m unittest -v test_qwen_server.py\n      - name: Validate exact approvals and build dry-run split
         run: python ai_engine/finetune_qwen_lora.py --dry-run
