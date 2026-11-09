@@ -36,9 +36,9 @@ jobs:
       - name: Compile Python source and repair diagnostics
         run: python -m compileall -q ai_engine scripts tests
       - name: Test Auto Repair diagnostics
-        run: python -m unittest tests.test_error_diagnostics -v
+        run: python -m unittest discover -s tests -p 'test_error_diagnostics.py' -v
       - name: Test Auto Repair safety rules
-        run: python -m unittest tests.test_auto_repair -v
+        run: python -m unittest discover -s tests -p 'test_auto_repair.py' -v
       - name: Test source approval gate
         working-directory: ai_engine
         run: python -m unittest discover -s tests -p 'test_source_approval.py' -v
