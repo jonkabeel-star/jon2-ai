@@ -24,17 +24,17 @@ USER_AGENT = "Jon2AI/1.1 (public knowledge retrieval; contact: project repositor
 # signatures; ambiguous Latin text safely defaults to English.
 LATIN_SIGNATURES = {
     "en": {"the", "what", "who", "when", "where", "why", "how", "is", "are", "of", "for"},
-    "fr": {"le", "la", "les", "des", "est", "qui", "quoi", "comment", "pour", "avec"},
-    "es": {"el", "la", "los", "las", "que", "como", "cómo", "quien", "qué", "para"},
+    "fr": {"le", "la", "les", "des", "est", "qui", "quoi", "comment", "pour", "avec", "qu'est", "ce", "une"},
+    "es": {"el", "la", "los", "las", "que", "como", "cómo", "quien", "qué", "para", "es", "una"},
     "de": {"der", "die", "das", "ist", "wer", "was", "wie", "warum", "und", "mit"},
-    "it": {"il", "lo", "gli", "che", "come", "chi", "cosa", "per", "con", "una"},
+    "it": {"il", "lo", "gli", "che", "come", "chi", "cosa", "per", "con", "una", "cos'è", "la"},
     "pt": {"o", "os", "as", "que", "como", "quem", "uma", "para", "com", "não"},
-    "nl": {"de", "het", "een", "wie", "wat", "waar", "hoe", "waarom", "met", "voor"},
+    "nl": {"de", "het", "een", "wie", "wat", "waar", "hoe", "waarom", "met", "voor", "kunstmatige", "intelligentie"},
 }
 SCRIPT_LANGUAGES = (
     ("ar", re.compile(r"[\u0600-\u06ff]")),
-    ("zh", re.compile(r"[\u4e00-\u9fff]")),
     ("ja", re.compile(r"[\u3040-\u30ff]")),
+    ("zh", re.compile(r"[\u4e00-\u9fff]")),
     ("ko", re.compile(r"[\uac00-\ud7af]")),
     ("ru", re.compile(r"[\u0400-\u04ff]")),
     ("hi", re.compile(r"[\u0900-\u097f]")),
