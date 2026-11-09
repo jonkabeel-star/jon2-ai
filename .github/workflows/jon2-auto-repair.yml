@@ -6,7 +6,7 @@ on:
     paths:
       - "ai_engine/**/*.py"
       - "tests/**/*.py"
-      - "scripts/jon2_auto_repair.py"
+      - "scripts/**/*.py"
       - ".github/workflows/jon2-auto-repair.yml"
   schedule:
     - cron: "23 3 * * *"
@@ -91,6 +91,7 @@ jobs:
           add-paths: |
             ai_engine/
             tests/
+            scripts/
           delete-branch: true
           commit-message: "Apply verified safe Jon2 maintenance repairs"
           title: "Jon2 Auto Repair: verified safe maintenance"
@@ -98,8 +99,9 @@ jobs:
             ## Automated repair report
 
             Jon2 Auto Repair analyzed trusted workflow failure logs when available,
-            applied only an exact allowlisted missing-standard-library-import patch
-            (or safe whitespace normalization), and reran the repository checks.
+            classified common Python/CI failure types and applied only an exact
+            allowlisted missing-standard-library-import patch (or safe whitespace
+            normalization), then reran the repository checks.
 
             - All configured checks passed before this pull request was opened.
             - Any code patch is limited to an exact missing standard-library import rule.
