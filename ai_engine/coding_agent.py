@@ -177,46 +177,35 @@ def repair_until_green(task,model,host,repo,image,max_rounds=2):
 
 
 def main():
-    p=argparse.ArgumentParser()
-    p.add_argument("--repo",default="."); p.add_argument("--task",required=True)
-    p.add_argument("--model",default=os.getenv("JON2_CODER_MODEL","qwen2.5-coder:1.5b"))
-    p.add_argument("--host",default=os.getenv("OLLAMA_HOST","http://127.0.0.1:11434"))
-    p.add_argument("--docker-image",default="python:3.11-slim")
-    p.add_argument("--output",default="artifacts/jon2-proposed.patch")
-    p.add_argument("--report",default="artifacts/jon2-coding-agent-report.json")
-    p.add_argument("--max-repair-rounds",type=int,default=2)
-    a=p.parse_args()
-    repo=Path(a.repo).resolve()
-    report_path=Path(a.report)
+    parser=argparse.ArgumentParser()
+    parser.add_argument("--repo",default=".")
+    parser.add_argument("--task",required=True)
+    parser.add_argument("--model",default=os.getenv("JON2_CODER_MODEL","qwen2.5-coder:1.5b"))
+    parser.add_argument("--host",default=os.getenv("OLLAMA_HOST","http://127.0.0.1:11434"))
+    parser.add_argument("--docker-image",default="python:3.11-slim")
+    parser.add_argument("--output",default="artifacts/jon2-proposed.patch")
+    parser.add_argument("--report",default="artifacts/jon2-coding-agent-report.json")
+    parser.add_argument("--max-repair-rounds",type=int,default=2)
+    args=parser.parse_args()
+    repo=Path(args.repo).resolve()
+    report_path=Path(args.report)
     report_path.parent.mkdir(parents=True,exist_ok=True)
     try:
-        result=repair_until_green(a.task,a.model,a.host,repo,a.docker_image,a.max_repair_rounds)
+        result=repair_until_green(args.task,args.model,args.host,repo,args.docker_image,args.max_repair_rounds)
         patch=result.pop("patch",None)
         if patch and result.get("tests_passed") is True:
-            out=Path(a.output); out.parent.mkdir(parents=True,exist_ok=True)
-            out.write_text(patch+"\n",encoding="utf-8")
-        result.update({"model":a.model,"human_review_required":True})
+            output=Path(args.output)
+            output.parent.mkdir(parents=True,exist_ok=True)
+            output.write_text(patch+"\\n",encoding="utf-8")
+        result.update({"model":args.model,"human_review_required":True})
     except (ValueError,PermissionError,RuntimeError,OSError,subprocess.SubprocessError) as exc:
-        result={"model":a.model,"outcome":"rejected_or_not_sandboxed","changed_paths":[],
+        result={"model":args.model,"outcome":"rejected_or_not_sandboxed","changed_paths":[],
                 "tests_passed":False,"test_log":str(exc),"executed_inside_no_network_docker":False,
                 "committed_or_pushed":False,"human_review_required":True,"passed":False}
-    report_path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-        print(json.dumps(result,ensure_ascii=False,indent=2))
-        return 0
-    try:
-        paths=validate(patch)
-        out=Path(a.output); out.parent.mkdir(parents=True,exist_ok=True); out.write_text(patch+"\n",encoding="utf-8")
-        result=sandbox(repo,patch,a.docker_image)
-        outcome="patch_tested"
-    except (ValueError, PermissionError, RuntimeError, OSError, subprocess.SubprocessError) as exc:
-        paths=[]
-        outcome="rejected_or_not_sandboxed"
-        result={"tests_passed":False,"test_exit_code":None,
-                "test_log":str(exc),"executed_inside_no_network_docker":False,
-                "committed_or_pushed":False,"passed":False}
-    result.update({"model":a.model,"outcome":outcome,"changed_paths":paths,
-                   "human_review_required":True,"passed":result["tests_passed"]})
-    report_path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+    report_path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\\n",encoding="utf-8")
     print(json.dumps(result,ensure_ascii=False,indent=2))
-    return 0 if result["tests_passed"] else 2
-if __name__=="__main__": raise SystemExit(main())
+    return 0 if result.get("passed") is True else 2
+
+
+if __name__=="__main__":
+    raise SystemExit(main())
