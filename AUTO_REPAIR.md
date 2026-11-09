@@ -5,15 +5,17 @@ Jon2 Auto Repair is a conservative maintenance workflow for the repository.
 ## What it does
 
 1. Runs on pushes to `main` that affect Python source, every day at 03:23 UTC, or when manually started from GitHub Actions.
-2. Removes only trailing spaces/tabs and ensures a final newline in Python files under `ai_engine/` and `tests/`.
-3. Runs Python compilation, the repository's three unittest discovery suites, training-data audits, the dataset inventory, and the non-training 30M readiness preflight.
-4. Writes a JSON diagnostic report and uploads it as a 14-day workflow artifact.
-5. Opens or updates a pull request only if every configured check passes and there are safe source changes to propose.
+2. Reads failed logs only from allowlisted workflows that ran on the trusted `main` branch.
+3. Recognizes exact missing-name `NameError` signatures and can insert one import from a small standard-library allowlist into a traceback file under `ai_engine/`; it also normalizes Python trailing whitespace.
+4. Runs Python compilation, the repository's three unittest discovery suites, training-data audits, the dataset inventory, and the non-training 30M readiness preflight.
+5. Writes a JSON diagnostic report and uploads it as a 14-day workflow artifact. Raw failure logs are not uploaded.
+6. Opens or updates a pull request only if every configured check passes and there are safe source changes to propose.
 
 ## Safety boundaries
 
 - The workflow checks out trusted `main`; it does not run with write permissions on pull requests from forks.
 - It uses a fixed command allowlist. It never executes code or shell commands copied from error logs.
+- The only code-generation rule currently enabled is a minimal import insertion for an exact missing-name `NameError`, limited to approved standard-library symbols and files under `ai_engine/`.
 - It does not rewrite application logic, alter model weights, delete checkpoints, change training data, change secrets, or deploy.
 - It never pushes directly to `main`. Any proposed source change is isolated in a bot pull request and requires human review before merge.
 - A failed test blocks the pull request. The report remains available as a workflow artifact for diagnosis.
@@ -27,4 +29,4 @@ Jon2 Auto Repair is a conservative maintenance workflow for the repository.
 4. Open the run and inspect its **jon2-auto-repair-report** artifact.
 5. Review any generated pull request before merging.
 
-This is the first safe automation layer. It can automatically correct formatting-only defects and diagnose failures through the existing tests. It does not claim to repair arbitrary semantic bugs. More powerful AI-generated code changes must be isolated, tested, and reviewed before they are trusted.
+This is a bounded rule-based repair generator, not an unrestricted autonomous programmer. It can generate and test a narrow code patch when a recognized failure is found. It does not claim to repair arbitrary semantic bugs; broader AI-generated changes must be isolated, tested, and reviewed before they are trusted.
