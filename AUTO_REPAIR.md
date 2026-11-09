@@ -6,16 +6,16 @@ Jon2 Auto Repair is a conservative maintenance workflow for the repository.
 
 1. Runs on pushes to `main` that affect Python source, every day at 03:23 UTC, or when manually started from GitHub Actions.
 2. Reads failed logs only from allowlisted workflows that ran on the trusted `main` branch.
-3. Recognizes exact missing-name `NameError` signatures and can insert one import from a small standard-library allowlist into a traceback file under `ai_engine/`; it also normalizes Python trailing whitespace.
-4. Runs Python compilation, the repository's three unittest discovery suites, training-data audits, the dataset inventory, and the non-training 30M readiness preflight.
-5. Writes a JSON diagnostic report and uploads it as a 14-day workflow artifact. Raw failure logs are not uploaded.
-6. Opens or updates a pull request only if every configured check passes and there are safe source changes to propose.
+3. Classifies common failures including syntax/indentation, missing modules, import/name/attribute/type/value errors, assertion failures, missing files, permissions, timeouts, and selected HTTP/network errors. It records failed test names and traceback locations when present.\n4. Recognizes exact missing-name `NameError` signatures and can insert one import from a small standard-library allowlist into a traceback file under `ai_engine/`; it also normalizes Python trailing whitespace. Other categories receive explicit remediation guidance but are not rewritten automatically.
+5. Runs Python compilation, the repository's three unittest discovery suites, training-data audits, the dataset inventory, and the non-training 30M readiness preflight.
+6. Writes a JSON diagnostic report with structured categories and uploads it as a 14-day workflow artifact. Raw failure logs are not uploaded.
+7. Opens or updates a pull request only if every configured check passes and there are safe source changes to propose.
 
 ## Safety boundaries
 
 - The workflow checks out trusted `main`; it does not run with write permissions on pull requests from forks.
 - It uses a fixed command allowlist. It never executes code or shell commands copied from error logs.
-- The only code-generation rule currently enabled is a minimal import insertion for an exact missing-name `NameError`, limited to approved standard-library symbols and files under `ai_engine/`.
+- The only automatic code-generation rule currently enabled is a minimal import insertion for an exact missing-name `NameError`, limited to approved standard-library symbols and files under `ai_engine/`. Other recognized error classes produce structured diagnosis and a repair plan, not speculative edits.
 - It does not rewrite application logic, alter model weights, delete checkpoints, change training data, change secrets, or deploy.
 - It never pushes directly to `main`. Any proposed source change is isolated in a bot pull request and requires human review before merge.
 - A failed test blocks the pull request. The report remains available as a workflow artifact for diagnosis.
