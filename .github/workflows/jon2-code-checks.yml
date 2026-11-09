@@ -35,6 +35,9 @@ jobs:
       - name: Test source approval gate
         working-directory: ai_engine
         run: python -m unittest discover -s tests -p 'test_source_approval.py' -v
+      - name: Test read-only Arabic data intake audit
+        working-directory: ai_engine
+        run: python -m unittest discover -s tests -p 'test_intake_audit.py' -v
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
