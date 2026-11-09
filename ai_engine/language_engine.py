@@ -1,4 +1,5 @@
 import os
+import traceback
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 class Jon2LanguageEngine:
@@ -83,6 +84,7 @@ class Jon2LanguageEngine:
             return answer or "لم أتمكن من إنشاء إجابة. حاول مرة أخرى."
         except Exception as error:
             print(f"Jon2 generation failed ({type(error).__name__}): {error!r}", flush=True)
+            traceback.print_exc()
             return "حدث خطأ أثناء توليد الإجابة. حاول مرة أخرى."
 if __name__ == "__main__":
     engine = Jon2LanguageEngine()
