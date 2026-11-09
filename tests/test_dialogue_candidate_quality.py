@@ -68,6 +68,31 @@ class DialogueCandidateQualityTests(unittest.TestCase):
         self.assertEqual(DATASET.parent.name, "data_candidates")
         self.assertNotIn("training_data", DATASET.parts)
 
+    def test_generic_question_families_have_topic_specific_answers(self):
+        families = {
+            "beginner": "هل يمكن تعلم",
+            "overdoing": "كيف أتجنب المبالغة",
+            "recovery": "ماذا أفعل إذا لم تنجح أول محاولة",
+        }
+        for family, prefix in families.items():
+            selected = [
+                record for record in self.records
+                if record["messages"][0]["content"].startswith(prefix)
+            ]
+            self.assertEqual(len(selected), 20, family)
+            answers = [record["messages"][1]["content"] for record in selected]
+            self.assertEqual(len(set(answers)), 20, family)
+
+        all_answers = [record["messages"][1]["content"] for record in self.records]
+        forbidden_boilerplate = (
+            "لا تحتاج إلى خبرة سابقة. ابدأ بالأساسيات",
+            "اترك وقتًا للطوارئ والراحة، ولا تحوّل الوسيلة إلى هدف",
+            "لا تكرر المحاولة نفسها تلقائيًا",
+        )
+        for answer in all_answers:
+            for phrase in forbidden_boilerplate:
+                self.assertNotIn(phrase, answer)
+
 
 if __name__ == "__main__":
     unittest.main()
