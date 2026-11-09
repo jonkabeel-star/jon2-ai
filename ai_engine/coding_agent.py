@@ -101,15 +101,15 @@ def main():
                 "tests_passed":None,"executed_inside_no_network_docker":False,
                 "committed_or_pushed":False,"human_review_required":True,
                 "passed":True,"note":"The coding model explicitly declined to propose a change."}
-        report_path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\\n",encoding="utf-8")
+        report_path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
         print(json.dumps(result,ensure_ascii=False,indent=2))
         return 0
     paths=validate(patch)
-    out=Path(a.output); out.parent.mkdir(parents=True,exist_ok=True); out.write_text(patch+"\\n",encoding="utf-8")
+    out=Path(a.output); out.parent.mkdir(parents=True,exist_ok=True); out.write_text(patch+"\n",encoding="utf-8")
     result=sandbox(repo,patch,a.docker_image)
     result.update({"model":a.model,"outcome":"patch_tested","changed_paths":paths,
                    "human_review_required":True,"passed":result["tests_passed"]})
-    report_path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\\n",encoding="utf-8")
+    report_path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print(json.dumps(result,ensure_ascii=False,indent=2))
     return 0 if result["tests_passed"] else 2
 if __name__=="__main__": raise SystemExit(main())
