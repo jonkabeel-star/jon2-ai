@@ -57,11 +57,11 @@ def _request_ollama_patch(task,model,host,context,previous_invalid=""):
             "and correct @@ hunk context, or exactly NO_SAFE_PATCH. No markdown fences, JSON, "
             "or explanations. Minimal Python-only changes under ai_engine/. Never alter rights "
             "gates, training, weights, data, CI, deployment, dependencies, secrets, or shell/network behavior.")
-    user=task+"\\n\\nCURRENT REPOSITORY SOURCE (authoritative; do not invent files or functions):\\n"+context
+    user=task+"\n\nCURRENT REPOSITORY SOURCE (authoritative; do not invent files or functions):\n"+context
     if previous_invalid:
-        user += ("\\n\\nYour previous response was rejected because it was not a valid unified git diff. "
+        user += ("\n\nYour previous response was rejected because it was not a valid unified git diff. "
                  "Try once more with correct paths and hunk syntax. If no safe minimal fix is justified, "
-                 "return exactly NO_SAFE_PATCH. Previous rejected response (do not copy blindly):\\n"
+                 "return exactly NO_SAFE_PATCH. Previous rejected response (do not copy blindly):\n"
                  + previous_invalid[:6000])
     data=json.dumps({"model":model,"stream":False,"options":{"temperature":0.0},"messages":[
       {"role":"system","content":system},{"role":"user","content":user}]}).encode()
