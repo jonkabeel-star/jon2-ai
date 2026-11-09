@@ -6,7 +6,8 @@ import unittest
 from pathlib import Path
 
 from scripts.jon2_auto_repair import (
-    analyze_incident_log, diagnose_failure, generate_safe_repairs, restore_snapshot, snapshot_repair_scope,
+    analyze_incident_log, diagnose_failure, generate_safe_repairs, normalize_python_whitespace,
+    restore_snapshot, snapshot_repair_scope,
 )
 
 
@@ -130,6 +131,28 @@ class SafeRepairTests(unittest.TestCase):
         result = generate_safe_repairs(self.root, self._log(target))
         self.assertEqual(result[0]["status"], "blocked")
         self.assertEqual(target.read_text(encoding="utf-8"), "def broken(:\n")
+
+    def test_diagnostic_only_mode_does_not_normalize_source_files(self) -> None:
+        target = self.root / "ai_engine" / "sample.py"
+        original = b"def run():  \\n    return 1\\n"
+        target.write_bytes(original)
+        changed = normalize_python_whitespace(self.root, enabled=False)
+        self.assertEqual(changed, [])
+        self.assertEqual(target.read_bytes(), original)
+
+    def test_whitespace_normalizer_never_follows_symlinks_outside_scope(self) -> None:
+        outside = self.root.parent / (self.root.name + "-outside.py")
+        original = b"x = 1  \\n"
+        try:
+            outside.write_bytes(original)
+            link = self.root / "ai_engine" / "linked.py"
+            link.symlink_to(outside)
+            changed = normalize_python_whitespace(self.root)
+            self.assertEqual(changed, [])
+            self.assertEqual(outside.read_bytes(), original)
+        finally:
+            if outside.exists():
+                outside.unlink()
 
 
 if __name__ == "__main__":
