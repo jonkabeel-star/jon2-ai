@@ -18,7 +18,7 @@ BASE_MODEL_LICENSE = "Apache-2.0"
 USER_LABELS = ("المستخدم:", "User:")
 ASSISTANT_LABELS = ("Jon2:", "المساعد:", "Assistant:")
 EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
-EGYPT_MOBILE_RE = re.compile(r"(?<!\d)(?:\+?20|0)?1[0125]\d{8,9}(?!\d)")
+EGYPT_MOBILE_RE = re.compile(r"(?<![A-Za-z0-9])(?:\+?20|0)?1[0125]\d{8}(?![A-Za-z0-9])")
 SECRET_RE = re.compile(r"(?i)\b(?:api[_-]?key|access[_-]?token|secret|password)\s*[:=]\s*['\"]?[A-Za-z0-9_./+\-=]{12,}")
 
 
@@ -258,7 +258,7 @@ def run_training(args) -> int:
         args.test_fraction, args.seed
     )
     print(json.dumps(manifest, ensure_ascii=False, indent=2), flush=True)
-    if not args.execute:
+    if not args.execute or args.dry_run:
         print("DRY RUN ONLY: no model loaded, no optimizer steps, and no weights changed.")
         return 0
     if not args.allow_cpu:
@@ -404,7 +404,9 @@ def build_parser():
     parser.add_argument("--lora-alpha", type=int, default=16)
     parser.add_argument("--lora-dropout", type=float, default=0.05)
     parser.add_argument("--allow-cpu", action="store_true", help="Explicitly allow very slow CPU experimentation.")
-    parser.add_argument("--execute", action="store_true", help="Actually load Qwen and perform optimizer steps; default is dry-run.")
+    run_mode = parser.add_mutually_exclusive_group()
+    run_mode.add_argument("--execute", action="store_true", help="Actually load Qwen and perform optimizer steps.")
+    run_mode.add_argument("--dry-run", action="store_true", help="Validate rights, data, and split only; this is also the default.")
     return parser
 
 
