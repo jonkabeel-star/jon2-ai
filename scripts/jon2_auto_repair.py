@@ -265,6 +265,14 @@ def diagnose_failure(log_text: str) -> list[dict]:
 
 
 
+def analyze_incident_log(root: Path, log_text: str, allow_repairs: bool = True) -> tuple[list[dict], list[dict]]:
+    """Classify an incident log; untrusted user reports can be diagnostic-only."""
+    diagnostics = diagnose_failure(log_text)
+    if allow_repairs:
+        return diagnostics, generate_safe_repairs(root, log_text)
+    return diagnostics, [{"status": "diagnostic_only", "reason": "Untrusted user-submitted reports cannot authorize source edits."}]
+
+
 def collect_failed_check_output(checks: list[dict]) -> str:
     """Collect only failed check output as untrusted diagnostic text."""
     sections = []
@@ -330,6 +338,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--root", type=Path, default=Path.cwd())
     parser.add_argument("--report", type=Path, default=Path("auto-repair-output/report.json"))
     parser.add_argument("--logs", type=Path, help="Path to a failed GitHub Actions log; logs are parsed as data only.")
+    parser.add_argument("--diagnostic-only", action="store_true", help="Never propose source edits from this incident log.")
     args = parser.parse_args(argv)
     root = args.root.resolve()
     report_path = (root / args.report).resolve()
@@ -348,8 +357,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         if log_path.is_file():
             external_log_text = log_path.read_text(encoding="utf-8", errors="replace")
             diagnostic_source = "submitted_or_workflow_log"
-            diagnostics = diagnose_failure(external_log_text)
-            repair_proposals = generate_safe_repairs(root, external_log_text)
+            diagnostics, repair_proposals = analyze_incident_log(
+                root, external_log_text, allow_repairs=not args.diagnostic_only
+            )
         else:
             repair_proposals = [{"status": "no_log", "reason": "The supplied log file was not found."}]
 
@@ -390,6 +400,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "repair_policy": "allowlisted_standard_library_imports_and_python_whitespace_only",
         "coverage": ["scheduled_repository_scan", "submitted_error_logs", "dependency_diagnostics", "path_failure_diagnostics", "function_signature_diagnostics", "missing_attribute_diagnostics", "frontend_inline_javascript", "node_server_syntax_and_release_gate_tests"],
         "diagnostic_source": diagnostic_source,
+        "diagnostic_only": bool(args.diagnostic_only),
         "unsupported_failures_are_diagnostic_only": True,
         "repair_proposals": repair_proposals,
         "diagnostics": diagnostics,
