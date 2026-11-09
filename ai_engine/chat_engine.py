@@ -65,7 +65,7 @@ def build_conversation_prompt(message: str, history=None, memories=None, tokeniz
         content = item.get("content") if isinstance(item, dict) else None
         if role in {"user", "assistant"} and isinstance(content, str) and content.strip():
             label = "المستخدم" if role == "user" else "Jon2"
-            memory_items.append(f"{label}: {content.strip()[-90:]}")
+            memory_items.append(f"{label}: {content.strip()}")
 
     turns = []
     for item in (history or [])[-4:]:
@@ -76,10 +76,14 @@ def build_conversation_prompt(message: str, history=None, memories=None, tokeniz
         content = content.strip()
         if content:
             label = "المستخدم" if role == "user" else "Jon2"
-            turns.append(f"{label}: {content[-90:]}")
+            turns.append(f"{label}: {content}")
 
     token_limit = max(8, int(context or getattr(_model, "context", 128)))
-    instruction = "تعليمات: أجب بالعربية الواضحة، مباشرةً، ولا تخمّن."
+    instruction = (
+        "تعليمات: أجب بعربية سهلة وواضحة. افهم اللهجة المصرية والأخطاء الإملائية "
+        "من السياق. أجب مباشرةً بلا تكرار. لا تخترع معلومات؛ قل لا أعلم عند الجهل. "
+        "راعِ سياق الحوار السابق."
+    )
     while True:
         sections = [instruction]
         if memory_items:
