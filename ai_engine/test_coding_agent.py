@@ -100,6 +100,10 @@ class CodingAgentTests(unittest.TestCase):
             target = root / "ai_engine" / "example.py"
             target.write_text("old = 1\n", encoding="utf-8")
             subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            subprocess.run(["git", "config", "user.email", "jon2-tests@example.invalid"], cwd=root, check=True)
+            subprocess.run(["git", "config", "user.name", "Jon2 Tests"], cwd=root, check=True)
+            subprocess.run(["git", "add", "ai_engine/example.py"], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-qm", "baseline"], cwd=root, check=True)
             self.assertTrue(check_patch_applicability(root, VALID))
             self.assertEqual(target.read_text(encoding="utf-8"), "old = 1\n")
 
