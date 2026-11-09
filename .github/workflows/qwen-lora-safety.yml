@@ -3,36 +3,51 @@ name: Qwen LoRA Safety Checks
 on:
   pull_request:
     paths:
-      - "ai_engine/finetune_qwen_lora.py"\n      - "ai_engine/qwen_server.py"\n      - "ai_engine/test_qwen_server.py"\n      - "Dockerfile.oracle"\n      - "docker-compose.oracle.yml"\n      - "deploy/oracle/**"
+      - "ai_engine/finetune_qwen_lora.py"
+      - "ai_engine/qwen_server.py"
+      - "ai_engine/test_qwen_server.py"
       - "ai_engine/test_qwen_lora_pipeline.py"
       - "ai_engine/training_data/**"
       - "ai_engine/requirements-lora.txt"
+      - "Dockerfile.oracle"
+      - "docker-compose.oracle.yml"
+      - "deploy/oracle/**"
       - ".github/workflows/qwen-lora-safety.yml"
   push:
     branches:
       - "feature/qwen25-arabic-lora-pipeline"
     paths:
       - "ai_engine/finetune_qwen_lora.py"
+      - "ai_engine/qwen_server.py"
+      - "ai_engine/test_qwen_server.py"
       - "ai_engine/test_qwen_lora_pipeline.py"
       - "ai_engine/training_data/**"
       - "ai_engine/requirements-lora.txt"
+      - "Dockerfile.oracle"
+      - "docker-compose.oracle.yml"
+      - "deploy/oracle/**"
       - ".github/workflows/qwen-lora-safety.yml"
 
 permissions:
   contents: read
 
 jobs:
-  lora-data-and-parser:
+  lora-data-and-runtime:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Compile training script
-        run: python -m py_compile ai_engine/finetune_qwen_lora.py
-      - name: Run dependency-free tests
+      - name: Install lightweight API test dependencies
+        run: python -m pip install "fastapi>=0.115,<1" "pydantic>=2,<3"
+      - name: Compile Python runtime and trainer
+        run: python -m py_compile ai_engine/finetune_qwen_lora.py ai_engine/qwen_server.py
+      - name: Run rights, parser, and data-split tests
         working-directory: ai_engine
         run: python -m unittest -v test_qwen_lora_pipeline.py
-      - name: Test local Qwen runtime gate and prompt construction\n        working-directory: ai_engine\n        run: python -m unittest -v test_qwen_server.py\n      - name: Validate exact approvals and build dry-run split
+      - name: Test local Qwen runtime gate and prompt construction
+        working-directory: ai_engine
+        run: python -m unittest -v test_qwen_server.py
+      - name: Validate exact approvals and build dry-run split
         run: python ai_engine/finetune_qwen_lora.py --dry-run
