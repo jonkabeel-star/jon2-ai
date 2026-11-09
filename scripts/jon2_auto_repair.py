@@ -264,6 +264,24 @@ def diagnose_failure(log_text: str) -> list[dict]:
     return findings
 
 
+
+def collect_failed_check_output(checks: list[dict]) -> str:
+    """Collect only failed check output as untrusted diagnostic text."""
+    sections = []
+    for item in checks:
+        if not item.get("passed"):
+            sections.append(
+                f"=== FAILED CHECK: {item.get('name', 'unknown')} ===\\n"
+                f"{str(item.get('output', ''))[-30000:]}"
+            )
+    return "\\n".join(sections)
+
+
+def analyze_failed_checks(checks: list[dict]) -> tuple[str, list[dict]]:
+    """Turn failed check output into structured findings; never execute log content."""
+    failure_text = collect_failed_check_output(checks)
+    return failure_text, diagnose_failure(failure_text) if failure_text else []
+
 def run_checks(root: Path) -> list[dict]:
     """Run a fixed allowlist of repository checks; never interpret log text as code."""
     output_dir = root / "auto-repair-output"
@@ -318,16 +336,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not (root / "ai_engine").is_dir() or not (root / "tests").is_dir():
         parser.error("--root must point to the Jon2 repository root")
 
-    # Keep a byte-for-byte recovery point before either whitespace cleanup or code repair.
+    # Snapshot before every possible source mutation; protected files are never included.
     original_snapshot = snapshot_repair_scope(root)
     repair_proposals: list[dict] = []
     diagnostics: list[dict] = []
+    diagnostic_source = "scheduled_repository_scan"
+    external_log_text = ""
+
     if args.logs:
         log_path = args.logs if args.logs.is_absolute() else root / args.logs
         if log_path.is_file():
-            log_text = log_path.read_text(encoding="utf-8", errors="replace")
-            diagnostics = diagnose_failure(log_text)
-            repair_proposals = generate_safe_repairs(root, log_text)
+            external_log_text = log_path.read_text(encoding="utf-8", errors="replace")
+            diagnostic_source = "submitted_or_workflow_log"
+            diagnostics = diagnose_failure(external_log_text)
+            repair_proposals = generate_safe_repairs(root, external_log_text)
         else:
             repair_proposals = [{"status": "no_log", "reason": "The supplied log file was not found."}]
 
@@ -337,12 +359,25 @@ def main(argv: Sequence[str] | None = None) -> int:
             target = proposal.get("file")
             if isinstance(target, str) and target not in changed:
                 changed.append(target)
-    changed.sort()
-    print(f"Safe allowlisted repairs: {len(changed)} file(s)", flush=True)
-    for path in changed:
-        print(f"  repaired: {path}", flush=True)
 
+    # With no supplied incident log, discover failures by running the fixed check suite.
     checks = run_checks(root)
+    if not external_log_text:
+        failure_text, discovered_diagnostics = analyze_failed_checks(checks)
+        diagnostics = discovered_diagnostics
+        if failure_text:
+            discovered_repairs = generate_safe_repairs(root, failure_text)
+            repair_proposals.extend(discovered_repairs)
+            if any(item.get("status") == "patched" for item in discovered_repairs):
+                diagnostic_source = "scheduled_repository_scan"
+                for proposal in discovered_repairs:
+                    target = proposal.get("file")
+                    if proposal.get("status") == "patched" and isinstance(target, str) and target not in changed:
+                        changed.append(target)
+                # A repair is not trusted until the complete fixed suite passes again.
+                checks = run_checks(root)
+
+    changed.sort()
     all_checks_passed = bool(checks) and all(item["passed"] for item in checks)
     rolled_back_files: list[str] = []
     if not all_checks_passed:
@@ -351,9 +386,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     report = {
         "tool": "Jon2 Auto Repair Engine",
-        "version": 1,
+        "version": 2,
         "repair_policy": "allowlisted_standard_library_imports_and_python_whitespace_only",
-        "coverage": ["python", "function_signature_diagnostics", "path_failure_diagnostics", "dependency_diagnostics", "frontend_inline_javascript", "node_server_syntax_and_release_gate_tests"],
+        "coverage": ["scheduled_repository_scan", "submitted_error_logs", "dependency_diagnostics", "path_failure_diagnostics", "function_signature_diagnostics", "missing_attribute_diagnostics", "frontend_inline_javascript", "node_server_syntax_and_release_gate_tests"],
+        "diagnostic_source": diagnostic_source,
         "unsupported_failures_are_diagnostic_only": True,
         "repair_proposals": repair_proposals,
         "diagnostics": diagnostics,
