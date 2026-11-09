@@ -3,7 +3,7 @@
 
 The engine never executes commands from logs, never edits outside ai_engine/
 for code repairs, and never changes model weights, training data, secrets, or
-deployment workflows. Proposed changes go to a pull request for human review.
+deployment workflows. Only verified allowlisted source repairs may be committed directly.
 """
 from __future__ import annotations
 
@@ -16,6 +16,8 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
+
+PROTECTED_PATH_PARTS = {"training_data", "checkpoints", "evaluation", "models", "secrets", "weights"}
 
 CHECKS: tuple[tuple[str, tuple[str, ...], tuple[int, ...]], ...] = (
     ("python_compile", (sys.executable, "-m", "compileall", "-q", "ai_engine", "tests"), (0,)),
@@ -40,7 +42,7 @@ def normalize_python_whitespace(root: Path) -> list[str]:
         if not base.exists():
             continue
         for path in sorted(base.rglob("*.py")):
-            if any(part in {".git", "__pycache__", ".venv", "venv"} for part in path.parts):
+            if any(part in {".git", "__pycache__", ".venv", "venv"} | PROTECTED_PATH_PARTS for part in path.parts):
                 continue
             raw = path.read_bytes()
             try:
@@ -101,7 +103,9 @@ def _repo_python_file(root: Path, raw_path: str) -> Path | None:
             relative = resolved.relative_to(root.resolve())
         except (OSError, ValueError):
             continue
-        if relative.parts and relative.parts[0] == "ai_engine" and resolved.is_file() and resolved.suffix == ".py":
+        if (relative.parts and relative.parts[0] == "ai_engine"
+            and not any(part in PROTECTED_PATH_PARTS for part in relative.parts)
+            and resolved.is_file() and resolved.suffix == ".py"):
             return resolved
     return None
 
