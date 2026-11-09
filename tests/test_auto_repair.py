@@ -101,7 +101,8 @@ class AutoRepairTests(unittest.TestCase):
                 target.write_bytes(b"value = 1  \\n")
                 changed = jon2_auto_repair.normalize_python_whitespace(root)
                 self.assertNotIn(target.relative_to(root).as_posix(), changed)
-                log = f"File \\"{target}\\", line 1, in <module>\\nNameError: name 'json' is not defined"
+                log = f"""File "{target}", line 1, in <module>
+NameError: name 'json' is not defined"""
                 result = jon2_auto_repair.generate_safe_repairs(root, log)
                 self.assertNotEqual(result[0]["status"], "patched")
                 self.assertEqual(target.read_bytes(), b"value = 1  \\n")
