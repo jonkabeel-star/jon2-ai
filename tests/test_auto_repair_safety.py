@@ -115,6 +115,16 @@ class SafeRepairTests(unittest.TestCase):
         self.assertEqual(target.read_bytes(), original)
         self.assertEqual(restored, [str(target)])
 
+    def test_rollback_recreates_a_snapshotted_file_if_missing(self) -> None:
+        target = self.root / "ai_engine" / "sample.py"
+        original = b"value = 42\\n"
+        target.write_bytes(original)
+        snapshot = snapshot_repair_scope(self.root)
+        target.unlink()
+        restored = restore_snapshot(snapshot)
+        self.assertEqual(target.read_bytes(), original)
+        self.assertEqual(restored, [str(target)])
+
     def test_snapshot_never_follows_symlinks_outside_scope(self) -> None:
         target = self.root / "ai_engine" / "real.py"
         outside = self.root.parent / (self.root.name + "-outside.py")
