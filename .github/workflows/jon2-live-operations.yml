@@ -67,7 +67,7 @@ jobs:
         run: |
           docker info
           python ai_engine/coding_agent.py \
-            --task "Inspect the Jon2 AI engine for one narrowly scoped, demonstrably useful Python bug fix. Return NO_SAFE_PATCH if no safe, testable fix exists. Do not change training, data, rights, CI, deployment, dependencies, or public APIs."
+            --task "Make one minimal, safe Python-only improvement to ai_engine/language_engine.py: when generation fails, include the exception class and repr in diagnostic output while preserving the existing user-facing fallback and model behavior. Return NO_SAFE_PATCH only if this exact change cannot be made safely. Do not change training, data, rights, CI, deployment, dependencies, or public APIs."
         continue-on-error: true
 
       - name: Run training gate and train only if every gate passes
