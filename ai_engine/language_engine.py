@@ -82,7 +82,7 @@ class Jon2LanguageEngine:
             ).strip()
             return answer or "لم أتمكن من إنشاء إجابة. حاول مرة أخرى."
         except Exception as error:
-            print(f"Jon2 generation failed: {error}")
+            print(f"Jon2 generation failed ({type(error).__name__}): {error!r}", flush=True)
             return "حدث خطأ أثناء توليد الإجابة. حاول مرة أخرى."
 if __name__ == "__main__":
     engine = Jon2LanguageEngine()
