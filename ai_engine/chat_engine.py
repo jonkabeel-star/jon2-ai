@@ -7,7 +7,7 @@ are deliberately lazy so the API health service can start on small hosts.
 import os
 from pathlib import Path
 
-from arabic_response import (\n    clean_generated_answer, diagnose_arabic_answer, validate_arabic_answer,\n)
+from arabic_response import clean_generated_answer, diagnose_arabic_answer, validate_arabic_answer
 
 CHECKPOINT_PATH = Path(
     os.getenv(
