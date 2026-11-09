@@ -115,6 +115,16 @@ class SafeRepairTests(unittest.TestCase):
         self.assertEqual(target.read_bytes(), original)
         self.assertEqual(restored, [str(target)])
 
+    def test_snapshot_never_follows_symlinks(self) -> None:
+        target = self.root / "ai_engine" / "real.py"
+        link = self.root / "ai_engine" / "linked.py"
+        target.write_text("value = 1\\n", encoding="utf-8")
+        link.symlink_to(target)
+        snapshot = snapshot_repair_scope(self.root)
+        self.assertIn(target.resolve(), snapshot)
+        # The link must not create an additional snapshot entry or redirect writes.
+        self.assertEqual(len(snapshot), 1)
+
     def test_snapshot_excludes_protected_model_and_training_paths(self) -> None:
         allowed = self.root / "ai_engine" / "sample.py"
         protected = self.root / "ai_engine" / "models" / "weights.py"
