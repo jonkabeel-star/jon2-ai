@@ -13,6 +13,9 @@ on:
       - "Jon2 AI Python Checks"
       - "Jon2 AI Code Checks"
       - "Jon2 AI Container Build"
+      - "Jon2 Knowledge Retrieval Tests"
+      - "Jon2 RTL compile and smoke tests"
+      - "Jais 2 adapter contract checks"
     types: [completed]
     branches: [main]
 
@@ -31,7 +34,7 @@ jobs:
        (github.event.workflow_run.conclusion == 'failure' &&
         github.event.workflow_run.head_branch == 'main' &&
         github.event.workflow_run.head_repository.full_name == github.repository &&
-        contains(fromJSON('["Jon2 AI Python Checks","Jon2 AI Code Checks","Jon2 AI Container Build"]'), github.event.workflow_run.name)))
+        contains(fromJSON('["Jon2 AI Python Checks","Jon2 AI Code Checks","Jon2 AI Container Build","Jon2 Knowledge Retrieval Tests","Jon2 RTL compile and smoke tests","Jais 2 adapter contract checks"]'), github.event.workflow_run.name)))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
