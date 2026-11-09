@@ -7,7 +7,7 @@ AI_ENGINE = Path(__file__).resolve().parents[1]
 if str(AI_ENGINE) not in sys.path:
     sys.path.insert(0, str(AI_ENGINE))
 
-from preflight_training import assess_readiness
+from preflight_training import assess_readiness, should_skip_exact_tokenizer
 
 
 class TrainingPreflightTests(unittest.TestCase):
@@ -55,6 +55,28 @@ class TrainingPreflightTests(unittest.TestCase):
         blockers = assess_readiness(**args)["blockers"]
         self.assertIn("training_partition_too_short_for_context", blockers)
         self.assertIn("validation_partition_too_short_for_context", blockers)
+
+    def test_skips_full_tokenizer_when_optimistic_upper_bound_fails(self):
+        self.assertTrue(should_skip_exact_tokenizer(
+            probe_tokens=195_059,
+            target_parameters=29_938_688,
+            minimum_tokens_per_parameter=10.0,
+        ))
+
+    def test_keeps_exact_tokenizer_when_probe_upper_bound_may_pass(self):
+        self.assertFalse(should_skip_exact_tokenizer(
+            probe_tokens=400_000_000,
+            target_parameters=29_938_688,
+            minimum_tokens_per_parameter=10.0,
+        ))
+
+    def test_probe_guard_rejects_invalid_counts(self):
+        with self.assertRaises(ValueError):
+            should_skip_exact_tokenizer(
+                probe_tokens=-1,
+                target_parameters=100,
+                minimum_tokens_per_parameter=1.0,
+            )
 
     def test_reports_actual_parameter_count_not_profile_label(self):
         args = self.base()
