@@ -15,10 +15,10 @@ from collections import Counter
 from pathlib import Path
 from typing import Iterable
 
-EMAIL_RE = re.compile(r"\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b", re.I)
-URL_RE = re.compile(r"\\b(?:https?://|www\\.)\\S+", re.I)
-PHONE_RE = re.compile(r"(?<!\\w)(?:\\+?\\d[\\d\\s().-]{7,}\\d)(?!\\w)")
-ZERO_WIDTH = {"\\u200b", "\\u200c", "\\u200d", "\\ufeff", "\\u2060"}
+EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)
+URL_RE = re.compile(r"\b(?:https?://|www\.)\S+", re.I)
+PHONE_RE = re.compile(r"(?<!\w)(?:\+?\d[\d\s().-]{7,}\d)(?!\w)")
+ZERO_WIDTH = {"\u200b", "\u200c", "\u200d", "\ufeff", "\u2060"}
 
 
 def _documents(path: Path, decoded: str) -> Iterable[str]:
@@ -47,6 +47,8 @@ def audit_candidate(candidate: str | Path) -> dict:
         raise ValueError("Candidate file cannot be a symlink.")
     if not path.is_file():
         raise FileNotFoundError("Candidate must be an existing regular file.")
+    if path.suffix.lower() not in {".txt", ".jsonl"}:
+        raise ValueError("Only UTF-8 .txt and .jsonl candidates are supported.")
     raw = path.read_bytes()
     decoded = raw.decode("utf-8", errors="strict")
     documents = list(_documents(path, decoded))
@@ -60,18 +62,12 @@ def audit_candidate(candidate: str | Path) -> dict:
     duplicate_excess = sum(count - 1 for count in counts.values() if count > 1)
 
     letters = [char for char in decoded if char.isalpha()]
-    arabic_letters = [
-        char for char in letters
-        if "\\u0600" <= char <= "\\u06ff"
-    ]
-    latin_letters = [
-        char for char in letters
-        if ("a" <= char.lower() <= "z")
-    ]
+    arabic_letters = [char for char in letters if "\u0600" <= char <= "\u06ff"]
+    latin_letters = [char for char in letters if "a" <= char.lower() <= "z"]
     phone_matches = []
     for match in PHONE_RE.findall(decoded):
         value = match.strip()
-        if re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}", value):
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
             continue
         phone_matches.append(match)
 
@@ -101,10 +97,10 @@ def audit_candidate(candidate: str | Path) -> dict:
             "matched_values_included": False,
         },
         "integrity_signals": {
-            "replacement_characters": decoded.count("\\ufffd"),
+            "replacement_characters": decoded.count("\ufffd"),
             "unexpected_control_characters": sum(
                 1 for char in decoded
-                if unicodedata.category(char) == "Cc" and char not in "\\n\\r\\t"
+                if unicodedata.category(char) == "Cc" and char not in "\n\r\t"
             ),
             "zero_width_or_bom_characters": sum(decoded.count(char) for char in ZERO_WIDTH),
         },
@@ -121,7 +117,7 @@ def audit_candidate(candidate: str | Path) -> dict:
             "training_started": False,
         },
         "warnings": _warnings(
-            len(documents), duplicate_excess, decoded.count("\\ufffd"),
+            len(documents), duplicate_excess, decoded.count("\ufffd"),
             len(EMAIL_RE.findall(decoded)), len(phone_matches),
         ),
     }
@@ -146,7 +142,7 @@ def main() -> int:
     parser.add_argument("--output", default="", help="Optional JSON report path.")
     args = parser.parse_args()
     report = audit_candidate(args.candidate)
-    rendered = json.dumps(report, ensure_ascii=False, indent=2) + "\\n"
+    rendered = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
     if args.output:
         destination = Path(args.output)
         destination.parent.mkdir(parents=True, exist_ok=True)
