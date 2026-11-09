@@ -35,16 +35,31 @@ CHECKS: tuple[tuple[str, tuple[str, ...], tuple[int, ...]], ...] = (
 )
 
 
-def normalize_python_whitespace(root: Path) -> list[str]:
-    """Remove trailing horizontal whitespace and ensure final LF, preserving CRLF."""
+def normalize_python_whitespace(root: Path, *, enabled: bool = True) -> list[str]:
+    """Remove trailing horizontal whitespace only from regular in-scope files."""
+    if not enabled:
+        return []
     changed: list[str] = []
     for base in (root / "ai_engine", root / "tests"):
         if not base.exists():
             continue
         for path in sorted(base.rglob("*.py")):
-            if any(part in {".git", "__pycache__", ".venv", "venv"} | PROTECTED_PATH_PARTS for part in path.parts):
+            # Never follow symlinks: their targets may be outside the repair scope.
+            if path.is_symlink():
                 continue
-            raw = path.read_bytes()
+            try:
+                resolved = path.resolve()
+                relative = resolved.relative_to(root.resolve())
+            except (OSError, ValueError):
+                continue
+            if (
+                not relative.parts
+                or relative.parts[0] not in {"ai_engine", "tests"}
+                or any(part in {".git", "__pycache__", ".venv", "venv"} | PROTECTED_PATH_PARTS for part in relative.parts)
+                or not resolved.is_file()
+            ):
+                continue
+            raw = resolved.read_bytes()
             try:
                 source = raw.decode("utf-8")
             except UnicodeDecodeError:
@@ -64,8 +79,8 @@ def normalize_python_whitespace(root: Path) -> list[str]:
                 fixed += newline
             updated = fixed.encode("utf-8")
             if updated != raw:
-                path.write_bytes(updated)
-                changed.append(path.relative_to(root).as_posix())
+                resolved.write_bytes(updated)
+                changed.append(relative.as_posix())
     return changed
 
 
@@ -363,7 +378,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         else:
             repair_proposals = [{"status": "no_log", "reason": "The supplied log file was not found."}]
 
-    changed = normalize_python_whitespace(root)
+    # Untrusted issue reports are strictly read-only: no formatting or source edits.
+    changed = normalize_python_whitespace(root, enabled=not args.diagnostic_only)
     for proposal in repair_proposals:
         if proposal.get("status") == "patched":
             target = proposal.get("file")
