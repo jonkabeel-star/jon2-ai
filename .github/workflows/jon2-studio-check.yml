@@ -1,0 +1,28 @@
+name: Jon2 Studio syntax check
+on:
+  push:
+    branches:
+      - jon2-studio-private-bootstrap
+    paths:
+      - "studio/**"
+      - ".github/workflows/jon2-studio-check.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  studio-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check Studio JavaScript syntax
+        run: node --check studio/studio.js
+      - name: Verify required Studio files
+        run: |
+          test -s studio/index.html
+          test -s studio/studio.css
+          test -s studio/studio.js
+          grep -q 'sandbox="allow-scripts"' studio/index.html
+          ! grep -R -E 'api[_-]?key|secret|ghp_[A-Za-z0-9]+' studio/
