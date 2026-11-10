@@ -74,3 +74,14 @@ owned and moved by the project. That does not make public hosting free or
 permanent: an online shared service still needs a running computer/server,
 power, network access, storage, and maintenance. No hosting provider or
 lifetime-free uptime is promised by this code.
+
+
+## Website gateway cutover — prepared, not deployed
+
+The Cloudflare Worker is now designed to be a thin HTTPS gateway only. It no longer calls env.AI, declares a model ID, or performs hosted model inference. The [ai] binding has been removed from wrangler.toml.
+
+After the independent FastAPI service is hosted and passes its readiness, security, and quality gates, set the Worker environment variable JON2_CORE_URL to that service HTTPS origin. The Worker forwards only the message and session UUID to the project own API.
+
+Until JON2_CORE_URL is configured and the independent core is ready, /api/health reports that the core is not connected and /api/chat returns HTTP 503. This is intentional: there is no fallback to a hosted AI provider and no fake response.
+
+This Worker remains a Cloudflare-hosted gateway; removing Workers AI does not remove the hosting provider. The model inference and SQLite memory run on the separately hosted Jon2 server. Do not deploy this cutover until that server is available and verified, or the public chat will remain unavailable.
