@@ -18,7 +18,7 @@ function validText(v, max = 12000) {
 }
 function authorized(request, env) {
   const expected = env.JON2_MEMORY_API_KEY;
-  const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer\\s+/i, "");
+  const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
   return Boolean(expected && supplied && supplied === expected);
 }
 export default {
@@ -64,7 +64,7 @@ export default {
         const owner = b.owner_id;
         if (!validText(owner, 128) || !validText(b.query, 300)) return json({ error: "invalid_search" }, 400, headers);
         const limit = Math.min(Math.max(Number(b.limit || 10), 1), 25);
-        const terms = [...new Set(b.query.toLowerCase().split(/[^\\p{L}\\p{N}]+/u).filter(x => x.length > 1))].slice(0, 6);
+        const terms = [...new Set(b.query.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(x => x.length > 1))].slice(0, 6);
         if (!terms.length) return json({ ok: true, memories: [] }, 200, headers);
         const clauses = terms.map(() => "lower(content) LIKE ?").join(" OR ");
         const binds = terms.map(term => "%" + term + "%");
