@@ -8,6 +8,7 @@ from pathlib import Path
 from autonomous_builder import (
     _recommendations,
     _safe_report_destination,
+    _write_report_atomically,
     build_autonomous_report,
 )
 
@@ -42,6 +43,43 @@ class AutonomousBuilderTests(unittest.TestCase):
                 _safe_report_destination(root / "report.json", root)
             outside = root.parent / (root.name + "-report.json")
             self.assertEqual(_safe_report_destination(outside, root), outside.resolve())
+
+    def test_report_destination_rejects_symlink_without_touching_target(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            workspace = Path(temporary)
+            root = workspace / "repo"
+            root.mkdir()
+            protected = workspace / "protected.txt"
+            protected.write_text("keep me", encoding="utf-8")
+            destination = workspace / "report.json"
+            destination.symlink_to(protected)
+            with self.assertRaises(ValueError):
+                _safe_report_destination(destination, root)
+            self.assertEqual(protected.read_text(encoding="utf-8"), "keep me")
+            self.assertTrue(destination.is_symlink())
+
+    def test_report_writer_ignores_preexisting_temp_symlink(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            workspace = Path(temporary)
+            root = workspace / "repo"
+            output = workspace / "output"
+            root.mkdir()
+            output.mkdir()
+            destination = output / "report.json"
+            protected = output / "protected.txt"
+            protected.write_text("keep me", encoding="utf-8")
+            stale_temp = destination.with_name(destination.name + ".tmp")
+            stale_temp.symlink_to(protected)
+
+            safe_destination = _safe_report_destination(destination, root)
+            _write_report_atomically(safe_destination, '{"status": "blocked"}\\n')
+
+            self.assertEqual(protected.read_text(encoding="utf-8"), "keep me")
+            self.assertTrue(stale_temp.is_symlink())
+            self.assertEqual(
+                destination.read_text(encoding="utf-8"),
+                '{"status": "blocked"}\\n',
+            )
 
     def test_no_automatic_training_or_release_permissions(self):
         with tempfile.TemporaryDirectory() as temporary:
