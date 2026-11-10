@@ -17,6 +17,7 @@ import chat_memory
 from chat_engine import (
     CHECKPOINT_PATH,
     generate_reply,
+    load_runtime,
     model_is_ready,
 )
 
@@ -99,6 +100,14 @@ def health():
 
 @app.get("/api/health/ready")
 def readiness():
+    if _release_approved() and _checkpoint_exists() and not model_is_ready():
+        try:
+            load_runtime()
+        except Exception as error:
+            raise HTTPException(
+                status_code=503,
+                detail="تعذر تحميل نموذج Jon2 الأصلي على هذا الخادم.",
+            ) from error
     snapshot = health()
     if not snapshot["chat_ready"]:
         raise HTTPException(
