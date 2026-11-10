@@ -37,4 +37,4 @@ jobs:
           test -s studio/bot.js
           test -s server/jon2-studio-agent/app.py
           grep -q 'sandbox="allow-scripts"' studio/index.html
-          ! grep -R -E 'api[_-]?key|secret|ghp_[A-Za-z0-9]+' studio/
+          ! grep -R -E 'gh[pousr]_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}' studio/
