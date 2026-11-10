@@ -310,10 +310,10 @@ def chat(request: ChatRequest):
             status_code=503,
             detail="محادثة Jon2 متوقفة حتى تفعيل الوضع التجريبي صراحةً أو اجتياز مراجعة الجودة والمراجعة البشرية.",
         )
-    if experimental and not model_is_ready():
+    if experimental and (not _checkpoint_configured() or not model_is_ready()):
         raise HTTPException(
             status_code=503,
-            detail="الوضع التجريبي مفعّل، لكن أوزان نموذج Jon2 الأصلي لم تُحمّل بعد. لم يتم إنشاء رد بديل.",
+            detail="الوضع التجريبي لا يتجاوز شرط مراجعة الجودة والمراجعة البشرية: أوزان نموذج Jon2 الأصلي غير متاحة أو لم تُحمّل. لم يتم إنشاء رد بديل.",
         )
 
     # Deterministic greetings and source-backed factual retrieval work without
