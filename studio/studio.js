@@ -6,7 +6,8 @@ const HISTORY_KEY="jon2_studio_agent_history_v1";let agentHistory=[];
 function remember(){try{agentHistory.push(JSON.stringify(project));if(agentHistory.length>12)agentHistory.shift();localStorage.setItem(HISTORY_KEY,JSON.stringify(agentHistory));}catch(e){}}
 function restoreAgentHistory(){try{const h=JSON.parse(localStorage.getItem(HISTORY_KEY)||"[]");if(Array.isArray(h))agentHistory=h.slice(-12);}catch(e){agentHistory=[];}}
 const $=id=>document.getElementById(id);
-const validPath=n=>typeof n==="string"&&n.length<=100&&/^[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(n)&&!n.startsWith("/")&&!n.split("/").some(p=>!p||p==="."||p===".."||p.startsWith("."));\nconst kind=n=>{const e=n.split(".").pop().toLowerCase();return e==="html"?"html":e==="css"?"css":e==="js"?"js":"text";};
+const validPath=n=>typeof n==="string"&&n.length<=100&&/^[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(n)&&!n.startsWith("/")&&!n.split("/").some(p=>!p||p==="."||p===".."||p.startsWith("."));
+const kind=n=>{const e=n.split(".").pop().toLowerCase();return e==="html"?"html":e==="css"?"css":e==="js"?"js":"text";};
 function save(){try{localStorage.setItem(KEY,JSON.stringify(project));$("saveState").textContent="تم الحفظ محليًا";}catch(e){$("saveState").textContent="تعذر الحفظ محليًا";}}
 function load(){try{const p=JSON.parse(localStorage.getItem(KEY)||"null");if(!p||!p.files)return;const files={};for(const [n,f] of Object.entries(p.files)){if(validPath(n)&&f&&typeof f.content==="string")files[n]={type:kind(n),content:f.content.slice(0,250000)};}if(Object.keys(files).length)project={name:String(p.name||"مشروعي").slice(0,60),files};}catch(e){console.warn("Studio local restore failed",e);}}
 function read(){if(project.files[active])project.files[active].content=$("codeEditor").value;}
