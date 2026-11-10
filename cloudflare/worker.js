@@ -112,12 +112,15 @@ export default {
         project: "Jon2 Cloud",
         status: "online",
         api_ready: true,
-        model_ready: Boolean(env.AI),
+        // This Worker runs Qwen for infrastructure testing, not the original Jon2 checkpoint.
+        model_ready: false,
         chat_ready: Boolean(env.AI),
-        model_status: env.AI ? "binding_configured_test_inference_required" : "binding_missing",
+        inference_tested: false,
+        model_status: env.AI ? "qwen_binding_configured_inference_unverified" : "binding_missing",
         model: MODEL_ID,
+        model_type: "qwen_test_only",
         message: env.AI
-          ? "تم إعداد ربط نموذج Qwen على Cloudflare؛ يلزم اختبار توليد فعلي للتأكد من جاهزية المحادثة."
+          ? "الخادم متصل، لكن هذا اختبار Qwen فقط وليس نموذج Jon2 الأصلي، ولم يتم اعتماد جودة التوليد."
           : "لم يتم إعداد Workers AI binding بعد.",
       }, 200, origin);
     }
