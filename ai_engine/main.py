@@ -116,11 +116,12 @@ def health():
     experimental = _experimental_chat_enabled() and not release_approved
     # Experimental mode is informational only; the public chat route stays closed
     # until the explicit human release approval is enabled.
-    chat_enabled = release_approved
+    chat_enabled = (release_approved or experimental) and loaded and checkpoint_available
     model_status = (
         "checkpoint_missing" if not checkpoint_available
         else "ready" if release_approved and loaded
-        else "release_blocked" if not release_approved
+        else "experimental_ready" if experimental and loaded
+        else "release_blocked" if not release_approved and not experimental
         else "checkpoint_available"
     )
     checkpoint_path = os.getenv(
@@ -302,10 +303,17 @@ def chat(request: ChatRequest):
     if not message:
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
 
-    if not _chat_release_approved():
+    release_approved = _chat_release_approved()
+    experimental = _experimental_chat_enabled() and not release_approved
+    if not release_approved and not experimental:
         raise HTTPException(
             status_code=503,
-            detail="محادثة Jon2 متوقفة حتى تفعيل الوضع التجريبي أو اجتياز مراجعة الجودة والمراجعة البشرية.",
+            detail="محادثة Jon2 متوقفة حتى تفعيل الوضع التجريبي صراحةً أو اجتياز مراجعة الجودة والمراجعة البشرية.",
+        )
+    if experimental and not model_is_ready():
+        raise HTTPException(
+            status_code=503,
+            detail="الوضع التجريبي مفعّل، لكن أوزان نموذج Jon2 الأصلي لم تُحمّل بعد. لم يتم إنشاء رد بديل.",
         )
 
     # Deterministic greetings and source-backed factual retrieval work without
