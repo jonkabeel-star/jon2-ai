@@ -59,6 +59,16 @@
       "review_date": "2026-11-08",
       "rights_basis": "The repository owner explicitly approved this original project-authored dialogue pack for private experimental Jon2 research training only on 2026-11-08. No public-model or commercial training use is authorized.",
       "intended_use": "research_training"
+    },
+    {
+      "file": "jon2_arabic_dialogue_v1.jsonl",
+      "sha256": "6150c0112d42bbb03b1df9ce999c80372a05df5b6004f233e2b7581d0ef3ddb1",
+      "character_count": 11628,
+      "status": "APPROVED",
+      "reviewer": "Repository owner (explicit approval in conversation)",
+      "review_date": "2026-11-10",
+      "rights_basis": "The repository owner explicitly approved this exact 41-example, project-drafted Arabic dialogue file for private experimental Jon2 research training only on 2026-11-10. No public-model, commercial, or redistribution use is authorized.",
+      "intended_use": "research_training"
     }
   ]
 }
