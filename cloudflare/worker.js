@@ -6,10 +6,11 @@ const ALLOWED_ORIGINS = new Set([
 ]);
 const MODEL_ID = "@cf/qwen/qwen3.8-27b";
 const MAX_MESSAGE_CHARS = 2000;
-const MAX_HISTORY_ITEMS = 8;
-const MAX_OUTPUT_TOKENS = 500;
+const MAX_HISTORY_ITEMS = 6;
+const MAX_HISTORY_CHARS = 1200;
+const MAX_OUTPUT_TOKENS = 384;
 const WINDOW_MS = 60_000;
-const MAX_REQUESTS_PER_WINDOW = 10;
+const MAX_REQUESTS_PER_WINDOW = 6;
 
 // Best-effort per-isolate protection. Cloudflare's account-level daily AI quota
 // remains the hard usage boundary; this map is not a globally distributed limiter.
@@ -60,7 +61,7 @@ function normalizeHistory(history) {
     .slice(-MAX_HISTORY_ITEMS)
     .map((item) => ({
       role: item.role,
-      content: item.content.slice(0, MAX_MESSAGE_CHARS),
+      content: item.content.slice(0, MAX_HISTORY_CHARS),
     }));
 }
 
@@ -119,6 +120,8 @@ export default {
         model_status: env.AI ? "qwen_binding_configured_inference_unverified" : "binding_missing",
         model: MODEL_ID,
         model_type: "qwen_test_only",
+        free_quota_policy: "Workers Free includes 10,000 Neurons per day; resets at 00:00 UTC.",
+        billing_warning: "This Worker has no paid-model fallback. Workers Paid accounts can incur charges above the daily free allocation; keep the Cloudflare account on Workers Free to avoid AI overage charges.",
         message: env.AI
           ? "الخادم متصل، لكن هذا اختبار Qwen فقط وليس نموذج Jon2 الأصلي، ولم يتم اعتماد جودة التوليد."
           : "لم يتم إعداد Workers AI binding بعد.",
@@ -193,7 +196,7 @@ export default {
         return json({
           project: "Jon2 Cloud",
           error: "inference_failed",
-          message: "تعذر تشغيل نموذج Qwen الآن. قد تكون الحصة المجانية اليومية انتهت أو الخدمة مزدحمة. حاول لاحقًا.",
+          message: "تعذر تشغيل نموذج Qwen الآن. قد تكون الحصة اليومية قد انتهت أو الخدمة مزدحمة. لا يوجد تحويل تلقائي إلى مزود مدفوع؛ حاول بعد التجديد.",
         }, 502, origin);
       }
     }
