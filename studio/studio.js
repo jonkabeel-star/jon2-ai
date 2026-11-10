@@ -2,6 +2,9 @@
 const KEY="jon2_studio_projects_v1";
 const defaults={"index.html":{type:"html",content:"<!doctype html>\n<html lang=\"ar\" dir=\"rtl\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>مشروعي الأول</title>\n<link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n<main class=\"card\">\n<h1>أهلًا بك في مشروعي!</h1>\n<p>ابدأ تعديل ملفاتك من Jon2 Studio.</p>\n<button id=\"hello\">اضغط هنا</button>\n</main>\n<script src=\"script.js\"><\\/script>\n</body>\n</html>"},"style.css":{type:"css",content:"body{margin:0;min-height:100vh;display:grid;place-items:center;background:#eef2ff;font-family:Arial,sans-serif}.card{background:white;padding:36px;border-radius:20px;box-shadow:0 15px 45px #23315b22;text-align:center}h1{color:#425bd5}button{border:0;border-radius:10px;padding:12px 20px;background:#526de5;color:white;cursor:pointer}"},"script.js":{type:"js",content:"document.getElementById('hello')?.addEventListener('click',()=>{\n alert('مرحبًا بك في Jon2 Studio!');\n});"}};
 let project={name:"مشروعي الأول",files:structuredClone(defaults)},active="index.html";
+const HISTORY_KEY="jon2_studio_agent_history_v1";let agentHistory=[];
+function remember(){try{agentHistory.push(JSON.stringify(project));if(agentHistory.length>12)agentHistory.shift();localStorage.setItem(HISTORY_KEY,JSON.stringify(agentHistory));}catch(e){}}
+function restoreAgentHistory(){try{const h=JSON.parse(localStorage.getItem(HISTORY_KEY)||"[]");if(Array.isArray(h))agentHistory=h.slice(-12);}catch(e){agentHistory=[];}}
 const $=id=>document.getElementById(id);
 const kind=n=>{const e=n.split(".").pop().toLowerCase();return e==="html"?"html":e==="css"?"css":e==="js"?"js":"text";};
 function save(){try{localStorage.setItem(KEY,JSON.stringify(project));$("saveState").textContent="تم الحفظ محليًا";}catch(e){$("saveState").textContent="تعذر الحفظ محليًا";}}
@@ -17,6 +20,11 @@ $("runCode").onclick=preview;$("refreshPreview").onclick=preview;$("downloadFile
 $("addFile").onclick=()=>{const n=prompt("اسم الملف (مثل app.js أو notes.txt):");if(!n)return;if(!/^[a-zA-Z0-9._-]{1,64}$/.test(n)||n.startsWith(".")||project.files[n]){alert("اسم غير صالح أو الملف موجود بالفعل.");return;}read();project.files[n]={type:kind(n),content:""};active=n;render();};
 $("renameProject").onclick=()=>{const n=prompt("اسم المشروع:",project.name);if(n&&n.trim()){project.name=n.trim().slice(0,60);save();render();}};
 $("newProject").onclick=()=>{if(!confirm("إنشاء مشروع جديد؟ سيتم استبدال المشروع المحفوظ على هذا المتصفح."))return;project={name:"مشروع جديد",files:structuredClone(defaults)};active="index.html";render();preview();};
-window.Jon2Studio={getSnapshot:()=>({name:project.name,activeFile:active,files:Object.fromEntries(Object.entries(project.files).map(([n,f])=>[n,{type:f.type,content:f.content}]))})};
-load();render();preview();
+window.Jon2Studio={
+ getSnapshot:()=>({name:project.name,activeFile:active,files:Object.fromEntries(Object.entries(project.files).map(([n,f])=>[n,{type:f.type,content:f.content}]))}),
+ createAgentFile:(name,content)=>{if(!/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$/.test(name)||name.startsWith(".")||Object.keys(project.files).length>=40||project.files[name]||typeof content!=="string"||content.length>250000)return{ok:false,message:"اسم الملف غير صالح أو موجود، أو تم تجاوز الحد الآمن."};remember();project.files[name]={type:kind(name),content};active=name;render();preview();return{ok:true,message:"تم إنشاء "+name+" داخل مساحة العمل المحلية."};},
+ updateAgentFile:(name,content)=>{if(!project.files[name]||typeof content!=="string"||content.length>250000)return{ok:false,message:"الملف غير موجود أو المحتوى يتجاوز الحد."};remember();project.files[name].content=content;active=name;render();preview();return{ok:true,message:"تم تحديث "+name+" مع حفظ نسخة سابقة للتراجع."};},
+ undoAgentChange:()=>{const old=agentHistory.pop();if(!old)return{ok:false,message:"لا توجد تغييرات للتراجع عنها."};try{project=JSON.parse(old);localStorage.setItem(HISTORY_KEY,JSON.stringify(agentHistory));active=project.files[active]?active:Object.keys(project.files)[0];render();preview();return{ok:true,message:"تم التراجع عن آخر تغيير."};}catch(e){return{ok:false,message:"تعذر استعادة النسخة السابقة."};}}
+};
+restoreAgentHistory();load();render();preview();
 })();
