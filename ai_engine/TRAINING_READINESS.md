@@ -69,3 +69,20 @@ A previously observed legacy workflow run `42538599326` remained in `pending` wi
 ### Human review
 
 No human review or release approval is recorded for the current checkpoint. The 40-prompt historical evaluation was explicitly marked for human review and showed incoherent Arabic. The release flag must remain false.
+
+## Owner-approved Arabic dialogue source — 2026-11-10
+
+The repository owner explicitly approved the exact 41-example file drafted for review in PR #35 for **private experimental research training only**.
+
+- Training source: `ai_engine/training_data/jon2_arabic_dialogue_v1.jsonl`
+- Examples: 41 complete user/assistant dialogue records.
+- UTF-8 character count: 11,628.
+- SHA-256: `6150c0112d42bbb03b1df9ce999c80372a05df5b6004f233e2b7581d0ef3ddb1`
+- Approval is recorded in `ai_engine/training_data/source_approvals.json`, bound to the exact file hash and character count.
+- Intended use: `research_training` only. No public-model, commercial, or redistribution use is authorized.
+- The original candidate remains preserved under `ai_engine/data_candidates/`.
+
+The trainer's structured JSONL input is opt-in. A future explicitly approved research run must pass `--include-jsonl`; otherwise this source is not loaded. This approval does not start training, change any checkpoint, or authorize public release.
+
+This is a small addition, not a corpus-readiness pass. Keep the existing model release gate closed, keep held-out evaluation data separate, and do not launch the 30M profile. First expand and quality-review the corpus, then run the documented readiness checks and an isolated research experiment.
+
