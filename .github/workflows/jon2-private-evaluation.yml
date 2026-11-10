@@ -1,4 +1,5 @@
 name: Jon2 Private Checkpoint Human Evaluation # UTF-8 sampling regression recheck
+# One-time owner-requested rerun after the Qwen infrastructure smoke test.
 
 on:
   push:
