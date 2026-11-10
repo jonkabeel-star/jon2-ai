@@ -307,7 +307,7 @@ async function checkApiHealth() {
     });
     if (!response.ok) throw new Error("Health check failed: " + response.status);
     const health = await response.json();
-    apiStatusKey = health.experimental_mode && health.chat_ready ? "experimentalReady" : health.chat_ready === true || health.model_ready === true ? "modelReady" : health.api_ready === true || health.runtime_api_ready === true ? "apiOnline" : "offline";
+    apiStatusKey = health.experimental_mode && health.chat_ready ? "experimentalReady" : health.chat_ready === true || health.model_ready === true ? "modelReady" : health.status === "online" || health.api_ready === true || health.runtime_api_ready === true ? "apiOnline" : "offline";
     status.textContent = translations[lang][apiStatusKey];
     updateChatNote();
   } catch (error) {
