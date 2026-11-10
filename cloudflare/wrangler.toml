@@ -1,4 +1,6 @@
-name = "jon2-cloud-api"
-main = "worker.py"
+name = "jon2-ai"
+main = "worker.js"
 compatibility_date = "2026-11-06"
-compatibility_flags = ["python_workers"]
+
+[ai]
+binding = "AI"
