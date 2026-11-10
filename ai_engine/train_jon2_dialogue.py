@@ -29,6 +29,25 @@ from dialogue_objective import (
 )
 
 
+def load_initial_checkpoint(path: str, expected_config: dict):
+    """Load a locally stored Jon2-owned checkpoint for continued training."""
+    source = Path(path)
+    if not source.is_file():
+        raise FileNotFoundError(f"Initial Jon2 checkpoint not found: {source}")
+    checkpoint = torch.load(source, map_location="cpu", weights_only=True)
+    if not isinstance(checkpoint, dict) or not {
+        "model_state", "tokenizer", "config"
+    }.issubset(checkpoint):
+        raise ValueError("Initial checkpoint is missing model_state, tokenizer, or config.")
+    if checkpoint["config"] != expected_config:
+        raise ValueError(
+            "Initial checkpoint architecture does not match the selected width/heads/layers/context/dropout."
+        )
+    tokenizer = ByteBPETokenizer.from_dict(checkpoint["tokenizer"])
+    digest = hashlib.sha256(source.read_bytes()).hexdigest()
+    return tokenizer, checkpoint["model_state"], digest
+
+
 def train(args):
     random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -46,11 +65,29 @@ def train(args):
         conversations, args.validation_fraction, args.seed
     )
     train_text = format_dialogues(train_conversations)
-    tokenizer = ByteBPETokenizer.train(
-        train_text,
-        vocab_size=args.tokenizer_vocab_size,
-        min_frequency=args.tokenizer_min_frequency,
-    )
+    config = {
+        "width": args.width,
+        "heads": args.heads,
+        "layers": args.layers,
+        "context": args.context,
+        "dropout": args.dropout,
+    }
+    initial_state = None
+    parent_checkpoint_sha256 = None
+    if args.init_checkpoint:
+        tokenizer, initial_state, parent_checkpoint_sha256 = load_initial_checkpoint(
+            args.init_checkpoint, config
+        )
+        print(
+            "Continuing from the project-owned Jon2 checkpoint "
+            f"(sha256={parent_checkpoint_sha256})."
+        )
+    else:
+        tokenizer = ByteBPETokenizer.train(
+            train_text,
+            vocab_size=args.tokenizer_vocab_size,
+            min_frequency=args.tokenizer_min_frequency,
+        )
     train_data, train_mask = encode_assistant_only(train_conversations, tokenizer)
     validation_data, validation_mask = encode_assistant_only(
         validation_conversations, tokenizer
@@ -60,16 +97,11 @@ def train(args):
     if not train_mask[1:].any() or not validation_mask[1:].any():
         raise ValueError("Both train and validation splits need assistant response targets.")
 
-    config = {
-        "width": args.width,
-        "heads": args.heads,
-        "layers": args.layers,
-        "context": args.context,
-        "dropout": args.dropout,
-    }
     model = Jon2Transformer(
         vocab_size=tokenizer.vocab_size, **config
     ).to("cuda" if torch.cuda.is_available() else "cpu")
+    if initial_state is not None:
+        model.load_state_dict(initial_state, strict=True)
     device = next(model.parameters()).device
     parameters = sum(parameter.numel() for parameter in model.parameters())
     assistant_tokens = int(train_mask.sum().item())
@@ -138,6 +170,8 @@ def train(args):
         "training_method": "assistant_only_next_token_loss_v1",
         "model_name": "Jon2 Original Transformer — Assistant Only",
         "release_approved": False,
+        "initialization": "continued_from_project_checkpoint" if args.init_checkpoint else "random_initialization",
+        "parent_checkpoint_sha256": parent_checkpoint_sha256,
     }
     temporary = output.with_suffix(output.suffix + ".tmp")
     torch.save(checkpoint, temporary)
@@ -165,6 +199,7 @@ def main():
     parser.add_argument("--data", default="ai_engine/training_data")
     parser.add_argument("--approval-manifest", default="ai_engine/training_data/source_approvals.json")
     parser.add_argument("--output", default="ai_engine/checkpoints/jon2-dialogue-v1.pt")
+    parser.add_argument("--init-checkpoint", default="", help="Optional local Jon2-owned checkpoint to continue training; architecture and tokenizer must match.")
     parser.add_argument("--steps", type=int, default=2000)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--context", type=int, default=128)
@@ -177,7 +212,7 @@ def main():
     parser.add_argument("--validation-fraction", type=float, default=0.1)
     parser.add_argument("--tokenizer-vocab-size", type=int, default=512)
     parser.add_argument("--tokenizer-min-frequency", type=int, default=2)
-    parser.add_argument("--minimum-assistant-tokens-per-parameter", type=float, default=10.0)
+    parser.add_argument("--minimum-assistant-tokens-per-parameter", type=float, default=None)
     parser.add_argument("--eval-every", type=int, default=100)
     parser.add_argument("--eval-steps", type=int, default=20)
     parser.add_argument("--seed", type=int, default=42)
@@ -192,6 +227,9 @@ def main():
         parser.error("training sizes and intervals must be positive")
     if args.width % args.heads:
         parser.error("width must be divisible by heads")
+    if args.minimum_assistant_tokens_per_parameter is None:
+        # Fine-tuning has a lower data floor than learning a language model from random weights.
+        args.minimum_assistant_tokens_per_parameter = 1.0 if args.init_checkpoint else 10.0
     if args.minimum_assistant_tokens_per_parameter <= 0:
         parser.error("minimum-assistant-tokens-per-parameter must be positive")
     if args.weight_decay < 0 or args.learning_rate <= 0:
