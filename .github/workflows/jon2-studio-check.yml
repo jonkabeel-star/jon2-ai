@@ -5,6 +5,7 @@ on:
       - jon2-studio-private-bootstrap
     paths:
       - "studio/**"
+      - "functions/**"
       - "server/jon2-studio-agent/**"
       - ".github/workflows/jon2-studio-check.yml"
   workflow_dispatch:
