@@ -10,6 +10,7 @@ import argparse
 import json
 import os
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -67,13 +68,44 @@ def _recommendations(blockers: list[str], approval_ok: bool) -> list[dict[str, s
 
 
 def _safe_report_destination(destination: Path, repository_root: Path) -> Path:
-    resolved = destination.expanduser().resolve()
+    candidate = destination.expanduser()
+    # Check before resolve(): resolving first erases the fact that the final
+    # path component was a symlink and could redirect a report write.
+    if candidate.is_symlink():
+        raise ValueError("Diagnostic report destination cannot be a symlink.")
+    resolved = candidate.resolve()
     root = repository_root.resolve()
     if resolved == root or root in resolved.parents:
         raise ValueError("Diagnostic reports must be written outside the Git repository.")
-    if resolved.exists() and resolved.is_symlink():
-        raise ValueError("Diagnostic report destination cannot be a symlink.")
     return resolved
+
+
+def _write_report_atomically(destination: Path, rendered: str) -> None:
+    """Write through a unique, exclusively-created temp file in the same directory."""
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{destination.name}.",
+        suffix=".tmp",
+        dir=destination.parent,
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as stream:
+            stream.write(rendered)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, destination)
+    except BaseException:
+        # fdopen normally owns/closes the descriptor; ignore an already-closed fd.
+        try:
+            os.close(descriptor)
+        except OSError:
+            pass
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+        raise
 
 
 def build_autonomous_report(
@@ -179,10 +211,7 @@ def main(argv: list[str] | None = None) -> int:
     rendered = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
     if args.report:
         destination = _safe_report_destination(Path(args.report), root)
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        temporary = destination.with_name(destination.name + ".tmp")
-        temporary.write_text(rendered, encoding="utf-8")
-        os.replace(temporary, destination)
+        _write_report_atomically(destination, rendered)
         print(f"Jon2 autonomous report written: {destination}")
     print(rendered, end="")
     return 0 if report["status"] == "ready_for_owner_training_approval" else 2
