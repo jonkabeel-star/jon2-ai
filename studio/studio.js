@@ -17,5 +17,6 @@ $("runCode").onclick=preview;$("refreshPreview").onclick=preview;$("downloadFile
 $("addFile").onclick=()=>{const n=prompt("اسم الملف (مثل app.js أو notes.txt):");if(!n)return;if(!/^[a-zA-Z0-9._-]{1,64}$/.test(n)||n.startsWith(".")||project.files[n]){alert("اسم غير صالح أو الملف موجود بالفعل.");return;}read();project.files[n]={type:kind(n),content:""};active=n;render();};
 $("renameProject").onclick=()=>{const n=prompt("اسم المشروع:",project.name);if(n&&n.trim()){project.name=n.trim().slice(0,60);save();render();}};
 $("newProject").onclick=()=>{if(!confirm("إنشاء مشروع جديد؟ سيتم استبدال المشروع المحفوظ على هذا المتصفح."))return;project={name:"مشروع جديد",files:structuredClone(defaults)};active="index.html";render();preview();};
+window.Jon2Studio={getSnapshot:()=>({name:project.name,activeFile:active,files:Object.fromEntries(Object.entries(project.files).map(([n,f])=>[n,{type:f.type,content:f.content}]))})};
 load();render();preview();
 })();
