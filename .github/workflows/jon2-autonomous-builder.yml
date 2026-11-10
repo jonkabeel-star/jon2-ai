@@ -10,7 +10,9 @@ on:
       - "ai_engine/source_approval.py"
       - ".github/workflows/jon2-autonomous-builder.yml"
   push:
-    branches: [main]
+    branches:
+      - main
+      - "feature/autonomous-brain-builder"
     paths:
       - "ai_engine/autonomous_builder.py"
       - "ai_engine/preflight_training.py"
