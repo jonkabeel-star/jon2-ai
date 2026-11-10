@@ -30,7 +30,7 @@ async function verifyAccess(request, env) {
     const header = JSON.parse(new TextDecoder().decode(decodePart(parts[0])));
     const claims = JSON.parse(new TextDecoder().decode(decodePart(parts[1])));
     const now = Math.floor(Date.now() / 1000);
-    const team = String(env.ACCESS_TEAM_DOMAIN).replace(/^https?:\\/\\//, "").replace(/\\/$/, "");
+    const team = String(env.ACCESS_TEAM_DOMAIN).replace(/^https?:\/\//, "").replace(/\/$/, "");
     if (claims.iss !== "https://" + team) return { configured: true, valid: false };
     if (!Array.isArray(claims.aud) || !claims.aud.includes(env.ACCESS_AUD)) return { configured: true, valid: false };
     if (typeof claims.exp !== "number" || claims.exp <= now) return { configured: true, valid: false };
