@@ -33,3 +33,7 @@ Do not add paid services, paid APIs, paid runners, or automatic plan upgrades. A
 
 ## Local data warning
 Projects are stored in this browser profile only. Clearing browser site data may erase them. Export the project JSON regularly if it matters.
+
+
+## Self-hosted language-model connection
+The separate Python API scaffold is in `server/jon2-studio-agent/`. It provides authenticated chat and SQLite conversation memory, but it does not include or host model weights. Run it on a separate Linux host, configure a compatible local model server and environment variables as described in that directory's README, then enter the API base URL and bearer token in the Jon2 Bot connection panel. The token is held in page memory only; do not paste it into public repositories or screenshots. The browser sends project file contents (excluding obvious secret-like filenames) to that server when using remote chat, so only connect to a host you control. The Studio site itself cannot host this Python API on Cloudflare Pages.
