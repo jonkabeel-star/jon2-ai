@@ -2,5 +2,5 @@ name = "jon2-ai"
 main = "cloudflare/worker.js"
 compatibility_date = "2026-11-06"
 
-[ai]
-binding = "AI"
+# Configure JON2_CORE_URL as a Worker environment variable after the independent API is hosted.
+# No Workers AI binding or hosted model is used by this Worker.
