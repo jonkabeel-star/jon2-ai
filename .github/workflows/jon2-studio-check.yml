@@ -19,10 +19,14 @@ jobs:
           node-version: "22"
       - name: Check Studio JavaScript syntax
         run: node --check studio/studio.js
+          node --check studio/brain.js
+          node --check studio/bot.js
       - name: Verify required Studio files
         run: |
           test -s studio/index.html
           test -s studio/studio.css
           test -s studio/studio.js
+          test -s studio/brain.js
+          test -s studio/bot.js
           grep -q 'sandbox="allow-scripts"' studio/index.html
           ! grep -R -E 'api[_-]?key|secret|ghp_[A-Za-z0-9]+' studio/
