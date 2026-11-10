@@ -202,6 +202,12 @@ export async function onRequestPost({ request, env }) {
   }
 }
 
-export function onRequestGet() {
-  return json({ service: "Jon2 Studio Agent", status: "ready", requiresAccess: true });
+export async function onRequestGet({ request, env }) {
+  const access = await verifyAccess(request, env);
+  if (!access.configured) return json({ service: "Jon2 Studio Agent", status: "needs_access_configuration" }, 503);
+  if (!access.valid) return json({ error: "يجب تسجيل الدخول عبر Cloudflare Access." }, 401);
+  if (!env.AI || typeof env.AI.run !== "function") {
+    return json({ service: "Jon2 Studio Agent", status: "needs_workers_ai_binding" }, 503);
+  }
+  return json({ service: "Jon2 Studio Agent", status: "ready", model: MODEL });
 }
