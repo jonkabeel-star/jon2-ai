@@ -2,6 +2,9 @@ name: Qwen One-Shot Inference Test
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/qwen-one-shot-test.yml"
 
 permissions:
   contents: read
