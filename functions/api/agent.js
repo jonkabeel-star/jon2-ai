@@ -19,39 +19,19 @@ function decodePart(value) {
   return Uint8Array.from(atob(normalized), c => c.charCodeAt(0));
 }
 
-async function verifyAccess(request, env) {
-  if (!env.ACCESS_TEAM_DOMAIN || !env.ACCESS_AUD) return { configured: false };
-  const token = request.headers.get("cf-access-jwt-assertion");
-  if (!token) return { configured: true, valid: false };
-
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return { configured: true, valid: false };
-    const header = JSON.parse(new TextDecoder().decode(decodePart(parts[0])));
-    const claims = JSON.parse(new TextDecoder().decode(decodePart(parts[1])));
-    const now = Math.floor(Date.now() / 1000);
-    const team = String(env.ACCESS_TEAM_DOMAIN).replace(/^https?:\/\//, "").replace(/\/$/, "");
-    if (claims.iss !== "https://" + team) return { configured: true, valid: false };
-    if (!Array.isArray(claims.aud) || !claims.aud.includes(env.ACCESS_AUD)) return { configured: true, valid: false };
-    if (typeof claims.exp !== "number" || claims.exp <= now) return { configured: true, valid: false };
-    if (typeof claims.nbf === "number" && claims.nbf > now + 60) return { configured: true, valid: false };
-
-    const certResponse = await fetch("https://" + team + "/cdn-cgi/access/certs", { cf: { cacheTtl: 300 } });
-    if (!certResponse.ok) return { configured: true, valid: false };
-    const certs = await certResponse.json();
-    const jwk = (certs.keys || []).find(key => key.kid === header.kid);
-    if (!jwk || header.alg !== "RS256") return { configured: true, valid: false };
-    const publicKey = await crypto.subtle.importKey(
-      "jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]
-    );
-    const valid = await crypto.subtle.verify(
-      "RSASSA-PKCS1-v1_5", publicKey, decodePart(parts[2]),
-      new TextEncoder().encode(parts[0] + "." + parts[1])
-    );
-    return { configured: true, valid };
-  } catch {
-    return { configured: true, valid: false };
-  }
+async function verifyBotSecret(request, env) {
+  const expected = typeof env.JON2_BOT_SECRET === "string" ? env.JON2_BOT_SECRET : "";
+  if (expected.length < 32) return { configured: false, valid: false };
+  const header = request.headers.get("authorization") || "";
+  const supplied = header.startsWith("Bearer ") ? header.slice(7) : "";
+  if (!supplied || supplied.length > 256) return { configured: true, valid: false };
+  const encoder = new TextEncoder();
+  const left = encoder.encode(expected);
+  const right = encoder.encode(supplied);
+  let diff = left.length ^ right.length;
+  const size = Math.max(left.length, right.length);
+  for (let i = 0; i < size; i++) diff |= (left[i] || 0) ^ (right[i] || 0);
+  return { configured: true, valid: diff === 0 };
 }
 
 function validPath(path) {
@@ -80,11 +60,9 @@ export async function onRequestPost({ request, env }) {
   const requestOrigin = new URL(request.url).origin;
   if (origin && origin !== requestOrigin) return json({ error: "الطلب من مصدر غير مسموح." }, 403);
 
-  const access = await verifyAccess(request, env);
-  if (!access.configured) {
-    return json({ error: "لم يتم إعداد حماية Cloudflare Access بعد. لن يتم تشغيل الذكاء قبل حماية الاستوديو." }, 503);
-  }
-  if (!access.valid) return json({ error: "يجب تسجيل الدخول عبر Cloudflare Access لاستخدام Jon2 Bot." }, 401);
+  const auth = await verifyBotSecret(request, env);
+  if (!auth.configured) return json({ error: "لم يتم إعداد سر Jon2 Bot في Cloudflare بعد." }, 503);
+  if (!auth.valid) return json({ error: "أدخل رمز Jon2 Bot الصحيح في لوحة الوكيل." }, 401);
   if (!env.AI || typeof env.AI.run !== "function") {
     return json({ error: "ربط Workers AI غير مفعّل في إعدادات Pages." }, 503);
   }
@@ -203,9 +181,9 @@ export async function onRequestPost({ request, env }) {
 }
 
 export async function onRequestGet({ request, env }) {
-  const access = await verifyAccess(request, env);
-  if (!access.configured) return json({ service: "Jon2 Studio Agent", status: "needs_access_configuration" }, 503);
-  if (!access.valid) return json({ error: "يجب تسجيل الدخول عبر Cloudflare Access." }, 401);
+  const auth = await verifyBotSecret(request, env);
+  if (!auth.configured) return json({ service: "Jon2 Studio Agent", status: "needs_secret_configuration" }, 503);
+  if (!auth.valid) return json({ error: "أدخل رمز Jon2 Bot في لوحة الوكيل." }, 401);
   if (!env.AI || typeof env.AI.run !== "function") {
     return json({ service: "Jon2 Studio Agent", status: "needs_workers_ai_binding" }, 503);
   }
