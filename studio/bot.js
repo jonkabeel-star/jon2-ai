@@ -18,7 +18,15 @@ function validPath(name){return typeof name==="string"&&name.length<=100&&/^[a-z
 async function askAgent(task){
  const snap=snapshot(),files=snap.files||{};
  const payload={task,files,activeFile:snap.activeFile||"",history:history.slice(-4)};
- const response=await fetch("/api/agent",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),90000);
+ let response;
+ try{
+  response=await fetch("/api/agent",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify(payload),signal:controller.signal});
+ }catch(error){
+  if(error&&error.name==="AbortError")throw new Error("استغرق الرد أكثر من 90 ثانية. أعد المحاولة بطلب أقصر؛ لم يتم تغيير ملفاتك.");
+  throw new Error("تعذر الاتصال بخدمة Jon2 Bot. تحقق من اتصال الإنترنت ثم أعد المحاولة.");
+ }finally{clearTimeout(timeout);}
  let data={};try{data=await response.json()}catch{}
  if(!response.ok){const detail=typeof data.detail==="string"?data.detail.slice(0,220):"";throw new Error((data.error||("تعذر الاتصال بالوكيل (HTTP "+response.status+")."))+(detail?"\nالتفاصيل التقنية: "+detail:""));}
  if(!Array.isArray(data.changes)||typeof data.message!=="string")throw new Error("وصل رد غير مكتمل من الوكيل.");
