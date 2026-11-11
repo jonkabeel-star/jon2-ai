@@ -172,10 +172,16 @@ export async function onRequestPost({ request, env }) {
   const prompt = system + "\n\nبيانات الطلب والملفات الحالية:\n" + userPayload;
   let proposal = null;
   try {
-    const result = await env.AI.run(MODEL, { prompt });
-    const rawText = typeof result?.response === "string" ? result.response :
-      typeof result?.output_text === "string" ? result.output_text :
-      typeof result?.choices?.[0]?.message?.content === "string" ? result.choices[0].message.content : "";
+    const result = await env.AI.run(MODEL, { prompt, max_completion_tokens: 6000, chat_template_kwargs: { enable_thinking: false } });
+    const candidates = [
+      result?.response,
+      result?.output_text,
+      result?.choices?.[0]?.message?.content,
+      result?.choices?.[0]?.text,
+      result?.result?.response,
+      result?.result?.choices?.[0]?.message?.content
+    ];
+    const rawText = candidates.find(value => typeof value === "string" && value.trim()) || "";
     const cleaned = rawText.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
     const jsonStart = cleaned.indexOf("{");
     const jsonEnd = cleaned.lastIndexOf("}");
