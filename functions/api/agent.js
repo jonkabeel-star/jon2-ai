@@ -127,7 +127,15 @@ export async function onRequestPost({ request, env }) {
     }
     return json({ message: proposal.message.slice(0, 5000), changes, model: MODEL, applied: false });
   } catch (error) {
-    return json({ error: "تعذر إكمال طلب الذكاء الآن. قد تكون الحصة اليومية انتهت أو أن النموذج غير متاح مؤقتًا.", detail: String(error && error.message || error).slice(0, 250) }, 503);
+    const detail = String(error && error.message || error).slice(0, 250);
+    const code = String(error && (error.code || error.error?.code) || "");
+    const message = /8004/.test(detail + " " + code)
+      ? "خدمة Workers AI أعادت خطأ داخليًا (8004). هذا ليس دليلًا وحده على انتهاء الحصة. انتظر قليلًا ثم أعد المحاولة."
+      : /quota|limit|exceed|billing|payment/i.test(detail + " " + code)
+        ? "يبدو أن هناك حد استخدام أو مشكلة في صلاحية الحساب لدى Workers AI."
+        : "تعذر على Workers AI إكمال الطلب. قد يكون عطلًا مؤقتًا أو مشكلة في إعداد الخدمة.";
+    console.error("Jon2 AI request failed", { model: MODEL, code, detail });
+    return json({ error: message, detail, code: code || null, retryable: true }, 503);
   }
 }
 export async function onRequestGet({ env }) {
