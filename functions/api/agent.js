@@ -167,15 +167,12 @@ export async function onRequestPost({ request, env }) {
     webResearch: webContext || undefined,
     note: "هذه هي الملفات الحالية ذات الصلة. أعد الملفات التي تريد إنشاءها أو تحديثها فقط."
   });
-  // Use the model's documented minimal chat input. Avoid replaying browser history
-  // and optional generation fields that are not needed for a single task request.
-  const messages = [
-    { role: "system", content: system },
-    { role: "user", content: userPayload }
-  ];
+  // Use the model's documented plain-prompt input. This avoids the chat-message
+  // validation path that was returning Cloudflare error 8001 for this deployment.
+  const prompt = system + "\n\nبيانات الطلب والملفات الحالية:\n" + userPayload;
   let proposal = null;
   try {
-    const result = await env.AI.run(MODEL, { messages });
+    const result = await env.AI.run(MODEL, { prompt });
     const rawText = typeof result?.response === "string" ? result.response :
       typeof result?.output_text === "string" ? result.output_text :
       typeof result?.choices?.[0]?.message?.content === "string" ? result.choices[0].message.content : "";
