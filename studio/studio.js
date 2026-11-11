@@ -33,6 +33,16 @@ window.Jon2Studio={
   const additions=normalized.filter(x=>!project.files[x.path]).length;
   if(Object.keys(project.files).length+additions>40)return{ok:false,message:"لا يمكن تطبيق التغييرات لأنها ستتجاوز حد 40 ملفًا."};
   if(!normalized.length)return{ok:true,changed:[]};
+  const candidate=Object.fromEntries(Object.entries(project.files).map(([name,file])=>[name,{type:file.type,content:file.content}]));
+  for(const item of normalized)candidate[item.path]={type:kind(item.path),content:item.content};
+  const total=Object.values(candidate).reduce((sum,file)=>sum+file.content.length,0);
+  if(total>1000000)return{ok:false,message:"حجم المشروع بعد التعديل يتجاوز حد الفحص والحفظ الآمن (1MB). لم يتم تطبيق أي تغيير."};
+  if(window.Jon2Brain&&typeof window.Jon2Brain.analyze==="function"){
+   const before=window.Jon2Brain.analyze(project.files),after=window.Jon2Brain.analyze(candidate);
+   const known=new Set((before.issues||[]).filter(issue=>issue.level==="error").map(issue=>[issue.file,issue.code,issue.message].join("|")));
+   const introduced=(after.issues||[]).filter(issue=>issue.level==="error"&&!known.has([issue.file,issue.code,issue.message].join("|")));
+   if(introduced.length)return{ok:false,message:"أوقف الفحص الوقائي تطبيق التعديلات لوجود خطأ بنيوي جديد: "+introduced.slice(0,3).map(issue=>issue.file+" — "+issue.message).join("؛ ")+" . لم يتم تطبيق أي تغيير."};
+  }
   remember();
   for(const item of normalized)project.files[item.path]={type:kind(item.path),content:item.content};
   active=normalized[normalized.length-1].path;
