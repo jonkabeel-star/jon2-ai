@@ -172,17 +172,21 @@ export async function onRequestPost({ request, env }) {
   const prompt = system + "\n\nبيانات الطلب والملفات الحالية:\n" + userPayload;
   let proposal = null;
   try {
-    const result = await env.AI.run(MODEL, { prompt, max_completion_tokens: 6000, chat_template_kwargs: { enable_thinking: false } });
-    const candidates = [
+  try {
+    // Use Cloudflare's documented chat-message input and omit optional parameters
+    // until the binding/model accepts the basic request reliably.
+    const messages = [
+      { role: "system", content: system },
+      { role: "user", content: "بيانات الطلب والملفات الحالية:\n" + userPayload }
+    ];
+    const result = await env.AI.run(MODEL, { messages });
+    const rawText = [
+      result?.choices?.[0]?.message?.content,
       result?.response,
       result?.output_text,
-      result?.choices?.[0]?.message?.content,
-      result?.choices?.[0]?.text,
-      result?.result?.response,
-      result?.result?.choices?.[0]?.message?.content
-    ];
-    const rawText = candidates.find(value => typeof value === "string" && value.trim()) || "";
-    const cleaned = rawText.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+      result?.result?.response
+    ].find(value => typeof value === "string" && value.trim()) || "";
+    const cleaned = rawText.trim().replace(/^\x60{3}(?:json)?\s*/i, "").replace(/\s*\x60{3}$/, "");
     const jsonStart = cleaned.indexOf("{");
     const jsonEnd = cleaned.lastIndexOf("}");
     const jsonText = jsonStart >= 0 && jsonEnd > jsonStart ? cleaned.slice(jsonStart, jsonEnd + 1) : cleaned;
