@@ -18,7 +18,7 @@ async function askAgent(task){
  const secret=secretInput.value.trim();if(secret.length<32)throw new Error("أدخل رمز Jon2 Bot واحفظه لهذه الجلسة أولًا.");
  const response=await fetch("/api/agent",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json","authorization":"Bearer "+secret},body:JSON.stringify(payload)});
  let data={};try{data=await response.json();}catch{}
- if(!response.ok)throw new Error(data.error||("تعذر الاتصال بالوكيل (HTTP "+response.status+")."));
+ if(!response.ok){const detail=typeof data.detail==="string"?data.detail.slice(0,220):"";throw new Error((data.error||("تعذر الاتصال بالوكيل (HTTP "+response.status+")."))+(detail?"\nالتفاصيل التقنية: "+detail:""));}
  if(!Array.isArray(data.changes)||typeof data.message!=="string")throw new Error("وصل رد غير مكتمل من الوكيل.");
  const changed=[];
  for(const item of data.changes){
