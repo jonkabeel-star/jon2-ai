@@ -1,7 +1,7 @@
 const MODEL = "@cf/zai-org/glm-4.7-flash";
 const MAX_BODY = 180_000;
 const MAX_FILES = 10;
-const MAX_CONTEXT = 20_000;
+const MAX_CONTEXT = 12_000;
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: {
@@ -113,25 +113,36 @@ export async function onRequestPost({ request, env }) {
   const inputNames = Object.keys(files);
   if (inputNames.length > 40) return json({ error: "عدد ملفات المشروع أكبر من الحد الآمن (40 ملفًا)." }, 413);
   const preferred = typeof body.activeFile === "string" ? body.activeFile : "";
-  const names = [...new Set([preferred, ...inputNames])].filter(Boolean).slice(0, MAX_FILES);
+  const taskWords = task.toLowerCase().split(/[^\\p{L}\\p{N}_-]+/u).filter(word => word.length > 2);
+  const rankedNames = inputNames.filter(name => validPath(name) && files[name] && typeof files[name].content === "string")
+    .map(name => {
+      const lower = name.toLowerCase();
+      const score = taskWords.reduce((sum, word) => sum + (lower.includes(word) ? 3 : 0), 0);
+      return { name, score };
+    })
+    .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+    .map(item => item.name);
+  const names = [...new Set([preferred, ...rankedNames])].filter(name =>
+    name && validPath(name) && files[name] && typeof files[name].content === "string"
+  ).slice(0, MAX_FILES);
   const safeFiles = {};
   let total = 0;
   for (const name of names) {
-    const file = files[name];
-    if (!validPath(name) || !file || typeof file.content !== "string") continue;
     const remaining = MAX_CONTEXT - total;
     if (remaining <= 0) break;
-    const limit = name === preferred ? 9000 : 2200;
-    safeFiles[name] = file.content.slice(0, Math.min(limit, remaining));
+    const limit = name === preferred ? 7000 : 1250;
+    safeFiles[name] = files[name].content.slice(0, Math.min(limit, remaining));
     total += safeFiles[name].length;
   }
-  const history = Array.isArray(body.history) ? body.history.slice(-4).map(item => ({
+  const history = Array.isArray(body.history) ? body.history.slice(-2).map(item => ({
     role: item && item.role === "assistant" ? "assistant" : "user",
-    content: String(item && item.content || "").slice(0, 500)
+    content: String(item && item.content || "").slice(0, 300)
   })) : [];
 
+  const quickTask = task.length < 180 && !/(أنشئ|ابنِ|برمج|اكتب كود|عدّل ملف|غيّر ملف|أصلح|اصلح|نفّذ|نفذ|مشروع|موقع|تطبيق|واجهة|قاعدة بيانات|api|backend|frontend|refactor|debug|implement|create|build|modify|fix|deploy)/i.test(task);
   const system = [
     "أنت Jon2 Bot، وكيل هندسة برمجيات وتنفيذ وبحث داخل Jon2 Studio، ولست روبوت دردشة عام. أجب بالعربية الواضحة وباختصار، ونفّذ العمل فعليًا على ملفات المشروع المرفقة. لديك أداة بحث ويب اسمها search_web؛ استخدمها للتأكد من المعلومات التقنية والحديثة قبل التنفيذ عندما يلزم.",
+    "اجعل الإجابة مباشرة ومختصرة. في الأسئلة البسيطة لا تطل التفكير ولا تشرح خطوات داخلية؛ في مهام البرمجة حافظ على الدقة وافحص الملفات اللازمة فقط.",
     "الهدف: تحويل وصف المستخدم إلى نتيجة عملية مكتملة قدر الإمكان. افهم النتيجة المطلوبة أولًا، استنتج المتطلبات المعتادة غير الخطرة، ثم أنشئ أو عدّل كل الملفات اللازمة بدل الاكتفاء بخطة أو أمثلة أو شيفرات مبتورة.",
     "قبل التعديل: افحص أسماء الملفات ومحتوياتها، وحدد نقطة الدخول والاعتماديات والأنماط الحالية. استخدم البنية الموجودة ولا تنشئ نسخة موازية من نفس الوظيفة. حافظ على الميزات الحالية والبيانات والتصميم ما لم يطلب المستخدم تغييرها.",
     "في إنشاء أداة أو موقع أو تطبيق واجهة: أنشئ تجربة كاملة قابلة للتشغيل، لا مجرد شكل ثابت؛ اربط الأزرار والنماذج والأحداث بالوظائف الحقيقية، وأضف حالات التحميل والنجاح والخطأ والتحقق من المدخلات والتصميم المتجاوب وإمكانية الوصول الأساسية. لا تترك أزرارًا وهمية أو TODO أو نصوصًا تقول إن الوظيفة ستضاف لاحقًا.",
@@ -179,7 +190,7 @@ export async function onRequestPost({ request, env }) {
       { role: "system", content: system },
       { role: "user", content: "بيانات الطلب والملفات الحالية:\n" + userPayload }
     ];
-    const result = await env.AI.run(MODEL, { messages });
+    const result = await env.AI.run(MODEL, { messages, chat_template_kwargs: { enable_thinking: !quickTask }, max_completion_tokens: quickTask ? 1200 : 4096 });
     const rawText = [
       result?.choices?.[0]?.message?.content,
       result?.response,
