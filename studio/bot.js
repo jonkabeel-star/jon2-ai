@@ -13,7 +13,7 @@ function repair(){const changes=window.Jon2Brain.repair(snapshot().files);if(!ch
 function validPath(name){return typeof name==="string"&&name.length<=100&&/^[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(name)&&!name.startsWith("/")&&!name.split("/").some(p=>!p||p==="."||p===".."||p.startsWith("."));}
 async function askAgent(task){
  const snap=snapshot(),files=snap.files||{};
- const payload={task,files,history:history.slice(-8)};
+ const payload={task,files,activeFile:snap.activeFile||"",history:history.slice(-4)};
  const response=await fetch("/api/agent",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
  let data={};try{data=await response.json();}catch{}
  if(!response.ok){const detail=typeof data.detail==="string"?data.detail.slice(0,220):"";throw new Error((data.error||("تعذر الاتصال بالوكيل (HTTP "+response.status+")."))+(detail?"\nالتفاصيل التقنية: "+detail:""));}
