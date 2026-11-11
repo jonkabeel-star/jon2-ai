@@ -160,8 +160,8 @@ export async function onRequestPost({ request, env }) {
         }
       }],
       tool_choice: { type: "function", function: { name: "submit_agent_result" } },
-      max_tokens: 12000,
-      temperature: 0.2
+      max_tokens: 7000,
+      temperature: 0.1
     });
 
     const proposal = extractToolCall(result);
