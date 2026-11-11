@@ -23,6 +23,22 @@ $("renameProject").onclick=()=>{const n=prompt("اسم المشروع:",project.
 $("newProject").onclick=()=>{if(!confirm("إنشاء مشروع جديد؟ سيتم استبدال المشروع المحفوظ على هذا المتصفح."))return;project={name:"مشروع جديد",files:structuredClone(defaults)};active="index.html";render();preview();};
 window.Jon2Studio={
  getSnapshot:()=>({name:project.name,activeFile:active,files:Object.fromEntries(Object.entries(project.files).map(([n,f])=>[n,{type:f.type,content:f.content}]))}),
+ applyAgentChanges:(changes)=>{
+  if(!Array.isArray(changes)||changes.length>10)return{ok:false,message:"عدد التغييرات غير صالح."};
+  const seen=new Set(),normalized=[];
+  for(const item of changes){
+   if(!item||!validPath(item.path)||typeof item.content!=="string"||item.content.length>250000||seen.has(item.path))return{ok:false,message:"رفضت مساحة العمل تغييرًا غير صالح أو مسارًا مكررًا. لم يتم تطبيق أي تغيير."};
+   seen.add(item.path);normalized.push({path:item.path,content:item.content});
+  }
+  const additions=normalized.filter(x=>!project.files[x.path]).length;
+  if(Object.keys(project.files).length+additions>40)return{ok:false,message:"لا يمكن تطبيق التغييرات لأنها ستتجاوز حد 40 ملفًا."};
+  if(!normalized.length)return{ok:true,changed:[]};
+  remember();
+  for(const item of normalized)project.files[item.path]={type:kind(item.path),content:item.content};
+  active=normalized[normalized.length-1].path;
+  render();preview();
+  return{ok:true,changed:normalized.map(x=>x.path)};
+ },
  createAgentFile:(name,content)=>{if(!validPath(name)||Object.keys(project.files).length>=40||project.files[name]||typeof content!=="string"||content.length>250000)return{ok:false,message:"اسم الملف غير صالح أو موجود، أو تم تجاوز الحد الآمن."};remember();project.files[name]={type:kind(name),content};active=name;render();preview();return{ok:true,message:"تم إنشاء "+name+" داخل مساحة العمل المحلية."};},
  updateAgentFile:(name,content)=>{if(!project.files[name]||typeof content!=="string"||content.length>250000)return{ok:false,message:"الملف غير موجود أو المحتوى يتجاوز الحد."};remember();project.files[name].content=content;active=name;render();preview();return{ok:true,message:"تم تحديث "+name+" مع حفظ نسخة سابقة للتراجع."};},
  undoAgentChange:()=>{const old=agentHistory.pop();if(!old)return{ok:false,message:"لا توجد تغييرات للتراجع عنها."};try{project=JSON.parse(old);localStorage.setItem(HISTORY_KEY,JSON.stringify(agentHistory));active=project.files[active]?active:Object.keys(project.files)[0];render();preview();return{ok:true,message:"تم التراجع عن آخر تغيير."};}catch(e){return{ok:false,message:"تعذر استعادة النسخة السابقة."};}}
