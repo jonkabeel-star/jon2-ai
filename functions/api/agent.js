@@ -78,9 +78,6 @@ export async function onRequestPost({ request, env }) {
   const requestOrigin = new URL(request.url).origin;
   if (origin && origin !== requestOrigin) return json({ error: "الطلب من مصدر غير مسموح." }, 403);
 
-  const auth = await verifyBotSecret(request, env);
-  if (!auth.configured) return json({ error: "لم يتم إعداد سر Jon2 Bot في Cloudflare بعد." }, 503);
-  if (!auth.valid) return json({ error: "أدخل رمز Jon2 Bot الصحيح في لوحة الوكيل." }, 401);
   if (!env.AI || typeof env.AI.run !== "function") {
     return json({ error: "ربط Workers AI غير مفعّل في إعدادات Pages." }, 503);
   }
@@ -199,11 +196,8 @@ export async function onRequestPost({ request, env }) {
 }
 
 export async function onRequestGet({ request, env }) {
-  const auth = await verifyBotSecret(request, env);
-  if (!auth.configured) return json({ service: "Jon2 Studio Agent", status: "needs_secret_configuration" }, 503);
-  if (!auth.valid) return json({ error: "أدخل رمز Jon2 Bot في لوحة الوكيل." }, 401);
   if (!env.AI || typeof env.AI.run !== "function") {
     return json({ service: "Jon2 Studio Agent", status: "needs_workers_ai_binding" }, 503);
   }
-  return json({ service: "Jon2 Studio Agent", status: "ready", model: MODEL });
+  return json({ service: "Jon2 Studio Agent", status: "ready", model: MODEL, access: "public" });
 }
