@@ -1,7 +1,7 @@
 const MODEL = "@cf/zai-org/glm-4.7-flash";
 const MAX_BODY = 180_000;
 const MAX_FILES = 40;
-const MAX_CONTEXT = 70_000;
+const MAX_CONTEXT = 50_000;
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -91,7 +91,8 @@ export async function onRequestPost({ request, env }) {
   const files = body.files && typeof body.files === "object" && !Array.isArray(body.files) ? body.files : {};
   if (!task) return json({ error: "اكتب المطلوب من Jon2 Bot." }, 400);
 
-  const names = Object.keys(files).slice(0, MAX_FILES);
+  const preferred = typeof body.activeFile === "string" ? body.activeFile : "";
+  const names = [...new Set([preferred, ...Object.keys(files)])].filter(Boolean).slice(0, MAX_FILES);
   const safeFiles = {};
   let total = 0;
   for (const name of names) {
@@ -99,14 +100,14 @@ export async function onRequestPost({ request, env }) {
     if (!validPath(name) || !file || typeof file.content !== "string") continue;
     const remaining = MAX_CONTEXT - total;
     if (remaining <= 0) break;
-    const content = file.content.slice(0, Math.min(18_000, remaining));
+    const content = file.content.slice(0, Math.min(14_000, remaining));
     safeFiles[name] = content;
     total += content.length;
   }
 
-  const history = Array.isArray(body.history) ? body.history.slice(-8).map(item => ({
+  const history = Array.isArray(body.history) ? body.history.slice(-4).map(item => ({
     role: item && item.role === "assistant" ? "assistant" : "user",
-    content: String(item && item.content || "").slice(0, 2500)
+    content: String(item && item.content || "").slice(0, 1400)
   })) : [];
 
   const system = [
