@@ -45,12 +45,30 @@ function validPath(path) {
 
 function extractToolCall(result) {
   const response = result && result.response;
-  const calls = response && response.tool_calls || result && result.tool_calls;
+  const choice = result && result.choices && result.choices[0];
+  const responseChoice = response && response.choices && response.choices[0];
+  const message = choice && choice.message || responseChoice && responseChoice.message;
+  const calls = response && response.tool_calls ||
+    result && result.tool_calls ||
+    message && message.tool_calls;
   if (Array.isArray(calls) && calls.length) {
     const call = calls.find(item => item.function && item.function.name === "submit_agent_result") || calls[0];
     const args = call && call.function && call.function.arguments;
     if (typeof args === "string") return JSON.parse(args);
     if (args && typeof args === "object") return args;
+  }
+
+  // Some Workers AI responses expose the assistant text rather than the
+  // OpenAI-compatible choices/tool_calls wrapper. Accept strict JSON fallback.
+  const text = typeof response === "string" ? response :
+    message && typeof message.content === "string" ? message.content :
+    result && typeof result.output_text === "string" ? result.output_text : "";
+  if (text) {
+    const cleaned = text.trim().replace(/^\x60{3}(?:json)?\s*/i, "").replace(/\s*\x60{3}$/i, "");
+    try {
+      const parsed = JSON.parse(cleaned);
+      if (parsed && typeof parsed.message === "string" && Array.isArray(parsed.files)) return parsed;
+    } catch {}
   }
   return null;
 }
