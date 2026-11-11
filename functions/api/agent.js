@@ -16,11 +16,11 @@ function validPath(path) {
     !path.split("/").some(part => !part || part === "." || part === ".." || part.startsWith("."));
 }
 function cleanSearchText(value) {
-  return String(value || "").replace(/<script[\\s\\S]*?<\\/script>/gi, " ")
-    .replace(/<style[\\s\\S]*?<\\/style>/gi, " ").replace(/<[^>]*>/g, " ")
+  return String(value || "").replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]*>/g, " ")
     .replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
-    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
-    .replace(/\\s+/g, " ").trim().slice(0, 700);
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/\s+/g, " ").trim().slice(0, 700);
 }
 function decodeSearchUrl(value) {
   try {
@@ -39,16 +39,16 @@ async function searchWeb(query) {
     if (!response.ok) return { ok: false, error: "محرك البحث لم يستجب الآن (HTTP " + response.status + ")." };
     const html = (await response.text()).slice(0, 700000);
     const results = [];
-    const anchors = html.match(/<a\\b[\\s\\S]*?<\\/a>/gi) || [];
+    const anchors = html.match(/<a\b[\s\S]*?<\/a>/gi) || [];
     for (const tag of anchors) {
       if (!/class=["'][^"']*result__a/i.test(tag)) continue;
       const href = (tag.match(/href=["']([^"']+)["']/i) || [])[1] || "";
       const title = cleanSearchText(tag);
       const link = decodeSearchUrl(href);
-      if (!title || !link || !/^https?:\\/\\//i.test(link) || /duckduckgo\\.com/i.test(new URL(link).hostname)) continue;
+      if (!title || !link || !/^https?:\/\//i.test(link) || /duckduckgo\.com/i.test(new URL(link).hostname)) continue;
       const around = html.slice(Math.max(0, html.indexOf(tag) - 100), Math.min(html.length, html.indexOf(tag) + tag.length + 1800));
-      const snippetTag = (around.match(/<a\\b[^>]*class=["'][^"']*result__snippet[^"']*["'][^>]*>[\\s\\S]*?<\\/a>/i) || [])[0] ||
-        (around.match(/<td[^>]*class=["'][^"']*result__snippet[^"']*["'][^>]*>[\\s\\S]*?<\\/td>/i) || [])[0] || "";
+      const snippetTag = (around.match(/<a\b[^>]*class=["'][^"']*result__snippet[^"']*["'][^>]*>[\s\S]*?<\/a>/i) || [])[0] ||
+        (around.match(/<td[^>]*class=["'][^"']*result__snippet[^"']*["'][^>]*>[\s\S]*?<\/td>/i) || [])[0] || "";
       results.push({ title, url: link, snippet: cleanSearchText(snippetTag) });
       if (results.length >= 6) break;
     }
