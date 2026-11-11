@@ -54,21 +54,32 @@ function extractToolCall(result) {
   if (Array.isArray(calls) && calls.length) {
     const call = calls.find(item => item.function && item.function.name === "submit_agent_result") || calls[0];
     const args = call && call.function && call.function.arguments;
-    if (typeof args === "string") return JSON.parse(args);
+    if (typeof args === "string") {
+      try {
+        const parsed = JSON.parse(args);
+        if (parsed && typeof parsed === "object") return parsed;
+      } catch {
+        // Some model responses place ordinary assistant text in the
+        // function-arguments field instead of returning valid JSON.
+      }
+    }
     if (args && typeof args === "object") return args;
   }
 
-  // Some Workers AI responses expose the assistant text rather than the
-  // OpenAI-compatible choices/tool_calls wrapper. Accept strict JSON fallback.
+  // Workers AI may return ordinary assistant text instead of a tool call.
+  // Preserve that answer as a text-only response; never interpret it as edits.
   const text = typeof response === "string" ? response :
     message && typeof message.content === "string" ? message.content :
-    result && typeof result.output_text === "string" ? result.output_text : "";
+    result && typeof result.output_text === "string" ? result.output_text :
+    result && typeof result.response === "string" ? result.response : "";
   if (text) {
     const cleaned = text.trim().replace(/^\x60{3}(?:json)?\s*/i, "").replace(/\s*\x60{3}$/i, "");
     try {
       const parsed = JSON.parse(cleaned);
       if (parsed && typeof parsed.message === "string" && Array.isArray(parsed.files)) return parsed;
-    } catch {}
+    } catch {
+      return { message: cleaned.slice(0, 6000), files: [] };
+    }
   }
   return null;
 }
