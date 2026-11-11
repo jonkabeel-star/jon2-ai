@@ -164,7 +164,7 @@ export async function onRequestPost({ request, env }) {
         description: "أنهِ المهمة وأعد رسالة عربية ومحتوى الملفات الكامل المطلوب إنشاؤها أو تعديلها.",
         parameters: {
           type: "object",
-          properties: { message: { type: "string" }, files: { type: "array", maxItems: 10, items: {
+          properties: { message: { type: "string" }, files: { type: "array", items: {
             type: "object", properties: { path: { type: "string" }, content: { type: "string" } },
             required: ["path", "content"]
           }}},
@@ -177,9 +177,8 @@ export async function onRequestPost({ request, env }) {
     let proposal = null, searches = 0, searchUsed = false, lastText = "";
     for (let turn = 0; turn < 5; turn++) {
       const result = await env.AI.run(MODEL, {
-        messages, tools, tool_choice: "auto",
-        max_tokens: 5200, temperature: 0.15,
-        chat_template_kwargs: { enable_thinking: false }
+        messages, tools,
+        max_tokens: 5200, temperature: 0.15
       });
       // Workers AI returns tool_calls at the top level as { name, arguments },
       // and ordinary generated text in result.response (a string).
