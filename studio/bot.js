@@ -23,12 +23,11 @@ async function askAgent(task){
  if(!response.ok){const detail=typeof data.detail==="string"?data.detail.slice(0,220):"";throw new Error((data.error||("تعذر الاتصال بالوكيل (HTTP "+response.status+")."))+(detail?"\nالتفاصيل التقنية: "+detail:""));}
  if(!Array.isArray(data.changes)||typeof data.message!=="string")throw new Error("وصل رد غير مكتمل من الوكيل.");
  const changed=[];
- for(const item of data.changes){
-  if(!validPath(item.path)||typeof item.content!=="string")throw new Error("رفضت الواجهة مسار ملف غير آمن. لم أطبق هذا التغيير.");
-  const current=snapshot().files||{};
-  const result=current[item.path]?window.Jon2Studio.updateAgentFile(item.path,item.content):window.Jon2Studio.createAgentFile(item.path,item.content);
-  if(!result.ok)throw new Error("تعذر تطبيق "+item.path+": "+result.message+"\nقد تكون بعض التغييرات السابقة قد طُبقت بالفعل.");
-  changed.push(item.path);
+ if(data.changes.length){
+  if(typeof window.Jon2Studio.applyAgentChanges!=="function")throw new Error("ميزة التطبيق الآمن للتغييرات غير متاحة. حدّث الصفحة ثم أعد المحاولة.");
+  const applied=window.Jon2Studio.applyAgentChanges(data.changes);
+  if(!applied.ok)throw new Error(applied.message||"رفضت مساحة العمل تطبيق التغييرات.");
+  changed.push(...applied.changed);
  }
  let answer=data.message;
  if(changed.length)answer+="\n\nالملفات التي تم تحديثها: "+changed.join("، ")+". راجع المعاينة والملفات الآن.";
