@@ -1,7 +1,7 @@
 const MODEL = "@cf/zai-org/glm-4.7-flash";
 const MAX_BODY = 180_000;
-const MAX_FILES = 40;
-const MAX_CONTEXT = 50_000;
+const MAX_FILES = 12;
+const MAX_CONTEXT = 24_000;
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -111,14 +111,15 @@ export async function onRequestPost({ request, env }) {
     if (!validPath(name) || !file || typeof file.content !== "string") continue;
     const remaining = MAX_CONTEXT - total;
     if (remaining <= 0) break;
-    const content = file.content.slice(0, Math.min(14_000, remaining));
+    const perFileLimit = name === preferred ? 10_000 : 2_500;
+    const content = file.content.slice(0, Math.min(perFileLimit, remaining));
     safeFiles[name] = content;
     total += content.length;
   }
 
-  const history = Array.isArray(body.history) ? body.history.slice(-4).map(item => ({
+  const history = Array.isArray(body.history) ? body.history.slice(-2).map(item => ({
     role: item && item.role === "assistant" ? "assistant" : "user",
-    content: String(item && item.content || "").slice(0, 1400)
+    content: String(item && item.content || "") .slice(0, 600)
   })) : [];
 
   const system = [
@@ -172,8 +173,9 @@ export async function onRequestPost({ request, env }) {
         }
       }],
       tool_choice: { type: "function", function: { name: "submit_agent_result" } },
-      max_tokens: 7000,
-      temperature: 0.1
+      max_tokens: 4500,
+      temperature: 0.1,
+      chat_template_kwargs: { enable_thinking: false }
     });
 
     const proposal = extractToolCall(result);
