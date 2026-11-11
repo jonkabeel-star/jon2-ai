@@ -91,6 +91,31 @@ class AutonomousBuilderTests(unittest.TestCase):
         self.assertIn("start model training or fine-tuning", report["never_automatic_actions"])
         self.assertFalse(report["public_release_approved"])
 
+    def test_workflow_filters_cover_all_preflight_dependencies(self):
+        repository_root = Path(__file__).resolve().parents[1]
+        workflow = (
+            repository_root / ".github" / "workflows" / "jon2-autonomous-builder.yml"
+        ).read_text(encoding="utf-8")
+        required_paths = (
+            "ai_engine/autonomous_builder.py",
+            "ai_engine/test_autonomous_builder.py",
+            "ai_engine/preflight_training.py",
+            "ai_engine/source_approval.py",
+            "ai_engine/model_profiles.py",
+            "ai_engine/corpus_reader.py",
+            "ai_engine/tokenizer.py",
+            "ai_engine/train_jon2.py",
+            "ai_engine/training_data/**",
+            ".github/workflows/jon2-autonomous-builder.yml",
+        )
+        for path in required_paths:
+            with self.subTest(path=path):
+                self.assertEqual(
+                    workflow.count(f'"{path}"'),
+                    2,
+                    f"{path} must trigger both pull_request and push runs",
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
