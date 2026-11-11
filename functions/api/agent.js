@@ -173,16 +173,18 @@ export async function onRequestPost({ request, env }) {
   try {
     const result = await env.AI.run(MODEL, {
       messages,
-      response_format: { type: "json_object" },
       max_completion_tokens: 5200,
       temperature: 0.15
     });
     const rawText = typeof result?.response === "string" ? result.response :
       typeof result?.output_text === "string" ? result.output_text :
       typeof result?.choices?.[0]?.message?.content === "string" ? result.choices[0].message.content : "";
-    const cleaned = rawText.trim().replace(/^\\x60{3}(?:json)?\\s*/i, "").replace(/\\s*\\x60{3}$/, "");
+    const cleaned = rawText.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+    const jsonStart = cleaned.indexOf("{");
+    const jsonEnd = cleaned.lastIndexOf("}");
+    const jsonText = jsonStart >= 0 && jsonEnd > jsonStart ? cleaned.slice(jsonStart, jsonEnd + 1) : cleaned;
     try {
-      const parsed = JSON.parse(cleaned);
+      const parsed = JSON.parse(jsonText);
       if (parsed && typeof parsed.message === "string" && Array.isArray(parsed.files)) proposal = parsed;
       else proposal = { message: "لم يُرجع النموذج بنية تنفيذ صالحة.", files: [] };
     } catch {
