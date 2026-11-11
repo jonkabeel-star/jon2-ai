@@ -1,101 +1,54 @@
 const MODEL = "@cf/zai-org/glm-4.7-flash";
 const MAX_BODY = 180_000;
-const MAX_FILES = 12;
-const MAX_CONTEXT = 24_000;
+const MAX_FILES = 10;
+const MAX_CONTEXT = 20_000;
 
 function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      "cache-control": "no-store",
-      "x-content-type-options": "nosniff"
-    }
-  });
+  return new Response(JSON.stringify(data), { status, headers: {
+    "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-store",
+    "x-content-type-options": "nosniff"
+  }});
 }
-
-function decodePart(value) {
-  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
-  return Uint8Array.from(atob(normalized), c => c.charCodeAt(0));
-}
-
-async function verifyBotSecret(request, env) {
-  const expected = typeof env.JON2_BOT_SECRET === "string" ? env.JON2_BOT_SECRET : "";
-  if (expected.length < 32) return { configured: false, valid: false };
-  const header = request.headers.get("authorization") || "";
-  const supplied = header.startsWith("Bearer ") ? header.slice(7) : "";
-  if (!supplied || supplied.length > 256) return { configured: true, valid: false };
-  const encoder = new TextEncoder();
-  const left = encoder.encode(expected);
-  const right = encoder.encode(supplied);
-  let diff = left.length ^ right.length;
-  const size = Math.max(left.length, right.length);
-  for (let i = 0; i < size; i++) diff |= (left[i] || 0) ^ (right[i] || 0);
-  return { configured: true, valid: diff === 0 };
-}
-
 function validPath(path) {
-  return typeof path === "string" &&
-    path.length <= 100 &&
-    /^[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(path) &&
-    !path.startsWith("/") &&
-    !path.split("/").some(part => !part || part === "." || part === "..") &&
-    !path.split("/").some(part => part.startsWith("."));
+  return typeof path === "string" && path.length <= 100 &&
+    /^[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(path) && !path.startsWith("/") &&
+    !path.split("/").some(part => !part || part === "." || part === ".." || part.startsWith("."));
 }
-
 function extractToolCall(result) {
   const response = result && result.response;
   const choice = result && result.choices && result.choices[0];
   const responseChoice = response && response.choices && response.choices[0];
   const message = choice && choice.message || responseChoice && responseChoice.message;
-  const calls = response && response.tool_calls ||
-    result && result.tool_calls ||
-    message && message.tool_calls;
+  const calls = choice && choice.message && choice.message.tool_calls ||
+    responseChoice && responseChoice.message && responseChoice.message.tool_calls ||
+    response && response.tool_calls || result && result.tool_calls || message && message.tool_calls;
   if (Array.isArray(calls) && calls.length) {
     const call = calls.find(item => item.function && item.function.name === "submit_agent_result") || calls[0];
     const args = call && call.function && call.function.arguments;
     if (typeof args === "string") {
-      try {
-        const parsed = JSON.parse(args);
-        if (parsed && typeof parsed === "object") return parsed;
-      } catch {
-        // Some model responses place ordinary assistant text in the
-        // function-arguments field instead of returning valid JSON.
-      }
-    }
-    if (args && typeof args === "object") return args;
+      try { const parsed = JSON.parse(args); if (parsed && typeof parsed === "object") return parsed; } catch {}
+    } else if (args && typeof args === "object") return args;
   }
-
-  // Workers AI may return ordinary assistant text instead of a tool call.
-  // Preserve that answer as a text-only response; never interpret it as edits.
-  const text = typeof response === "string" ? response :
-    message && typeof message.content === "string" ? message.content :
-    result && typeof result.output_text === "string" ? result.output_text :
-    result && typeof result.response === "string" ? result.response : "";
+  const text = message && typeof message.content === "string" ? message.content :
+    typeof response === "string" ? response :
+    typeof result?.output_text === "string" ? result.output_text : "";
   if (text) {
     const cleaned = text.trim().replace(/^\x60{3}(?:json)?\s*/i, "").replace(/\s*\x60{3}$/i, "");
     try {
       const parsed = JSON.parse(cleaned);
       if (parsed && typeof parsed.message === "string" && Array.isArray(parsed.files)) return parsed;
-    } catch {
-      return { message: cleaned.slice(0, 6000), files: [] };
-    }
+    } catch {}
+    return { message: cleaned.slice(0, 5000), files: [] };
   }
   return null;
 }
-
 export async function onRequestPost({ request, env }) {
   const origin = request.headers.get("origin");
-  const requestOrigin = new URL(request.url).origin;
-  if (origin && origin !== requestOrigin) return json({ error: "الطلب من مصدر غير مسموح." }, 403);
-
-  if (!env.AI || typeof env.AI.run !== "function") {
-    return json({ error: "ربط Workers AI غير مفعّل في إعدادات Pages." }, 503);
-  }
-
+  if (origin && origin !== new URL(request.url).origin) return json({ error: "الطلب من مصدر غير مسموح." }, 403);
+  if (!env.AI || typeof env.AI.run !== "function") return json({ error: "ربط Workers AI غير مفعّل في إعدادات Pages." }, 503);
   const length = Number(request.headers.get("content-length") || 0);
   if (length > MAX_BODY) return json({ error: "حجم الطلب أكبر من الحد المسموح." }, 413);
-
   let body;
   try { body = await request.json(); } catch { return json({ error: "بيانات الطلب غير صالحة." }, 400); }
   const task = typeof body.task === "string" ? body.task.trim().slice(0, 4000) : "";
@@ -111,107 +64,73 @@ export async function onRequestPost({ request, env }) {
     if (!validPath(name) || !file || typeof file.content !== "string") continue;
     const remaining = MAX_CONTEXT - total;
     if (remaining <= 0) break;
-    const perFileLimit = name === preferred ? 10_000 : 2_500;
-    const content = file.content.slice(0, Math.min(perFileLimit, remaining));
-    safeFiles[name] = content;
-    total += content.length;
+    const limit = name === preferred ? 9000 : 2200;
+    safeFiles[name] = file.content.slice(0, Math.min(limit, remaining));
+    total += safeFiles[name].length;
   }
-
-  const history = Array.isArray(body.history) ? body.history.slice(-2).map(item => ({
+  const history = Array.isArray(body.history) ? body.history.slice(-4).map(item => ({
     role: item && item.role === "assistant" ? "assistant" : "user",
-    content: String(item && item.content || "") .slice(0, 600)
+    content: String(item && item.content || "").slice(0, 500)
   })) : [];
 
   const system = [
-    "أنت Jon2 Bot، وكيل برمجة عربي مدمج داخل Jon2 Studio.",
-    "مهمتك فهم طلب المستخدم والعمل على ملفات مشروعه الحالية. اقرأ الملفات المقدمة قبل التعديل، واحتفظ بالتصميم والسلوك الموجودين ما لم يطلب المستخدم تغييره.",
-    "يمكنك إنشاء ملفات جديدة أو تحديث ملفات موجودة. لا تحذف ملفات. لا تنفذ أوامر نظام أو شبكات أو تثبيت حزم. لا تدّع أنك شغّلت اختبارات حقيقية؛ يمكنك مراجعة الكود ذهنيًا فقط.",
-    "أعد دائمًا استدعاء الدالة submit_agent_result مرة واحدة. ضع شرحًا عربيًا موجزًا في message، والتغييرات الكاملة للملفات في files. إذا كان الطلب سؤالًا أو شرحًا فقط، اجعل files مصفوفة فارغة.",
-    "كل عنصر في files يجب أن يحتوي path وcontent. اكتب المحتوى الكامل للملف وليس رقعة جزئية. لا تستخدم مسارات تبدأ بنقطة أو تحتوي على .. أو / في البداية.",
-    "لا تستبدل ملفًا إلا إذا كان ذلك مطلوبًا. لا تكتب مفاتيح سرية أو كلمات مرور أو بيانات شخصية في الملفات. إذا كان الطلب غامضًا لدرجة تمنع التعديل الآمن، اسأل سؤالًا واحدًا واجعل files فارغة.",
-    "اكتب HTML/CSS/JavaScript متوافقًا مع المتصفح. في صفحات الويب استخدم العربية وRTL افتراضيًا ما لم يطلب المستخدم خلاف ذلك. لا تستخدم مكتبات خارجية إلا إذا طلبها المستخدم أو كانت موجودة بالفعل في المشروع.",
-    "المعاينة تعمل في iframe معزول؛ لا تفترض توفر backend أو ملفات نظام أو Python/Node runtime."
+    "أنت Jon2 Bot، مهندس برمجيات ومساعد برمجة عملي داخل Jon2 Studio. أجب بالعربية.",
+    "نفذ طلب المستخدم على ملفات المشروع المرفقة. اقرأ الملفات ذات الصلة وافهم بنية المشروع قبل اقتراح التغييرات.",
+    "عند طلب إنشاء أو تعديل برنامج: أعد الملفات الكاملة اللازمة في files، لا تكتف بخطة أو وصف أو قول سأفعل. لا تغيّر الملفات غير المرتبطة بالطلب.",
+    "عند طلب إصلاح: حدد السبب من الكود المرفق وأصلح السبب الحقيقي مع الحفاظ على السلوك الحالي. عند تحسين الأداء: قلل العمل غير الضروري وحافظ على الوظائف. عند مراجعة الأمان: لا تضف أسرارًا أو مفاتيح.",
+    "لا تخترع ملفات أو APIs أو مكتبات غير موجودة. لا تفترض وجود خادم خلفي أو Python أو Node في المعاينة. استخدم HTML وCSS وJavaScript المتوافقة مع المتصفح عند الحاجة.",
+    "إذا كان الطلب سؤالًا فقط ولا يحتاج تغيير ملفات، أعد files فارغة وأجب مباشرة. إذا كان هناك نقص حقيقي يمنع التعديل الآمن، اسأل سؤالًا واحدًا واضحًا وأعد files فارغة.",
+    "لا تحذف ملفات ولا تنفذ أوامر نظام أو تثبيت حزم أو اتصالات خارجية. لا تدّع تشغيل اختبارات لم تنفذها.",
+    "يجب أن تستدعي submit_agent_result مرة واحدة. message شرح موجز للنتيجة، وfiles مصفوفة تغييرات كاملة. كل عنصر يحتوي path وcontent. لا تستخدم مسارات تبدأ بنقطة أو تحتوي .. أو تبدأ بشرطة مائلة.",
+    "حافظ على واجهة RTL العربية عند تعديل الواجهة، وراعِ عرض الهاتف. لا تضف اعتماديات خارجية إلا إذا كانت موجودة أصلًا أو طلبها المستخدم."
   ].join("\n");
-
-  const userPayload = JSON.stringify({
-    task,
-    projectFiles: safeFiles,
-    note: "الملفات الحالية هي مصدر الحقيقة. أعد فقط الملفات التي تريد إنشاءها أو تحديثها."
-  });
-
+  const userPayload = JSON.stringify({ task, projectFiles: safeFiles, note: "هذه هي الملفات الحالية ذات الصلة. أعد الملفات التي تريد إنشاءها أو تحديثها فقط." });
   try {
     const result = await env.AI.run(MODEL, {
-      messages: [
-        { role: "system", content: system },
-        ...history,
-        { role: "user", content: userPayload }
-      ],
+      messages: [{ role: "system", content: system }, ...history, { role: "user", content: userPayload }],
       tools: [{
         type: "function",
         function: {
           name: "submit_agent_result",
-          description: "Return the Arabic response and complete file contents to create or update in the user's project.",
+          description: "Return a concise Arabic result and complete contents of project files to create or update.",
           parameters: {
             type: "object",
             properties: {
               message: { type: "string" },
-              files: {
-                type: "array",
-                maxItems: 12,
-                items: {
-                  type: "object",
-                  properties: {
-                    path: { type: "string" },
-                    content: { type: "string" }
-                  },
-                  required: ["path", "content"]
-                }
-              }
+              files: { type: "array", maxItems: 10, items: {
+                type: "object", properties: { path: { type: "string" }, content: { type: "string" } },
+                required: ["path", "content"]
+              }}
             },
             required: ["message", "files"]
           }
         }
       }],
       tool_choice: { type: "function", function: { name: "submit_agent_result" } },
-      max_tokens: 4500,
-      temperature: 0.1,
+      max_tokens: 5200,
+      temperature: 0.15,
       chat_template_kwargs: { enable_thinking: false }
     });
-
     const proposal = extractToolCall(result);
     if (!proposal || typeof proposal.message !== "string" || !Array.isArray(proposal.files)) {
-      return json({ error: "لم يرجع النموذج خطة قابلة للتطبيق. جرّب صياغة الطلب بشكل أوضح." }, 502);
+      return json({ error: "لم يرجع النموذج محتوى قابلًا للتطبيق. جرّب طلبًا محددًا أو أعد المحاولة." }, 502);
     }
-
-    if (proposal.files.length > 12) return json({ error: "عدد الملفات المقترح أكبر من الحد الآمن." }, 422);
+    if (proposal.files.length > 10) return json({ error: "عدد الملفات المقترح أكبر من الحد الآمن." }, 422);
     const changes = [];
     let outputSize = 0;
     for (const file of proposal.files) {
-      if (!file || !validPath(file.path) || typeof file.content !== "string" || file.content.length > 100_000) {
-        return json({ error: "تضمن اقتراح الذكاء ملفًا أو مسارًا غير صالح؛ لم يتم تطبيق أي تغيير." }, 422);
-      }
+      if (!file || !validPath(file.path) || typeof file.content !== "string" || file.content.length > 100_000)
+        return json({ error: "تضمن الاقتراح ملفًا أو مسارًا غير صالح؛ لم يتم تطبيق أي تغيير." }, 422);
       outputSize += file.content.length;
-      if (outputSize > 500_000) return json({ error: "حجم التغييرات المقترحة أكبر من الحد الآمن." }, 422);
+      if (outputSize > 400_000) return json({ error: "حجم التغييرات أكبر من الحد الآمن." }, 422);
       changes.push({ path: file.path, content: file.content });
     }
-
-    return json({
-      message: proposal.message.slice(0, 6000),
-      changes,
-      model: MODEL,
-      applied: false
-    });
+    return json({ message: proposal.message.slice(0, 5000), changes, model: MODEL, applied: false });
   } catch (error) {
-    return json({
-      error: "تعذر إكمال طلب الذكاء الآن. قد تكون الحصة المجانية اليومية انتهت أو أن النموذج غير متاح مؤقتًا.",
-      detail: String(error && error.message || error).slice(0, 300)
-    }, 503);
+    return json({ error: "تعذر إكمال طلب الذكاء الآن. قد تكون الحصة اليومية انتهت أو أن النموذج غير متاح مؤقتًا.", detail: String(error && error.message || error).slice(0, 250) }, 503);
   }
 }
-
-export async function onRequestGet({ request, env }) {
-  if (!env.AI || typeof env.AI.run !== "function") {
-    return json({ service: "Jon2 Studio Agent", status: "needs_workers_ai_binding" }, 503);
-  }
+export async function onRequestGet({ env }) {
+  if (!env.AI || typeof env.AI.run !== "function") return json({ service: "Jon2 Studio Agent", status: "needs_workers_ai_binding" }, 503);
   return json({ service: "Jon2 Studio Agent", status: "ready", model: MODEL, access: "public" });
 }
