@@ -47,16 +47,20 @@ export async function onRequestPost({ request, env }) {
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin) return json({ error: "الطلب من مصدر غير مسموح." }, 403);
   if (!env.AI || typeof env.AI.run !== "function") return json({ error: "ربط Workers AI غير مفعّل في إعدادات Pages." }, 503);
-  const length = Number(request.headers.get("content-length") || 0);
-  if (length > MAX_BODY) return json({ error: "حجم الطلب أكبر من الحد المسموح." }, 413);
+  let rawBody;
+  try { rawBody = await request.text(); } catch { return json({ error: "تعذر قراءة بيانات الطلب." }, 400); }
+  if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY) return json({ error: "حجم الطلب أكبر من الحد المسموح." }, 413);
   let body;
-  try { body = await request.json(); } catch { return json({ error: "بيانات الطلب غير صالحة." }, 400); }
+  try { body = JSON.parse(rawBody); } catch { return json({ error: "بيانات الطلب غير صالحة." }, 400); }
+  if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "بنية الطلب غير صالحة." }, 400);
   const task = typeof body.task === "string" ? body.task.trim().slice(0, 4000) : "";
   const files = body.files && typeof body.files === "object" && !Array.isArray(body.files) ? body.files : {};
   if (!task) return json({ error: "اكتب المطلوب من Jon2 Bot." }, 400);
 
+  const inputNames = Object.keys(files);
+  if (inputNames.length > 40) return json({ error: "عدد ملفات المشروع أكبر من الحد الآمن (40 ملفًا)." }, 413);
   const preferred = typeof body.activeFile === "string" ? body.activeFile : "";
-  const names = [...new Set([preferred, ...Object.keys(files)])].filter(Boolean).slice(0, MAX_FILES);
+  const names = [...new Set([preferred, ...inputNames])].filter(Boolean).slice(0, MAX_FILES);
   const safeFiles = {};
   let total = 0;
   for (const name of names) {
@@ -124,10 +128,12 @@ export async function onRequestPost({ request, env }) {
     }
     if (proposal.files.length > 10) return json({ error: "عدد الملفات المقترح أكبر من الحد الآمن." }, 422);
     const changes = [];
+    const outputPaths = new Set();
     let outputSize = 0;
     for (const file of proposal.files) {
-      if (!file || !validPath(file.path) || typeof file.content !== "string" || file.content.length > 100_000)
-        return json({ error: "تضمن الاقتراح ملفًا أو مسارًا غير صالح؛ لم يتم تطبيق أي تغيير." }, 422);
+      if (!file || !validPath(file.path) || typeof file.content !== "string" || file.content.length > 100_000 || outputPaths.has(file.path))
+        return json({ error: "تضمن الاقتراح ملفًا أو مسارًا غير صالح أو مكررًا؛ لم يتم تطبيق أي تغيير." }, 422);
+      outputPaths.add(file.path);
       outputSize += file.content.length;
       if (outputSize > 400_000) return json({ error: "حجم التغييرات أكبر من الحد الآمن." }, 422);
       changes.push({ path: file.path, content: file.content });
