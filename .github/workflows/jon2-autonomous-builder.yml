@@ -8,6 +8,11 @@ on:
       - "ai_engine/test_autonomous_builder.py"
       - "ai_engine/preflight_training.py"
       - "ai_engine/source_approval.py"
+      - "ai_engine/model_profiles.py"
+      - "ai_engine/corpus_reader.py"
+      - "ai_engine/tokenizer.py"
+      - "ai_engine/train_jon2.py"
+      - "ai_engine/training_data/**"
       - ".github/workflows/jon2-autonomous-builder.yml"
   push:
     branches:
@@ -15,9 +20,13 @@ on:
       - "feature/autonomous-brain-builder"
     paths:
       - "ai_engine/autonomous_builder.py"
+      - "ai_engine/test_autonomous_builder.py"
       - "ai_engine/preflight_training.py"
       - "ai_engine/source_approval.py"
       - "ai_engine/model_profiles.py"
+      - "ai_engine/corpus_reader.py"
+      - "ai_engine/tokenizer.py"
+      - "ai_engine/train_jon2.py"
       - "ai_engine/training_data/**"
       - ".github/workflows/jon2-autonomous-builder.yml"
 
