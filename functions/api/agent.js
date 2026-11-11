@@ -113,7 +113,7 @@ export async function onRequestPost({ request, env }) {
   const inputNames = Object.keys(files);
   if (inputNames.length > 40) return json({ error: "عدد ملفات المشروع أكبر من الحد الآمن (40 ملفًا)." }, 413);
   const preferred = typeof body.activeFile === "string" ? body.activeFile : "";
-  const taskWords = task.toLowerCase().split(/[^\\p{L}\\p{N}_-]+/u).filter(word => word.length > 2);
+  const taskWords = task.toLowerCase().split(/[^\p{L}\p{N}_-]+/u).filter(word => word.length > 2);
   const rankedNames = inputNames.filter(name => validPath(name) && files[name] && typeof files[name].content === "string")
     .map(name => {
       const lower = name.toLowerCase();
