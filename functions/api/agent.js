@@ -167,15 +167,15 @@ export async function onRequestPost({ request, env }) {
     webResearch: webContext || undefined,
     note: "هذه هي الملفات الحالية ذات الصلة. أعد الملفات التي تريد إنشاءها أو تحديثها فقط."
   });
-  const messages = [{ role: "system", content: system }, ...history,
-    { role: "user", content: userPayload }];
+  // Use the model's documented minimal chat input. Avoid replaying browser history
+  // and optional generation fields that are not needed for a single task request.
+  const messages = [
+    { role: "system", content: system },
+    { role: "user", content: userPayload }
+  ];
   let proposal = null;
   try {
-    const result = await env.AI.run(MODEL, {
-      messages,
-      max_completion_tokens: 5200,
-      temperature: 0.15
-    });
+    const result = await env.AI.run(MODEL, { messages });
     const rawText = typeof result?.response === "string" ? result.response :
       typeof result?.output_text === "string" ? result.output_text :
       typeof result?.choices?.[0]?.message?.content === "string" ? result.choices[0].message.content : "";
