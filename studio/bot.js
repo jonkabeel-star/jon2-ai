@@ -17,7 +17,7 @@ function repair(){const changes=window.Jon2Brain.repair(snapshot().files);if(!ch
 function validPath(name){return typeof name==="string"&&name.length<=100&&/^[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(name)&&!name.startsWith("/")&&!name.split("/").some(p=>!p||p==="."||p===".."||p.startsWith("."));}
 async function askAgent(task){
  const snap=snapshot(),files=snap.files||{};
- const payload={task,files,activeFile:snap.activeFile||"",history:history.slice(-4)};
+ const payload={task,files,activeFile:snap.activeFile||"",history:history.slice(-2)};
  const controller=new AbortController();
  const timeout=setTimeout(()=>controller.abort(),90000);
  let response;
@@ -46,6 +46,9 @@ async function askAgent(task){
  if(changed.length)scan();
 }
 function localCommand(q){
+ const normalized=q.trim().replace(/[.!؟?،]+$/g,"").toLowerCase();
+ if(/^(مرحبا|مرحباً|اهلا|أهلا|السلام عليكم|صباح الخير|مساء الخير|hi|hello|hey)$/.test(normalized)){say("أهلًا بك! 👋 أنا Jon2 Bot. اكتب طلبك وسأساعدك في تنفيذه.", "assistant");return true;}
+ if(/^(شكرا|شكرًا|تسلم|متشكر|thanks|thank you)$/.test(normalized)){say("العفو! أنا جاهز لمساعدتك.", "assistant");return true;}
  if(/^(فحص|حلل|راجع|اكتشف الأخطاء|تحليل المشروع)/.test(q)){const r=scan();say("انتهى الفحص. عدد المشكلات المحددة: "+(r.issues||[]).length+".","assistant");return true;}
  if(/^(إصلاحات آمنة|اصلح الأخطاء الآمنة|إصلاح محلي)/.test(q)){repair();return true;}
  if(/^(تراجع|الغاء آخر|استرجع)$/.test(q)){const r=window.Jon2Studio.undoAgentChange();say(r.message,"assistant");return true;}
