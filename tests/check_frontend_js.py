@@ -11,20 +11,22 @@ from pathlib import Path
 class InlineScriptParser(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=False)
-        self.in_script = False
-        self.parts: list[str] = []
+        self.current = None
+        self.parts: list[tuple[str, str]] = []
 
     def handle_starttag(self, tag, attrs):
         if tag.lower() == "script":
-            self.in_script = True
+            attr = dict(attrs)
+            self.current = [attr.get("type", ""), ""]
 
     def handle_endtag(self, tag):
-        if tag.lower() == "script":
-            self.in_script = False
+        if tag.lower() == "script" and self.current is not None:
+            self.parts.append((self.current[0], self.current[1]))
+            self.current = None
 
     def handle_data(self, data):
-        if self.in_script:
-            self.parts.append(data)
+        if self.current is not None:
+            self.current[1] += data
 
 
 def check_inline_scripts(html_path: Path) -> int:
@@ -37,10 +39,11 @@ def check_inline_scripts(html_path: Path) -> int:
     parser = InlineScriptParser()
     parser.feed(html)
     parser.close()
-    source = "\n".join(parser.parts).strip()
-    if not source:
+    scripts = [(kind, source.strip()) for kind, source in parser.parts if source.strip()]
+    if not scripts:
         raise ValueError(f"No inline JavaScript found in {html_path}.")
 
+    combined = "\\n".join(source for _, source in scripts)
     required_contract = (
         "window.JON2_API_BASE_URL",
         '"/api/health"',
@@ -53,29 +56,33 @@ def check_inline_scripts(html_path: Path) -> int:
         "payload.message",
         "apiNotReadyNote",
         "AbortSignal.timeout",
+        "window.JON2_LOCAL_CLIENT.generate",
+        "CHECKPOINT_SHA256",
+        "weights.bin",
+        "manifest.json",
     )
-    missing = [marker for marker in required_contract if marker not in source]
+    missing = [marker for marker in required_contract if marker not in combined]
     if missing:
-        raise AssertionError("Frontend chat API contract is incomplete: " + ", ".join(missing))
+        raise AssertionError("Frontend chat/local-runtime contract is incomplete: " + ", ".join(missing))
 
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".js", encoding="utf-8", delete=False
-    ) as handle:
-        temporary = Path(handle.name)
-        handle.write(source)
-    try:
-        result = subprocess.run(
-            ["node", "--check", str(temporary)],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode:
-            raise RuntimeError(result.stderr.strip() or "Node.js syntax check failed.")
-    finally:
-        temporary.unlink(missing_ok=True)
-    print(f"JavaScript syntax: PASS ({html_path}, {len(parser.parts)} inline script block(s)).")
-    return len(parser.parts)
+    for index, (kind, source) in enumerate(scripts):
+        suffix = ".mjs" if kind == "module" else ".js"
+        with tempfile.NamedTemporaryFile(mode="w", suffix=suffix, encoding="utf-8", delete=False) as handle:
+            temporary = Path(handle.name)
+            handle.write(source)
+        try:
+            result = subprocess.run(
+                ["node", "--check", str(temporary)],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode:
+                raise RuntimeError(f"Inline script {index + 1} syntax error: {result.stderr.strip()}")
+        finally:
+            temporary.unlink(missing_ok=True)
+    print(f"JavaScript syntax: PASS ({html_path}, {len(scripts)} inline script block(s)).")
+    return len(scripts)
 
 
 def main() -> int:
