@@ -92,7 +92,7 @@ class Jon2ApiTests(unittest.TestCase):
             response = self.client.get("/api/health")
         self.assertTrue(response.json()["experimental_chat_enabled"])
         self.assertFalse(response.json()["chat_ready"])
-        self.assertEqual(response.json()["model_status"], "release_not_approved")
+        self.assertEqual(response.json()["model_status"], "release_blocked")
 
     def test_health_reports_release_blocked_without_approval(self):
         with patch.dict(jon2_api.os.environ, {"JON2_CHAT_RELEASE_APPROVED": "false"}), \
