@@ -6,6 +6,8 @@ on:
     paths:
       - "ai_engine/**"
       - "server/**"
+      - "cloudflare/**"
+      - "wrangler.toml"
       - "index.html"
       - "jon2-config.js"
       - "tests/**"
@@ -14,6 +16,8 @@ on:
     paths:
       - "ai_engine/**"
       - "server/**"
+      - "cloudflare/**"
+      - "wrangler.toml"
       - "index.html"
       - "jon2-config.js"
       - "tests/**"
@@ -45,6 +49,7 @@ jobs:
           node-version: "22"
       - name: Check static website JavaScript syntax
         run: python tests/check_frontend_js.py index.html
-
+      - name: Test production Cloudflare gateway fail-closed behavior
+        run: node --test tests/test_cloudflare_worker.mjs
       - name: Check Node.js API server and release-gate tests
         run: npm run check --prefix server
