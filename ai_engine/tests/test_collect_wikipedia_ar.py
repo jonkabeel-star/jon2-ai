@@ -21,6 +21,18 @@ class QuarantinedCollectorTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             _assert_quarantine_destination(Path("ai_engine/training_data/private-wikipedia"))
 
+    def test_root_training_data_destination_is_rejected(self):
+        with self.assertRaises(ValueError):
+            _assert_quarantine_destination(Path("training_data/private-wikipedia"))
+
+    def test_symlink_into_training_data_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temp:
+            link = Path(temp) / "linked-training-data"
+            protected = Path("ai_engine/training_data").resolve()
+            link.symlink_to(protected, target_is_directory=True)
+            with self.assertRaises(ValueError):
+                _assert_quarantine_destination(link)
+
     def test_collection_is_quarantined_and_never_approves_source(self):
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp) / "private-quarantine"
