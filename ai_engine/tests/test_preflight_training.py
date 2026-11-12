@@ -13,7 +13,7 @@ from preflight_training import (\n    MINIMUM_CORPUS_CHARACTERS, MINIMUM_TOKENS_
 class TrainingPreflightTests(unittest.TestCase):
     def base(self):
         return dict(
-            corpus_characters=500_000,
+            corpus_characters=1_500_000,
             train_tokens=160_000_000,
             validation_tokens=40_000_000,
             estimated_parameter_count=20_000_000,
