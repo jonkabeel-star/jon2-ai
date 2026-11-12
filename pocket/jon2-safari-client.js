@@ -8,22 +8,51 @@ export class Jon2SafariClient {
       const message = event.data || {};
       const pending = this.pending.get(message.requestId);
       if (!pending) return;
-      this.pending.delete(message.requestId);
+      this._settle(message.requestId);
       if (message.type === "error") pending.reject(new Error(message.message));
       else pending.resolve(message);
     });
     this.worker.addEventListener("error", event => {
-      const error = new Error(event.message || "Jon2 inference worker failed.");
-      for (const pending of this.pending.values()) pending.reject(error);
-      this.pending.clear();
+      this._rejectAll(new Error(event.message || "Jon2 inference worker failed."));
+    });
+    this.worker.addEventListener("messageerror", () => {
+      this._rejectAll(new Error("Jon2 inference worker returned an unreadable message."));
     });
   }
 
-  _request(type, payload, transfer = []) {
+  _settle(requestId) {
+    const pending = this.pending.get(requestId);
+    if (!pending) return null;
+    clearTimeout(pending.timer);
+    this.pending.delete(requestId);
+    return pending;
+  }
+
+  _rejectAll(error) {
+    for (const [requestId, pending] of this.pending) {
+      this._settle(requestId);
+      pending.reject(error);
+    }
+  }
+
+  _request(type, payload, transfer = [], timeoutMs = 180000) {
     const requestId = this.nextId++;
     return new Promise((resolve, reject) => {
-      this.pending.set(requestId, { resolve, reject });
-      this.worker.postMessage({ type, requestId, ...payload }, transfer);
+      const timer = setTimeout(() => {
+        const pending = this._settle(requestId);
+        if (pending) pending.reject(new Error(
+          type === "generate"
+            ? "Jon2 inference timed out on this device. Try a shorter message or fewer output tokens."
+            : "Jon2 model loading timed out on this device. Check available memory and try again."
+        ));
+      }, timeoutMs);
+      this.pending.set(requestId, { resolve, reject, timer });
+      try {
+        this.worker.postMessage({ type, requestId, ...payload }, transfer);
+      } catch (error) {
+        const pending = this._settle(requestId);
+        if (pending) pending.reject(error);
+      }
     });
   }
 
@@ -37,17 +66,15 @@ export class Jon2SafariClient {
     ]);
     return this._request("load", {
       manifestText, weightsBuffer, expectedCheckpointSha256, expectedWeightsSha256
-    }, [weightsBuffer]);
+    }, [weightsBuffer], 300000);
   }
 
   generate(prompt, maxTokens = 256) {
-    return this._request("generate", { prompt, maxTokens });
+    return this._request("generate", { prompt, maxTokens }, [], 180000);
   }
 
   close() {
     this.worker.terminate();
-    const error = new Error("Jon2 Safari worker was closed.");
-    for (const pending of this.pending.values()) pending.reject(error);
-    this.pending.clear();
+    this._rejectAll(new Error("Jon2 Safari worker was closed."));
   }
 }
