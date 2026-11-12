@@ -30,7 +30,7 @@ class Jon2ApiTests(unittest.TestCase):
 
     def test_health_distinguishes_api_online_from_model_readiness(self):
         with patch.object(jon2_api, "model_is_ready", return_value=False), \
-             patch.object(jon2_api.os.path, "isfile", return_value=False):
+             patch.object(jon2_api, "_checkpoint_configured", return_value=False):
             response = self.client.get("/api/health")
         self.assertEqual(response.status_code, 200)
         payload = response.json()
