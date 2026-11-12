@@ -7,7 +7,7 @@ AI_ENGINE = Path(__file__).resolve().parents[1]
 if str(AI_ENGINE) not in sys.path:
     sys.path.insert(0, str(AI_ENGINE))
 
-from preflight_training import assess_readiness, should_skip_exact_tokenizer
+from preflight_training import (\n    MINIMUM_CORPUS_CHARACTERS, MINIMUM_TOKENS_PER_PARAMETER,\n    assess_readiness, should_skip_exact_tokenizer,\n)
 
 
 class TrainingPreflightTests(unittest.TestCase):
@@ -20,9 +20,13 @@ class TrainingPreflightTests(unittest.TestCase):
             tokenizer_vocab=8192,
             target_tokenizer_vocab=8192,
             context=1024,
-            minimum_characters=100_000,
-            minimum_tokens_per_parameter=10.0,
+            minimum_characters=MINIMUM_CORPUS_CHARACTERS,
+            minimum_tokens_per_parameter=MINIMUM_TOKENS_PER_PARAMETER,
         )
+
+    def test_policy_raises_minimums(self):
+        self.assertEqual(MINIMUM_CORPUS_CHARACTERS, 1_000_000)
+        self.assertEqual(MINIMUM_TOKENS_PER_PARAMETER, 20.0)
 
     def test_accepts_ready_configuration(self):
         result = assess_readiness(**self.base())
@@ -60,14 +64,14 @@ class TrainingPreflightTests(unittest.TestCase):
         self.assertTrue(should_skip_exact_tokenizer(
             probe_tokens=195_059,
             target_parameters=29_938_688,
-            minimum_tokens_per_parameter=10.0,
+            minimum_tokens_per_parameter=MINIMUM_TOKENS_PER_PARAMETER,
         ))
 
     def test_keeps_exact_tokenizer_when_probe_upper_bound_may_pass(self):
         self.assertFalse(should_skip_exact_tokenizer(
             probe_tokens=400_000_000,
             target_parameters=29_938_688,
-            minimum_tokens_per_parameter=10.0,
+            minimum_tokens_per_parameter=MINIMUM_TOKENS_PER_PARAMETER,
         ))
 
     def test_probe_guard_rejects_invalid_counts(self):
