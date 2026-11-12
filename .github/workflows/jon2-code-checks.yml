@@ -12,6 +12,7 @@ on:
       - "jon2-config.js"
       - "tests/**"
       - ".github/workflows/jon2-code-checks.yml"
+      - ".github/workflows/jon2-checkpoint-verify.yml"
   pull_request:
     paths:
       - "ai_engine/**"
@@ -22,6 +23,7 @@ on:
       - "jon2-config.js"
       - "tests/**"
       - ".github/workflows/jon2-code-checks.yml"
+      - ".github/workflows/jon2-checkpoint-verify.yml"
   workflow_dispatch:
 
 permissions:
