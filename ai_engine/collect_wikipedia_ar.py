@@ -1,7 +1,9 @@
-"""Collect an Arabic Wikipedia starter corpus with per-page attribution.
+"""Collect Arabic Wikipedia extracts into a private, unapproved quarantine.
 
-Wikipedia text is generally CC BY-SA 4.0 (verify each article page).
-The script records article titles and URLs and writes the corpus locally.
+This collector never writes into the approved training-data directory and never
+creates or changes a source-approval record. Every collected page remains
+ineligible for training until a human completes a separate rights, privacy,
+quality, and intended-use review.
 """
 from __future__ import annotations
 
@@ -14,9 +16,11 @@ import urllib.request
 from pathlib import Path
 
 API_URL = "https://ar.wikipedia.org/w/api.php"
-LICENSE_NAME = "CC BY-SA 4.0 (verify each article page for exceptions)"
+LICENSE_NAME = "CC BY-SA 4.0 (verify each article page and applicable notices)"
 LICENSE_URL = "https://creativecommons.org/licenses/by-sa/4.0/"
-USER_AGENT = "Jon2AI/1.0 (https://github.com/jonkabeel-star/jon2-ai; Arabic corpus collection)"
+USER_AGENT = "Jon2AI/1.1 (https://github.com/jonkabeel-star/jon2-ai; Arabic corpus collection)"
+DEFAULT_OUTPUT_DIR = "private-corpus-quarantine/wikipedia_ar"
+QUARANTINE_STATUS = "QUARANTINED_NOT_APPROVED"
 
 
 def clean_article_text(value: str) -> str:
@@ -46,6 +50,18 @@ def fetch_batch(params: dict) -> dict:
         return json.loads(response.read().decode("utf-8"))
 
 
+def _assert_quarantine_destination(output_dir: Path) -> None:
+    destination = output_dir.resolve()
+    candidates = (Path("ai_engine/training_data"), Path("training_data"))
+    for candidate in candidates:
+        training_dir = candidate.resolve()
+        if destination == training_dir or training_dir in destination.parents:
+            raise ValueError(
+                "Wikipedia collection must stay outside the approved training-data "
+                "directory. Use the private quarantine destination instead."
+            )
+
+
 def collect_corpus(
     output_dir: Path,
     target_chars: int = 130_000,
@@ -54,14 +70,14 @@ def collect_corpus(
 ) -> tuple[int, int]:
     if target_chars < 100_000:
         raise ValueError("target_chars must be at least 100,000.")
+    if max_pages < 1:
+        raise ValueError("max_pages must be at least 1.")
 
+    _assert_quarantine_destination(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    corpus_path = output_dir / "wikipedia_ar_cc_by_sa.txt"
-    manifest_path = output_dir / "wikipedia_ar_sources.json"
+    corpus_path = output_dir / "wikipedia_ar_QUARANTINED_NOT_FOR_TRAINING.txt"
+    manifest_path = output_dir / "wikipedia_ar_quarantine_manifest.json"
 
-    # Request exactly one generated page and one full extract per API call.
-    # This avoids MediaWiki lowering exlimit and returning empty extracts
-    # for the remaining generated pages.
     base_params = {
         "action": "query",
         "generator": "allpages",
@@ -69,10 +85,12 @@ def collect_corpus(
         "gapfilterredir": "nonredirects",
         "gapfrom": "أ",
         "gaplimit": 1,
-        "prop": "extracts|info",
+        "prop": "extracts|info|revisions",
         "exlimit": 1,
         "explaintext": 1,
         "inprop": "url",
+        "rvprop": "ids|timestamp",
+        "rvlimit": 1,
         "format": "json",
         "formatversion": 2,
     }
@@ -104,11 +122,7 @@ def collect_corpus(
         requests_made += 1
         warnings = payload.get("warnings", {})
         if warnings:
-            print(
-                "Wikipedia API warning: "
-                + json.dumps(warnings, ensure_ascii=False),
-                flush=True,
-            )
+            print("Wikipedia API warning: " + json.dumps(warnings, ensure_ascii=False), flush=True)
 
         pages = payload.get("query", {}).get("pages", [])
         for page in pages:
@@ -130,18 +144,25 @@ def collect_corpus(
 
             title = page.get("title", "Untitled")
             url = page.get("fullurl") or (
-                "https://ar.wikipedia.org/wiki/"
-                + urllib.parse.quote(title.replace(" ", "_"))
+                "https://ar.wikipedia.org/wiki/" + urllib.parse.quote(title.replace(" ", "_"))
             )
+            revisions = page.get("revisions") or []
+            revision = revisions[0] if revisions else {}
             articles.append(selected)
             records.append({
                 "pageid": page_id,
                 "title": title,
                 "url": url,
+                "revision_id": revision.get("revid"),
+                "revision_timestamp": revision.get("timestamp"),
                 "license": LICENSE_NAME,
                 "license_url": LICENSE_URL,
                 "source": "Arabic Wikipedia / MediaWiki API",
-                "modified": (
+                "status": QUARANTINE_STATUS,
+                "training_eligible": False,
+                "commercial_use_eligible": False,
+                "human_rights_review_required": True,
+                "changes": (
                     "Plain-text extraction, whitespace normalization, "
                     "short/noisy-line removal, duplicate removal; "
                     "the final selected article may be truncated."
@@ -156,54 +177,58 @@ def collect_corpus(
                 f"{len(records)} usable articles, {total_chars:,} characters.",
                 flush=True,
             )
-
         if not continuation:
             break
         if total_chars < target_chars:
             time.sleep(pause_seconds)
 
-    # Always save collected material, even when the requested target was
-    # not reached. This prevents a long collection run from losing its work.
     corpus_path.write_text("\n\n".join(articles) + "\n", encoding="utf-8")
     manifest = {
-        "dataset": "Jon2 Arabic Wikipedia starter corpus",
-        "language": "Arabic (Modern Standard Arabic and mixed article registers)",
+        "dataset": "Jon2 Arabic Wikipedia quarantined research candidate",
+        "language": "Arabic (mixed article registers; dialect not classified)",
         "source": "https://ar.wikipedia.org/",
         "license": LICENSE_NAME,
         "license_url": LICENSE_URL,
+        "status": QUARANTINE_STATUS,
+        "training_eligible": False,
+        "commercial_use_eligible": False,
+        "approval_created": False,
+        "approval_manifest_modified": False,
         "attribution": (
-            "Each article title and URL is recorded below. "
-            "The linked page history identifies contributors."
+            "Each article title, URL, page ID, and available revision metadata "
+            "is recorded below. Article histories identify contributors."
         ),
         "changes": (
             "Plain-text extraction, whitespace normalization, removal of "
             "short/noisy lines, exact-page/text deduplication, and possible "
-            "truncation of the final selected article to the requested size."
+            "truncation of the final selected article."
         ),
         "collected_characters_including_separators": total_chars,
         "article_count": len(records),
         "warning": (
-            "Verify article-specific notices and applicable rights before "
-            "commercial distribution. CC BY-SA requires attribution and "
-            "share-alike for adapted material; this script does not provide "
-            "legal advice."
+            "This corpus is quarantined and MUST NOT be used for training or "
+            "commercial deployment. Review article-specific notices, attribution, "
+            "share-alike obligations, privacy, factual quality, and intended model "
+            "use before any separate explicit owner approval. This manifest is "
+            "provenance metadata, not a training approval."
         ),
         "articles": records,
     }
-    manifest_path.write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(
-        f"Collected {total_chars:,} characters from {len(records):,} "
-        "Arabic Wikipedia pages.",
+        f"Quarantined {total_chars:,} characters from {len(records):,} "
+        "Arabic Wikipedia pages. NOT APPROVED FOR TRAINING.",
         flush=True,
     )
-    print("Files: wikipedia_ar_cc_by_sa.txt and wikipedia_ar_sources.json", flush=True)
+    print(
+        "Files: wikipedia_ar_QUARANTINED_NOT_FOR_TRAINING.txt and "
+        "wikipedia_ar_quarantine_manifest.json",
+        flush=True,
+    )
     if total_chars < target_chars:
         raise RuntimeError(
-            f"Saved a partial corpus of {total_chars:,} characters from "
-            f"{len(records):,} articles after {requests_made:,} API requests. "
+            f"Saved a partial quarantined corpus of {total_chars:,} characters "
+            f"from {len(records):,} articles after {requests_made:,} API requests. "
             f"Target is {target_chars:,}; increase --max-pages and rerun."
         )
     return total_chars, len(records)
@@ -211,7 +236,7 @@ def collect_corpus(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output-dir", default="training_data")
+    parser.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--target-chars", type=int, default=130_000)
     parser.add_argument("--max-pages", type=int, default=3000)
     args = parser.parse_args()

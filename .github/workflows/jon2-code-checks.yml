@@ -45,6 +45,8 @@ jobs:
       - name: Test source approval gate
         working-directory: ai_engine
         run: python -m unittest discover -s tests -p 'test_source_approval.py' -v
+      - name: Test quarantined Arabic corpus collector
+        run: python -m unittest ai_engine.tests.test_collect_wikipedia_ar -v
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
