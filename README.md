@@ -6,6 +6,11 @@ Jon2 AI is an independent Arabic-first AI platform project.
 
 This repository contains the website interface, an early original-model prototype, and the first API gateway. A first genuine CPU-trained Jon2 checkpoint is now stored privately, but its Arabic replies are not coherent enough for user-facing chat. It is **not yet a public production AI service**. A deployed Python model runtime, approved training corpus, quality-approved checkpoint, persistent database, secure public accounts, video rendering, YouTube OAuth/upload, and AdSense are not live.
 
+
+## Original Jon2 model in iPhone Safari
+
+The public website now includes an experimental local Safari runtime. It can load a privately exported bundle of the original Jon2 checkpoint directly in the browser; model files are not uploaded to the website. See [the Arabic setup guide](docs/SAFARI_LOCAL_MODEL_AR.md) and [the Kaggle export notebook](notebooks/Jon2_Safari_Private_Export.ipynb). This path still requires the owner to run the export, and on-device speed and Arabic output quality have not yet passed production review. The public server chat release gate remains closed.
+
 ## Start here
 
 - [Jon2 Auto Repair](AUTO_REPAIR.md) — safe automated maintenance, diagnostics, test-gated repair pull requests, and manual run instructions.
