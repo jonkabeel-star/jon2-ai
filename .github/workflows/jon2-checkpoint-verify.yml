@@ -3,7 +3,7 @@ name: Verify Jon2 Private Checkpoint
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, "feat/manual-private-checkpoint-verification-2026-11-12"]
     paths:
       - ".github/workflows/jon2-checkpoint-verify.yml"
   workflow_run:
