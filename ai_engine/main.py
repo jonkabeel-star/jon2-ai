@@ -114,9 +114,15 @@ def health():
     checkpoint_available = _checkpoint_configured()
     release_approved = _chat_release_approved()
     experimental = _experimental_chat_enabled() and not release_approved
-    # Experimental mode is informational only; the public chat route stays closed
-    # until the explicit human release approval is enabled.
-    chat_enabled = (release_approved or experimental) and loaded and checkpoint_available
+    inference_tested = os.getenv("JON2_INFERENCE_TESTED", "false").strip().lower() == "true"
+    quality_review_passed = os.getenv("JON2_QUALITY_REVIEW_PASSED", "false").strip().lower() == "true"
+    # Public chat requires the original checkpoint, a completed inference test,
+    # an explicit human quality review, and the separate release approval.
+    # Experimental mode never opens the public composer or release endpoint.
+    chat_enabled = (
+        release_approved and loaded and checkpoint_available
+        and inference_tested and quality_review_passed
+    )
     model_status = (
         "checkpoint_missing" if not checkpoint_available
         else "ready" if release_approved and loaded
@@ -135,7 +141,11 @@ def health():
         "status": "online",
         "api_version": app.version,
         "model": "Jon2 Original Transformer",
+        "model_type": "jon2_original",
         "model_loaded": loaded,
+        "model_ready": loaded and checkpoint_available,
+        "inference_tested": inference_tested,
+        "quality_review_passed": quality_review_passed,
         "checkpoint_configured": checkpoint_available,
         "checkpoint_readable": checkpoint_readable,
         "checkpoint_size_bytes": checkpoint_size,
@@ -167,7 +177,11 @@ def runtime_v1_health():
         "project": "Jon2 AI",
         "status": "ready" if model_ready else "online",
         "api_ready": len(os.getenv("JON2_RUNTIME_TOKEN", "")) >= 32,
+        "model_type": "jon2_original",
         "model_ready": model_ready,
+        "chat_ready": bool(snapshot["chat_ready"]),
+        "inference_tested": bool(snapshot["inference_tested"]),
+        "quality_review_passed": bool(snapshot["quality_review_passed"]),
         "model_status": snapshot["model_status"],
     }
 
