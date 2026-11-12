@@ -24,7 +24,7 @@ function allowedOrigin(request) {
 export default {
   async fetch(request) {
     const url = new URL(request.url);
-    const path = url.pathname.replace(/\\/+$/, "") || "/";
+    const path = url.pathname.replace(/\/+$/, "") || "/";
     const method = request.method.toUpperCase();
     const origin = allowedOrigin(request);
 
