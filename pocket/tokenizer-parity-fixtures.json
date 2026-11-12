@@ -1,0 +1,78 @@
+{
+  "format": "jon2-tokenizer-parity-fixtures-v1",
+  "source": "app/jon2_native.py::ByteBPETokenizer",
+  "cases": [
+    {
+      "name": "basic_merge",
+      "text": "hi!",
+      "merges": [
+        [
+          104,
+          105
+        ]
+      ],
+      "expected": [
+        256,
+        33
+      ]
+    },
+    {
+      "name": "word_whitespace_boundary",
+      "text": "a b",
+      "merges": [
+        [
+          97,
+          32
+        ]
+      ],
+      "expected": [
+        97,
+        32,
+        98
+      ]
+    },
+    {
+      "name": "python_control_whitespace",
+      "text": "\u001c\u001d",
+      "merges": [
+        [
+          28,
+          29
+        ]
+      ],
+      "expected": [
+        256
+      ]
+    },
+    {
+      "name": "arabic_combining_mark_boundary",
+      "text": "اَ",
+      "merges": [
+        [
+          167,
+          217
+        ]
+      ],
+      "expected": [
+        216,
+        167,
+        217,
+        142
+      ]
+    },
+    {
+      "name": "punctuation_boundary",
+      "text": "!?",
+      "merges": [
+        [
+          33,
+          63
+        ]
+      ],
+      "expected": [
+        33,
+        63
+      ]
+    }
+  ]
+}
