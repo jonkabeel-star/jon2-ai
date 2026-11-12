@@ -9,6 +9,8 @@ on:
       - "cloudflare/**"
       - "wrangler.toml"
       - "index.html"
+      - "pocket/**"
+      - "pocket/**"
       - "jon2-config.js"
       - "tests/**"
       - ".github/workflows/jon2-code-checks.yml"
@@ -53,6 +55,8 @@ jobs:
           node-version: "22"
       - name: Check static website JavaScript syntax
         run: python tests/check_frontend_js.py index.html
+      - name: Test Safari native runtime parity
+        run: node --test tests/test_safari_runtime.mjs
       - name: Test production Cloudflare gateway fail-closed behavior
         run: node --test tests/test_cloudflare_worker.mjs
       - name: Check Node.js API server and release-gate tests
