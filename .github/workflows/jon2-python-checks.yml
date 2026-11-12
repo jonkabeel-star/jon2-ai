@@ -7,11 +7,13 @@ on:
       - "ai_engine/**"
       - "tests/**"
       - ".github/workflows/jon2-python-checks.yml"
+      - ".github/workflows/jon2-checkpoint-verify.yml"
   pull_request:
     paths:
       - "ai_engine/**"
       - "tests/**"
       - ".github/workflows/jon2-python-checks.yml"
+      - ".github/workflows/jon2-checkpoint-verify.yml"
 
 permissions:
   contents: read
