@@ -103,6 +103,25 @@ def _checkpoint_configured() -> bool:
     return os.path.isfile(checkpoint)
 
 
+def _inference_tested() -> bool:
+    return os.getenv("JON2_INFERENCE_TESTED", "false").strip().lower() == "true"
+
+
+def _quality_review_passed() -> bool:
+    return os.getenv("JON2_QUALITY_REVIEW_PASSED", "false").strip().lower() == "true"
+
+
+def _public_release_ready() -> bool:
+    """Single fail-closed gate shared by health and every chat route."""
+    return (
+        _chat_release_approved()
+        and _checkpoint_configured()
+        and model_is_ready()
+        and _inference_tested()
+        and _quality_review_passed()
+    )
+
+
 @app.get("/api/health/live")
 def liveness():
     return {"project": "Jon2 AI", "status": "alive"}
@@ -114,15 +133,19 @@ def health():
     checkpoint_available = _checkpoint_configured()
     release_approved = _chat_release_approved()
     experimental = _experimental_chat_enabled() and not release_approved
-    # Experimental mode is informational only; the public chat route stays closed
-    # until the explicit human release approval is enabled.
-    chat_enabled = (release_approved or experimental) and loaded and checkpoint_available
+    inference_tested = _inference_tested()
+    quality_review_passed = _quality_review_passed()
+    chat_enabled = (
+        release_approved and loaded and checkpoint_available
+        and inference_tested and quality_review_passed
+    )
     model_status = (
         "checkpoint_missing" if not checkpoint_available
-        else "ready" if release_approved and loaded
-        else "experimental_ready" if experimental and loaded
-        else "release_blocked" if not release_approved and not experimental
-        else "checkpoint_available"
+        else "checkpoint_available" if not loaded
+        else "inference_not_tested" if not inference_tested
+        else "human_quality_review_pending" if not quality_review_passed
+        else "release_blocked" if not release_approved
+        else "ready"
     )
     checkpoint_path = os.getenv(
         "JON2_CHECKPOINT",
@@ -136,13 +159,16 @@ def health():
         "api_version": app.version,
         "model": "Jon2 Original Transformer",
         "model_loaded": loaded,
+        "model_type": "jon2_original",
+        "inference_tested": inference_tested,
+        "quality_review_passed": quality_review_passed,
         "checkpoint_configured": checkpoint_available,
         "checkpoint_readable": checkpoint_readable,
         "checkpoint_size_bytes": checkpoint_size,
         "checkpoint_path": checkpoint_path,
         "kaggle_token_present": bool(os.getenv("KAGGLE_API_TOKEN")),
         "experimental_chat_enabled": _experimental_chat_enabled(),
-        "chat_ready": chat_enabled and loaded and checkpoint_available,
+        "chat_ready": chat_enabled,
         "release_approved": release_approved,
         "experimental_mode": experimental,
         "model_status": model_status,
@@ -168,6 +194,9 @@ def runtime_v1_health():
         "status": "ready" if model_ready else "online",
         "api_ready": len(os.getenv("JON2_RUNTIME_TOKEN", "")) >= 32,
         "model_ready": model_ready,
+        "model_type": "jon2_original",
+        "inference_tested": bool(snapshot["inference_tested"]),
+        "quality_review_passed": bool(snapshot["quality_review_passed"]),
         "model_status": snapshot["model_status"],
     }
 
@@ -303,17 +332,16 @@ def chat(request: ChatRequest):
     if not message:
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
 
-    release_approved = _chat_release_approved()
-    experimental = _experimental_chat_enabled() and not release_approved
-    if not release_approved and not experimental:
+    if not _public_release_ready():
+        snapshot = health()
         raise HTTPException(
             status_code=503,
-            detail="محادثة Jon2 متوقفة حتى تفعيل الوضع التجريبي صراحةً أو اجتياز مراجعة الجودة والمراجعة البشرية.",
-        )
-    if experimental and (not _checkpoint_configured() or not model_is_ready()):
-        raise HTTPException(
-            status_code=503,
-            detail="الوضع التجريبي لا يتجاوز شرط مراجعة الجودة والمراجعة البشرية: أوزان نموذج Jon2 الأصلي غير متاحة أو لم تُحمّل. لم يتم إنشاء رد بديل.",
+            detail={
+                "error": "public_release_gate_closed",
+                "message": "محادثة Jon2 مغلقة حتى اكتمال التدريب والاختبار والمراجعة البشرية واعتماد الإصدار.",
+                "model_status": snapshot["model_status"],
+                "chat_ready": False,
+            },
         )
 
     # Deterministic greetings and source-backed factual retrieval work without

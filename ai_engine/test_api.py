@@ -47,7 +47,7 @@ class ApiHealthTests(unittest.TestCase):
             with self.assertRaises(HTTPException) as caught:
                 main.chat(request)
         self.assertEqual(caught.exception.status_code, 503)
-        self.assertIn("المراجعة البشرية", caught.exception.detail)
+        self.assertIn("المراجعة البشرية", caught.exception.detail["message"])
 
     def test_chat_request_rejects_unknown_fields(self):
         with self.assertRaises(ValidationError):
@@ -88,8 +88,12 @@ class ApiHealthTests(unittest.TestCase):
             db = str(Path(directory) / "memory.sqlite3")
             with patch.dict(os.environ, {
                 "JON2_CHAT_RELEASE_APPROVED": "true",
+                "JON2_INFERENCE_TESTED": "true",
+                "JON2_QUALITY_REVIEW_PASSED": "true",
                 "JON2_MEMORY_DB_PATH": db,
-            }, clear=False), patch("main.local_greeting", return_value=None), patch(
+            }, clear=False), patch("main._checkpoint_configured", return_value=True), patch(
+                "main.model_is_ready", return_value=True
+            ), patch("main.local_greeting", return_value=None), patch(
                 "main.looks_like_fact_question", return_value=False
             ), patch("main.generate_reply", return_value="أهلًا بك يا صديقي"):
                 response = main.chat(main.ChatRequest(message="اشرح فكرة بسيطة", session_id=sid))
@@ -102,9 +106,12 @@ class ApiHealthTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with patch.dict(os.environ, {
                 "JON2_CHAT_RELEASE_APPROVED": "true",
+                "JON2_INFERENCE_TESTED": "true",
+                "JON2_QUALITY_REVIEW_PASSED": "true",
                 "JON2_MEMORY_DB_PATH": str(Path(directory) / "memory.sqlite3"),
-            }, clear=False), patch(
-                "main.generate_reply", side_effect=RuntimeError("inference failed")
+            }, clear=False), patch("main._checkpoint_configured", return_value=True), patch(
+                "main.model_is_ready", return_value=True
+            ), patch("main.generate_reply", side_effect=RuntimeError("inference failed")
             ):
                 with self.assertRaises(HTTPException) as caught:
                     main.chat(main.ChatRequest(message="سؤال تجريبي", session_id=sid))
