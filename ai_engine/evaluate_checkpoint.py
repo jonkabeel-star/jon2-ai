@@ -67,26 +67,26 @@ def evaluate(checkpoint_path: str, max_new_chars: int = 180) -> dict:
 
     rows = []
     for dialect, prompts in PROMPT_SETS.items():
-      for prompt in prompts:
-        answer = generate(
-            model, tokenizer, f"المستخدم: {prompt}\nJon2:",
-            device, max_new_chars=max_new_chars, do_sample=False,
-            repetition_penalty=1.10, no_repeat_ngram_size=3,
-            stop_sequences=["المستخدم:", "\nالمستخدم:"],
-        )
-        answer = answer.split("\nالمستخدم:", 1)[0].strip()
-        arabic_letters = sum("\u0600" <= char <= "\u06ff" and char.isalpha() for char in answer)
-        visible_chars = sum(not char.isspace() for char in answer)
-        rows.append({
-            "dialect": dialect,
-            "prompt": prompt,
-            "answer": answer,
-            "answer_characters": len(answer),
-            "arabic_letter_ratio": round(arabic_letters / max(1, visible_chars), 4),
-            "trigram_repetition_ratio": round(repetition_ratio(answer), 4),
-            "empty": not bool(answer),
-            "replacement_character_present": "\ufffd" in answer,
-        })
+        for prompt in prompts:
+            answer = generate(
+                model, tokenizer, f"المستخدم: {prompt}\nJon2:",
+                device, max_new_chars=max_new_chars, do_sample=False,
+                repetition_penalty=1.10, no_repeat_ngram_size=3,
+                stop_sequences=["المستخدم:", "\nالمستخدم:"],
+            )
+            answer = answer.split("\nالمستخدم:", 1)[0].strip()
+            arabic_letters = sum("\u0600" <= char <= "\u06ff" and char.isalpha() for char in answer)
+            visible_chars = sum(not char.isspace() for char in answer)
+            rows.append({
+                "dialect": dialect,
+                "prompt": prompt,
+                "answer": answer,
+                "answer_characters": len(answer),
+                "arabic_letter_ratio": round(arabic_letters / max(1, visible_chars), 4),
+                "trigram_repetition_ratio": round(repetition_ratio(answer), 4),
+                "empty": not bool(answer),
+                "replacement_character_present": "\ufffd" in answer,
+            })
 
     lengths = [row["answer_characters"] for row in rows]
     repetitions = [row["trigram_repetition_ratio"] for row in rows]
