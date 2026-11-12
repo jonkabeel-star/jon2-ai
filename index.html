@@ -161,6 +161,7 @@ let chatMessages = [];
 let savedDraft = "";
 let apiStatusKey = "offline";
 let chatReady = false;
+let localRuntimeReady = false;
 let chatBusy = false;
 let sessionId = "";
 
@@ -224,10 +225,10 @@ function setLang(next) {
 function syncChatControls() {
   const input = document.getElementById("input");
   const send = document.getElementById("send");
-  const enabled = chatReady && !chatBusy;
+  const enabled = (chatReady || localRuntimeReady) && !chatBusy;
   input.disabled = !enabled;
   send.disabled = !enabled;
-  input.placeholder = chatReady ? translations[lang].placeholder : translations[lang].waitingPlaceholder;
+  input.placeholder = localRuntimeReady ? translations[lang].localPlaceholder : chatReady ? translations[lang].placeholder : translations[lang].waitingPlaceholder;
   if (enabled) {
     input.removeAttribute("aria-disabled");
     send.removeAttribute("aria-disabled");
@@ -240,6 +241,7 @@ function syncChatControls() {
 function updateChatNote() {
   const note = document.getElementById("statusNote");
   if (!note) return;
+  if (localRuntimeReady) { note.textContent = translations[lang].localNote; return; }
   const key = !API_BASE_URL ? "offlineNote" : apiStatusKey === "experimentalReady" ? "experimentalNote" : apiStatusKey === "modelReady" ? "apiReadyNote" : apiStatusKey === "apiOnline" ? "apiNotReadyNote" : "offlineNote";
   note.textContent = translations[lang][key] || translations[lang].chatNote;
 }
@@ -329,6 +331,7 @@ document.getElementById("input").addEventListener("input", saveState);
 
 async function checkApiHealth() {
   const status = document.getElementById("status");
+  if (localRuntimeReady) { chatReady = true; apiStatusKey = "localReady"; status.textContent = translations[lang].localReady; updateChatNote(); syncChatControls(); return; }
   if (!API_BASE_URL) {
     apiStatusKey = "offline";
     chatReady = false;
@@ -366,11 +369,35 @@ document.getElementById("form").addEventListener("submit", async event => {
   const input = document.getElementById("input");
   const send = document.getElementById("send");
   const value = input.value.trim();
-  if (!value || send.disabled || !chatReady) return;
+  if (!value || send.disabled || (!chatReady && !localRuntimeReady)) return;
 
   addMessage(value, "user");
   input.value = "";
   saveState();
+
+  if (localRuntimeReady && window.JON2_LOCAL_CLIENT) {
+    chatBusy = true;
+    syncChatControls();
+    send.setAttribute("aria-busy", "true");
+    try {
+      const promptParts = chatMessages.slice(-10).filter(item => item.kind === "user" || item.kind === "assistant").map(item =>
+        item.kind === "user" ? "المستخدم: " + item.text : "Jon2: " + item.text
+      );
+      const prompt = promptParts.join("\n") + "\nJon2:";
+      const result = await window.JON2_LOCAL_CLIENT.generate(prompt, 256);
+      if (typeof result.answer !== "string" || !result.answer.trim()) throw new Error("Empty local Jon2 response.");
+      addMessage(result.answer.trim(), "assistant");
+    } catch (error) {
+      addMessage(translations[lang].localRequestFailed, "bot");
+      console.warn("Local Jon2 inference failed.", error);
+    } finally {
+      chatBusy = false;
+      syncChatControls();
+      send.removeAttribute("aria-busy");
+      if (localRuntimeReady) input.focus();
+    }
+    return;
+  }
 
   if (!API_BASE_URL) {
     addMessage(translations[lang].backendError, "bot");
