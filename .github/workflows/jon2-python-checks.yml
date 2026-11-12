@@ -50,6 +50,9 @@ jobs:
       - name: Test checkpoint loading, chat runtime, and Arabic coverage
         run: python -m unittest discover -s ai_engine/tests -t . -p 'test_*.py' -v
 
+      - name: Test quarantined dataset acquisition safeguards
+        run: python -m unittest ai_engine.tests.test_download_arabic_candidate -v
+
       - name: Audit current training text
         run: python ai_engine/audit_data.py
 
