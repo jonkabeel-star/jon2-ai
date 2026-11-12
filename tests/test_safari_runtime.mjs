@@ -119,3 +119,70 @@ test("private Safari bundle loader verifies pinned hashes and tensor layout", as
     /SHA-256 mismatch/
   );
 });
+
+
+test("Safari worker client resolves successful inference responses", async () => {
+  const originalWorker = globalThis.Worker;
+  class FakeWorker {
+    listeners = new Map();
+    addEventListener(type, callback) { this.listeners.set(type, callback); }
+    postMessage(message) {
+      queueMicrotask(() => this.listeners.get("message")?.({data:{
+        type:"generated",requestId:message.requestId,answer:"أهلًا"
+      }}));
+    }
+    terminate() {}
+  }
+  globalThis.Worker = FakeWorker;
+  try {
+    const { Jon2SafariClient } = await import("../pocket/jon2-safari-client.js?success-test");
+    const client = new Jon2SafariClient();
+    const result = await client.generate("مرحبا", 8);
+    assert.equal(result.answer, "أهلًا");
+    client.close();
+  } finally {
+    globalThis.Worker = originalWorker;
+  }
+});
+
+test("Safari worker client rejects timed-out generation instead of hanging chat", async () => {
+  const originalWorker = globalThis.Worker;
+  class SilentWorker {
+    addEventListener() {}
+    postMessage() {}
+    terminate() {}
+  }
+  globalThis.Worker = SilentWorker;
+  try {
+    const { Jon2SafariClient } = await import("../pocket/jon2-safari-client.js?timeout-test");
+    const client = new Jon2SafariClient();
+    await assert.rejects(
+      client._request("generate", {prompt:"مرحبا",maxTokens:8}, [], 5),
+      /inference timed out/
+    );
+    assert.equal(client.pending.size, 0);
+    client.close();
+  } finally {
+    globalThis.Worker = originalWorker;
+  }
+});
+
+test("Safari worker client clears pending requests when closed", async () => {
+  const originalWorker = globalThis.Worker;
+  class SilentWorker {
+    addEventListener() {}
+    postMessage() {}
+    terminate() {}
+  }
+  globalThis.Worker = SilentWorker;
+  try {
+    const { Jon2SafariClient } = await import("../pocket/jon2-safari-client.js?close-test");
+    const client = new Jon2SafariClient();
+    const pending = client._request("generate", {prompt:"مرحبا"}, [], 10000);
+    client.close();
+    await assert.rejects(pending, /worker was closed/);
+    assert.equal(client.pending.size, 0);
+  } finally {
+    globalThis.Worker = originalWorker;
+  }
+});
