@@ -1,0 +1,143 @@
+name: Jon2 Private GPU Training
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_gpu_training:
+        description: "Type TRAIN_ON_PRIVATE_GPU after the private GPU runner and approved data are configured."
+        required: true
+        default: "NO"
+        type: string
+      steps:
+        description: "Training steps (bounded to 1,000–50,000)."
+        required: true
+        default: "10000"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jon2-private-gpu-training
+  cancel-in-progress: false
+
+jobs:
+  train:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.confirm_gpu_training == 'TRAIN_ON_PRIVATE_GPU' }}
+    runs-on: [self-hosted, linux, x64, jon2-gpu]
+    timeout-minutes: 1440
+    env:
+      JON2_PRIVATE_DATA_DIR: ${{ vars.JON2_PRIVATE_DATA_DIR }}
+      JON2_PRIVATE_CHECKPOINT_DIR: ${{ vars.JON2_PRIVATE_CHECKPOINT_DIR }}
+      JON2_PROFILE: arabic_30m
+    steps:
+      - name: Checkout source code only
+        uses: actions/checkout@v4
+
+      - name: Validate private paths and GPU runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$JON2_PRIVATE_DATA_DIR" || { echo "::error::Set repository variable JON2_PRIVATE_DATA_DIR on the self-hosted GPU runner."; exit 1; }
+          test -n "$JON2_PRIVATE_CHECKPOINT_DIR" || { echo "::error::Set repository variable JON2_PRIVATE_CHECKPOINT_DIR on the self-hosted GPU runner."; exit 1; }
+          case "$JON2_PRIVATE_DATA_DIR" in "$GITHUB_WORKSPACE"/*) echo "::error::Training data must be outside the public repository checkout."; exit 1;; esac
+          case "$JON2_PRIVATE_CHECKPOINT_DIR" in "$GITHUB_WORKSPACE"/*) echo "::error::Checkpoints must be outside the public repository checkout."; exit 1;; esac
+          test -d "$JON2_PRIVATE_DATA_DIR"
+          test -s "$JON2_PRIVATE_DATA_DIR/source_approvals.json"
+          mkdir -p "$JON2_PRIVATE_CHECKPOINT_DIR"
+          case "$JON2_PRIVATE_CHECKPOINT_DIR" in "$JON2_PRIVATE_DATA_DIR"/*) echo "::error::Checkpoint directory must be separate from the source data directory."; exit 1;; esac
+          nvidia-smi
+          python - <<'PY'
+          import torch
+          if not torch.cuda.is_available():
+              raise SystemExit("CUDA is unavailable. No training was started.")
+          print("GPU:", torch.cuda.get_device_name(0))
+          print("VRAM GiB:", round(torch.cuda.get_device_properties(0).total_memory / 1024**3, 2))
+          print("PyTorch CUDA:", torch.version.cuda)
+          PY
+
+      - name: Verify rights manifest and training readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=ai_engine python ai_engine/preflight_training.py \
+            --data "$JON2_PRIVATE_DATA_DIR" \
+            --approval-manifest "$JON2_PRIVATE_DATA_DIR/source_approvals.json" \
+            --profile "$JON2_PROFILE" \
+            --minimum-characters 1000000 \
+            --minimum-tokens-per-parameter 20 \
+            --output "$JON2_PRIVATE_CHECKPOINT_DIR/preflight-$(date -u +%Y%m%dT%H%M%SZ).json"
+
+      - name: Train the original Jon2 model on the private GPU
+        shell: bash
+        env:
+          TRAIN_STEPS: ${{ inputs.steps }}
+        run: |
+          set -euo pipefail
+          [[ "$TRAIN_STEPS" =~ ^[0-9]+$ ]] || { echo "::error::Steps must be an integer."; exit 1; }
+          (( TRAIN_STEPS >= 1000 && TRAIN_STEPS <= 50000 )) || { echo "::error::Steps must be between 1000 and 50000."; exit 1; }
+          PYTHONPATH=ai_engine python ai_engine/train_jon2.py \
+            --data "$JON2_PRIVATE_DATA_DIR" \
+            --approval-manifest "$JON2_PRIVATE_DATA_DIR/source_approvals.json" \
+            --profile "$JON2_PROFILE" \
+            --steps "$TRAIN_STEPS" \
+            --minimum-chars 1000000 \
+            --minimum-tokens-per-parameter 20 \
+            --output "$JON2_PRIVATE_CHECKPOINT_DIR/jon2-arabic-30m.pt" \
+            --last-checkpoint "$JON2_PRIVATE_CHECKPOINT_DIR/jon2-arabic-30m-last.pt" \
+            --keep-last 2>&1 | tee "$JON2_PRIVATE_CHECKPOINT_DIR/training.log"
+
+      - name: Hash checkpoints and write private provenance manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, os, platform, subprocess
+          from datetime import datetime, timezone
+          from pathlib import Path
+          root = Path(os.environ["JON2_PRIVATE_CHECKPOINT_DIR"])
+          files = {}
+          for label, name in (
+              ("best", "jon2-arabic-30m.pt"),
+              ("resume", "jon2-arabic-30m-last.pt"),
+          ):
+              p = root / name
+              if not p.is_file():
+                  if label == "resume":
+                      continue
+                  raise SystemExit(f"Missing checkpoint: {p}")
+              digest = hashlib.sha256(p.read_bytes()).hexdigest()
+              files[label] = {"filename": name, "size_bytes": p.stat().st_size, "sha256": digest}
+          manifest = {
+              "format": "jon2-private-checkpoint-manifest-v1",
+              "created_at": datetime.now(timezone.utc).isoformat(),
+              "git_commit": os.environ.get("GITHUB_SHA"),
+              "profile": "arabic_30m",
+              "python": platform.python_version(),
+              "torch": __import__("torch").__version__,
+              "cuda": __import__("torch").version.cuda,
+              "gpu": __import__("torch").cuda.get_device_name(0),
+              "files": files,
+              "public_release_approved": False,
+              "human_review_required": True,
+          }
+          target = root / "checkpoint-manifest.json"
+          target.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(manifest, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Verify checkpoint loads and run held-out diagnostic
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=ai_engine python ai_engine/evaluate_checkpoint.py \
+            --checkpoint "$JON2_PRIVATE_CHECKPOINT_DIR/jon2-arabic-30m.pt" \
+            --output "$JON2_PRIVATE_CHECKPOINT_DIR/automatic-diagnostic.json" \
+            --max-new-chars 180
+          echo "Diagnostic only. Human semantic review and separate MSA/Egyptian held-out evaluation remain mandatory."
+
+      - name: Confirm public chat remains closed
+        if: always()
+        run: |
+          echo "No deployment approval flags are set by this workflow."
+          echo "The reviewed checkpoint remains private; public chat release requires separate human sign-off."
