@@ -20,6 +20,12 @@ class Jon2ApiTests(unittest.TestCase):
         })
         self.release_env.start()
         self.addCleanup(self.release_env.stop)
+        self.ready_model = patch.object(jon2_api, "model_is_ready", return_value=True)
+        self.ready_checkpoint = patch.object(jon2_api, "_checkpoint_configured", return_value=True)
+        self.ready_model.start()
+        self.ready_checkpoint.start()
+        self.addCleanup(self.ready_model.stop)
+        self.addCleanup(self.ready_checkpoint.stop)
         self.client = TestClient(jon2_api.app)
 
     def test_health_distinguishes_api_online_from_model_readiness(self):
