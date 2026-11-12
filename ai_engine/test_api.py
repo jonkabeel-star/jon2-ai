@@ -29,6 +29,28 @@ class ApiHealthTests(unittest.TestCase):
         self.assertFalse(result["release_approved"])
         self.assertEqual(result["model_status"], "checkpoint_missing")
 
+
+    def test_startup_loads_checkpoint_when_present(self):
+        with patch("main._checkpoint_configured", return_value=True), patch("main.load_runtime") as load:
+            main.load_checkpoint_at_startup()
+        load.assert_called_once()
+        self.assertEqual(main._checkpoint_load_status, "loaded")
+        self.assertIsNone(main._checkpoint_load_error)
+
+    def test_startup_records_checkpoint_load_failure_without_crashing_api(self):
+        with patch("main._checkpoint_configured", return_value=True), patch(
+            "main.load_runtime", side_effect=RuntimeError("invalid checkpoint")
+        ):
+            main.load_checkpoint_at_startup()
+        self.assertEqual(main._checkpoint_load_status, "failed")
+        self.assertIn("invalid checkpoint", main._checkpoint_load_error)
+
+    def test_startup_reports_missing_checkpoint(self):
+        with patch("main._checkpoint_configured", return_value=False), patch("main.load_runtime") as load:
+            main.load_checkpoint_at_startup()
+        load.assert_not_called()
+        self.assertEqual(main._checkpoint_load_status, "missing")
+
     def test_readiness_returns_503_until_chat_is_genuinely_ready(self):
         with patch.dict(os.environ, {
             "JON2_CHAT_RELEASE_APPROVED": "false",

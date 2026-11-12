@@ -50,6 +50,7 @@ const MAX_MESSAGE_LENGTH = 2_000;
 const MAX_HISTORY_ITEMS = 8;
 const MAX_HISTORY_CONTENT_LENGTH = 2_000;
 
+/** Only roles accepted by the Python runtime may cross this boundary. */
 export function isChatRole(value: unknown): value is ChatRole {
   return value === "user" || value === "assistant";
 }
@@ -80,8 +81,11 @@ export function isChatRequestV1(value: unknown): value is ChatRequestV1 {
   return candidate.history.every((item: unknown) => {
     if (!item || typeof item !== "object" || Array.isArray(item)) return false;
     const entry = item as Record<string, unknown>;
-    return isChatRole(entry.role) &&
+    const keys = Object.keys(entry);
+    return keys.every((key) => key === "role" || key === "content") &&
+      isChatRole(entry.role) &&
       typeof entry.content === "string" &&
+      entry.content.trim().length > 0 &&
       entry.content.length <= MAX_HISTORY_CONTENT_LENGTH;
   });
 }

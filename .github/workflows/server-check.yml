@@ -7,6 +7,11 @@ on:
       - "ai_engine/**"
       - "requirements.txt"
       - "cloudflare-ts/**"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "docker-entrypoint.sh"
+      - "index.html"
+      - "tests/**"
       - ".github/workflows/server-check.yml"
   pull_request:
     paths:
@@ -14,6 +19,11 @@ on:
       - "ai_engine/**"
       - "requirements.txt"
       - "cloudflare-ts/**"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "docker-entrypoint.sh"
+      - "index.html"
+      - "tests/**"
       - ".github/workflows/server-check.yml"
 
 permissions:
@@ -51,3 +61,5 @@ jobs:
         run: npm --prefix server run check
       - name: Validate package manifest
         run: node -e "JSON.parse(require('fs').readFileSync('server/package.json', 'utf8')); console.log('package.json is valid')"
+      - name: Validate container entrypoint shell syntax
+        run: sh -n docker-entrypoint.sh
