@@ -68,7 +68,7 @@ class Jon2ApiTests(unittest.TestCase):
         }), patch.object(jon2_api, "generate_reply") as generate:
             response = self.client.post("/api/chat", json={"message": "اكتب شرحًا عن الذكاء الاصطناعي"})
         self.assertEqual(response.status_code, 503)
-        self.assertIn("مراجعة البشرية", response.json()["detail"])
+        self.assertIn("المراجعة البشرية", response.json()["detail"]["message"])
         generate.assert_not_called()
 
     def test_experimental_mode_never_opens_chat(self):
