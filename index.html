@@ -467,5 +467,82 @@ if (chatMessages.length === 0) {
 renderMessages();
 saveState();
 </script>
+<script type="module">
+import { Jon2SafariClient } from "./pocket/jon2-safari-client.js";
+
+const CHECKPOINT_SHA256 = "acbae28e4acc4dc060194df466f65a72410792f5b0fec7ff9bdd939244b9c43f";
+const $ = id => document.getElementById(id);
+function localText(ar,en){ return document.documentElement.lang === "en" ? en : ar; }
+
+async function readJon2Zip(file) {
+  const buffer = await file.arrayBuffer();
+  const view = new DataView(buffer);
+  const min = Math.max(0, buffer.byteLength - 65557);
+  let eocd = -1;
+  for (let p = buffer.byteLength - 22; p >= min; p--) {
+    if (view.getUint32(p, true) === 0x06054b50) { eocd = p; break; }
+  }
+  if (eocd < 0) throw new Error("ZIP directory not found.");
+  const count = view.getUint16(eocd + 10, true);
+  let cursor = view.getUint32(eocd + 16, true);
+  const decoder = new TextDecoder();
+  const wanted = new Map();
+  for (let i = 0; i < count; i++) {
+    if (view.getUint32(cursor, true) !== 0x02014b50) throw new Error("Invalid ZIP directory entry.");
+    const method = view.getUint16(cursor + 10, true);
+    const compressedSize = view.getUint32(cursor + 20, true);
+    const nameLength = view.getUint16(cursor + 28, true);
+    const extraLength = view.getUint16(cursor + 30, true);
+    const commentLength = view.getUint16(cursor + 32, true);
+    const localOffset = view.getUint32(cursor + 42, true);
+    const name = decoder.decode(new Uint8Array(buffer, cursor + 46, nameLength));
+    const base = name.split("/").pop();
+    if (base === "manifest.json" || base === "weights.bin") {
+      if (method !== 0) throw new Error("This Jon2 ZIP must use stored (uncompressed) files.");
+      if (view.getUint32(localOffset, true) !== 0x04034b50) throw new Error("Invalid ZIP local header.");
+      const localNameLength = view.getUint16(localOffset + 26, true);
+      const localExtraLength = view.getUint16(localOffset + 28, true);
+      const dataStart = localOffset + 30 + localNameLength + localExtraLength;
+      if (dataStart + compressedSize > buffer.byteLength) throw new Error("ZIP entry is truncated.");
+      if (wanted.has(base)) throw new Error("Duplicate Jon2 ZIP entry: " + base);
+      wanted.set(base, new Blob([buffer.slice(dataStart, dataStart + compressedSize)]));
+    }
+    cursor += 46 + nameLength + extraLength + commentLength;
+  }
+  if (!wanted.has("manifest.json") || !wanted.has("weights.bin")) {
+    throw new Error("ZIP must contain manifest.json and weights.bin.");
+  }
+  return wanted;
+}
+
+$("loadLocalJon2").addEventListener("click", async () => {
+  const button = $("loadLocalJon2");
+  const status = $("localModelStatus");
+  const file = $("jon2Bundle").files?.[0];
+  const weightsHash = $("jon2WeightsHash").value.trim().toLowerCase();
+  if (!file) { status.textContent = localText("اختر ملف ZIP أولًا.", "Choose the ZIP file first."); return; }
+  if (!/^[0-9a-f]{64}$/.test(weightsHash)) { status.textContent = localText("أدخل بصمة SHA-256 كاملة من 64 خانة.", "Enter the full 64-character SHA-256 fingerprint."); return; }
+  button.disabled = true;
+  status.textContent = localText("جارٍ التحقق من الملف وتحميله…", "Verifying and loading the bundle…");
+  let client;
+  try {
+    const entries = await readJon2Zip(file);
+    client = new Jon2SafariClient();
+    await client.load(entries.get("manifest.json"), entries.get("weights.bin"), CHECKPOINT_SHA256, weightsHash);
+    window.JON2_LOCAL_CLIENT?.close?.();
+    window.JON2_LOCAL_CLIENT = client;
+    window.JON2_LOCAL_RUNTIME_READY = true;
+    window.JON2_REFRESH_CHAT_STATE?.();
+    status.textContent = localText("تم التحقق وتحميل النموذج الأصلي. يمكنك بدء المحادثة الآن.", "Verified. The original model is loaded; you can chat now.");
+    $("assistant").scrollIntoView({behavior:"smooth",block:"start"});
+  } catch (error) {
+    client?.close?.();
+    status.textContent = localText("فشل التحميل: ", "Load failed: ") + (error?.message || String(error));
+    console.error("Jon2 local bundle load failed.", error);
+  } finally {
+    button.disabled = false;
+  }
+});
+</script>
 </body>
 </html>
