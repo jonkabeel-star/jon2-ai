@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "policy": "fail_closed_commercial_training",
+  "sources": [
+    {
+      "source_id": "fineweb2-egyptian-arabic",
+      "repository": "Omartificial-Intelligence-Space/FineWeb2-Egyptian-Arabic",
+      "source_url": "https://huggingface.co/datasets/Omartificial-Intelligence-Space/FineWeb2-Egyptian-Arabic",
+      "upstream_source": "Common Crawl / FineWeb2",
+      "declared_license": "ODC-By-1.0",
+      "commercial_training_status": "QUARANTINE",
+      "reason": "Underlying crawled page rights and all upstream terms require source-level legal review; dataset wrapper licence alone is insufficient.",
+      "approved": false
+    },
+    {
+      "source_id": "arabictext-large",
+      "repository": "Jr23xd23/ArabicText-Large",
+      "source_url": "https://huggingface.co/datasets/Jr23xd23/ArabicText-Large",
+      "declared_license": "Apache-2.0 (dataset card claim)",
+      "commercial_training_status": "QUARANTINE",
+      "reason": "Underlying article provenance and rights chain not established.",
+      "approved": false
+    },
+    {
+      "source_id": "alkhalil-corpus",
+      "source_url": "https://aclanthology.org/2026.abjadnlp-1.27/",
+      "commercial_training_status": "CONTACT_RIGHTSHOLDER",
+      "reason": "Obtain written licence and commercial model-training permission from rights holder.",
+      "approved": false
+    },
+    {
+      "source_id": "openiti",
+      "source_url": "https://github.com/OpenITI",
+      "declared_license": "CC-BY-NC-SA-4.0",
+      "commercial_training_status": "EXCLUDED",
+      "reason": "Non-commercial restriction conflicts with commercial training.",
+      "approved": false
+    }
+  ]
+}
