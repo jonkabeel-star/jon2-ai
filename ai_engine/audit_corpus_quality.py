@@ -154,7 +154,12 @@ def analyze_directory(data_dir: Path) -> dict:
         raise ValueError(f"No .txt files found in {data_dir}")
 
     reports = []
+    root = data_dir.resolve()
     for path in files:
+        # Do not follow a corpus-file symlink outside the selected workspace.
+        # The inventory and training approval gates enforce the same boundary.
+        if not path.resolve().is_relative_to(root):
+            raise PermissionError(f"Corpus source resolves outside data directory: {path}")
         raw = path.read_bytes()
         decoded = raw.decode("utf-8", errors="strict")
         reports.append(analyze_text(decoded, path.relative_to(data_dir).as_posix()))

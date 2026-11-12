@@ -71,6 +71,21 @@ class CorpusQualityAuditTests(unittest.TestCase):
                 {"a.txt", "nested/b.txt"},
             )
 
+    def test_directory_rejects_file_symlink_outside_workspace(self):
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory)
+            root = workspace / "corpus"
+            root.mkdir()
+            outside = workspace / "private.txt"
+            outside.write_text("must not be inspected", encoding="utf-8")
+            link = root / "external.txt"
+            try:
+                link.symlink_to(outside)
+            except (OSError, NotImplementedError):
+                self.skipTest("Symlinks are unavailable in this environment")
+            with self.assertRaises(PermissionError):
+                analyze_directory(root)
+
     def test_invalid_utf8_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
