@@ -1,6 +1,3 @@
 name = "jon2-ai"
 main = "cloudflare/worker.js"
 compatibility_date = "2026-11-06"
-
-[ai]
-binding = "AI"
