@@ -156,3 +156,18 @@ Operational decision: keep `JON2_CHAT_RELEASE_APPROVED` false. Do not describe t
 - Current size: 117 conversation records, 234 messages, 18,744 message-content characters.
 - Format: structured user/assistant question-and-answer conversations.
 - Status: **NOT APPROVED** — exact-file human review and private approval manifest required before training.
+
+
+## Candidate 12 — OpenITI Chunked Arabic Research Corpus
+
+- Dataset ID: `mittagessen/openiti_chunked`.
+- Hugging Face revision pinned for quarantine acquisition: `edb9823fb63b544a5cd7889b835a2f85146f031a`.
+- Dataset card reports 10,222,980 chunks, approximately 17.9 GB download size and 38.0 GB dataset size.
+- Hugging Face metadata declares CC0-1.0 for the converted dataset package.
+- Upstream source: OpenITI release 2023.1.8. OpenITI's own documentation states that OpenITI releases are published under CC BY-NC-SA 4.0; its copyright FAQ separately explains its view that the historical underlying texts date to 1900 or earlier. These are distinct claims and must not be conflated with a blanket CC0 grant for the underlying corpus.
+- Intended role: quarantined research and source-rights audit only.
+- Status: **QUARANTINED / NOT APPROVED FOR JON2 TRAINING OR COMMERCIAL USE**.
+- Reason: the upstream OpenITI release terms include a non-commercial restriction; the Hub package's CC0 label does not establish that the underlying source texts have been relicensed for commercial model training.
+- Handling: use `ai_engine/download_arabic_candidate.py` only to download into a separate private quarantine folder. The tool pins the revision, records a manifest, and hard-codes both training and commercial eligibility to false. It refuses any destination inside `training_data`.
+- Storage warning: approximately 17.9 GB compressed and 38.0 GB unpacked; standard 15 GB Drive storage is insufficient.
+- Next requirement: resolve source-level rights and intended use with OpenITI / rights holders. If commercial rights cannot be established, permanently exclude this dataset from Jon2's commercial training corpus.
