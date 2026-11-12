@@ -18,6 +18,9 @@ from source_approval import validate_source_approvals
 from tokenizer import ByteBPETokenizer
 from train_jon2 import split_corpus_blocks
 
+MINIMUM_CORPUS_CHARACTERS = 1_000_000
+MINIMUM_TOKENS_PER_PARAMETER = 20.0
+
 
 def assess_readiness(
     *,
@@ -96,8 +99,8 @@ def build_report(
     approval_manifest: Path,
     profile_name: str,
     include_jsonl: bool = False,
-    minimum_characters: int = 100_000,
-    minimum_tokens_per_parameter: float = 10.0,
+    minimum_characters: int = MINIMUM_CORPUS_CHARACTERS,
+    minimum_tokens_per_parameter: float = MINIMUM_TOKENS_PER_PARAMETER,
     seed: int = 42,
 ) -> dict:
     """Run read-only corpus, approval, tokenizer, and architecture preflight."""
@@ -203,14 +206,16 @@ def main() -> int:
         __import__("model_profiles").PROFILES
     ), default="arabic_30m")
     parser.add_argument("--include-jsonl", action="store_true")
-    parser.add_argument("--minimum-characters", type=int, default=100_000)
-    parser.add_argument("--minimum-tokens-per-parameter", type=float, default=10.0)
+    parser.add_argument("--minimum-characters", type=int, default=MINIMUM_CORPUS_CHARACTERS)
+    parser.add_argument("--minimum-tokens-per-parameter", type=float, default=MINIMUM_TOKENS_PER_PARAMETER)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output", default="")
     args = parser.parse_args()
 
-    if args.minimum_characters < 1 or args.minimum_tokens_per_parameter < 0:
-        parser.error("minimum characters must be positive and token ratio non-negative")
+    if args.minimum_characters < MINIMUM_CORPUS_CHARACTERS:
+        parser.error(f"minimum-characters cannot be lower than {MINIMUM_CORPUS_CHARACTERS:,}")
+    if args.minimum_tokens_per_parameter < MINIMUM_TOKENS_PER_PARAMETER:
+        parser.error(f"minimum-tokens-per-parameter cannot be lower than {MINIMUM_TOKENS_PER_PARAMETER:g}")
 
     report = build_report(
         data_dir=Path(args.data),

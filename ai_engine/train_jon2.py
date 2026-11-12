@@ -20,6 +20,9 @@ from tokenizer import ByteBPETokenizer
 from source_approval import validate_source_approvals
 from model_profiles import PROFILES, describe_profile
 
+MINIMUM_CORPUS_CHARACTERS = 1_000_000
+MINIMUM_TOKENS_PER_PARAMETER = 20.0
+
 
 def split_corpus_blocks(corpus: str, validation_fraction: float, seed: int):
     """Split blank-line-delimited text blocks before fitting the tokenizer."""
@@ -127,6 +130,10 @@ def save_checkpoint(
 
 
 def train(args):
+    if args.minimum_chars < MINIMUM_CORPUS_CHARACTERS:
+        raise ValueError(f"minimum_chars cannot be lower than {MINIMUM_CORPUS_CHARACTERS:,}.")
+    if args.minimum_tokens_per_parameter < MINIMUM_TOKENS_PER_PARAMETER:
+        raise ValueError(f"minimum_tokens_per_parameter cannot be lower than {MINIMUM_TOKENS_PER_PARAMETER:g}.")
     random.seed(args.seed)
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
@@ -364,10 +371,10 @@ def main():
     parser.add_argument("--patience", type=int, default=8)
     parser.add_argument("--min-delta", type=float, default=0.001)
     parser.add_argument("--grad-clip", type=float, default=1.0)
-    parser.add_argument("--minimum-chars", type=int, default=100_000)
+    parser.add_argument("--minimum-chars", type=int, default=MINIMUM_CORPUS_CHARACTERS)
     parser.add_argument("--tokenizer-vocab-size", type=int, default=512)
     parser.add_argument("--tokenizer-min-frequency", type=int, default=2)
-    parser.add_argument("--minimum-tokens-per-parameter", type=float, default=None)
+    parser.add_argument("--minimum-tokens-per-parameter", type=float, default=MINIMUM_TOKENS_PER_PARAMETER)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--no-amp", action="store_true")
     parser.add_argument("--keep-last", action="store_true")
@@ -381,8 +388,6 @@ def main():
         args.context = selected["context"]
         args.batch_size = selected["batch_size"]
         args.tokenizer_vocab_size = selected["tokenizer_vocab_size"]
-        if args.minimum_tokens_per_parameter is None:
-            args.minimum_tokens_per_parameter = 10.0
         print(
             f"Selected profile={args.profile} | "
             f"estimated_parameters={selected['estimated_parameters']:,} | "
@@ -394,10 +399,10 @@ def main():
         parser.error("additional-steps cannot be negative")
     if args.additional_steps and not args.resume:
         parser.error("additional-steps requires --resume")
-    if args.minimum_tokens_per_parameter is None:
-        args.minimum_tokens_per_parameter = 0.0
-    if args.minimum_tokens_per_parameter < 0:
-        parser.error("minimum-tokens-per-parameter cannot be negative")
+    if args.minimum_tokens_per_parameter < MINIMUM_TOKENS_PER_PARAMETER:
+        parser.error(f"minimum-tokens-per-parameter cannot be lower than {MINIMUM_TOKENS_PER_PARAMETER:g}")
+    if args.minimum_chars < MINIMUM_CORPUS_CHARACTERS:
+        parser.error(f"minimum-chars cannot be lower than {MINIMUM_CORPUS_CHARACTERS:,}")
 
     if args.output is None:
         suffix = args.profile or "small"
