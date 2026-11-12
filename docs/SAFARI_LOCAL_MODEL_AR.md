@@ -4,7 +4,7 @@
 
 ## 1. تجهيز ملف النموذج من Kaggle
 
-1. افتح دفتر التصدير الخاص في مستودع Jon2 الخاص: `notebooks/Jon2_Safari_Private_Export.ipynb`.
+1. افتح [دفتر التصدير على GitHub](https://github.com/jonkabeel-star/jon2-ai/blob/main/notebooks/Jon2_Safari_Private_Export.ipynb) ونزّله إلى تطبيق Files.
 2. نزّل ملف الدفتر وافتحه في Kaggle Notebook بحساب لديه صلاحية الوصول إلى مجموعة البيانات `jon2kabeel/jon2-private-model-checkpoint`.
 3. فعّل Internet إذا طلب Kaggle ذلك، ثم شغّل الخلايا بالترتيب.
 4. الدفتر يتحقق من حجم checkpoint وبصمة SHA-256 قبل تصدير أي شيء. إذا لم تتطابق البصمة، يتوقف ولا يصدّر.
