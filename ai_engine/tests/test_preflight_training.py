@@ -7,7 +7,7 @@ AI_ENGINE = Path(__file__).resolve().parents[1]
 if str(AI_ENGINE) not in sys.path:
     sys.path.insert(0, str(AI_ENGINE))
 
-from preflight_training import (\n    MINIMUM_CORPUS_CHARACTERS, MINIMUM_TOKENS_PER_PARAMETER,\n    assess_readiness, should_skip_exact_tokenizer,\n)
+from preflight_training import MINIMUM_CORPUS_CHARACTERS, MINIMUM_TOKENS_PER_PARAMETER, assess_readiness, should_skip_exact_tokenizer
 
 
 class TrainingPreflightTests(unittest.TestCase):
