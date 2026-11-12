@@ -222,6 +222,15 @@ function setLang(next) {
   syncChatControls();
 }
 
+window.JON2_REFRESH_CHAT_STATE = function () {
+  localRuntimeReady = true;
+  chatReady = true;
+  apiStatusKey = "localReady";
+  document.getElementById("status").textContent = translations[lang].localReady;
+  updateChatNote();
+  syncChatControls();
+};
+
 function syncChatControls() {
   const input = document.getElementById("input");
   const send = document.getElementById("send");
