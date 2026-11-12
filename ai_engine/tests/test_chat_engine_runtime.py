@@ -66,10 +66,19 @@ class ChatEngineRuntimeTests(unittest.TestCase):
                 {"role": "assistant", "content": "أهلًا سامح"},
             ],
         )
-        self.assertEqual(
-            prompt,
-            "المستخدم: اسمي سامح\nJon2: أهلًا سامح\nالمستخدم: ما اسمي؟\nJon2:",
+        self.assertTrue(prompt.startswith("تعليمات: أجب بعربية سهلة وواضحة."))
+        self.assertIn("المستخدم: اسمي سامح", prompt)
+        self.assertIn("Jon2: أهلًا سامح", prompt)
+        self.assertTrue(prompt.endswith("المستخدم: ما اسمي؟\nJon2:"))
+
+    def test_conversation_prompt_preserves_complete_recent_messages(self):
+        previous = "هذه رسالة سابقة مهمة " * 20
+        prompt = chat_engine.build_conversation_prompt(
+            "تابع من فضلك",
+            [{"role": "user", "content": previous}],
         )
+        # Prompt construction strips surrounding whitespace but preserves all message text.
+        self.assertIn(previous.strip(), prompt)
 
     def test_conversation_prompt_uses_only_last_eight_turns(self):
         history = [
@@ -112,12 +121,17 @@ class ChatEngineRuntimeTests(unittest.TestCase):
         self.assertEqual(device.type, "cpu")
 
     def test_reply_uses_deterministic_low_noise_generation_settings(self):
-        prompt = "المستخدم: مرحبًا\nJon2:"
         chat_engine._model = object()
         chat_engine._tokenizer = object()
         chat_engine._device = "cpu"
-        with mock.patch.object(chat_engine, "load_runtime"), \
-             mock.patch.object(chat_engine, "generate", return_value=prompt + " أهلًا بك") as generator:
+        with (
+            mock.patch.object(chat_engine, "load_runtime"),
+            mock.patch.object(
+                 chat_engine,
+                 "generate",
+                 side_effect=lambda *args, **kwargs: args[2] + " أهلًا بك",
+            ) as generator,
+        ):
             answer = chat_engine.generate_reply("مرحبًا")
         self.assertEqual(answer, "أهلًا بك")
         self.assertFalse(generator.call_args.kwargs["do_sample"])
@@ -126,17 +140,21 @@ class ChatEngineRuntimeTests(unittest.TestCase):
         self.assertEqual(generator.call_args.kwargs["top_k"], 0)
 
     def test_reply_contains_only_generated_completion(self):
-        prompt = "المستخدم: مرحبًا\nJon2:"
         chat_engine._model = object()
         chat_engine._tokenizer = object()
         chat_engine._device = "cpu"
-        with mock.patch.object(chat_engine, "load_runtime"), \
-             mock.patch.object(chat_engine, "generate", return_value=prompt + " أهلًا بك") as generator:
+        with (
+            mock.patch.object(chat_engine, "load_runtime"),
+            mock.patch.object(
+                 chat_engine,
+                 "generate",
+                 side_effect=lambda *args, **kwargs: args[2] + " أهلًا بك",
+            ) as generator,
+        ):
             answer = chat_engine.generate_reply("مرحبًا")
         self.assertEqual(answer, "أهلًا بك")
-        self.assertEqual(generator.call_args.args[2], prompt)
+        self.assertIn("تعليمات: أجب بعربية سهلة وواضحة.", generator.call_args.args[2])
         self.assertEqual(generator.call_args.kwargs["stop_sequences"], ["المستخدم:"])
-
 
 if __name__ == "__main__":
     unittest.main()

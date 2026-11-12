@@ -7,7 +7,7 @@ are deliberately lazy so the API health service can start on small hosts.
 import os
 from pathlib import Path
 
-from answer_quality import validate_generated_answer
+from arabic_response import clean_generated_answer, diagnose_arabic_answer, validate_arabic_answer
 
 CHECKPOINT_PATH = Path(
     os.getenv(
@@ -54,7 +54,7 @@ def load_runtime() -> None:
 
 
 def build_conversation_prompt(message: str, history=None, memories=None, tokenizer=None, context=None) -> str:
-    """Build a prompt that fits the checkpoint's actual token context."""
+    """Build a concise Arabic-first prompt without silently changing the question."""
     question = str(message).strip()
     if not question:
         raise ValueError("اكتب رسالتك أولًا.")
@@ -65,7 +65,7 @@ def build_conversation_prompt(message: str, history=None, memories=None, tokeniz
         content = item.get("content") if isinstance(item, dict) else None
         if role in {"user", "assistant"} and isinstance(content, str) and content.strip():
             label = "المستخدم" if role == "user" else "Jon2"
-            memory_items.append(f"{label}: {content.strip()[-90:]}")
+            memory_items.append(f"{label}: {content.strip()}")
 
     turns = []
     for item in (history or [])[-4:]:
@@ -76,13 +76,16 @@ def build_conversation_prompt(message: str, history=None, memories=None, tokeniz
         content = content.strip()
         if content:
             label = "المستخدم" if role == "user" else "Jon2"
-            turns.append(f"{label}: {content[-90:]}")
+            turns.append(f"{label}: {content}")
 
-    # Reserve the final token for the model's answer marker. Drop oldest
-    # context first; only shorten the current question if it alone is too long.
     token_limit = max(8, int(context or getattr(_model, "context", 128)))
+    instruction = (
+        "تعليمات: أجب بعربية سهلة وواضحة. افهم اللهجة المصرية والأخطاء الإملائية "
+        "من السياق. أجب مباشرةً بلا تكرار. لا تخترع معلومات؛ قل لا أعلم عند الجهل. "
+        "راعِ سياق الحوار السابق."
+    )
     while True:
-        sections = []
+        sections = [instruction]
         if memory_items:
             sections.append("ذاكرة سابقة:\n" + "\n".join(memory_items))
         dialogue = list(turns) + [f"المستخدم: {question}\nJon2:"]
@@ -96,16 +99,13 @@ def build_conversation_prompt(message: str, history=None, memories=None, tokeniz
         if memory_items:
             memory_items.pop(0)
             continue
-        if len(question) > 8:
-            # Preserve the beginning of the user's request; the suffix may omit its subject.
-            question = question[:max(8, len(question) // 2)]
-            continue
-        # Last-resort safe prompt still includes a compact form of the question.
-        compact = f"سؤال: {question[-4:]}\nJon2:"
-        if len(tokenizer.encode(compact)) > token_limit - 1:
-            raise ValueError("نافذة سياق النموذج أصغر من أن تستوعب السؤال.")
-        return compact
 
+        # Truncating a question can remove a negation, condition, or key constraint.
+        # Reject it clearly instead of generating an answer to a different question.
+        raise ValueError(
+            "السؤال أطول من سعة السياق الحالية لنموذج Jon2. "
+            "اختصر السؤال مع الحفاظ على المطلوب والشروط، ثم أرسله مرة أخرى."
+        )
 
 def generate_reply(message: str, history=None, memories=None) -> str:
     if not message or not message.strip():
@@ -132,14 +132,17 @@ def generate_reply(message: str, history=None, memories=None) -> str:
         no_repeat_ngram_size=3,
         top_k=0,
     )
-    answer = full_text[len(prompt):].strip()
+    answer = clean_generated_answer(full_text[len(prompt):])
     if not answer:
         raise RuntimeError("لم ينتج نموذج Jon2 إجابة.")
-    # Experimental mode must never bypass basic output-integrity checks.
-    # This catches malformed characters and obvious repetition, not semantic quality.
-    if not validate_generated_answer(answer):
+
+    # These checks reject visibly corrupted or looping output. They do not
+    # certify meaning, factuality, grammar, or instruction-following.
+    report = diagnose_arabic_answer(answer, question=message)
+    if not validate_arabic_answer(answer, question=message):
+        print(f"Jon2 Arabic answer rejected: {report}")
         raise RuntimeError(
-            "رفض Jon2 عرض الإجابة لأن ناتج النموذج فشل فحص سلامة النص. "
-            "يلزم تحسين بيانات التدريب وإعادة تقييم النموذج."
+            "لم أعرض الإجابة لأن صياغة النموذج لم تجتز فحص وضوح النص العربي. "
+            "حاول تبسيط السؤال؛ وما زالت جودة المعنى تحتاج إلى تقييم بشري."
         )
     return answer
