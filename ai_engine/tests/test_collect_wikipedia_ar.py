@@ -5,7 +5,12 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from collect_wikipedia_ar import DEFAULT_OUTPUT_DIR, QUARANTINE_STATUS, collect_corpus
+from ai_engine.collect_wikipedia_ar import (
+    DEFAULT_OUTPUT_DIR,
+    QUARANTINE_STATUS,
+    _assert_quarantine_destination,
+    collect_corpus,
+)
 
 
 class QuarantinedCollectorTests(unittest.TestCase):
@@ -13,17 +18,8 @@ class QuarantinedCollectorTests(unittest.TestCase):
         self.assertEqual(DEFAULT_OUTPUT_DIR, "private-corpus-quarantine/wikipedia_ar")
 
     def test_training_data_destination_is_rejected(self):
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            training = root / "ai_engine" / "training_data"
-            training.mkdir(parents=True)
-            output = training / "wikipedia"
-            with patch("collect_wikipedia_ar.Path.resolve") as resolve:
-                resolve.side_effect = lambda path: (
-                    root / path if not Path(path).is_absolute() else Path(path)
-                )
-                with self.assertRaises(ValueError):
-                    collect_corpus(output, target_chars=100_000, max_pages=1)
+        with self.assertRaises(ValueError):
+            _assert_quarantine_destination(Path("ai_engine/training_data/private-wikipedia"))
 
     def test_collection_is_quarantined_and_never_approves_source(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -43,7 +39,7 @@ class QuarantinedCollectorTests(unittest.TestCase):
                     }]
                 }
             }
-            with patch("collect_wikipedia_ar.fetch_batch", return_value=payload):
+            with patch("ai_engine.collect_wikipedia_ar.fetch_batch", return_value=payload):
                 chars, count = collect_corpus(output, target_chars=100_000, max_pages=1)
 
             self.assertGreaterEqual(chars, 100_000)
