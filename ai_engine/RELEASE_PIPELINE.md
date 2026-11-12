@@ -46,43 +46,21 @@ The current repository-owned dialogue packs are approved only for private experi
 
 Do not copy test prompts into training data, synthetic instruction data, examples, logs used for training, or human feedback used for optimization.
 
-## 3. GPU training (owner-controlled Colab/Kaggle runtime)
+## 3. GPU training (independent self-hosted Linux GPU server — no Colab)
 
-The GitHub Actions runner is CPU-only. Run training only in an attached GPU runtime where the user controls the private source files and credentials.
+GitHub Actions manages orchestration, tests, approvals and audit records. Actual training runs only on a separately provisioned Linux GPU server registered as a GitHub Actions self-hosted runner with labels `self-hosted`, `linux`, `x64`, and `jon2-gpu`. Standard GitHub-hosted runners are not treated as GPU machines.
 
-Before training:
-```bash
-nvidia-smi
-python - <<'PY'
-import torch
-assert torch.cuda.is_available(), "CUDA GPU is required; training was not started."
-print("GPU:", torch.cuda.get_device_name(0))
-print("VRAM GiB:", round(torch.cuda.get_device_properties(0).total_memory / 1024**3, 2))
-print("PyTorch CUDA:", torch.version.cuda)
-PY
-```
+The workflow is `.github/workflows/jon2-private-gpu-training.yml`. It is manual-only and requires the exact confirmation `TRAIN_ON_PRIVATE_GPU`. The runner must be online, have NVIDIA drivers, CUDA-compatible PyTorch and the Jon2 Python dependencies already installed.
 
-Then run the repository's source-approval preflight against the approved data directory and manifest. Do not lower the minimums. Only after it reports ready, run the existing trainer with an explicitly selected Jon2 profile, an output checkpoint outside the source-data directory, validation enabled, and mixed precision where supported. Example command shape (replace paths only with the verified private data paths):
+Configure these repository Actions variables to absolute directories on that GPU server:
+- `JON2_PRIVATE_DATA_DIR`: private approved corpus directory, outside the checked-out repository, containing `source_approvals.json`.
+- `JON2_PRIVATE_CHECKPOINT_DIR`: private checkpoint/output directory, outside both the repository checkout and the corpus directory.
 
-```bash
-python ai_engine/preflight_training.py \
-  --data /content/jon2-approved-data \
-  --approval-manifest /content/jon2-approved-data/source_approvals.json \
-  --profile arabic_30m \
-  --output /content/jon2-checkpoints/jon2-arabic-30m.pt
+The workflow refuses to start if the runner lacks a working CUDA GPU, if either path is missing or inside the public checkout, or if the private approval manifest is absent. It runs the existing read-only `preflight_training.py` first and stops unless all source-rights, 1,000,000-character and 20-training-tokens-per-parameter gates pass. It then invokes the original Jon2 trainer with the `arabic_30m` profile. It never downloads a pretrained external model and never uploads corpus files or checkpoints to the public repository or workflow artifacts.
 
-python ai_engine/train_jon2.py \
-  --data /content/jon2-approved-data \
-  --approval-manifest /content/jon2-approved-data/source_approvals.json \
-  --profile arabic_30m \
-  --steps 10000 \
-  --output /content/jon2-checkpoints/jon2-arabic-30m.pt \
-  --last-checkpoint /content/jon2-checkpoints/jon2-arabic-30m-last.pt
-```
+The resulting private `checkpoint-manifest.json` records SHA-256 for each checkpoint, file size, Git commit, profile, Python/PyTorch/CUDA versions and GPU model. Keep the manifest and weights in private storage and retain an independent backup. The workflow also runs the current automatic Arabic diagnostic, but that is not a semantic-quality approval.
 
-After training, record GPU model/VRAM, CUDA and PyTorch versions, git commit, dataset manifest hash, tokenizer hash, seed, hyperparameters, start/end time, train/validation token counts, best validation loss, early-stop status, and checkpoint SHA-256. Keep checkpoints private; do not commit large weights to Git.
-
-A profile selection is configuration only. It is not a trained model. A checkpoint is accepted only if its architecture and tokenizer metadata match the runtime and its hash is recorded.
+This workflow does not provision or pay for a GPU host. It becomes runnable only after an independent GPU server is provisioned and registered as the labelled self-hosted runner. No Colab or Kaggle notebook/runtime is part of this path.
 
 ## 4. Sealed evaluation
 
