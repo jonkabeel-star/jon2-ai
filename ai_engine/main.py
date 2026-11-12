@@ -141,10 +141,10 @@ def health():
     )
     model_status = (
         "checkpoint_missing" if not checkpoint_available
-        else "model_not_loaded" if not loaded
+        else "checkpoint_available" if not loaded
         else "inference_not_tested" if not inference_tested
         else "human_quality_review_pending" if not quality_review_passed
-        else "release_not_approved" if not release_approved
+        else "release_blocked" if not release_approved
         else "ready"
     )
     checkpoint_path = os.getenv(
