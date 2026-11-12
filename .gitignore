@@ -9,3 +9,6 @@ ai_engine/evaluation/*.json
 __pycache__/
 *.py[cod]
 .pytest_cache/
+
+# Collected third-party text stays private and quarantined; never commit it.
+private-corpus-quarantine/
