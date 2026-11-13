@@ -19,14 +19,14 @@ _ENGINE_DIR = str(Path(__file__).resolve().parent)
 if _ENGINE_DIR not in sys.path:
     sys.path.insert(0, _ENGINE_DIR)
 
-from jon2_core import Jon2Transformer
-from sft_data import (
+from jon2_core import Jon2Transformer  # noqa: E402
+from sft_data import (  # noqa: E402
     IGNORE_INDEX,
     SFTConversationDataset,
     collate_sft_batch,
     load_approved_sft_splits,
 )
-from tokenizer import ByteBPETokenizer
+from tokenizer import ByteBPETokenizer  # noqa: E402
 
 MIN_SFT_CONVERSATIONS = 50
 MIN_SFT_ASSISTANT_TOKENS = 10_000
@@ -206,9 +206,7 @@ def train_sft(
         "validation_loss": validation_loss,
         "source_checkpoint_sha256": source_hash,
         "approval_manifest_sha256": manifest_hash,
-        "approved_sources": json.loads(manifest_path.read_text(encoding="utf-8")).get(
-            "approved_sources", []
-        ),
+        "approved_source_hashes": [\n            {"file": item["file"], "sha256": item["sha256"]}\n            for item in json.loads(manifest_path.read_text(encoding="utf-8")).get(\n                "approved_sources", []\n            )\n        ],
     }
     # Keep the source checkpoint untouched; only the new output path is written.
     torch.save(result, output)
