@@ -395,8 +395,7 @@ document.getElementById("form").addEventListener("submit", async event => {
       const prompt = promptParts.join("\n") + "\nJon2:";
       const result = await window.JON2_LOCAL_CLIENT.generate(prompt, 256);
       if (typeof result.answer !== "string" || !result.answer.trim()) throw new Error("Empty local Jon2 response.");
-      const warning = result.qualityPassed === false ? "\n\n" + translations[lang].localQualityWarning : "";
-      addMessage(result.answer.trim() + warning, "assistant");
+      addMessage(result.answer.trim(), "assistant");
     } catch (error) {
       const message = error?.message === "JON2_QUALITY_REJECTED"
         ? translations[lang].localQualityRejected
