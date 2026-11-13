@@ -149,41 +149,13 @@ textarea{font-size:16px;line-height:1.8;direction:inherit;overscroll-behavior:co
 <section class="chat-section" id="assistant">
   <div class="section-head"><div><h2 data-t="assistantHeading">المحادثة العامة — Jon2 AI</h2><p data-t="assistantDesc">متاحة للزوار بدون تسجيل دخول؛ محرك Jon2 الأصلي قيد التجهيز</p></div></div>
   <div class="chat-shell">
-    <details class="local-model-panel">
-      <summary data-t="localPanelTitle">تشغيل نموذج Jon2 الأصلي على هذا الآيفون</summary>
-      <p data-t="localPanelHelp">اختر ملف حزمة Jon2 ZIP الذي جهزناه لك. بصمة الأوزان الصحيحة مُدخلة مسبقًا؛ سيُتحقق من الحزمة محليًا داخل Safari ولن تُرفع الأوزان إلى الموقع.</p>
-      <a class="secondary local-export-link" href="https://github.com/jonkabeel-star/jon2-ai/blob/main/notebooks/Jon2_Safari_Private_Export.ipynb" target="_blank" rel="noopener noreferrer" data-t="bundleNotebookLink">فتح دفتر تجهيز الحزمة الخاصة</a>
-      <div class="local-model-fields">
-        <label><span data-t="bundleLabel">ملف Jon2 الخاص ZIP</span><input id="jon2Bundle" type="file" accept=".zip,application/zip"></label>
-        <label><span data-t="weightsHashLabel">بصمة SHA-256 للأوزان</span><input id="jon2WeightsHash" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" value="814f39f3a02e66cdd387efaa09e6000f0f5ee42f67fae4a3207c7f6e14e94884" placeholder="64-character SHA-256"></label>
-        <button class="local-load" id="loadLocalJon2" type="button" data-t="loadLocal">تحميل النموذج على هذا الجهاز</button>
-        <div class="local-model-status" id="localModelStatus" role="status" aria-live="polite" data-t="localNotLoaded">لم يتم تحميل النموذج المحلي بعد.</div>
-      </div>
-    </details>
     <div class="chat-top"><div class="chat-title"><div class="chat-avatar">J2</div><div><strong data-t="assistantName">المساعد الذكي</strong><small id="status" data-state="offline" data-t="offline">الخادم غير متصل حاليًا</small></div></div><button class="clear" id="clear" data-t="clear">مسح المحادثة</button></div>
     <div class="messages" id="messages" aria-live="polite"><div class="msg bot" data-t="welcome">أهلًا بك! واجهة المحادثة جاهزة، وسيتم تفعيل الردود الذكية بعد ربط نموذج Jon2 AI الحقيقي.</div></div>
-    <form class="composer" id="form"><textarea id="input" placeholder="الردود متوقفة حتى جاهزية محرك Jon2 الأصلي" data-ph="placeholder" maxlength="2000" required disabled></textarea><button class="send" id="send" type="submit" data-t="send" disabled>إرسال ↑</button></form>
+    <form class="composer" id="form"><textarea id="input" placeholder="اكتب رسالتك هنا..." data-ph="placeholder" maxlength="2000" required></textarea><button class="send" id="send" type="submit" data-t="send">إرسال ↑</button></form>
     <div class="status-note" id="statusNote" data-t="chatNote">المحادثة الذكية غير مفعّلة بعد؛ لن نعرض ردودًا وهمية.</div>
   </div>
 </section>
 
-
-<section class="quality-section" id="quality">
-  <div class="section-head"><div><h2>اختبار جودة العربية</h2><p>اختبار عملي للنموذج المحلي، مع تقييم بشري لكل إجابة</p></div></div>
-  <div class="quality-shell">
-    <p class="quality-intro" data-t="qualityIntro">شغّل سؤالًا واحدًا في كل مرة حتى لا نضغط على ذاكرة الآيفون. قيّم وضوح اللغة، وترابط المعنى، والالتزام بالسؤال من 0 إلى 8. لا يُعتبر النموذج ناجحًا إلا إذا حصل على 7/8 على الأقل في كل الأسئلة العشرة.</p>
-    <div class="quality-metrics"><span class="quality-metric" id="qualityProgress">التقدم: 0 من 10</span><span class="quality-metric" id="qualityScore">التقييم: لم يبدأ</span></div>
-    <div class="quality-status" id="qualityStatus" role="status" aria-live="polite" data-t="qualityStatusInitial">حمّل نموذج Jon2 المحلي أولًا من لوحة تشغيل النموذج بالأعلى، ثم ابدأ الاختبار.</div>
-    <div class="quality-prompt" id="qualityPrompt" data-t="qualityPromptInitial">سيظهر السؤال هنا.</div>
-    <div class="quality-answer" id="qualityAnswer" dir="rtl" data-t="qualityAnswerInitial">لم يتم إنشاء إجابة بعد.</div>
-    <div class="quality-controls">
-      <label for="qualityRating"><span data-t="qualityRatingLabel">تقييم الإجابة:</span> <strong id="qualityRatingValue">—</strong> / 8</label>
-      <input id="qualityRating" type="range" min="0" max="8" step="1" value="0" disabled>
-      <button class="quality-action" id="qualityNext" type="button" data-t="qualityStartButton">تشغيل السؤال الأول</button>
-    </div>
-    <p class="quality-intro">0 = إجابة غير مفهومة، 4 = مفهومة جزئيًا، 7 = جيدة وواضحة، 8 = ممتازة. التقييم يدوي ولا يدّعي قياس صحة المعلومات تلقائيًا.</p>
-  </div>
-</section>
 
 <!-- مساحة مخصصة لإعلانات AdSense مستقبلًا بعد الموافقة وإضافة كود الناشر -->
 <div class="ad-slot" aria-label="مساحة إعلانية مستقبلية"><span data-t="adPlaceholder">مساحة إعلانية مستقبلية — ستُفعّل بعد موافقة Google AdSense</span></div>
@@ -194,10 +166,10 @@ textarea{font-size:16px;line-height:1.8;direction:inherit;overscroll-behavior:co
 <script>
 const translations={
 ar:{
-brandSub:"منصتك للإبداع بالذكاء الاصطناعي",assistantNav:"المحادثة العامة",toolsNav:"الأدوات",eyebrow:"مساحة إبداعية مفتوحة للجميع",heroLine1:"حوّل أفكارك إلى",heroLine2:"إبداع مع Jon2 AI",heroText:"اكتشف أدوات الذكاء الاصطناعي لصناعة المحتوى والصور والفيديوهات. ابدأ من فكرتك، واترك مساحة للإبداع.",explore:"استكشف الأدوات ←",tryChat:"جرّب المساعد",toolsTitle:"استوديو الأدوات",toolsDesc:"كل أفكارك الإبداعية في مكان واحد",imageTitle:"توليد الصور",imageDesc:"حوّل وصفك إلى أفكار وصور إبداعية.",videoTitle:"توليد الفيديو",videoDesc:"اصنع مشاهد وقصص فيديو من أفكارك.",audioTitle:"الصوت والتعليق",audioDesc:"أدوات صوتية ومساعدة في التعليق الصوتي.",storyTitle:"كتابة القصص",storyDesc:"طوّر أفكارك إلى قصص وسيناريوهات.",soon:"قريبًا",assistantHeading:"المحادثة العامة — Jon2 AI",assistantDesc:"متاحة للزوار بدون تسجيل دخول؛ محرك Jon2 الأصلي قيد التجهيز",assistantName:"مساعد Jon2 AI",offline:"بوابة المحادثة غير متاحة حاليًا",apiOnline:"بوابة Jon2 متصلة — محرك النموذج الأصلي غير جاهز",modelReady:"نموذج Jon2 جاهز",experimentalReady:"Jon2 يعمل في الوضع التجريبي",requestFailed:"تعذر الحصول على رد من خادم Jon2 AI.",apiNotReadyNote:"المحادثة العامة مفتوحة للزوار، لكن إرسال الرسائل ينتظر جاهزية محرك Jon2 الأصلي واجتيازه مراجعة الجودة.",experimentalNote:"تنبيه: Jon2 يعمل تجريبيًا. قد تكون بعض الإجابات غير دقيقة أو غير مترابطة؛ لا تعتمد عليها كمعلومات مؤكدة.",apiReadyNote:"محرك Jon2 الأصلي اجتاز اختبارات الجاهزية المعتمدة وأصبح متاحًا.",offlineNote:"تعذر الاتصال بخادم Jon2 AI. تحقق من عنوان HTTPS وإعدادات CORS.",localPanelTitle:"تشغيل نموذج Jon2 الأصلي على هذا الآيفون",localPanelHelp:"اختر ملف حزمة Jon2 ZIP الذي جهزناه لك. بصمة الأوزان الصحيحة مُدخلة مسبقًا؛ سيُتحقق من الحزمة محليًا داخل Safari ولن تُرفع الأوزان إلى الموقع.",bundleNotebookLink:"فتح دفتر تجهيز الحزمة الخاصة",bundleLabel:"ملف Jon2 الخاص ZIP",weightsHashLabel:"بصمة SHA-256 للأوزان",loadLocal:"تحميل النموذج على هذا الجهاز",localNotLoaded:"لم يتم تحميل النموذج المحلي بعد.",localLoading:"جارٍ التحقق من النموذج وتحميله على الجهاز…",localReady:"نموذج Jon2 الأصلي محمّل محليًا على هذا الجهاز",localFailed:"فشل تحميل النموذج. راجع الملف وبصمة الأوزان.",localNote:"أنت تستخدم نموذج Jon2 الأصلي المحمّل محليًا داخل Safari. الملفات لا تُرسل إلى خادم. قد يوقف iOS المعالجة عند مغادرة الصفحة أو إغلاقها.",localPlaceholder:"اكتب رسالتك إلى Jon2 المحلي…",localRequestFailed:"تعذر على النموذج المحلي توليد رد.",localQualityRejected:"رفض Jon2 عرض الإجابة لأنها غير واضحة أو تحتوي على تكرار. هذا النموذج يحتاج إلى تحسين قبل الاعتماد عليه.",clear:"مسح المحادثة",welcome:"أهلًا بك في المحادثة العامة لـ Jon2 AI. يمكنك فتح الواجهة واستخدامها دون تسجيل دخول. الردود الذكية ستبدأ عندما يصبح محرك Jon2 الأصلي جاهزًا؛ لن نعرض إجابات وهمية.",placeholder:"اكتب رسالتك هنا...",waitingPlaceholder:"الردود متوقفة حتى يجتاز محرك Jon2 الأصلي مراجعة الجودة",send:"إرسال ↑",chatNote:"واجهة المحادثة العامة متاحة؛ محرك Jon2 الأصلي لم يجتز اختبار الجودة بعد، لذلك الردود متوقفة مؤقتًا.",adPlaceholder:"مساحة إعلانية مستقبلية — ستُفعّل بعد موافقة Google AdSense",footerText:"منصة إبداعية مستقلة — قيد التطوير",backendError:"تعذر الاتصال ببوابة Jon2 AI. أعد المحاولة لاحقًا.",qualityTitle:"اختبار جودة العربية",qualityDesc:"اختبار عملي للنموذج المحلي، مع تقييم بشري لكل إجابة",qualityIntro:"شغّل سؤالًا واحدًا في كل مرة حتى لا نضغط على ذاكرة الآيفون. قيّم وضوح اللغة وترابط المعنى والالتزام بالسؤال من 0 إلى 8.",qualityStatusInitial:"حمّل نموذج Jon2 المحلي أولًا من لوحة تشغيل النموذج بالأعلى، ثم ابدأ الاختبار.",qualityPromptInitial:"سيظهر السؤال هنا.",qualityAnswerInitial:"لم يتم إنشاء إجابة بعد.",qualityRatingLabel:"تقييم الإجابة:",qualityScaleNote:"0 = إجابة غير مفهومة، 4 = مفهومة جزئيًا، 7 = جيدة وواضحة، 8 = ممتازة. التقييم يدوي ولا يدّعي قياس صحة المعلومات تلقائيًا.",qualityStartButton:"تشغيل السؤال الأول",qualityRestartButton:"إعادة الاختبار من البداية",
+brandSub:"منصتك للإبداع بالذكاء الاصطناعي",assistantNav:"المحادثة العامة",toolsNav:"الأدوات",eyebrow:"مساحة إبداعية مفتوحة للجميع",heroLine1:"حوّل أفكارك إلى",heroLine2:"إبداع مع Jon2 AI",heroText:"اكتشف أدوات الذكاء الاصطناعي لصناعة المحتوى والصور والفيديوهات. ابدأ من فكرتك، واترك مساحة للإبداع.",explore:"استكشف الأدوات ←",tryChat:"جرّب المساعد",toolsTitle:"استوديو الأدوات",toolsDesc:"كل أفكارك الإبداعية في مكان واحد",imageTitle:"توليد الصور",imageDesc:"حوّل وصفك إلى أفكار وصور إبداعية.",videoTitle:"توليد الفيديو",videoDesc:"اصنع مشاهد وقصص فيديو من أفكارك.",audioTitle:"الصوت والتعليق",audioDesc:"أدوات صوتية ومساعدة في التعليق الصوتي.",storyTitle:"كتابة القصص",storyDesc:"طوّر أفكارك إلى قصص وسيناريوهات.",soon:"قريبًا",assistantHeading:"المحادثة العامة — Jon2 AI",assistantDesc:"متاحة للزوار بدون تسجيل دخول؛ محرك Jon2 الأصلي قيد التجهيز",assistantName:"مساعد Jon2 AI",offline:"بوابة المحادثة غير متاحة حاليًا",apiOnline:"بوابة Jon2 متصلة — محرك النموذج الأصلي غير جاهز",modelReady:"نموذج Jon2 جاهز",experimentalReady:"Jon2 يعمل في الوضع التجريبي",requestFailed:"تعذر الحصول على رد من خادم Jon2 AI.",apiNotReadyNote:"المحادثة العامة مفتوحة للزوار. محرك Jon2 الأصلي قيد التجهيز، لذلك قد يرفض الخادم الرسائل حتى اكتمال الجاهزية.",experimentalNote:"تنبيه: Jon2 يعمل تجريبيًا. قد تكون بعض الإجابات غير دقيقة أو غير مترابطة؛ لا تعتمد عليها كمعلومات مؤكدة.",apiReadyNote:"محرك Jon2 الأصلي اجتاز اختبارات الجاهزية المعتمدة وأصبح متاحًا.",offlineNote:"تعذر الاتصال بخادم Jon2 AI. تحقق من عنوان HTTPS وإعدادات CORS.",localPanelTitle:"تشغيل نموذج Jon2 الأصلي على هذا الآيفون",localPanelHelp:"اختر ملف حزمة Jon2 ZIP الذي جهزناه لك. بصمة الأوزان الصحيحة مُدخلة مسبقًا؛ سيُتحقق من الحزمة محليًا داخل Safari ولن تُرفع الأوزان إلى الموقع.",bundleNotebookLink:"فتح دفتر تجهيز الحزمة الخاصة",bundleLabel:"ملف Jon2 الخاص ZIP",weightsHashLabel:"بصمة SHA-256 للأوزان",loadLocal:"تحميل النموذج على هذا الجهاز",localNotLoaded:"لم يتم تحميل النموذج المحلي بعد.",localLoading:"جارٍ التحقق من النموذج وتحميله على الجهاز…",localReady:"نموذج Jon2 الأصلي محمّل محليًا على هذا الجهاز",localFailed:"فشل تحميل النموذج. راجع الملف وبصمة الأوزان.",localNote:"أنت تستخدم نموذج Jon2 الأصلي المحمّل محليًا داخل Safari. الملفات لا تُرسل إلى خادم. قد يوقف iOS المعالجة عند مغادرة الصفحة أو إغلاقها.",localPlaceholder:"اكتب رسالتك إلى Jon2 المحلي…",localRequestFailed:"تعذر على النموذج المحلي توليد رد.",localQualityRejected:"رفض Jon2 عرض الإجابة لأنها غير واضحة أو تحتوي على تكرار. هذا النموذج يحتاج إلى تحسين قبل الاعتماد عليه.",clear:"مسح المحادثة",welcome:"أهلًا بك في المحادثة العامة لـ Jon2 AI. المحادثة متاحة للزوار دون تسجيل دخول. محرك Jon2 الأصلي قيد التجهيز، ولن نعرض ردودًا وهمية.",placeholder:"اكتب رسالتك هنا...",send:"إرسال ↑",chatNote:"المحادثة متاحة للزوار بدون تسجيل دخول. محرك Jon2 الأصلي قيد التجهيز، وقد لا تتوفر الردود حتى اكتمال تشغيله واعتماد جودته.",adPlaceholder:"مساحة إعلانية مستقبلية — ستُفعّل بعد موافقة Google AdSense",footerText:"منصة إبداعية مستقلة — قيد التطوير",backendError:"تعذر الاتصال ببوابة Jon2 AI. أعد المحاولة لاحقًا.",qualityTitle:"اختبار جودة العربية",qualityDesc:"اختبار عملي للنموذج المحلي، مع تقييم بشري لكل إجابة",qualityIntro:"شغّل سؤالًا واحدًا في كل مرة حتى لا نضغط على ذاكرة الآيفون. قيّم وضوح اللغة وترابط المعنى والالتزام بالسؤال من 0 إلى 8.",qualityStatusInitial:"حمّل نموذج Jon2 المحلي أولًا من لوحة تشغيل النموذج بالأعلى، ثم ابدأ الاختبار.",qualityPromptInitial:"سيظهر السؤال هنا.",qualityAnswerInitial:"لم يتم إنشاء إجابة بعد.",qualityRatingLabel:"تقييم الإجابة:",qualityScaleNote:"0 = إجابة غير مفهومة، 4 = مفهومة جزئيًا، 7 = جيدة وواضحة، 8 = ممتازة. التقييم يدوي ولا يدّعي قياس صحة المعلومات تلقائيًا.",qualityStartButton:"تشغيل السؤال الأول",qualityRestartButton:"إعادة الاختبار من البداية",
 },
 en:{
-brandSub:"Your AI-powered creative space",toolsNav:"Tools",eyebrow:"A creative space open to everyone",heroLine1:"Turn your ideas into",heroLine2:"creativity with Jon2 AI",heroText:"Explore AI tools for content, images and videos. Start with an idea and make room for creativity.",explore:"Explore tools →",tryChat:"Try the assistant",toolsTitle:"Creative tools",toolsDesc:"Your creative ideas, all in one place",imageTitle:"Image generation",imageDesc:"Turn your prompts into creative image concepts.",videoTitle:"Video generation",videoDesc:"Create video scenes and stories from your ideas.",audioTitle:"Audio & voice",audioDesc:"Audio tools and voice-over assistance.",storyTitle:"Story writing",storyDesc:"Develop ideas into stories and scripts.",soon:"Coming soon",assistantHeading:"Public Jon2 AI Chat",assistantDesc:"Open to visitors without sign-in; the original Jon2 engine is being prepared",assistantName:"Jon2 AI Assistant",offline:"Chat gateway currently unavailable",apiOnline:"Jon2 gateway connected — original model is not ready",modelReady:"Jon2 model is ready",experimentalReady:"Jon2 is running in experimental mode",requestFailed:"Could not get a reply from the Jon2 AI server.",apiNotReadyNote:"The public chat page is open, but message replies are waiting for the original Jon2 engine to pass quality review.",experimentalNote:"Warning: Jon2 is running experimentally. Some replies may be inaccurate or incoherent; do not rely on them as verified information.",apiReadyNote:"The original Jon2 engine passed its readiness checks and is available.",offlineNote:"Could not reach the Jon2 AI API. Check its HTTPS URL and CORS settings.",localPanelTitle:"Run the original Jon2 model on this iPhone",localPanelHelp:"First create the original-model bundle with the private Kaggle notebook, then select its ZIP and enter the weights.bin fingerprint printed by the notebook. Verification and inference run locally in Safari; model weights are not uploaded to the website.",bundleNotebookLink:"Open the private bundle export notebook",bundleLabel:"Private Jon2 bundle ZIP",weightsHashLabel:"Weights SHA-256 fingerprint",loadLocal:"Load model on this device",localNotLoaded:"The local model has not been loaded yet.",localLoading:"Verifying and loading the model on this device…",localReady:"Original Jon2 model loaded locally on this device",localFailed:"Model loading failed. Check the file and weights fingerprint.",localNote:"You are using the original Jon2 model loaded locally in Safari. Files are not sent to a server. iOS may stop processing when you leave or close the page.",localPlaceholder:"Message your local Jon2 model…",localRequestFailed:"The local model could not generate a reply.",localQualityRejected:"Jon2 rejected this reply because it was unclear or repetitive. The model needs further improvement before it can be relied on.",clear:"Clear chat",welcome:"Welcome to the public Jon2 AI chat. The page is open without sign-in. AI replies will start when the original Jon2 engine is ready; we will not show fake answers.",placeholder:"Type your message here...",waitingPlaceholder:"Replies are paused until the original Jon2 engine passes quality review",send:"Send ↑",chatNote:"The public chat interface is available. The original Jon2 engine has not passed quality checks yet, so replies are temporarily paused.",adPlaceholder:"Future ad space — enabled only after Google AdSense approval",footerText:"Independent creative platform — in development",backendError:"Could not connect to the Jon2 AI gateway. Please try again later.",qualityTitle:"Arabic quality test",qualityDesc:"A practical local-model test with human review for every answer",qualityIntro:"Run one question at a time to reduce memory pressure on your iPhone. Rate language clarity, coherence, and relevance from 0 to 8.",qualityStatusInitial:"Load the local Jon2 model from the panel above, then start the test.",qualityPromptInitial:"The question will appear here.",qualityAnswerInitial:"No answer generated yet.",qualityRatingLabel:"Answer rating:",qualityScaleNote:"0 = unintelligible, 4 = partly understandable, 7 = clear and good, 8 = excellent. This is a human rating, not an automatic factuality score.",qualityStartButton:"Run the first question",qualityRestartButton:"Restart the test",
+brandSub:"Your AI-powered creative space",toolsNav:"Tools",eyebrow:"A creative space open to everyone",heroLine1:"Turn your ideas into",heroLine2:"creativity with Jon2 AI",heroText:"Explore AI tools for content, images and videos. Start with an idea and make room for creativity.",explore:"Explore tools →",tryChat:"Try the assistant",toolsTitle:"Creative tools",toolsDesc:"Your creative ideas, all in one place",imageTitle:"Image generation",imageDesc:"Turn your prompts into creative image concepts.",videoTitle:"Video generation",videoDesc:"Create video scenes and stories from your ideas.",audioTitle:"Audio & voice",audioDesc:"Audio tools and voice-over assistance.",storyTitle:"Story writing",storyDesc:"Develop ideas into stories and scripts.",soon:"Coming soon",assistantHeading:"Public Jon2 AI Chat",assistantDesc:"Open to visitors without sign-in; the original Jon2 engine is being prepared",assistantName:"Jon2 AI Assistant",offline:"Chat gateway currently unavailable",apiOnline:"Jon2 gateway connected — original model is not ready",modelReady:"Jon2 model is ready",experimentalReady:"Jon2 is running in experimental mode",requestFailed:"Could not get a reply from the Jon2 AI server.",apiNotReadyNote:"The public chat is open. The original Jon2 engine is being prepared, so the server may reject messages until it is ready.",experimentalNote:"Warning: Jon2 is running experimentally. Some replies may be inaccurate or incoherent; do not rely on them as verified information.",apiReadyNote:"The original Jon2 engine passed its readiness checks and is available.",offlineNote:"Could not reach the Jon2 AI API. Check its HTTPS URL and CORS settings.",localPanelTitle:"Run the original Jon2 model on this iPhone",localPanelHelp:"First create the original-model bundle with the private Kaggle notebook, then select its ZIP and enter the weights.bin fingerprint printed by the notebook. Verification and inference run locally in Safari; model weights are not uploaded to the website.",bundleNotebookLink:"Open the private bundle export notebook",bundleLabel:"Private Jon2 bundle ZIP",weightsHashLabel:"Weights SHA-256 fingerprint",loadLocal:"Load model on this device",localNotLoaded:"The local model has not been loaded yet.",localLoading:"Verifying and loading the model on this device…",localReady:"Original Jon2 model loaded locally on this device",localFailed:"Model loading failed. Check the file and weights fingerprint.",localNote:"You are using the original Jon2 model loaded locally in Safari. Files are not sent to a server. iOS may stop processing when you leave or close the page.",localPlaceholder:"Message your local Jon2 model…",localRequestFailed:"The local model could not generate a reply.",localQualityRejected:"Jon2 rejected this reply because it was unclear or repetitive. The model needs further improvement before it can be relied on.",clear:"Clear chat",welcome:"Welcome to the public Jon2 AI chat. Visitors can use the chat without signing in. The original Jon2 engine is being prepared; we will not show fake replies.",placeholder:"Type your message here...",waitingPlaceholder:"Replies are paused until the original Jon2 engine passes quality review",send:"Send ↑",chatNote:"The public chat is available without sign-in. The original Jon2 engine is being prepared; replies may remain unavailable until deployment and quality approval.",adPlaceholder:"Future ad space — enabled only after Google AdSense approval",footerText:"Independent creative platform — in development",backendError:"Could not connect to the Jon2 AI gateway. Please try again later.",qualityTitle:"Arabic quality test",qualityDesc:"A practical local-model test with human review for every answer",qualityIntro:"Run one question at a time to reduce memory pressure on your iPhone. Rate language clarity, coherence, and relevance from 0 to 8.",qualityStatusInitial:"Load the local Jon2 model from the panel above, then start the test.",qualityPromptInitial:"The question will appear here.",qualityAnswerInitial:"No answer generated yet.",qualityRatingLabel:"Answer rating:",qualityScaleNote:"0 = unintelligible, 4 = partly understandable, 7 = clear and good, 8 = excellent. This is a human rating, not an automatic factuality score.",qualityStartButton:"Run the first question",qualityRestartButton:"Restart the test",
 }};
 const STORAGE_KEY = "jon2_ai_site_state_v2";
 const LEGACY_STORAGE_KEY = "jon2_ai_site_state_v1";
@@ -218,7 +190,6 @@ let chatMessages = [];
 let savedDraft = "";
 let apiStatusKey = "offline";
 let chatReady = false;
-let localRuntimeReady = false;
 let chatBusy = false;
 let sessionId = "";
 
@@ -279,23 +250,14 @@ function setLang(next) {
   syncChatControls();
 }
 
-window.JON2_REFRESH_CHAT_STATE = function () {
-  localRuntimeReady = true;
-  chatReady = true;
-  apiStatusKey = "localReady";
-  document.getElementById("status").textContent = translations[lang].localReady;
-  updateChatNote();
-  syncChatControls();
-};
-
 function syncChatControls() {
   paintEngineStatus();
   const input = document.getElementById("input");
   const send = document.getElementById("send");
-  const enabled = (chatReady || localRuntimeReady) && !chatBusy;
+  const enabled = !chatBusy;
   input.disabled = !enabled;
   send.disabled = !enabled;
-  input.placeholder = localRuntimeReady ? translations[lang].localPlaceholder : chatReady ? translations[lang].placeholder : translations[lang].waitingPlaceholder;
+  input.placeholder = translations[lang].placeholder;
   if (enabled) {
     input.removeAttribute("aria-disabled");
     send.removeAttribute("aria-disabled");
@@ -308,14 +270,13 @@ function syncChatControls() {
 function paintEngineStatus() {
   const status = document.getElementById("status");
   if (!status) return;
-  const state = apiStatusKey === "modelReady" ? "ready" : localRuntimeReady || apiStatusKey === "experimentalReady" ? "experimental" : apiStatusKey === "apiOnline" ? "testing" : "offline";
+  const state = apiStatusKey === "modelReady" ? "ready" : apiStatusKey === "experimentalReady" ? "experimental" : apiStatusKey === "apiOnline" ? "testing" : "offline";
   status.dataset.state = state;
 }
 
 function updateChatNote() {
   const note = document.getElementById("statusNote");
   if (!note) return;
-  if (localRuntimeReady) { note.textContent = translations[lang].localNote; return; }
   const key = !API_BASE_URL ? "offlineNote" : apiStatusKey === "experimentalReady" ? "experimentalNote" : apiStatusKey === "modelReady" ? "apiReadyNote" : apiStatusKey === "apiOnline" ? "apiNotReadyNote" : "offlineNote";
   note.textContent = translations[lang][key] || translations[lang].chatNote;
 }
@@ -405,7 +366,6 @@ document.getElementById("input").addEventListener("input", saveState);
 
 async function checkApiHealth() {
   const status = document.getElementById("status");
-  if (localRuntimeReady) { chatReady = true; apiStatusKey = "localReady"; status.textContent = translations[lang].localReady; updateChatNote(); syncChatControls(); return; }
   if (!API_BASE_URL) {
     apiStatusKey = "offline";
     chatReady = false;
@@ -444,38 +404,12 @@ document.getElementById("form").addEventListener("submit", async event => {
   const input = document.getElementById("input");
   const send = document.getElementById("send");
   const value = input.value.trim();
-  if (!value || send.disabled || (!chatReady && !localRuntimeReady)) return;
+  if (!value || send.disabled) return;
 
   addMessage(value, "user");
   input.value = "";
   saveState();
 
-  if (localRuntimeReady && window.JON2_LOCAL_CLIENT) {
-    chatBusy = true;
-    syncChatControls();
-    send.setAttribute("aria-busy", "true");
-    try {
-      const promptParts = chatMessages.slice(-10).filter(item => item.kind === "user" || item.kind === "assistant").map(item =>
-        item.kind === "user" ? "المستخدم: " + item.text : "Jon2: " + item.text
-      );
-      const prompt = "تعليمات: أجب بعربية واضحة ومختصرة، دون تكرار.\n" + promptParts.join("\n") + "\nJon2:";
-      const result = await window.JON2_LOCAL_CLIENT.generate(prompt, 256);
-      if (typeof result.answer !== "string" || !result.answer.trim()) throw new Error("Empty local Jon2 response.");
-      addMessage(result.answer.trim(), "assistant");
-    } catch (error) {
-      const message = error?.message === "JON2_QUALITY_REJECTED"
-        ? translations[lang].localQualityRejected
-        : translations[lang].localRequestFailed;
-      addMessage(message, "bot");
-      console.warn("Local Jon2 inference failed.", error);
-    } finally {
-      chatBusy = false;
-      syncChatControls();
-      send.removeAttribute("aria-busy");
-      if (localRuntimeReady) input.focus();
-    }
-    return;
-  }
 
   if (!API_BASE_URL) {
     addMessage(translations[lang].backendError, "bot");
@@ -529,7 +463,7 @@ document.getElementById("form").addEventListener("submit", async event => {
     chatBusy = false;
     syncChatControls();
     send.removeAttribute("aria-busy");
-    if (chatReady) input.focus();
+    input.focus();
   }
 });
 
@@ -545,202 +479,9 @@ if (chatMessages.length === 0) {
 renderMessages();
 saveState();
 </script>
-<script type="module">
-import { Jon2SafariClient } from "./pocket/jon2-safari-client.js";
-import { getJon2BundleFromCache, getLatestJon2BundleFromCache, saveJon2BundleToCache, deleteJon2BundleFromCache } from "./pocket/jon2-model-cache.js";
 
-const CHECKPOINT_SHA256 = "edf96971187f93642f36282e270c2d2f3a6db39565b30d7898e856a49e0eaec2";
-const $ = id => document.getElementById(id);
-function localText(ar,en){ return document.documentElement.lang === "en" ? en : ar; }
 
-async function activateJon2Bundle(manifestBlob, weightsBlob, weightsHash) {
-  const client = new Jon2SafariClient();
-  try {
-    await client.load(manifestBlob, weightsBlob, CHECKPOINT_SHA256, weightsHash);
-    window.JON2_LOCAL_CLIENT?.close?.();
-    window.JON2_LOCAL_CLIENT = client;
-    window.JON2_LOCAL_RUNTIME_READY = true;
-    window.JON2_REFRESH_CHAT_STATE?.();
-    return client;
-  } catch (error) {
-    client.close();
-    throw error;
-  }
-}
 
-async function restoreJon2BundleFromCache(statusElement) {
-  let weightsHash = "";
-  try {
-    statusElement.textContent = localText("جارٍ البحث عن النموذج المحفوظ…", "Looking for your saved model…");
-    const cached = await getLatestJon2BundleFromCache(CHECKPOINT_SHA256);
-    if (!cached) return false;
-    weightsHash = cached.weightsSha256;
-    await activateJon2Bundle(cached.manifestBlob, cached.weightsBlob, weightsHash);
-    statusElement.textContent = localText("تم استرجاع النموذج المحفوظ والتحقق منه. يمكنك المحادثة دون اختيار الملف مجددًا.", "Saved model restored and verified. You can chat without selecting the ZIP again.");
-    $("assistant").scrollIntoView({behavior:"smooth",block:"start"});
-    return true;
-  } catch (error) {
-    try { await deleteJon2BundleFromCache(CHECKPOINT_SHA256, weightsHash); } catch {}
-    statusElement.textContent = localText("تعذر استرجاع النسخة المحفوظة. اختر ملف ZIP مرة أخرى.", "The saved copy could not be restored. Please select the ZIP again.");
-    console.warn("Jon2 cached model restore failed.", error);
-    return false;
-  }
-}
-
-async function readJon2Zip(file) {
-  const buffer = await file.arrayBuffer();
-  const view = new DataView(buffer);
-  const min = Math.max(0, buffer.byteLength - 65557);
-  let eocd = -1;
-  for (let p = buffer.byteLength - 22; p >= min; p--) {
-    if (view.getUint32(p, true) === 0x06054b50) { eocd = p; break; }
-  }
-  if (eocd < 0) throw new Error("ZIP directory not found.");
-  const count = view.getUint16(eocd + 10, true);
-  let cursor = view.getUint32(eocd + 16, true);
-  const decoder = new TextDecoder();
-  const wanted = new Map();
-  for (let i = 0; i < count; i++) {
-    if (view.getUint32(cursor, true) !== 0x02014b50) throw new Error("Invalid ZIP directory entry.");
-    const method = view.getUint16(cursor + 10, true);
-    const compressedSize = view.getUint32(cursor + 20, true);
-    const nameLength = view.getUint16(cursor + 28, true);
-    const extraLength = view.getUint16(cursor + 30, true);
-    const commentLength = view.getUint16(cursor + 32, true);
-    const localOffset = view.getUint32(cursor + 42, true);
-    const name = decoder.decode(new Uint8Array(buffer, cursor + 46, nameLength));
-    const base = name.split("/").pop();
-    if (base === "manifest.json" || base === "weights.bin") {
-      if (method !== 0) throw new Error("This Jon2 ZIP must use stored (uncompressed) files.");
-      if (view.getUint32(localOffset, true) !== 0x04034b50) throw new Error("Invalid ZIP local header.");
-      const localNameLength = view.getUint16(localOffset + 26, true);
-      const localExtraLength = view.getUint16(localOffset + 28, true);
-      const dataStart = localOffset + 30 + localNameLength + localExtraLength;
-      if (dataStart + compressedSize > buffer.byteLength) throw new Error("ZIP entry is truncated.");
-      if (wanted.has(base)) throw new Error("Duplicate Jon2 ZIP entry: " + base);
-      wanted.set(base, new Blob([buffer.slice(dataStart, dataStart + compressedSize)]));
-    }
-    cursor += 46 + nameLength + extraLength + commentLength;
-  }
-  if (!wanted.has("manifest.json") || !wanted.has("weights.bin")) {
-    throw new Error("ZIP must contain manifest.json and weights.bin.");
-  }
-  return wanted;
-}
-
-$("loadLocalJon2").addEventListener("click", async () => {
-  const button = $("loadLocalJon2");
-  const status = $("localModelStatus");
-  const file = $("jon2Bundle").files?.[0];
-  const weightsHash = $("jon2WeightsHash").value.trim().toLowerCase();
-  if (!/^[0-9a-f]{64}$/.test(weightsHash)) { status.textContent = localText("أدخل بصمة SHA-256 كاملة من 64 خانة.", "Enter the full 64-character SHA-256 fingerprint."); return; }
-  button.disabled = true;
-  status.textContent = localText("جارٍ التحقق من النموذج…", "Verifying model…");
-  try {
-    if (!file) {
-      const cached = await getJon2BundleFromCache(CHECKPOINT_SHA256, weightsHash);
-      if (!cached) throw new Error("No saved model found. Select the ZIP file once to save it on this device.");
-      await activateJon2Bundle(cached.manifestBlob, cached.weightsBlob, weightsHash);
-      status.textContent = localText("تم استرجاع النموذج المحفوظ والتحقق منه.", "Saved model restored and verified.");
-    } else {
-      const entries = await readJon2Zip(file);
-      await activateJon2Bundle(entries.get("manifest.json"), entries.get("weights.bin"), weightsHash);
-      try {
-        await saveJon2BundleToCache(CHECKPOINT_SHA256, weightsHash, entries.get("manifest.json"), entries.get("weights.bin"));
-        status.textContent = localText("تم تحميل النموذج والتحقق منه وحفظه على هذا الجهاز. لن تحتاج لاختيار ZIP مرة أخرى ما دامت بيانات Safari محفوظة.", "Model verified and saved on this device. You will not need to select the ZIP again while Safari data remains available.");
-      } catch (cacheError) {
-        status.textContent = localText("تم تحميل النموذج، لكن تعذر حفظه تلقائيًا: ", "Model loaded, but automatic saving failed: ") + (cacheError?.message || String(cacheError));
-      }
-    }
-    $("assistant").scrollIntoView({behavior:"smooth",block:"start"});
-  } catch (error) {
-    status.textContent = localText("فشل التحميل: ", "Load failed: ") + (error?.message || String(error));
-    console.error("Jon2 local bundle load failed.", error);
-  } finally {
-    button.disabled = false;
-  }
-});
-
-// Automatically restore the previously verified private bundle on return visits.
-const startupStatus = $("localModelStatus");
-restoreJon2BundleFromCache(startupStatus).catch(error => {
-  console.warn("Jon2 automatic model restore was skipped.", error);
-});
-</script>
-
-<script type="module">
-const testCases = [
-  ["الترحيب","رحّب بالمستخدم في جملة عربية طبيعية."],
-  ["معلومة مباشرة","ما عاصمة مصر؟ أجب بجملة واحدة."],
-  ["شرح مبسط","اشرح معنى الذكاء الاصطناعي لطفل في جملتين."],
-  ["ترابط منطقي","إذا كان اليوم الاثنين، فما اليوم بعد يومين؟ وضّح باختصار."],
-  ["اتباع التعليمات","اذكر ثلاث نصائح لتنظيم الوقت في قائمة قصيرة."],
-  ["تلخيص","لخّص هذه الفكرة في جملة: القراءة توسّع المعرفة وتساعد الإنسان على فهم العالم."],
-  ["عدم اختلاق المعلومات","إذا لم تكن متأكدًا من معلومة، كيف يجب أن تجيب؟"],
-  ["حوار متعدد الأدوار","المستخدم يقول: أحب التصوير. اقترح خطوة بسيطة للمبتدئ."],
-  ["وضوح اللغة","اكتب جملة عربية فصحى سليمة عن أهمية التعاون."],
-  ["الالتزام بالسؤال","ما الفرق بين الطقس والمناخ؟ أجب باختصار."]
-];
-let current = 0;
-let currentAnswer = null;
-let completed = false;
-const ratings = [];
-const $ = id => document.getElementById(id);
-const button = $("qualityNext");
-const slider = $("qualityRating");
-function localText(ar,en){return document.documentElement.lang==="en"?en:ar;}
-function updateProgress(){
-  $("qualityProgress").textContent=localText("التقدم: ","Progress: ")+ratings.length+" / 10";
-  const total=ratings.reduce((sum,item)=>sum+item,0);
-  $("qualityScore").textContent=ratings.length?localText("متوسط التقييم: ","Average rating: ")+(total/ratings.length).toFixed(1)+"/8":localText("التقييم: لم يبدأ","Score: not started");
-}
-slider.addEventListener("input",()=>{$("qualityRatingValue").textContent=slider.value;});
-document.getElementById("language")?.addEventListener("click",()=>{updateProgress();});
-button.addEventListener("click",async()=>{
-  if(completed){current=0;currentAnswer=null;ratings.length=0;completed=false;slider.disabled=true;$("qualityPrompt").textContent=localText("سيظهر السؤال هنا.","The question will appear here.");$("qualityAnswer").textContent=localText("لم يتم إنشاء إجابة بعد.","No answer generated yet.");$("qualityStatus").textContent=localText("ابدأ الاختبار من جديد.","Start the test again.");button.textContent=localText("تشغيل السؤال الأول","Run the first question");updateProgress();return;}
-  const client=window.JON2_LOCAL_CLIENT;
-  if(!client){
-    $("qualityStatus").textContent=localText("حمّل نموذج Jon2 المحلي أولًا من لوحة التشغيل أعلى المحادثة.","Load the local Jon2 model from the panel above first.");
-    return;
-  }
-  button.disabled=true;
-  try{
-    if(currentAnswer!==null){
-      ratings.push(Number(slider.value));
-      currentAnswer=null;
-      current++;
-      updateProgress();
-      if(current>=testCases.length){
-        const total=ratings.reduce((sum,item)=>sum+item,0);
-        const average=total/ratings.length;
-        const passed=ratings.every(item=>item>=7);
-        $("qualityPrompt").textContent=localText("اكتمل الاختبار","Test complete");
-        $("qualityAnswer").textContent=localText("النتيجة: ","Result: ")+ratings.filter(item=>item>=7).length+"/10 "+localText("إجابات حصلت على 7/8 أو أكثر. متوسط التقييم: ","answers scored at least 7/8. Average: ")+average.toFixed(1)+"/8";
-        $("qualityStatus").textContent=passed?localText("اجتاز التقييم البشري لهذه الجولة فقط. يلزم تكرار الاختبار قبل إعلان الجاهزية.","Passed this human-reviewed round only. Repeat testing before declaring readiness."):localText("لم يجتز النموذج معيار الجودة في هذه الجولة. راجع الإجابات ذات التقييم الأقل من 7.","The model did not meet the quality threshold in this round. Review answers rated below 7.");
-        button.textContent=localText("إعادة الاختبار من البداية","Restart test");
-        completed=true;
-        button.disabled=false;
-        slider.disabled=true;
-        return;
-      }
-    }
-    const [category,question]=testCases[current];
-    $("qualityPrompt").textContent=(current+1)+"/10 — "+category+"\n"+question;
-    $("qualityAnswer").textContent=localText("جارٍ توليد الإجابة على الجهاز…","Generating the answer on this device…");
-    $("qualityStatus").textContent=localText("اترك الصفحة مفتوحة حتى ينتهي النموذج من الإجابة.","Keep this page open while the model generates its answer.");
-    const prompt="تعليمات: أجب بالعربية الفصحى الواضحة، بإيجاز، ولا تكرر.\nالمستخدم: "+question+"\nJon2:";
-    const result=await client.generate(prompt,96);
-    currentAnswer=result.answer.trim();
-    $("qualityAnswer").textContent=currentAnswer;
-    $("qualityStatus").textContent=localText("قيّم الإجابة من 0 إلى 8، ثم اضغط «السؤال التالي».","Rate the answer from 0 to 8, then select Next question.");
-    slider.value="0";slider.disabled=false;$("qualityRatingValue").textContent="0";
-    button.textContent=current===0?localText("اعتماد التقييم وتشغيل السؤال التالي","Save rating and run next question"):localText("اعتماد التقييم وتشغيل السؤال التالي","Save rating and run next question");
-  }catch(error){
-    $("qualityStatus").textContent=localText("تعذر إكمال الاختبار: ","Test failed: ")+(error?.message||String(error));
-  }finally{button.disabled=false;}
-});
-updateProgress();
-</script>
 
 </body>
 </html>
