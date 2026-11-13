@@ -1,8 +1,7 @@
 # Jon2 assistant-only SFT data pipeline
 
 This module prepares supervised conversation examples for the original Jon2
-Byte-BPE Transformer. It does not download data, start training, or modify a
-checkpoint.
+Byte-BPE Transformer. The trainer is opt-in and does not run during import or CI.
 
 ## Loss behavior
 
@@ -27,8 +26,6 @@ validator before reading any conversation.
 The current project dialogue JSONL files are not automatically approved.
 Do not add the 100-question held-out evaluation file to SFT data. It is
 evaluation-only and must remain separate.
-
-## Status
 
 ## Optional training command
 
