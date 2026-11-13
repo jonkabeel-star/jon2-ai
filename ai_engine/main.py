@@ -345,25 +345,9 @@ def chat(request: ChatRequest):
     if not message:
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
 
-    # Attributed factual retrieval is separate from model generation. All
-    # conversational replies, including identity and greetings, must pass the
-    # same explicit release gate and come from the original Jon2 checkpoint.
-    if looks_like_fact_question(message):
-        knowledge = retrieve_knowledge(message)
-        if knowledge:
-            reply = format_knowledge_answer(knowledge)
-            if request.session_id:
-                chat_memory.add_exchange(request.session_id, message, reply)
-            return {
-                "project": "Jon2 AI", "reply": reply, "memory_used": False,
-                "session_id": request.session_id, "knowledge_used": True,
-                "knowledge_cached": bool(knowledge.get("cached")),
-                "knowledge_source": knowledge.get("source_url"),
-                "response_mode": "source_retrieval",
-            }
-
-    # General free-form conversation remains protected until the original
-    # checkpoint passes inference tests and explicit human quality approval.
+    # Every user-facing answer must come from the original Jon2 model.
+    # Check the same fail-closed release gate before any factual retrieval:
+    # retrieved text is context for Jon2, never a standalone answer or fallback.
     if not _public_release_ready():
         snapshot = health()
         raise HTTPException(
@@ -376,26 +360,47 @@ def chat(request: ChatRequest):
             },
         )
 
-
     try:
+        knowledge = retrieve_knowledge(message) if looks_like_fact_question(message) else None
+        knowledge_context = None
+        if knowledge:
+            title = str(knowledge.get("title", "")).strip()
+            extract = str(knowledge.get("extract", "")).strip()
+            if title and extract:
+                # Pass a bounded source extract to the model for its own synthesis.
+                # Attribution remains separate response metadata, not copied answer text.
+                knowledge_context = f"{title}: {extract[:500]}"
+
         history = [item.model_dump() for item in request.history]
         memories = []
         if request.session_id:
             # Read context before storing the current turn, preventing duplicate prompt entries.
             history = chat_memory.recent_messages(request.session_id, limit=8)
             memories = chat_memory.relevant_memories(request.session_id, message, limit=4)
-        reply = generate_reply(message, history, memories)
+
+        reply = generate_reply(
+            message, history, memories, knowledge_context=knowledge_context
+        )
         if request.session_id:
-            # Commit both sides only after generation succeeds; failed inference
-            # must not leave an orphan user turn that repeats on the next request.
+            # Persist only the actual model-generated exchange after inference succeeds.
             chat_memory.add_exchange(request.session_id, message, reply)
-        return {
+
+        response = {
             "project": "Jon2 AI",
             "reply": reply,
             "memory_used": bool(memories),
             "session_id": request.session_id,
             "experimental": _experimental_chat_enabled() and not _chat_release_approved(),
+            "response_mode": "jon2_generated_with_retrieval" if knowledge_context else "jon2_generated",
+            "knowledge_used": bool(knowledge_context),
         }
+        if knowledge_context and knowledge:
+            response.update({
+                "knowledge_source": knowledge.get("source_url"),
+                "knowledge_title": knowledge.get("title"),
+                "knowledge_cached": bool(knowledge.get("cached")),
+            })
+        return response
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
     except FileNotFoundError as error:
