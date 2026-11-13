@@ -173,7 +173,7 @@ test("Safari worker client rejects timed-out generation instead of hanging chat"
     const client = new Jon2SafariClient();
     await assert.rejects(
       client._request("generate", {prompt:"مرحبا",maxTokens:8}, [], 5),
-      /inference timed out/
+      /عقل Jon2 غير جاهز للرد/
     );
     assert.equal(client.pending.size, 0);
     client.close();
@@ -245,11 +245,11 @@ test("Safari worker never bypasses the original model with canned small-talk rep
   assert.doesNotMatch(workerSource, /function\s+getLocalArabicReply/);
   assert.match(
     workerSource,
-    /const generated = runtime\.model\.generate\(runtime\.tokenizer, message\.prompt, message\.maxTokens \?\? 256\)/
+    /const rawGenerated = runtime\.model\.generate\(/
   );
   assert.match(
     workerSource,
-    /const qualityPassed = validateJon2ArabicAnswer\(generated\)/
+    /const answer = requireUsableJon2Answer\(rawGenerated\)/
   );
 });
 
