@@ -78,8 +78,9 @@ def build_conversation_prompt(message: str, history=None, memories=None, tokeniz
             label = "المستخدم" if role == "user" else "Jon2"
             turns.append(f"{label}: {content[-90:]}")
 
-    # Reserve the final token for the model's answer marker. Drop oldest
-    # context first; only shorten the current question if it alone is too long.
+    # Reserve the final token for the model's answer marker. Remove older
+    # context first, but never silently truncate the user's current question:
+    # dropping its ending can reverse or destroy the meaning of Arabic requests.
     token_limit = max(8, int(context or getattr(_model, "context", 128)))
     while True:
         sections = []
@@ -96,15 +97,10 @@ def build_conversation_prompt(message: str, history=None, memories=None, tokeniz
         if memory_items:
             memory_items.pop(0)
             continue
-        if len(question) > 8:
-            # Preserve the beginning of the user's request; the suffix may omit its subject.
-            question = question[:max(8, len(question) // 2)]
-            continue
-        # Last-resort safe prompt still includes a compact form of the question.
-        compact = f"سؤال: {question[-4:]}\nJon2:"
-        if len(tokenizer.encode(compact)) > token_limit - 1:
-            raise ValueError("نافذة سياق النموذج أصغر من أن تستوعب السؤال.")
-        return compact
+        raise ValueError(
+            "سؤال المستخدم أطول من نافذة سياق نموذج Jon2؛ "
+            "لن يتم اختصاره حتى لا يتغير معناه."
+        )
 
 
 def generate_reply(message: str, history=None, memories=None) -> str:
