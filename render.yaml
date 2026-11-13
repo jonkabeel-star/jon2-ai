@@ -10,3 +10,9 @@ services:
     envVars:
       - key: JON2_CHAT_RELEASE_APPROVED
         value: "false"
+      - key: JON2_EXPERIMENTAL_CHAT
+        value: "false"
+      - key: JON2_RUNTIME_TOKEN
+        sync: false
+      - key: KAGGLE_API_TOKEN
+        sync: false
