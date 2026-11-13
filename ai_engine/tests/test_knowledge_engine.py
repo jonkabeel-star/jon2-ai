@@ -21,6 +21,11 @@ class KnowledgeEngineTests(unittest.TestCase):
         self.assertIn("أهلًا", knowledge.local_greeting("مرحبا"))
         self.assertIsNone(knowledge.local_greeting("اشرح الذكاء الاصطناعي"))
 
+    def test_identity_question_is_answered_without_model(self):
+        for question in ("انت اسمك ايه", "ما اسمك؟", "اسم المساعد ايه"):
+            self.assertIn("Jon2 AI", knowledge.local_identity(question))
+        self.assertIsNone(knowledge.local_identity("ما اسم عاصمة مصر؟"))
+
     def test_cache_persists_source_and_extract(self):
         record = {"title": "الذكاء الاصطناعي", "extract": "مجال علمي.", "source_url": "https://ar.wikipedia.org/wiki/AI"}
         knowledge.store("ما هو الذكاء الاصطناعي؟", record, now=100)

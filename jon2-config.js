@@ -1,2 +1,3 @@
-/* Jon2 public API is served by the Cloudflare Pages Functions gateway. */
-window.JON2_API_BASE_URL = "https://jon2-ai.pages.dev";
+/* No third-party API host is configured. The browser uses the on-device Jon2 runtime;
+   the Python API can be connected only when the project-owned server is actually running. */
+window.JON2_API_BASE_URL = "";

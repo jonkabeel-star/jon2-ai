@@ -215,6 +215,21 @@ def local_greeting(message: str) -> str | None:
         return "أهلًا وسهلًا! أنا Jon2 AI. كيف أقدر أساعدك؟"
     return None
 
+def local_identity(message: str) -> str | None:
+    """Answer a narrow set of direct Arabic questions about this assistant's identity."""
+    value = re.sub(r"[؟?!.،,;；。]+$", "", _normalize(message)).strip()
+    accepted = {
+        "انت اسمك ايه", "انتي اسمك ايه", "انت اسمك ما هو", "ما اسمك",
+        "ما هو اسمك", "اسمك ايه", "ايه اسمك", "انت مين", "انتي مين",
+        "مين انت", "مين انتي", "ما اسم هذا المساعد", "ما اسم المساعد",
+        "اسم المساعد ايه", "ايه اسم المساعد", "من انت", "من انتي",
+        "من تكون", "من تكونين",
+    }
+    if value in accepted:
+        return "اسمي Jon2 AI، وأنا مساعدك الذكي. أستطيع مساعدتك في الإجابة عن الأسئلة والبحث والكتابة والتعلّم."
+    return None
+
+
 
 def looks_like_fact_question(message: str) -> bool:
     value = str(message or "").strip()

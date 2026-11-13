@@ -233,7 +233,8 @@ window.JON2_REFRESH_CHAT_STATE = function () {
 function syncChatControls() {
   const input = document.getElementById("input");
   const send = document.getElementById("send");
-  const enabled = (chatReady || localRuntimeReady) && !chatBusy;
+  // Keep the composer available offline for built-in identity and connection diagnostics.
+  const enabled = !chatBusy;
   input.disabled = !enabled;
   send.disabled = !enabled;
   input.placeholder = localRuntimeReady ? translations[lang].localPlaceholder : chatReady ? translations[lang].placeholder : translations[lang].waitingPlaceholder;
@@ -376,13 +377,6 @@ async function checkApiHealth() {
   syncChatControls();
 }
 
-document.getElementById("form").addEventListener("submit", async event => {
-  event.preventDefault();
-  const input = document.getElementById("input");
-  const send = document.getElementById("send");
-  const value = input.value.trim();
-  if (!value || send.disabled || (!chatReady && !localRuntimeReady)) return;
-
 function normalizeJon2ArabicIntent(value) {
   return String(value || "")
     .normalize("NFKC")
@@ -404,6 +398,14 @@ function getJon2LocalIdentityReply(value) {
   if (!asksName) return null;
   return "اسمي Jon2 AI، وأنا مساعدك الذكي. أعمل على مساعدتك في الإجابة عن الأسئلة والكتابة والتعلّم.";
 }
+
+
+document.getElementById("form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const input = document.getElementById("input");
+  const send = document.getElementById("send");
+  const value = input.value.trim();
+  if (!value || chatBusy) return;
 
   const localIntentReply = getJon2LocalIdentityReply(value);
   addMessage(value, "user");

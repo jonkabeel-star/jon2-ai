@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from chat_engine import generate_reply, load_runtime, model_is_ready
 import chat_memory
 from knowledge_engine import (
-    format_knowledge_answer, local_greeting, looks_like_fact_question,
+    format_knowledge_answer, local_greeting, local_identity, looks_like_fact_question,
     retrieve_knowledge,
 )
 from external_models.jais2_routes import router as jais2_router
@@ -345,20 +345,18 @@ def chat(request: ChatRequest):
     if not message:
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
 
-    if not _public_release_ready():
-        snapshot = health()
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "error": "public_release_gate_closed",
-                "message": "محادثة Jon2 مغلقة حتى اكتمال التدريب والاختبار والمراجعة البشرية واعتماد الإصدار.",
-                "model_status": snapshot["model_status"],
-                "chat_ready": False,
-            },
-        )
+    # Narrow local intents and attributed factual retrieval do not require
+    # model weights. Web retrieval uses a free public encyclopedia API, not an AI API.
+    identity = local_identity(message)
+    if identity:
+        if request.session_id:
+            chat_memory.add_exchange(request.session_id, message, identity)
+        return {
+            "project": "Jon2 AI", "reply": identity, "memory_used": False,
+            "session_id": request.session_id, "knowledge_used": False,
+            "response_mode": "local_identity",
+        }
 
-    # Deterministic greetings and source-backed factual retrieval work without
-    # loading the still-experimental language model. This does not train weights.
     greeting = local_greeting(message)
     if greeting:
         if request.session_id:
@@ -382,6 +380,20 @@ def chat(request: ChatRequest):
                 "knowledge_source": knowledge.get("source_url"),
                 "response_mode": "source_retrieval",
             }
+
+    # General free-form conversation remains protected until the original
+    # checkpoint passes inference tests and explicit human quality approval.
+    if not _public_release_ready():
+        snapshot = health()
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "public_release_gate_closed",
+                "message": "المحادثة العامة تحتاج إلى نموذج Jon2 أصلي مجرّب ومراجَع قبل فتحها.",
+                "model_status": snapshot["model_status"],
+                "chat_ready": False,
+            },
+        )
 
 
     try:
