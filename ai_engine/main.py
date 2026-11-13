@@ -248,7 +248,7 @@ def runtime_v1_chat(
     try:
         result = chat(legacy_request)
     except HTTPException as error:
-        detail = error.detail if isinstance(error.detail, str) else "Runtime request failed."
+        detail = error.detail if isinstance(error.detail, str) else "عقل Jon2 غير جاهز للرد"
         error_code = (
             "model_not_ready" if error.status_code == 503
             else "invalid_request" if error.status_code == 400
@@ -270,7 +270,7 @@ def runtime_v1_chat(
             content={
                 "contract_version": "1",
                 "error": "empty_model_reply",
-                "detail": "The Jon2 runtime did not return a usable reply.",
+                "detail": "عقل Jon2 غير جاهز للرد",
             },
         )
 
@@ -361,16 +361,6 @@ def chat(request: ChatRequest):
         )
 
     try:
-        knowledge = retrieve_knowledge(message) if looks_like_fact_question(message) else None
-        knowledge_context = None
-        if knowledge:
-            title = str(knowledge.get("title", "")).strip()
-            extract = str(knowledge.get("extract", "")).strip()
-            if title and extract:
-                # Pass a bounded source extract to the model for its own synthesis.
-                # Attribution remains separate response metadata, not copied answer text.
-                knowledge_context = f"{title}: {extract[:500]}"
-
         history = [item.model_dump() for item in request.history]
         memories = []
         if request.session_id:
@@ -394,12 +384,6 @@ def chat(request: ChatRequest):
             "response_mode": "jon2_generated_with_retrieval" if knowledge_context else "jon2_generated",
             "knowledge_used": bool(knowledge_context),
         }
-        if knowledge_context and knowledge:
-            response.update({
-                "knowledge_source": knowledge.get("source_url"),
-                "knowledge_title": knowledge.get("title"),
-                "knowledge_cached": bool(knowledge.get("cached")),
-            })
         return response
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
