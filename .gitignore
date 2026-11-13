@@ -1,14 +1,9 @@
-# Private training approvals and corpora must never be committed.
-ai_engine/training_data/source_approvals.json
-ai_engine/training_data/private/
-ai_engine/training_data/*private*.txt
-ai_engine/checkpoints/
-ai_engine/evaluation/*.json
-
-# Python-generated files
-__pycache__/
-*.py[cod]
-.pytest_cache/
-
-# Collected third-party text stays private and quarantined; never commit it.
-private-corpus-quarantine/
+# Private training assets must remain outside the public checkout. These rules
+# protect future untracked files only; tracked files require a separate owner decision.
+/private-data/
+/ai_engine/private-data/
+/ai_engine/training_data/private/
+/ai_engine/training_data/source_approvals.json
+/ai_engine/training_data/*.local.json
+/ai_engine/checkpoints/
+/ai_engine/evaluation/*.json
