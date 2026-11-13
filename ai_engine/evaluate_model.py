@@ -6,6 +6,7 @@ corpus. This tool never assigns quality scores or approves a model automatically
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -98,11 +99,18 @@ def main() -> int:
         raise ValueError(
             f"Expected exactly {args.expected_prompt_count} held-out prompts, found {len(prompts)}."
         )
-    if args.checkpoint_sha256 is not None and (
-        len(args.checkpoint_sha256) != 64
-        or any(char not in "0123456789abcdef" for char in args.checkpoint_sha256)
-    ):
-        raise ValueError("checkpoint-sha256 must be a lowercase 64-character SHA-256 digest.")
+    actual_checkpoint_sha256 = hashlib.sha256(checkpoint.read_bytes()).hexdigest()
+    if args.checkpoint_sha256 is not None:
+        if (
+            len(args.checkpoint_sha256) != 64
+            or any(char not in "0123456789abcdef" for char in args.checkpoint_sha256)
+        ):
+            raise ValueError("checkpoint-sha256 must be a lowercase 64-character SHA-256 digest.")
+        if actual_checkpoint_sha256 != args.checkpoint_sha256:
+            raise ValueError(
+                "Checkpoint SHA-256 mismatch: expected "
+                f"{args.checkpoint_sha256}, found {actual_checkpoint_sha256}."
+            )
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(args.seed)
@@ -144,7 +152,7 @@ def main() -> int:
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "checkpoint": str(checkpoint),
         "training_run_id": args.training_run_id,
-        "checkpoint_sha256": args.checkpoint_sha256,
+        "checkpoint_sha256": actual_checkpoint_sha256,
         "device": str(device),
         "seed": args.seed,
         "temperature": args.temperature,
