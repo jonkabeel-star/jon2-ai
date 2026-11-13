@@ -237,7 +237,8 @@ export class Jon2TransformerCPU {
       // Prevent repeating a trigram, matching ai_engine/jon2_core.py.
       if (noRepeatNgramSize > 0 && allIds.length >= noRepeatNgramSize - 1) {
         const prefixLength = noRepeatNgramSize - 1;
-        const prefix = allIds.slice(-prefixLength);
+        // slice(-0) means slice(0), not an empty suffix; handle unigram blocking explicitly.
+        const prefix = prefixLength === 0 ? [] : allIds.slice(-prefixLength);
         const banned = new Set();
         for (let i = 0; i <= allIds.length - noRepeatNgramSize; i++) {
           let matches = true;
