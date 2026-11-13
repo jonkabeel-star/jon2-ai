@@ -8,7 +8,7 @@
     "coherence": "0-2: grammatical, connected Arabic sentences",
     "context": "0-2: correctly uses prior turns when present",
     "total": "0-8; a human reviewer must score every generated response manually",
-    "pass_rule": "At least 7/8 on every case, with no fabricated facts, repeated fragments, or unintelligible Arabic. A single failed case blocks readiness."
+    "pass_rule": "A human reviewer must score every case manually. At least 7/8 on every case, with no fabricated facts, repeated fragments, or unintelligible Arabic. A single failed case blocks readiness."
   },
   "cases": [
     {
