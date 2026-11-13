@@ -235,3 +235,27 @@ test("Safari generation skips tokens that would corrupt UTF-8", () => {
   };
   assert.equal(model.generate(tokenizer, "prompt", 1), "L");
 });
+
+test("Safari worker never bypasses the original model with canned small-talk replies", async () => {
+  const workerSource = await readFile(
+    new URL("../pocket/jon2-inference-worker.js", import.meta.url),
+    "utf8"
+  );
+  assert.doesNotMatch(workerSource, /function\s+getLocalArabicReply/);
+  assert.match(
+    workerSource,
+    /const generated = runtime\.model\.generate\(runtime\.tokenizer, message\.prompt, message\.maxTokens \?\? 256\)/
+  );
+  assert.match(
+    workerSource,
+    /const qualityPassed = validateJon2ArabicAnswer\(generated\)/
+  );
+});
+
+test("Safari chat sends identity questions to the model and rejects failed quality checks", async () => {
+  const page = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.doesNotMatch(page, /function\s+getJon2LocalIdentityReply/);
+  assert.doesNotMatch(page, /const\s+localIntentReply\s*=/);
+  assert.match(page, /result\.qualityPassed\s*!==\s*true/);
+  assert.match(page, /JON2_QUALITY_REJECTED/);
+});

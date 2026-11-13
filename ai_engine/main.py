@@ -345,28 +345,9 @@ def chat(request: ChatRequest):
     if not message:
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
 
-    # Narrow local intents and attributed factual retrieval do not require
-    # model weights. Web retrieval uses a free public encyclopedia API, not an AI API.
-    identity = local_identity(message)
-    if identity:
-        if request.session_id:
-            chat_memory.add_exchange(request.session_id, message, identity)
-        return {
-            "project": "Jon2 AI", "reply": identity, "memory_used": False,
-            "session_id": request.session_id, "knowledge_used": False,
-            "response_mode": "local_identity",
-        }
-
-    greeting = local_greeting(message)
-    if greeting:
-        if request.session_id:
-            chat_memory.add_exchange(request.session_id, message, greeting)
-        return {
-            "project": "Jon2 AI", "reply": greeting, "memory_used": False,
-            "session_id": request.session_id, "knowledge_used": False,
-            "response_mode": "local_greeting",
-        }
-
+    # Attributed factual retrieval is separate from model generation. All
+    # conversational replies, including identity and greetings, must pass the
+    # same explicit release gate and come from the original Jon2 checkpoint.
     if looks_like_fact_question(message):
         knowledge = retrieve_knowledge(message)
         if knowledge:
@@ -389,7 +370,7 @@ def chat(request: ChatRequest):
             status_code=503,
             detail={
                 "error": "public_release_gate_closed",
-                "message": "المحادثة العامة تحتاج إلى نموذج Jon2 أصلي مجرّب ومراجَع قبل فتحها.",
+                "message": "المحادثة العامة تحتاج إلى نموذج Jon2 أصلي مجرّب ومراجَع، واجتياز المراجعة البشرية الصريحة قبل فتحها.",
                 "model_status": snapshot["model_status"],
                 "chat_ready": False,
             },

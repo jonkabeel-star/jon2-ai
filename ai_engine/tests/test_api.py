@@ -54,13 +54,12 @@ class Jon2ApiTests(unittest.TestCase):
             response = self.client.get("/api/health")
         self.assertEqual(response.json()["model_status"], "checkpoint_missing")
 
-    def test_identity_question_is_answered_without_model_release(self):
+    def test_identity_question_is_blocked_without_model_release(self):
         with patch.dict(jon2_api.os.environ, {"JON2_CHAT_RELEASE_APPROVED": "false"}), \
              patch.object(jon2_api, "generate_reply") as generate:
             response = self.client.post("/api/chat", json={"message": "انت اسمك ايه"})
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Jon2 AI", response.json()["reply"])
-        self.assertEqual(response.json()["response_mode"], "local_identity")
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json()["detail"]["error"], "public_release_gate_closed")
         generate.assert_not_called()
 
     def test_local_greeting_is_blocked_without_release_approval(self):
