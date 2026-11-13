@@ -32,7 +32,7 @@
         return data.reply || data.response || "لم يصل رد من الذكاء الاصطناعي.";
       } catch (error) {
         throw new Error(
-          error.message || "تعذر الاتصال بخدمة المحادثة."
+          error.message || "عقل Jon2 غير جاهز للرد"
         );
       }
     }
