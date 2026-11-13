@@ -145,6 +145,10 @@ def train(args: argparse.Namespace) -> None:
         resume_path = Path(args.resume_from)
         if not resume_path.is_file():
             raise FileNotFoundError(f"Resume checkpoint not found: {resume_path}")
+        if Path(args.output).resolve() == resume_path.resolve():
+            raise ValueError(
+                "Output checkpoint must be a new path; the original resume checkpoint is protected."
+            )
         import hashlib
         resume_sha256 = hashlib.sha256(resume_path.read_bytes()).hexdigest()
         resume_checkpoint = torch.load(
@@ -246,13 +250,7 @@ def train(args: argparse.Namespace) -> None:
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    config = {
-        "width": args.width,
-        "heads": args.heads,
-        "layers": args.layers,
-        "context": args.context,
-        "dropout": args.dropout,
-    }
+    config = dict(model_config)
     torch.save(
         {
             "model_state": model.cpu().state_dict(),
