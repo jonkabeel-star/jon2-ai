@@ -51,6 +51,13 @@ export async function getJon2BundleFromCache(checkpointSha256, weightsSha256) {
   return (await transact("readonly", store => store.get(key))) || null;
 }
 
+export async function getLatestJon2BundleFromCache(checkpointSha256) {
+  const records = await transact("readonly", store => store.getAll());
+  return (records || [])
+    .filter(item => item.checkpointSha256 === String(checkpointSha256).toLowerCase())
+    .sort((a, b) => b.savedAt - a.savedAt)[0] || null;
+}
+
 export async function deleteJon2BundleFromCache(checkpointSha256, weightsSha256) {
   const key = jon2CacheKey(checkpointSha256, weightsSha256);
   await transact("readwrite", store => store.delete(key));
