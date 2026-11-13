@@ -62,13 +62,6 @@ class Jon2ApiTests(unittest.TestCase):
         self.assertEqual(response.json()["detail"]["error"], "public_release_gate_closed")
         generate.assert_not_called()
 
-    def test_local_greeting_is_blocked_without_release_approval(self):
-        with patch.dict(jon2_api.os.environ, {"JON2_CHAT_RELEASE_APPROVED": "false"}), patch.object(jon2_api, "generate_reply") as generate, patch.object(jon2_api, "local_greeting") as greeting:
-            response = self.client.post("/api/chat", json={"message": "مرحبا"})
-        self.assertEqual(response.status_code, 503)
-        generate.assert_not_called()
-        greeting.assert_not_called()
-
     def test_chat_is_blocked_until_human_release_approval(self):
         with patch.dict(jon2_api.os.environ, {
             "JON2_CHAT_RELEASE_APPROVED": "false",
@@ -138,14 +131,13 @@ class Jon2ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 503)
         self.assertEqual(response.json()["detail"], "عقل Jon2 غير جاهز للرد")
 
-    def test_chat_returns_generated_reply(self):
-        with patch.object(jon2_api, "local_greeting", return_value=None), patch.object(
-            jon2_api, "looks_like_fact_question", return_value=False
-        ), patch.object(jon2_api, "generate_reply", return_value="أهلًا بك") as generate:
-            response = self.client.post("/api/chat", json={"message": "اشرح فكرة بسيطة"})
+    def test_chat_returns_only_the_generated_original_model_reply(self):
+        with patch.object(jon2_api, "generate_reply", return_value="أهلًا بك") as generate:
+            response = self.client.post("/api/chat", json={"message": "مرحبا"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["reply"], "أهلًا بك")
-        generate.assert_called_once()
+        self.assertEqual(response.json()["response_mode"], "jon2_original_model_only")
+        generate.assert_called_once_with("مرحبا", [], [])
 
     def test_chat_rejects_whitespace_only_message(self):
         with patch.object(jon2_api, "generate_reply") as generate:
