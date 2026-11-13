@@ -41,9 +41,7 @@ export class Jon2SafariClient {
       const timer = setTimeout(() => {
         const pending = this._settle(requestId);
         if (pending) pending.reject(new Error(
-          type === "generate"
-            ? "Jon2 inference timed out on this device. Try a shorter message or fewer output tokens."
-            : "Jon2 model loading timed out on this device. Check available memory and try again."
+          "عقل Jon2 غير جاهز للرد"
         ));
       }, timeoutMs);
       this.pending.set(requestId, { resolve, reject, timer });
