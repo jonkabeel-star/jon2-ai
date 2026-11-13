@@ -30,8 +30,27 @@ evaluation-only and must remain separate.
 
 ## Status
 
-This is the data-preparation foundation only. It is not yet a training command.
-Before training is enabled, the next implementation stage must add a checkpoint
-loader that preserves the exact private checkpoint architecture and tokenizer,
-an assistant-only loss loop using shifted labels, a new output checkpoint path,
-SHA-256 provenance, and tests proving the source checkpoint is never overwritten.
+## Optional training command
+
+`ai_engine/sft_training.py` adds an explicit, opt-in trainer. It strictly loads the
+private checkpoint's original Byte-BPE tokenizer and model configuration, then
+computes shifted causal loss only where assistant labels are not `-100`.
+It refuses to run below 50 approved training conversations or 10,000 assistant
+target tokens, and it refuses to overwrite either the source checkpoint or an
+existing output file. The new checkpoint records the source-checkpoint SHA-256,
+approval-manifest SHA-256, approved file hashes, train/validation counts, and
+validation loss.
+
+Example command (only after the private dataset and manifest are approved):
+
+```bash
+python ai_engine/sft_training.py \\
+  --checkpoint /private/jon2-last.pt \\
+  --data /private/jon2-sft-jsonl \\
+  --approval-manifest /private/source_approvals.json \\
+  --output /private/jon2-sft-v1.pt
+```
+
+The command has not been run. CI tests validate data masking and overwrite
+protection; they do not train the user's private model. Passing code checks is
+not a claim that the model's Arabic quality has improved.
