@@ -1,0 +1,134 @@
+{
+  "format": "jon2-arabic-quality-benchmark-v1",
+  "language": "ar",
+  "purpose": "Human-reviewed evaluation prompts for the private Jon2 checkpoint. This is a test set, not training data and not an automatic claim of model quality.",
+  "scoring": {
+    "correctness": "0-2: factual or task correctness",
+    "relevance": "0-2: directly answers the prompt",
+    "coherence": "0-2: grammatical, connected Arabic sentences",
+    "context": "0-2: correctly uses prior turns when present",
+    "total": "0-8; a human reviewer must score every generated response",
+    "pass_rule": "At least 7/8 on every case, with no fabricated facts, repeated fragments, or unintelligible Arabic. A single failed case blocks readiness."
+  },
+  "cases": [
+    {
+      "id": "AR01",
+      "category": "greeting",
+      "prompt": "مرحبًا، كيف حالك؟",
+      "expected": "رد عربي طبيعي ومختصر يرحب بالمستخدم ويسأله كيف يمكن مساعدته.",
+      "must_include": [
+        "ترحيب"
+      ],
+      "must_not": "كلمات عشوائية أو ادعاء مشاعر بشرية"
+    },
+    {
+      "id": "AR02",
+      "category": "factual",
+      "prompt": "ما عاصمة مصر؟",
+      "expected": "القاهرة.",
+      "must_include": [
+        "القاهرة"
+      ],
+      "must_not": "ذكر مدينة أخرى"
+    },
+    {
+      "id": "AR03",
+      "category": "explanation",
+      "prompt": "اشرح الفرق بين الطقس والمناخ في جملتين.",
+      "expected": "الطقس يصف حالة الجو قصيرة المدى، والمناخ يصف الأنماط المعتادة طويلة المدى.",
+      "must_include": [
+        "قصير",
+        "طويل"
+      ],
+      "must_not": "خلط التعريفين"
+    },
+    {
+      "id": "AR04",
+      "category": "reasoning",
+      "prompt": "معي 3 صناديق، في كل صندوق 4 كتب. كم كتابًا لدي؟ اشرح الحساب.",
+      "expected": "12 كتابًا؛ 3 × 4 = 12.",
+      "must_include": [
+        "12",
+        "3",
+        "4"
+      ],
+      "must_not": "نتيجة حسابية خاطئة"
+    },
+    {
+      "id": "AR05",
+      "category": "summarization",
+      "prompt": "لخّص: استيقظت ليلى مبكرًا، وسقت النباتات، ثم ذهبت إلى المدرسة بالحافلة.",
+      "expected": "استيقظت ليلى مبكرًا واعتنت بالنباتات ثم ذهبت إلى المدرسة بالحافلة.",
+      "must_include": [
+        "ليلى",
+        "النباتات",
+        "المدرسة"
+      ],
+      "must_not": "إضافة أحداث غير موجودة"
+    },
+    {
+      "id": "AR06",
+      "category": "multi_turn",
+      "turns": [
+        {
+          "role": "user",
+          "text": "اسمي سارة وأحب القراءة."
+        },
+        {
+          "role": "assistant",
+          "text": "سعيد بمعرفتك يا سارة."
+        },
+        {
+          "role": "user",
+          "text": "ما اسمي، وماذا أحب؟"
+        }
+      ],
+      "expected": "اسم المستخدم سارة، وهي تحب القراءة.",
+      "must_include": [
+        "سارة",
+        "القراءة"
+      ],
+      "must_not": "نسيان معلومة السياق أو اختراع معلومة"
+    },
+    {
+      "id": "AR07",
+      "category": "uncertainty",
+      "prompt": "ما رقم هاتفي؟",
+      "expected": "يوضح أنه لا يعرف رقم الهاتف ما لم يقدمه المستخدم.",
+      "must_include": [
+        "لا أعرف"
+      ],
+      "must_not": "اختلاق رقم هاتف"
+    },
+    {
+      "id": "AR08",
+      "category": "instruction_following",
+      "prompt": "اكتب ثلاث نقاط عن فوائد شرب الماء، دون مبالغة طبية.",
+      "expected": "ثلاث نقاط موجزة عن الترطيب ووظائف الجسم وتنظيم الحرارة مع تجنب الادعاءات العلاجية.",
+      "must_include": [
+        "ثلاث"
+      ],
+      "must_not": "ادعاء أن الماء يعالج الأمراض"
+    },
+    {
+      "id": "AR09",
+      "category": "coherence",
+      "prompt": "اكتب فقرة عربية مترابطة من ثلاث جمل عن أهمية التعاون.",
+      "expected": "ثلاث جمل مترابطة، لكل منها معنى واضح، عن العمل المشترك وتقاسم المهام وتحقيق الهدف.",
+      "must_include": [
+        "التعاون"
+      ],
+      "must_not": "جمل متقطعة أو ألفاظ مشوهة"
+    },
+    {
+      "id": "AR10",
+      "category": "conversation",
+      "prompt": "لا أفهم معنى كلمة الاستدامة. اشرحها بمثال بسيط.",
+      "expected": "شرح مبسط لاستخدام الموارد بطريقة تلبي احتياجات الحاضر دون الإضرار بقدرة المستقبل، مع مثال واضح.",
+      "must_include": [
+        "المستقبل"
+      ],
+      "must_not": "تعريف دائري أو مثال غير مرتبط"
+    }
+  ]
+}
