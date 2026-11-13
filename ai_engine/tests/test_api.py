@@ -121,15 +121,35 @@ class Jon2ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 503)
         self.assertIn("missing trained checkpoint", response.json()["detail"])
 
-    def test_source_backed_knowledge_is_available_without_model_release(self):
+    def test_source_retrieval_is_blocked_when_model_release_is_not_ready(self):
         item = {"title": "القاهرة", "extract": "القاهرة عاصمة مصر.", "source_url": "https://ar.wikipedia.org/wiki/القاهرة", "cached": False}
         with patch.dict(jon2_api.os.environ, {"JON2_CHAT_RELEASE_APPROVED": "false"}), patch.object(jon2_api, "retrieve_knowledge", return_value=item) as retrieve, patch.object(jon2_api, "generate_reply") as generate:
             response = self.client.post("/api/chat", json={"message": "ما عاصمة مصر؟"})
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.json()["knowledge_used"])
-        self.assertEqual(response.json()["knowledge_source"], item["source_url"])
-        retrieve.assert_called_once()
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json()["detail"]["error"], "public_release_gate_closed")
+        retrieve.assert_not_called()
         generate.assert_not_called()
+
+    def test_factual_retrieval_is_context_for_model_generated_reply(self):
+        item = {
+            "title": "القاهرة",
+            "extract": "القاهرة عاصمة جمهورية مصر العربية.",
+            "source_url": "https://ar.wikipedia.org/wiki/القاهرة",
+            "cached": False,
+        }
+        with patch.object(jon2_api, "retrieve_knowledge", return_value=item) as retrieve, patch.object(
+            jon2_api, "generate_reply", return_value="القاهرة هي عاصمة مصر، وفقًا للمعلومات المرجعية."
+        ) as generate:
+            response = self.client.post("/api/chat", json={"message": "ما عاصمة مصر؟"})
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["reply"], "القاهرة هي عاصمة مصر، وفقًا للمعلومات المرجعية.")
+        self.assertEqual(payload["response_mode"], "jon2_generated_with_retrieval")
+        self.assertTrue(payload["knowledge_used"])
+        self.assertEqual(payload["knowledge_source"], item["source_url"])
+        self.assertIn(item["extract"], generate.call_args.kwargs["knowledge_context"])
+        retrieve.assert_called_once()
+        generate.assert_called_once()
 
     def test_chat_returns_generated_reply(self):
         with patch.object(jon2_api, "local_greeting", return_value=None), patch.object(
