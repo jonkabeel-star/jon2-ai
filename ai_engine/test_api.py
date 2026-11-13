@@ -41,13 +41,11 @@ class ApiHealthTests(unittest.TestCase):
 
     def test_chat_is_blocked_without_human_release_approval(self):
         request = main.ChatRequest(message="اشرح الذكاء الاصطناعي")
-        with patch.dict(os.environ, {"JON2_CHAT_RELEASE_APPROVED": "false"}, clear=False), patch(
-            "main.local_greeting", return_value=None
-        ), patch("main.looks_like_fact_question", return_value=False):
+        with patch.dict(os.environ, {"JON2_CHAT_RELEASE_APPROVED": "false"}, clear=False):
             with self.assertRaises(HTTPException) as caught:
                 main.chat(request)
         self.assertEqual(caught.exception.status_code, 503)
-        self.assertIn("المراجعة البشرية", caught.exception.detail["message"])
+        self.assertEqual(caught.exception.detail["message"], "عقل Jon2 غير جاهز للرد")
 
     def test_chat_request_rejects_unknown_fields(self):
         with self.assertRaises(ValidationError):
@@ -93,8 +91,6 @@ class ApiHealthTests(unittest.TestCase):
                 "JON2_MEMORY_DB_PATH": db,
             }, clear=False), patch("main._checkpoint_configured", return_value=True), patch(
                 "main.model_is_ready", return_value=True
-            ), patch("main.local_greeting", return_value=None), patch(
-                "main.looks_like_fact_question", return_value=False
             ), patch("main.generate_reply", return_value="أهلًا بك يا صديقي"):
                 response = main.chat(main.ChatRequest(message="اشرح فكرة بسيطة", session_id=sid))
                 self.assertEqual(response["reply"], "أهلًا بك يا صديقي")
