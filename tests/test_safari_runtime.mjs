@@ -216,7 +216,7 @@ test("Safari generation applies repetition penalty and blocks repeated trigrams"
     decode: ids => String.fromCharCode(...ids),
     tokenBytes: id => new Uint8Array([65 + (id % 26)])
   };
-  assert.equal(model.generate(tokenizer, "prompt", 4), "KKKL");
+  assert.equal(model.generate(tokenizer, "prompt", 4, {doSample:false}), "KLKK");
 });
 
 test("Safari generation skips tokens that would corrupt UTF-8", () => {
@@ -233,7 +233,7 @@ test("Safari generation skips tokens that would corrupt UTF-8", () => {
     decode: ids => String.fromCharCode(...ids),
     tokenBytes: id => new Uint8Array([id === 88 ? 0xff : 65 + (id % 26)])
   };
-  assert.equal(model.generate(tokenizer, "prompt", 1), "L");
+  assert.equal(model.generate(tokenizer, "prompt", 1, {doSample:false}), "L");
 });
 
 test("Safari worker never bypasses the original model with canned small-talk replies", async () => {
