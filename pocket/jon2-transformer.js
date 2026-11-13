@@ -163,7 +163,7 @@ export class Jon2TransformerCPU {
     return { token_id: best, logits };
   }
 
-  generate(tokenizer, prompt, maxTokens = 256) {
+  generate(tokenizer, prompt, maxTokens = 256, options = {}) {
     if (!tokenizer || typeof tokenizer.encode !== "function" ||
         typeof tokenizer.decode !== "function" || typeof tokenizer.tokenBytes !== "function") {
       throw new TypeError("Jon2 requires its native byte-BPE tokenizer.");
@@ -174,9 +174,14 @@ export class Jon2TransformerCPU {
     if (!promptIds.length) throw new TypeError("Jon2 prompt produced no tokens.");
 
     // Match the safeguards used by the native PyTorch runtime.
-    const repetitionPenalty = 1.10;
-    const noRepeatNgramSize = 3;
-    const temperature = 1.0;
+    const repetitionPenalty = options.repetitionPenalty ?? 1.12;
+    const noRepeatNgramSize = options.noRepeatNgramSize ?? 3;
+    const temperature = options.temperature ?? 0.8;
+    const doSample = options.doSample ?? true;
+    const topK = options.topK ?? 40;
+    if (!(temperature > 0) || repetitionPenalty < 1 || !Number.isInteger(noRepeatNgramSize) || noRepeatNgramSize < 0 || !Number.isInteger(topK) || topK < 0) {
+      throw new TypeError("Invalid Jon2 generation options.");
+    }
     const stopMarkers = ["\nالمستخدم:", "\nUser:"].map(value => new TextEncoder().encode(value));
     const allIds = promptIds.slice();
     const generatedIds = [];
@@ -244,17 +249,36 @@ export class Jon2TransformerCPU {
       }
 
       // Never append a byte sequence that would corrupt the UTF-8 answer.
-      let bestId = -1;
-      let bestLogit = -Infinity;
+      const validCandidates = [];
+      const currentPrefix = joinBytes([promptBytes, generatedBytes]);
       for (let candidate = 0; candidate < adjusted.length; candidate++) {
         const score = adjusted[candidate];
-        if (!Number.isFinite(score) || score <= bestLogit) continue;
+        if (!Number.isFinite(score)) continue;
         const piece = tokenizer.tokenBytes(candidate);
-        if (!isValidUtf8Prefix(joinBytes([promptBytes, generatedBytes]), piece)) continue;
-        bestId = candidate;
-        bestLogit = score;
+        if (isValidUtf8Prefix(currentPrefix, piece)) validCandidates.push(candidate);
       }
-      if (bestId < 0) break;
+      if (!validCandidates.length) break;
+
+      // Match the native runtime: UTF-8 filtering first, then top-k, then
+      // temperature-scaled sampling. Greedy mode remains available for parity tests.
+      validCandidates.sort((a, b) => adjusted[b] - adjusted[a]);
+      const candidates = doSample && topK > 0
+        ? validCandidates.slice(0, topK)
+        : validCandidates;
+      let bestId;
+      if (!doSample || candidates.length === 1) {
+        bestId = candidates[0];
+      } else {
+        const maxLogit = adjusted[candidates[0]];
+        const weights = candidates.map(id => Math.exp((adjusted[id] - maxLogit) / temperature));
+        const total = weights.reduce((sum, weight) => sum + weight, 0);
+        let draw = Math.random() * total;
+        bestId = candidates[candidates.length - 1];
+        for (let i = 0; i < candidates.length; i++) {
+          draw -= weights[i];
+          if (draw <= 0) { bestId = candidates[i]; break; }
+        }
+      }
 
       const selectedPiece = tokenizer.tokenBytes(bestId);
       allIds.push(bestId);
