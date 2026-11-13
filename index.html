@@ -307,7 +307,7 @@ function syncChatControls() {
 function paintEngineStatus() {
   const status = document.getElementById("status");
   if (!status) return;
-  const state = localRuntimeReady || apiStatusKey === "modelReady" ? "ready" : apiStatusKey === "experimentalReady" ? "experimental" : apiStatusKey === "apiOnline" ? "testing" : "offline";
+  const state = apiStatusKey === "modelReady" ? "ready" : localRuntimeReady || apiStatusKey === "experimentalReady" ? "experimental" : apiStatusKey === "apiOnline" ? "testing" : "offline";
   status.dataset.state = state;
 }
 
@@ -422,8 +422,9 @@ async function checkApiHealth() {
     if (!response.ok) throw new Error("Health check failed: " + response.status);
     const health = await response.json();
     const isOriginalJon2 = health.model_type === "jon2_original" && health.model_ready === true && health.chat_ready === true && health.inference_tested === true && health.quality_review_passed === true;
-    chatReady = isOriginalJon2;
-    apiStatusKey = isOriginalJon2 ? "modelReady" : health.api_ready === true || health.runtime_api_ready === true ? "apiOnline" : "offline";
+    const isExperimentalJon2 = health.model_type === "jon2_original" && health.model_ready === true && health.chat_ready === true && health.experimental_ready === true;
+    chatReady = isOriginalJon2 || isExperimentalJon2;
+    apiStatusKey = isOriginalJon2 ? "modelReady" : isExperimentalJon2 ? "experimentalReady" : health.api_ready === true || health.runtime_api_ready === true ? "apiOnline" : "offline";
     status.textContent = translations[lang][apiStatusKey];
     updateChatNote();
     syncChatControls();
@@ -665,5 +666,77 @@ restoreJon2BundleFromCache(startupStatus).catch(error => {
   console.warn("Jon2 automatic model restore was skipped.", error);
 });
 </script>
+
+<script type="module">
+const testCases = [
+  ["الترحيب","رحّب بالمستخدم في جملة عربية طبيعية."],
+  ["معلومة مباشرة","ما عاصمة مصر؟ أجب بجملة واحدة."],
+  ["شرح مبسط","اشرح معنى الذكاء الاصطناعي لطفل في جملتين."],
+  ["ترابط منطقي","إذا كان اليوم الاثنين، فما اليوم بعد يومين؟ وضّح باختصار."],
+  ["اتباع التعليمات","اذكر ثلاث نصائح لتنظيم الوقت في قائمة قصيرة."],
+  ["تلخيص","لخّص هذه الفكرة في جملة: القراءة توسّع المعرفة وتساعد الإنسان على فهم العالم."],
+  ["عدم اختلاق المعلومات","إذا لم تكن متأكدًا من معلومة، كيف يجب أن تجيب؟"],
+  ["حوار متعدد الأدوار","المستخدم يقول: أحب التصوير. اقترح خطوة بسيطة للمبتدئ."],
+  ["وضوح اللغة","اكتب جملة عربية فصحى سليمة عن أهمية التعاون."],
+  ["الالتزام بالسؤال","ما الفرق بين الطقس والمناخ؟ أجب باختصار."]
+];
+let current = 0;
+let currentAnswer = null;
+const ratings = [];
+const $ = id => document.getElementById(id);
+const button = $("qualityNext");
+const slider = $("qualityRating");
+function localText(ar,en){return document.documentElement.lang==="en"?en:ar;}
+function updateProgress(){
+  $("qualityProgress").textContent=localText("التقدم: ","Progress: ")+ratings.length+" / 10";
+  const total=ratings.reduce((sum,item)=>sum+item,0);
+  $("qualityScore").textContent=ratings.length?localText("متوسط التقييم: ","Average rating: ")+(total/ratings.length).toFixed(1)+"/8":localText("التقييم: لم يبدأ","Score: not started");
+}
+slider.addEventListener("input",()=>{$("qualityRatingValue").textContent=slider.value;});
+button.addEventListener("click",async()=>{
+  const client=window.JON2_LOCAL_CLIENT;
+  if(!client){
+    $("qualityStatus").textContent=localText("حمّل نموذج Jon2 المحلي أولًا من لوحة التشغيل أعلى المحادثة.","Load the local Jon2 model from the panel above first.");
+    return;
+  }
+  button.disabled=true;
+  try{
+    if(currentAnswer!==null){
+      ratings.push(Number(slider.value));
+      currentAnswer=null;
+      current++;
+      updateProgress();
+      if(current>=testCases.length){
+        const total=ratings.reduce((sum,item)=>sum+item,0);
+        const average=total/ratings.length;
+        const passed=ratings.every(item=>item>=7);
+        $("qualityPrompt").textContent=localText("اكتمل الاختبار","Test complete");
+        $("qualityAnswer").textContent=localText("النتيجة: ","Result: ")+ratings.filter(item=>item>=7).length+"/10 "+localText("إجابات حصلت على 7/8 أو أكثر. متوسط التقييم: ","answers scored at least 7/8. Average: ")+average.toFixed(1)+"/8";
+        $("qualityStatus").textContent=passed?localText("اجتاز التقييم البشري لهذه الجولة فقط. يلزم تكرار الاختبار قبل إعلان الجاهزية.","Passed this human-reviewed round only. Repeat testing before declaring readiness."):localText("لم يجتز النموذج معيار الجودة في هذه الجولة. راجع الإجابات ذات التقييم الأقل من 7.","The model did not meet the quality threshold in this round. Review answers rated below 7.");
+        button.textContent=localText("إعادة الاختبار من البداية","Restart test");
+        button.disabled=false;
+        button.onclick=()=>location.reload();
+        slider.disabled=true;
+        return;
+      }
+    }
+    const [category,question]=testCases[current];
+    $("qualityPrompt").textContent=(current+1)+"/10 — "+category+"\n"+question;
+    $("qualityAnswer").textContent=localText("جارٍ توليد الإجابة على الجهاز…","Generating the answer on this device…");
+    $("qualityStatus").textContent=localText("اترك الصفحة مفتوحة حتى ينتهي النموذج من الإجابة.","Keep this page open while the model generates its answer.");
+    const prompt="تعليمات: أجب بالعربية الفصحى الواضحة، بإيجاز، ولا تكرر.\nالمستخدم: "+question+"\nJon2:";
+    const result=await client.generate(prompt,96);
+    currentAnswer=result.answer.trim();
+    $("qualityAnswer").textContent=currentAnswer;
+    $("qualityStatus").textContent=localText("قيّم الإجابة من 0 إلى 8، ثم اضغط «السؤال التالي».","Rate the answer from 0 to 8, then select Next question.");
+    slider.value="0";slider.disabled=false;$("qualityRatingValue").textContent="0";
+    button.textContent=current===0?localText("اعتماد التقييم وتشغيل السؤال التالي","Save rating and run next question"):localText("اعتماد التقييم وتشغيل السؤال التالي","Save rating and run next question");
+  }catch(error){
+    $("qualityStatus").textContent=localText("تعذر إكمال الاختبار: ","Test failed: ")+(error?.message||String(error));
+  }finally{button.disabled=false;}
+});
+updateProgress();
+</script>
+
 </body>
 </html>
