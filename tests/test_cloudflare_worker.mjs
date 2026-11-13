@@ -41,6 +41,70 @@ describe("production Cloudflare gateway uses original Jon2 only", () => {
     assert.equal(calls, 0);
   });
 
+  it("proxies health to the authenticated private Python runtime", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (input) => {
+      assert.equal(String(input), "https://python-runtime.example/v1/health");
+      return new Response(JSON.stringify({
+        api_ready: true,
+        model_ready: true,
+        chat_ready: true,
+        inference_tested: true,
+        quality_review_passed: true,
+        model_status: "ready",
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    };
+    try {
+      const response = await call("/api/health", {}, {
+        JON2_RUNTIME_URL: "https://python-runtime.example",
+        JON2_RUNTIME_TOKEN: "r".repeat(48),
+      });
+      const body = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(body.runtime_configured, true);
+      assert.equal(body.model_ready, true);
+      assert.equal(body.chat_ready, true);
+      assert.equal(body.model_type, "jon2_original");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("forwards chat only to the private Jon2 runtime with its server-side token", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (input, init) => {
+      assert.equal(String(input), "https://python-runtime.example/v1/chat");
+      assert.equal(new Headers(init.headers).get("Authorization"), "Bearer " + "s".repeat(48));
+      const sent = JSON.parse(init.body);
+      assert.equal(sent.contract_version, "1");
+      assert.equal(sent.message, "مرحبا");
+      assert.equal(sent.history.length, 1);
+      return new Response(JSON.stringify({
+        reply: "أهلًا بك.",
+        session_id: sent.session_id,
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    };
+    try {
+      const response = await call("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: "مرحبا",
+          history: [{ role: "user", content: "سابق" }],
+        }),
+      }, {
+        JON2_RUNTIME_URL: "https://python-runtime.example",
+        JON2_RUNTIME_TOKEN: "s".repeat(48),
+      });
+      const body = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(body.reply, "أهلًا بك.");
+      assert.equal(body.response_mode, "original_jon2_runtime");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   it("allows the published GitHub Pages origin", async () => {
     const response = await call("/api/health/live", {
       headers: { Origin: "https://jonkabeel-star.github.io" },
