@@ -106,7 +106,7 @@ class Jon2ApiTests(unittest.TestCase):
         self.assertFalse(payload["release_approved"])
 
     def test_chat_returns_503_when_checkpoint_is_missing(self):
-        with patch.object(jon2_api, "retrieve_knowledge", return_value=None), patch.object(
+        with patch.object(
             jon2_api, "generate_reply",
             side_effect=FileNotFoundError("missing trained checkpoint"),
         ):
