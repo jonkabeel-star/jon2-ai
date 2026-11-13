@@ -1,5 +1,6 @@
 const ALLOWED_ORIGINS = new Set([
   "https://jon2-ai.pages.dev",
+  "https://feat-safari-persistent-model.jon2-ai.pages.dev",
   "https://jonkabeel-star.github.io",
   "http://localhost:3000",
   "http://127.0.0.1:5500",
