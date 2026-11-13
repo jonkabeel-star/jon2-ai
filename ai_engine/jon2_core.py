@@ -201,25 +201,28 @@ def train(args: argparse.Namespace) -> None:
         model.load_state_dict(resume_checkpoint["model_state"], strict=True)
 
     parameter_count = sum(p.numel() for p in model.parameters())
-    tokens_per_parameter = len(encoded) / max(parameter_count, 1)
-    required_tokens = int(parameter_count * args.minimum_tokens_per_parameter)
+    training_tokens_per_parameter = len(train_data) / max(parameter_count, 1)
+    required_training_tokens = int(parameter_count * args.minimum_tokens_per_parameter)
+    required_corpus_tokens = int(
+        required_training_tokens / (1.0 - args.validation_fraction)
+    )
     print(f"Jon2 original model | device={device} | corpus_tokens={len(encoded):,}")
     print(f"train_tokens={len(train_data):,} | validation_tokens={len(val_data):,}")
     print(
         f"vocabulary={tokenizer.vocab_size:,} | parameters={parameter_count:,} | "
-        f"tokens_per_parameter={tokens_per_parameter:.4f}"
+        f"training_tokens_per_parameter={training_tokens_per_parameter:.4f}"
     )
     print(
-        f"Data readiness: {len(encoded):,}/{required_tokens:,} tokens "
+        f"Data readiness: {len(train_data):,}/{required_training_tokens:,} training tokens "
         f"({args.minimum_tokens_per_parameter:g} tokens per parameter required)."
     )
-    if tokens_per_parameter < args.minimum_tokens_per_parameter:
-        missing_tokens = required_tokens - len(encoded)
+    if training_tokens_per_parameter < args.minimum_tokens_per_parameter:
+        missing_tokens = max(0, required_corpus_tokens - len(encoded))
         raise ValueError(
             "Training blocked: the approved corpus is too small for this model. "
-            f"Current ratio={tokens_per_parameter:.4f} tokens/parameter; "
+            f"Current ratio={training_tokens_per_parameter:.4f} training tokens/parameter; "
             f"required={args.minimum_tokens_per_parameter:g}; "
-            f"add at least {missing_tokens:,} distinct, rights-cleared tokens. "
+            f"add at least {missing_tokens:,} distinct, rights-cleared corpus tokens. "
             "Do not duplicate text or lower the quality gate."
         )
 
@@ -260,7 +263,7 @@ def train(args: argparse.Namespace) -> None:
             "additional_training_steps": args.steps,
             "corpus_tokens": len(encoded),
             "corpus_characters": len(corpus),
-            "tokens_per_parameter": tokens_per_parameter,
+            "training_tokens_per_parameter": training_tokens_per_parameter,
             "minimum_tokens_per_parameter": args.minimum_tokens_per_parameter,
             "resumed_from_sha256": resume_sha256,
             "validation_fraction": args.validation_fraction,
@@ -449,6 +452,8 @@ def main():
     parser.add_argument("--data", default="ai_engine/training_data")
     parser.add_argument("--approval-manifest", default="ai_engine/training_data/source_approvals.json")
     parser.add_argument("--minimum-chars", type=int, default=100_000)
+    parser.add_argument("--tokenizer-vocab-size", type=int, default=1000)
+    parser.add_argument("--tokenizer-min-frequency", type=int, default=2)
     parser.add_argument(
         "--minimum-tokens-per-parameter", type=float, default=10.0,
         help="Block training unless the approved corpus reaches this token/parameter ratio.",
@@ -474,7 +479,8 @@ def main():
     if min(
         args.steps, args.batch_size, args.context, args.width,
         args.heads, args.layers, args.eval_steps, args.log_every,
-        args.minimum_chars,
+        args.minimum_chars, args.tokenizer_vocab_size,
+        args.tokenizer_min_frequency,
     ) <= 0 or args.minimum_tokens_per_parameter <= 0:
         parser.error("training dimensions and steps must be positive")
     if not 0.05 <= args.validation_fraction <= 0.4:
