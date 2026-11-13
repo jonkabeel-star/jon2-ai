@@ -461,10 +461,10 @@ document.getElementById("form").addEventListener("submit", async event => {
       if (typeof result.answer !== "string" || !result.answer.trim()) {
         throw new Error(result.qualityPassed === true ? "Empty local Jon2 response." : "JON2_QUALITY_REJECTED");
       }
-      // Keep the quality signal visible, but do not hide a generated experimental
-      // answer from the user. This does not approve the model for public release.
+      // Fail closed: a generated string is never shown unless the local
+      // original-Jon2 quality gate explicitly passes.
       if (result.qualityPassed !== true) {
-        addMessage(translations[lang].localQualityWarning, "bot");
+        throw new Error("JON2_QUALITY_REJECTED");
       }
       addMessage(result.answer.trim(), "assistant");
     } catch (error) {
