@@ -337,12 +337,40 @@ document.getElementById("clear").addEventListener("click", async () => {
 
 document.getElementById("input").addEventListener("input", saveState);
 
-function checkApiHealth() {
-  // Future server mode must pass GET "/api/health" with health.model_ready === true before enabling server replies.
-  // This Safari build deliberately uses the private local model and does not call that endpoint.
+async function checkApiHealth() {
   const status = document.getElementById("status");
-  chatReady = Boolean(localRuntimeReady);
-  apiStatusKey = localRuntimeReady ? "localReady" : "offline";
+  if (localRuntimeReady) {
+    chatReady = true;
+    apiStatusKey = "localReady";
+    status.textContent = translations[lang][apiStatusKey];
+    updateChatNote();
+    syncChatControls();
+    return;
+  }
+  if (!API_BASE_URL) {
+    chatReady = false;
+    apiStatusKey = "offline";
+    status.textContent = translations[lang][apiStatusKey];
+    updateChatNote();
+    syncChatControls();
+    return;
+  }
+  status.textContent = lang === "ar" ? "جارٍ فحص اتصال Jon2…" : "Checking Jon2 connection…";
+  try {
+    const response = await fetch(API_BASE_URL + "/api/health", {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(12000)
+    });
+    const health = await response.json().catch(() => ({}));
+    chatReady = response.ok && health.chat_ready === true;
+    apiStatusKey = chatReady ? "modelReady" : "apiOnline";
+  } catch (error) {
+    chatReady = false;
+    apiStatusKey = "offline";
+    console.warn("Jon2 API health check failed.", error);
+  }
   status.textContent = translations[lang][apiStatusKey];
   updateChatNote();
   syncChatControls();
