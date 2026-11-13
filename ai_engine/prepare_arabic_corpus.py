@@ -90,19 +90,31 @@ def prepare(output_dir: Path, max_characters_per_language: int) -> dict:
     for config in DATASET_REVISION_CONFIGS:
         language = config.rsplit(".", 1)[1]
         output_file = output_dir / f"wikipedia_{language}_quarantine.txt"
+        provenance_file = output_dir / f"wikipedia_{language}_sources.jsonl"
         seen = set()
         total_chars = 0
         article_count = 0
+        provenance_rejected_count = 0
         rows = load_dataset(
             DATASET_ID,
             config,
             split="train",
             streaming=True,
         )
-        with output_file.open("w", encoding="utf-8", newline="\n") as handle:
+        with output_file.open("w", encoding="utf-8", newline="\n") as handle, provenance_file.open(
+            "w", encoding="utf-8", newline="\n"
+        ) as provenance:
             for row in rows:
                 text = clean_article(row.get("text"))
                 if not text:
+                    continue
+                source_id = row.get("id")
+                source_url = row.get("url")
+                source_title = row.get("title")
+                if not all(isinstance(value, str) and value.strip() for value in (
+                    source_id, source_url, source_title
+                )) or not source_url.startswith(("https://", "http://")):
+                    provenance_rejected_count += 1
                     continue
                 fingerprint = hashlib.sha256(text.encode("utf-8")).hexdigest()
                 if fingerprint in seen:
@@ -111,6 +123,13 @@ def prepare(output_dir: Path, max_characters_per_language: int) -> dict:
                     break
                 seen.add(fingerprint)
                 handle.write(text + "\n\n")
+                provenance.write(json.dumps({
+                    "id": source_id,
+                    "url": source_url,
+                    "title": source_title,
+                    "text_sha256": fingerprint,
+                    "license": DATASET_LICENSE,
+                }, ensure_ascii=False) + "\n")
                 total_chars += len(text)
                 article_count += 1
 
@@ -120,7 +139,10 @@ def prepare(output_dir: Path, max_characters_per_language: int) -> dict:
             "article_count": article_count,
             "character_count": total_chars,
             "sha256": sha256_file(output_file),
-        })
+            "provenance_file": provenance_file.name,
+            "provenance_sha256": sha256_file(provenance_file),
+            "articles_rejected_for_missing_provenance": provenance_rejected_count,
+        }))
 
     manifest = {
         "dataset": DATASET_ID,
