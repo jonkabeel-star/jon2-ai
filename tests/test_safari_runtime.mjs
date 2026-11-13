@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { Jon2ByteBPETokenizer } from "../pocket/jon2-tokenizer.js";
 import { Jon2TransformerCPU, makeJon2ParityWeights } from "../pocket/jon2-transformer.js";
 import { validateJon2ArabicAnswer } from "../pocket/jon2-answer-quality.js";
+import { canUseJon2SafariChat } from "../pocket/jon2-safari-release.js";
 
 const tokenizerFixtures = JSON.parse(await readFile(new URL("../pocket/tokenizer-parity-fixtures.json", import.meta.url), "utf8"));
 const transformerFixture = JSON.parse(await readFile(new URL("../pocket/transformer-parity-fixture.json", import.meta.url), "utf8"));
@@ -234,4 +235,11 @@ test("Safari generation skips tokens that would corrupt UTF-8", () => {
     tokenBytes: id => new Uint8Array([id === 88 ? 0xff : 65 + (id % 26)])
   };
   assert.equal(model.generate(tokenizer, "prompt", 1), "L");
+});
+
+test("Safari chat requires explicit release approval, a loaded model, and a passed human quality review", () => {
+  assert.equal(canUseJon2SafariChat({releaseApproved:false,modelLoaded:true,qualityReviewPassed:true}), false);
+  assert.equal(canUseJon2SafariChat({releaseApproved:true,modelLoaded:false,qualityReviewPassed:true}), false);
+  assert.equal(canUseJon2SafariChat({releaseApproved:true,modelLoaded:true,qualityReviewPassed:false}), false);
+  assert.equal(canUseJon2SafariChat({releaseApproved:true,modelLoaded:true,qualityReviewPassed:true}), true);
 });
