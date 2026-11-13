@@ -142,7 +142,7 @@ def prepare(output_dir: Path, max_characters_per_language: int) -> dict:
             "provenance_file": provenance_file.name,
             "provenance_sha256": sha256_file(provenance_file),
             "articles_rejected_for_missing_provenance": provenance_rejected_count,
-        }))
+        })
 
     manifest = {
         "dataset": DATASET_ID,
