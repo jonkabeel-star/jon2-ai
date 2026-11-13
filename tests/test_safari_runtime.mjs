@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { Jon2ByteBPETokenizer } from "../pocket/jon2-tokenizer.js";
 import { Jon2TransformerCPU, makeJon2ParityWeights } from "../pocket/jon2-transformer.js";
-import { validateJon2ArabicAnswer } from "../pocket/jon2-answer-quality.js";\nimport { requireUsableJon2Answer } from "../pocket/jon2-inference-worker.js";
+import { validateJon2ArabicAnswer } from "../pocket/jon2-answer-quality.js";
+import { requireUsableJon2Answer } from "../pocket/jon2-inference-worker.js";
 
 const tokenizerFixtures = JSON.parse(await readFile(new URL("../pocket/tokenizer-parity-fixtures.json", import.meta.url), "utf8"));
 const transformerFixture = JSON.parse(await readFile(new URL("../pocket/transformer-parity-fixture.json", import.meta.url), "utf8"));
