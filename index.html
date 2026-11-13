@@ -220,7 +220,7 @@ function setLang(next) {
   });
   document.getElementById("language").textContent =
     lang === "ar" ? "English 🌐" : "العربية 🌐";
-  document.getElementById("status").textContent = translations[lang][apiStatusKey];
+  document.getElementById("status").textContent = window.JON2_OPEN_MODEL_REQUESTED ? translations[lang][window.JON2_OPEN_MODEL_READY ? "openModelReady" : "openModelLoading"] : translations[lang][apiStatusKey];
   updateChatNote();
   syncChatControls();
 }
@@ -241,7 +241,7 @@ function syncChatControls() {
   const enabled = !chatBusy;
   input.disabled = !enabled;
   send.disabled = !enabled;
-  input.placeholder = localRuntimeReady ? translations[lang].localPlaceholder : chatReady ? translations[lang].placeholder : translations[lang].waitingPlaceholder;
+  input.placeholder = window.JON2_OPEN_MODEL_REQUESTED ? translations[lang].openModelPlaceholder : localRuntimeReady ? translations[lang].localPlaceholder : chatReady ? translations[lang].placeholder : translations[lang].waitingPlaceholder;
   if (enabled) {
     input.removeAttribute("aria-disabled");
     send.removeAttribute("aria-disabled");
@@ -254,7 +254,7 @@ function syncChatControls() {
 function updateChatNote() {
   const note = document.getElementById("statusNote");
   if (!note) return;
-  if (window.JON2_OPEN_MODEL_READY) { note.textContent = translations[lang].openModelNote; return; }
+  if (window.JON2_OPEN_MODEL_REQUESTED) { note.textContent = window.JON2_OPEN_MODEL_READY ? translations[lang].openModelNote : translations[lang].openModelError; return; }
   if (localRuntimeReady) { note.textContent = translations[lang].localNote; return; }
   const key = !API_BASE_URL ? "offlineNote" : apiStatusKey === "experimentalReady" ? "experimentalNote" : apiStatusKey === "modelReady" ? "apiReadyNote" : apiStatusKey === "apiOnline" ? "apiNotReadyNote" : "offlineNote";
   note.textContent = translations[lang][key] || translations[lang].chatNote;
@@ -345,6 +345,14 @@ document.getElementById("input").addEventListener("input", saveState);
 
 async function checkApiHealth() {
   const status = document.getElementById("status");
+  if (window.JON2_OPEN_MODEL_REQUESTED) {
+    chatReady = window.JON2_OPEN_MODEL_READY === true;
+    apiStatusKey = "offline";
+    status.textContent = translations[lang][window.JON2_OPEN_MODEL_READY ? "openModelReady" : "openModelLoading"];
+    updateChatNote();
+    syncChatControls();
+    return;
+  }
   if (localRuntimeReady) {
     chatReady = true;
     apiStatusKey = "localReady";
