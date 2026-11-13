@@ -1,6 +1,5 @@
-""""Safety contract for the manual-only Arabic corpus import workflow."""
+"""Safety contract for the manual-only Arabic corpus import workflow."""
 from pathlib import Path
-import re
 import unittest
 
 
@@ -13,9 +12,9 @@ class ArabicCorpusImportWorkflowSafetyTests(unittest.TestCase):
         trigger = WORKFLOW.split("permissions:", 1)[0]
         self.assertIn("workflow_dispatch:", trigger)
         self.assertNotIn("schedule:", trigger)
-        self.assertNotIn("\\n  push:", trigger)
+        self.assertNotIn(chr(10) + "  push:", trigger)
         self.assertIn('default: "10000000"', trigger)
-        normalized_workflow = re.sub(r"\\s+", "", WORKFLOW).replace("_", "")
+        normalized_workflow = "".join(WORKFLOW.split()).replace("_", "")
         self.assertIn("not200000<=int(value)<=10000000:", normalized_workflow)
 
     def test_import_is_quarantine_only_and_never_trains(self):
@@ -36,7 +35,7 @@ class ArabicCorpusImportWorkflowSafetyTests(unittest.TestCase):
     def test_no_private_credentials_or_checkpoint_secrets_required(self):
         self.assertNotIn("KAGGLE_API_TOKEN", WORKFLOW)
         self.assertNotIn("HF_TOKEN", WORKFLOW)
-        self.assertIn("permissions:\\n  contents: read", WORKFLOW)
+        self.assertIn("permissions:" + chr(10) + "  contents: read", WORKFLOW)
 
 
 if __name__ == "__main__":
