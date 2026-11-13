@@ -216,15 +216,17 @@ def local_greeting(message: str) -> str | None:
     return None
 
 def local_identity(message: str) -> str | None:
-    """Answer only direct questions about this assistant's name/identity."""
+    """Answer a narrow set of direct Arabic questions about this assistant's identity."""
     value = _normalize(message)
-    patterns = (
-        r"^(?:انت|انتي|انتو|حضرتك) (?:اسمك|اسم حضرتك)(?: ايه| ما هو)?$",
-        r"^(?:ما اسمك|ما هو اسمك|ما اسم هذا المساعد|اسمك ايه|انت مين|انتي مين)$",
-        r"^(?:ما اسم المساعد|اسم المساعد ايه)$",
-    )
-    if any(re.fullmatch(pattern, value) for pattern in patterns):
-        return "اسمي Jon2 AI، وأنا مساعدك الذكي. أستطيع مساعدتك في الإجابة عن الأسئلة والكتابة والتعلّم."
+    accepted = {
+        "انت اسمك ايه", "انتي اسمك ايه", "انت اسمك ما هو", "ما اسمك",
+        "ما هو اسمك", "اسمك ايه", "ايه اسمك", "انت مين", "انتي مين",
+        "مين انت", "مين انتي", "ما اسم هذا المساعد", "ما اسم المساعد",
+        "اسم المساعد ايه", "ايه اسم المساعد", "من انت", "من انتي",
+        "من تكون", "من تكونين",
+    }
+    if value in accepted:
+        return "اسمي Jon2 AI، وأنا مساعدك الذكي. أستطيع مساعدتك في الإجابة عن الأسئلة والبحث والكتابة والتعلّم."
     return None
 
 
