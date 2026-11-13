@@ -7,10 +7,12 @@ function getLocalArabicReply(prompt) {
   const matches = [...prompt.matchAll(/(?:المستخدم|User):\s*([^\n]+)/gu)];
   const latest = (matches.at(-1)?.[1] || prompt).trim()
     .replace(/[؟?!.,،؛:]+$/u, "")
+    .replace(/[\u064B-\u065F\u0670]/gu, "")
+    .replace(/ـ/gu, "")
     .replace(/[أإآ]/gu, "ا")
     .replace(/ى/gu, "ي")
     .replace(/\s+/gu, " ");
-  if (/^(اهلا|اهلين|مرحبا|مرحباً|السلام عليكم|صباح الخير|مساء الخير)$/u.test(latest)) {
+  if (/^(هلا|هلا والله|يا هلا|هلا بيك|اهلا|اهلين|مرحبا|السلام عليكم|صباح الخير|مساء الخير)$/u.test(latest)) {
     return "أهلًا بك! كيف يمكنني مساعدتك اليوم؟";
   }
   if (/^(ازيك|كيف حالك|عامل ايه|انت عامل ايه|كيفك)$/u.test(latest)) {
