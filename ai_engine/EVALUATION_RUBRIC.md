@@ -56,7 +56,7 @@ This rubric is an initial manual gate, not a formal benchmark, security audit, p
 
 ## Expanded Arabic meaning and context coverage
 
-The held-out suite now contains 40 prompts. The additional cases test:
+The held-out suite now contains 100 original prompts (60 additional cases were added in the current repair branch). The additional cases test:
 - polysemy and context-dependent word meaning;
 - negation, conditionals, tense, quantifiers, and temporal order;
 - pronoun reference and ambiguous attachment;
@@ -66,4 +66,4 @@ The held-out suite now contains 40 prompts. The additional cases test:
 - multi-step instruction following and continuity with prior context;
 - calibrated uncertainty when a sentence admits more than one reading.
 
-These are evaluation questions, not training examples. Keep them held out. Score whether the model explains ambiguity instead of guessing, distinguishes literal from figurative meaning, and uses the surrounding sentence to interpret words. A larger prompt set improves test coverage but does not itself improve the model; only training on permitted, high-quality data and subsequent evaluation can do that.
+The 100-case suite also includes 60 additional original cases covering practical explanation, arithmetic, uncertainty, online safety, comparison, summarization, Egyptian dialect, formal rewriting, and inference. These are evaluation questions, not training examples. Keep them held out. Score whether the model explains ambiguity instead of guessing, distinguishes literal from figurative meaning, and uses the surrounding sentence to interpret words. A larger prompt set improves test coverage but does not itself improve the model; only training on permitted, high-quality data and subsequent evaluation can do that.
