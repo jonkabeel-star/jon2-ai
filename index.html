@@ -481,7 +481,7 @@ saveState();
 </script>
 <script type="module">
 import { Jon2SafariClient } from "./pocket/jon2-safari-client.js";
-import { getJon2BundleFromCache, saveJon2BundleToCache, deleteJon2BundleFromCache } from "./pocket/jon2-model-cache.js";
+import { getJon2BundleFromCache, getLatestJon2BundleFromCache, saveJon2BundleToCache, deleteJon2BundleFromCache } from "./pocket/jon2-model-cache.js";
 
 const CHECKPOINT_SHA256 = "edf96971187f93642f36282e270c2d2f3a6db39565b30d7898e856a49e0eaec2";
 const $ = id => document.getElementById(id);
@@ -503,19 +503,17 @@ async function activateJon2Bundle(manifestBlob, weightsBlob, weightsHash) {
 }
 
 async function restoreJon2BundleFromCache(statusElement) {
-  const weightsHash = localStorage.getItem("jon2_bundle_weights_sha256") || "";
-  if (!/^[0-9a-f]{64}$/i.test(weightsHash)) return false;
   try {
     statusElement.textContent = localText("جارٍ البحث عن النموذج المحفوظ…", "Looking for your saved model…");
-    const cached = await getJon2BundleFromCache(CHECKPOINT_SHA256, weightsHash);
+    const cached = await getLatestJon2BundleFromCache(CHECKPOINT_SHA256);
     if (!cached) return false;
+    const weightsHash = cached.weightsSha256;
     await activateJon2Bundle(cached.manifestBlob, cached.weightsBlob, weightsHash);
     statusElement.textContent = localText("تم استرجاع النموذج المحفوظ والتحقق منه. يمكنك المحادثة دون اختيار الملف مجددًا.", "Saved model restored and verified. You can chat without selecting the ZIP again.");
     $("assistant").scrollIntoView({behavior:"smooth",block:"start"});
     return true;
   } catch (error) {
     try { await deleteJon2BundleFromCache(CHECKPOINT_SHA256, weightsHash); } catch {}
-    localStorage.removeItem("jon2_bundle_weights_sha256");
     statusElement.textContent = localText("تعذر استرجاع النسخة المحفوظة. اختر ملف ZIP مرة أخرى.", "The saved copy could not be restored. Please select the ZIP again.");
     console.warn("Jon2 cached model restore failed.", error);
     return false;
@@ -582,7 +580,6 @@ $("loadLocalJon2").addEventListener("click", async () => {
       await activateJon2Bundle(entries.get("manifest.json"), entries.get("weights.bin"), weightsHash);
       try {
         await saveJon2BundleToCache(CHECKPOINT_SHA256, weightsHash, entries.get("manifest.json"), entries.get("weights.bin"));
-        localStorage.setItem("jon2_bundle_weights_sha256", weightsHash);
         status.textContent = localText("تم تحميل النموذج والتحقق منه وحفظه على هذا الجهاز. لن تحتاج لاختيار ZIP مرة أخرى ما دامت بيانات Safari محفوظة.", "Model verified and saved on this device. You will not need to select the ZIP again while Safari data remains available.");
       } catch (cacheError) {
         status.textContent = localText("تم تحميل النموذج، لكن تعذر حفظه تلقائيًا: ", "Model loaded, but automatic saving failed: ") + (cacheError?.message || String(cacheError));
