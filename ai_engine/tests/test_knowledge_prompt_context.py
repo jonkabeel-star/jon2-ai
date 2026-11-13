@@ -27,15 +27,20 @@ class KnowledgePromptContextTests(unittest.TestCase):
         self.assertIn(question, prompt)
         self.assertTrue(prompt.endswith("Jon2:"))
 
-    def test_oversized_reference_context_fails_without_truncating_question(self):
+    def test_oversized_reference_context_is_reduced_without_truncating_question(self):
         question = "ما عاصمة مصر؟"
-        with self.assertRaisesRegex(ValueError, "لن يتم حذف السؤال أو اختصاره"):
-            chat_engine.build_conversation_prompt(
-                question,
-                tokenizer=WhitespaceTokenizer(),
-                context=8,
-                knowledge_context="معلومة مرجعية طويلة " * 30,
-            )
+        source_context = "معلومة مرجعية طويلة " * 30
+        prompt = chat_engine.build_conversation_prompt(
+            question,
+            tokenizer=WhitespaceTokenizer(),
+            context=24,
+            knowledge_context=source_context,
+        )
+        self.assertIn("معلومات مرجعية مسترجعة", prompt)
+        self.assertIn("معلومة", prompt)
+        self.assertIn(question, prompt)
+        self.assertLess(len(WhitespaceTokenizer().encode(prompt)), 24)
+        self.assertNotIn(source_context, prompt)
 
 
 if __name__ == "__main__":

@@ -39,6 +39,33 @@ class ChatPromptTests(unittest.TestCase):
         self.assertIn("Jon2", prompt)
         self.assertIn("ذاكرة سابقة", prompt)
 
+
+    def test_long_retrieved_context_is_reduced_before_current_question(self):
+        tokenizer = FakeTokenizer()
+        question = "اشرح معنى التعلم الآلي في جملة واضحة"
+        reference = "مرجع: " + ("معلومة طويلة ومهمة " * 20)
+        prompt = build_conversation_prompt(
+            question,
+            tokenizer=tokenizer,
+            context=180,
+            knowledge_context=reference,
+        )
+        self.assertIn(question, prompt)
+        self.assertIn("مرجع:", prompt)
+        self.assertLess(len(tokenizer.encode(prompt)), 180)
+        self.assertNotIn(reference, prompt)
+
+    def test_question_still_rejected_when_it_alone_exceeds_context(self):
+        tokenizer = FakeTokenizer()
+        question = "اشرح لي الذكاء الاصطناعي " * 20
+        with self.assertRaisesRegex(ValueError, "لن يتم اختصاره"):
+            build_conversation_prompt(
+                question,
+                tokenizer=tokenizer,
+                context=128,
+                knowledge_context="مرجع: معلومة مختصرة",
+            )
+
     def test_empty_question_is_rejected(self):
         with self.assertRaises(ValueError):
             build_conversation_prompt("   ", tokenizer=FakeTokenizer(), context=128)
