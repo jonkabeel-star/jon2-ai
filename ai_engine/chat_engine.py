@@ -53,8 +53,8 @@ def load_runtime() -> None:
     _model, _tokenizer, _device = load_model(str(CHECKPOINT_PATH))
 
 
-def build_conversation_prompt(message: str, history=None, memories=None, tokenizer=None, context=None) -> str:
-    """Build a prompt that fits the checkpoint's actual token context."""
+def build_conversation_prompt(message: str, history=None, memories=None, tokenizer=None, context=None, knowledge_context=None) -> str:
+    """Build a lossless conversation prompt with optional retrieved reference context."""
     question = str(message).strip()
     if not question:
         raise ValueError("اكتب رسالتك أولًا.")
@@ -67,6 +67,7 @@ def build_conversation_prompt(message: str, history=None, memories=None, tokeniz
             label = "المستخدم" if role == "user" else "Jon2"
             memory_items.append(f"{label}: {content.strip()[-90:]}")
 
+    reference_context = str(knowledge_context or "").strip()
     turns = []
     for item in (history or [])[-4:]:
         role = item.get("role") if isinstance(item, dict) else None
@@ -97,13 +98,18 @@ def build_conversation_prompt(message: str, history=None, memories=None, tokeniz
         if memory_items:
             memory_items.pop(0)
             continue
+        if reference_context:
+            raise ValueError(
+                "المعلومات المرجعية والسؤال لا يتسعان داخل نافذة سياق نموذج Jon2؛ "
+                "لن يتم حذف السؤال أو اختصاره."
+            )
         raise ValueError(
             "سؤال المستخدم أطول من نافذة سياق نموذج Jon2؛ "
             "لن يتم اختصاره حتى لا يتغير معناه."
         )
 
 
-def generate_reply(message: str, history=None, memories=None) -> str:
+def generate_reply(message: str, history=None, memories=None, knowledge_context=None) -> str:
     if not message or not message.strip():
         raise ValueError("اكتب رسالتك أولًا.")
 
@@ -112,6 +118,7 @@ def generate_reply(message: str, history=None, memories=None) -> str:
         message, history, memories,
         tokenizer=_tokenizer if callable(getattr(_tokenizer, "encode", None)) else None,
         context=getattr(_model, "context", 128),
+        knowledge_context=knowledge_context,
     )
     full_text = generate(
         _model,
