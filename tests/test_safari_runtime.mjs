@@ -160,6 +160,34 @@ test("Safari worker client resolves successful inference responses", async () =>
   }
 });
 
+test("Safari worker client preserves stable internal failure codes", async () => {
+  const originalWorker = globalThis.Worker;
+  class FailingWorker {
+    listeners = new Map();
+    addEventListener(type, callback) { this.listeners.set(type, callback); }
+    postMessage(message) {
+      queueMicrotask(() => this.listeners.get("message")?.({data:{
+        type:"error",requestId:message.requestId,code:"JON2_OUTPUT_REJECTED",
+        message:"عقل Jon2 غير جاهز للرد"
+      }}));
+    }
+    terminate() {}
+  }
+  globalThis.Worker = FailingWorker;
+  try {
+    const { Jon2SafariClient } = await import("../pocket/jon2-safari-client.js?diagnostic-code-test");
+    const client = new Jon2SafariClient();
+    await assert.rejects(client.generate("مرحبا", 8), error => {
+      assert.equal(error.code, "JON2_OUTPUT_REJECTED");
+      assert.match(error.message, /عقل Jon2 غير جاهز للرد/);
+      return true;
+    });
+    client.close();
+  } finally {
+    globalThis.Worker = originalWorker;
+  }
+});
+
 test("Safari worker client rejects timed-out generation instead of hanging chat", async () => {
   const originalWorker = globalThis.Worker;
   class SilentWorker {
@@ -263,6 +291,13 @@ test("Safari chat sends identity questions to the model and rejects failed quali
   assert.match(page, /result\.qualityPassed !== true/);
   assert.match(page, /throw new Error\("JON2_QUALITY_REJECTED"\)/);
   assert.doesNotMatch(page, /Keep the quality signal visible, but do not hide/);
+});
+
+test("Safari presents the canonical not-ready message for every local inference failure", async () => {
+  const page = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(page, /addMessage\("عقل Jon2 غير جاهز للرد", "bot"\)/);
+  assert.match(page, /code: error\?\.code \|\| "JON2_INFERENCE_FAILED"/);
+  assert.doesNotMatch(page, /addMessage\(translations\[lang\]\.localQualityRejected, "bot"\)/);
 });
 
 test("Safari only exposes non-empty model output that passes Arabic integrity checks", () => {
