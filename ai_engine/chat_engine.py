@@ -53,8 +53,8 @@ def load_runtime() -> None:
     _model, _tokenizer, _device = load_model(str(CHECKPOINT_PATH))
 
 
-def build_conversation_prompt(message: str, history=None, memories=None, tokenizer=None, context=None, knowledge_context=None) -> str:
-    """Build a lossless conversation prompt with optional retrieved reference context."""
+def build_conversation_prompt(message: str, history=None, memories=None, tokenizer=None, context=None) -> str:
+    """Build a prompt that fits the checkpoint's actual token context."""
     question = str(message).strip()
     if not question:
         raise ValueError("اكتب رسالتك أولًا.")
