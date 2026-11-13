@@ -13,10 +13,10 @@ export class Jon2SafariClient {
       else pending.resolve(message);
     });
     this.worker.addEventListener("error", event => {
-      this._rejectAll(new Error(event.message || "Jon2 inference worker failed."));
+      this._rejectAll(new Error("عقل Jon2 غير جاهز للرد"));
     });
     this.worker.addEventListener("messageerror", () => {
-      this._rejectAll(new Error("Jon2 inference worker returned an unreadable message."));
+      this._rejectAll(new Error("عقل Jon2 غير جاهز للرد"));
     });
   }
 
@@ -41,9 +41,7 @@ export class Jon2SafariClient {
       const timer = setTimeout(() => {
         const pending = this._settle(requestId);
         if (pending) pending.reject(new Error(
-          type === "generate"
-            ? "Jon2 inference timed out on this device. Try a shorter message or fewer output tokens."
-            : "Jon2 model loading timed out on this device. Check available memory and try again."
+          "عقل Jon2 غير جاهز للرد"
         ));
       }, timeoutMs);
       this.pending.set(requestId, { resolve, reject, timer });
@@ -58,7 +56,7 @@ export class Jon2SafariClient {
 
   async load(manifestFile, weightsFile, expectedCheckpointSha256, expectedWeightsSha256) {
     if (!(manifestFile instanceof Blob) || !(weightsFile instanceof Blob)) {
-      throw new TypeError("Select the private manifest.json and weights.bin files first.");
+      throw new TypeError("عقل Jon2 غير جاهز للرد");
     }
     const [manifestText, weightsBuffer] = await Promise.all([
       manifestFile.text(),

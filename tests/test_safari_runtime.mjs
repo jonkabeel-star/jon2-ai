@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { Jon2ByteBPETokenizer } from "../pocket/jon2-tokenizer.js";
 import { Jon2TransformerCPU, makeJon2ParityWeights } from "../pocket/jon2-transformer.js";
 import { validateJon2ArabicAnswer } from "../pocket/jon2-answer-quality.js";
+import { requireUsableJon2Answer } from "../pocket/jon2-inference-worker.js";
 
 const tokenizerFixtures = JSON.parse(await readFile(new URL("../pocket/tokenizer-parity-fixtures.json", import.meta.url), "utf8"));
 const transformerFixture = JSON.parse(await readFile(new URL("../pocket/transformer-parity-fixture.json", import.meta.url), "utf8"));
@@ -172,7 +173,7 @@ test("Safari worker client rejects timed-out generation instead of hanging chat"
     const client = new Jon2SafariClient();
     await assert.rejects(
       client._request("generate", {prompt:"مرحبا",maxTokens:8}, [], 5),
-      /inference timed out/
+      /عقل Jon2 غير جاهز للرد/
     );
     assert.equal(client.pending.size, 0);
     client.close();
@@ -244,11 +245,11 @@ test("Safari worker never bypasses the original model with canned small-talk rep
   assert.doesNotMatch(workerSource, /function\s+getLocalArabicReply/);
   assert.match(
     workerSource,
-    /const generated = runtime\.model\.generate\(runtime\.tokenizer, message\.prompt, message\.maxTokens \?\? 256\)/
+    /const rawGenerated = runtime\.model\.generate\(/
   );
   assert.match(
     workerSource,
-    /const qualityPassed = validateJon2ArabicAnswer\(generated\)/
+    /const answer = requireUsableJon2Answer\(rawGenerated\)/
   );
 });
 
@@ -256,6 +257,25 @@ test("Safari chat sends identity questions to the model and rejects failed quali
   const page = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.doesNotMatch(page, /function\s+getJon2LocalIdentityReply/);
   assert.doesNotMatch(page, /const\s+localIntentReply\s*=/);
+  assert.doesNotMatch(page, /window\.JON2_OPEN_MODEL\.generate\(history\)/);
+  assert.match(page, /alternate open-weight runtime is not the original Jon2 checkpoint/);
   assert.match(page, /result\.qualityPassed\s*!==\s*true/);
-  assert.match(page, /JON2_QUALITY_REJECTED/);
+  assert.match(page, /result\.qualityPassed !== true/);
+  assert.match(page, /throw new Error\("JON2_QUALITY_REJECTED"\)/);
+  assert.doesNotMatch(page, /Keep the quality signal visible, but do not hide/);
+});
+
+test("Safari only exposes non-empty model output that passes Arabic integrity checks", () => {
+  assert.equal(
+    requireUsableJon2Answer("مرحباً! أنا مساعد تجريبي من مشروع جون2، كيف يمكنني مساعدتك؟"),
+    "مرحباً! أنا مساعد تجريبي من مشروع جون2، كيف يمكنني مساعدتك؟"
+  );
+  assert.throws(
+    () => requireUsableJon2Answer(""),
+    /عقل Jon2 غير جاهز للرد/
+  );
+  assert.throws(
+    () => requireUsableJon2Answer("لا وأ ال ال الر ال ال الد الذي ال الذي ال الاست الطريقة ال ال الاسب الاسة ال الذي الذف ال ال ال الأو الذي الأو الاسة الاسب ال ال الذي الذي الأو الذي الاسم الأو الاسب ال ال ال ال ال ال ال ال ال ال ال ال ال الد الد الد ال الذي ال الد ال ال ال الد الاسة الذي الذي ال ال ال ال ال ال الد ال الذي الأو ال الد الد الأو الذي ال الد الذي الذي الد الد الد الد الد"),
+    /عقل Jon2 غير جاهز للرد/
+  );
 });

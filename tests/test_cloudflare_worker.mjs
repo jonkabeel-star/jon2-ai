@@ -38,6 +38,7 @@ describe("local-only Jon2 edge gateway", () => {
       assert.equal(response.status, 503);
       assert.equal(body.error, "local_model_not_loaded");
       assert.equal(body.chat_ready, false);
+      assert.equal(body.message, "عقل Jon2 غير جاهز للرد");
       assert.equal(networkCalls, 0);
     } finally {
       globalThis.fetch = originalFetch;

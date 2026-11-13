@@ -10,10 +10,6 @@ from pydantic import BaseModel, Field, ConfigDict
 
 from chat_engine import generate_reply, load_runtime, model_is_ready
 import chat_memory
-from knowledge_engine import (
-    format_knowledge_answer, local_greeting, local_identity, looks_like_fact_question,
-    retrieve_knowledge,
-)
 from external_models.jais2_routes import router as jais2_router
 from compute.routes import router as compute_router
 from model_profiles import PROFILES, describe_profile, list_profiles
@@ -248,7 +244,7 @@ def runtime_v1_chat(
     try:
         result = chat(legacy_request)
     except HTTPException as error:
-        detail = error.detail if isinstance(error.detail, str) else "Runtime request failed."
+        detail = error.detail if isinstance(error.detail, str) else "عقل Jon2 غير جاهز للرد"
         error_code = (
             "model_not_ready" if error.status_code == 503
             else "invalid_request" if error.status_code == 400
@@ -270,7 +266,7 @@ def runtime_v1_chat(
             content={
                 "contract_version": "1",
                 "error": "empty_model_reply",
-                "detail": "The Jon2 runtime did not return a usable reply.",
+                "detail": "عقل Jon2 غير جاهز للرد",
             },
         )
 
@@ -345,69 +341,44 @@ def chat(request: ChatRequest):
     if not message:
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
 
-    # Every user-facing answer must come from the original Jon2 model.
-    # Check the same fail-closed release gate before any factual retrieval:
-    # retrieved text is context for Jon2, never a standalone answer or fallback.
+    # Fail closed before inference. No canned replies, FAQ answer bank,
+    # retrieval-answer shortcut, or external model fallback is permitted.
     if not _public_release_ready():
         snapshot = health()
         raise HTTPException(
             status_code=503,
             detail={
                 "error": "public_release_gate_closed",
-                "message": "المحادثة العامة تحتاج إلى نموذج Jon2 أصلي مجرّب ومراجَع، واجتياز المراجعة البشرية الصريحة قبل فتحها.",
+                "message": "عقل Jon2 غير جاهز للرد",
                 "model_status": snapshot["model_status"],
                 "chat_ready": False,
             },
         )
 
     try:
-        knowledge = retrieve_knowledge(message) if looks_like_fact_question(message) else None
-        knowledge_context = None
-        if knowledge:
-            title = str(knowledge.get("title", "")).strip()
-            extract = str(knowledge.get("extract", "")).strip()
-            if title and extract:
-                # Pass a bounded source extract to the model for its own synthesis.
-                # Attribution remains separate response metadata, not copied answer text.
-                knowledge_context = f"{title}: {extract[:500]}"
-
         history = [item.model_dump() for item in request.history]
         memories = []
         if request.session_id:
-            # Read context before storing the current turn, preventing duplicate prompt entries.
+            # Conversation history is context only; every new answer is generated anew.
             history = chat_memory.recent_messages(request.session_id, limit=8)
             memories = chat_memory.relevant_memories(request.session_id, message, limit=4)
 
-        reply = generate_reply(
-            message, history, memories, knowledge_context=knowledge_context
-        )
+        # The original Jon2 checkpoint is the only source of the answer.
+        reply = generate_reply(message, history, memories)
+        if not isinstance(reply, str) or not reply.strip():
+            raise RuntimeError("empty original-model output")
+
         if request.session_id:
-            # Persist only the actual model-generated exchange after inference succeeds.
             chat_memory.add_exchange(request.session_id, message, reply)
 
-        response = {
+        return {
             "project": "Jon2 AI",
             "reply": reply,
             "memory_used": bool(memories),
             "session_id": request.session_id,
-            "experimental": _experimental_chat_enabled() and not _chat_release_approved(),
-            "response_mode": "jon2_generated_with_retrieval" if knowledge_context else "jon2_generated",
-            "knowledge_used": bool(knowledge_context),
+            "experimental": False,
+            "response_mode": "jon2_original_model_only",
         }
-        if knowledge_context and knowledge:
-            response.update({
-                "knowledge_source": knowledge.get("source_url"),
-                "knowledge_title": knowledge.get("title"),
-                "knowledge_cached": bool(knowledge.get("cached")),
-            })
-        return response
-    except ValueError as error:
-        raise HTTPException(status_code=400, detail=str(error))
-    except FileNotFoundError as error:
-        raise HTTPException(status_code=503, detail=str(error))
     except Exception as error:
-        print(f"Jon2 AI chat error: {error}")
-        raise HTTPException(
-            status_code=503,
-            detail="تعذر تشغيل نموذج Jon2 الأصلي. راجع سجلات الخادم.",
-        )
+        print(f"Jon2 AI chat error: {type(error).__name__}: {error}")
+        raise HTTPException(status_code=503, detail="عقل Jon2 غير جاهز للرد")

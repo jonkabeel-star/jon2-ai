@@ -419,32 +419,9 @@ document.getElementById("form").addEventListener("submit", async event => {
   saveState();
 
   if (window.JON2_OPEN_MODEL_REQUESTED) {
-    chatBusy = true;
-    syncChatControls();
-    send.setAttribute("aria-busy", "true");
-    try {
-      if (!window.JON2_OPEN_MODEL_READY || !window.JON2_OPEN_MODEL) {
-        throw new Error("OPEN_MODEL_NOT_READY");
-      }
-      const history = chatMessages
-        .filter(item => item.kind === "user" || item.kind === "assistant")
-        .slice(-8)
-        .map(item => ({ role: item.kind === "user" ? "user" : "assistant", content: item.text }));
-      const answer = await window.JON2_OPEN_MODEL.generate(history);
-      if (typeof answer !== "string" || !answer.trim()) throw new Error("Empty local model response.");
-      addMessage(answer.trim(), "assistant");
-    } catch (error) {
-      const message = error?.message === "OPEN_MODEL_NOT_READY"
-        ? translations[lang].openModelError
-        : translations[lang].openModelFailed + " " + (error?.message || String(error));
-      addMessage(message, "bot");
-      console.warn("Local open-weight model inference failed.", error);
-    } finally {
-      chatBusy = false;
-      syncChatControls();
-      send.removeAttribute("aria-busy");
-      input.focus();
-    }
+    // This alternate open-weight runtime is not the original Jon2 checkpoint.
+    // Never present its output as Jon2; only the verified original runtime may answer.
+    addMessage("عقل Jon2 غير جاهز للرد", "bot");
     return;
   }
 
@@ -461,10 +438,10 @@ document.getElementById("form").addEventListener("submit", async event => {
       if (typeof result.answer !== "string" || !result.answer.trim()) {
         throw new Error(result.qualityPassed === true ? "Empty local Jon2 response." : "JON2_QUALITY_REJECTED");
       }
-      // Keep the quality signal visible, but do not hide a generated experimental
-      // answer from the user. This does not approve the model for public release.
+      // Fail closed: a generated string is never shown unless the local
+      // original-Jon2 quality gate explicitly passes.
       if (result.qualityPassed !== true) {
-        addMessage(translations[lang].localQualityWarning, "bot");
+        throw new Error("JON2_QUALITY_REJECTED");
       }
       addMessage(result.answer.trim(), "assistant");
     } catch (error) {
