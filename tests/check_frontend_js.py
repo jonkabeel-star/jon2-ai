@@ -53,6 +53,7 @@ def check_inline_scripts(html_path: Path) -> int:
         "session_id: sessionId",
         "history: chatMessages.slice(0, -1)",
         "health.model_ready",
+        "health.chat_ready === true",
         "payload.message",
         "apiNotReadyNote",
         "AbortSignal.timeout",
