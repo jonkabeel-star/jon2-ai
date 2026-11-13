@@ -3,9 +3,19 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { Jon2ByteBPETokenizer } from "../pocket/jon2-tokenizer.js";
 import { Jon2TransformerCPU, makeJon2ParityWeights } from "../pocket/jon2-transformer.js";
+import { validateJon2ArabicAnswer } from "../pocket/jon2-answer-quality.js";
 
 const tokenizerFixtures = JSON.parse(await readFile(new URL("../pocket/tokenizer-parity-fixtures.json", import.meta.url), "utf8"));
 const transformerFixture = JSON.parse(await readFile(new URL("../pocket/transformer-parity-fixture.json", import.meta.url), "utf8"));
+
+test("Safari Arabic answer guard rejects the observed fragmented output", () => {
+  const corrupted = "لا وأ ال ال الر ال ال الد الذي ال الذي ال الاست الطريقة ال ال الاسب الاسة ال الذي الذف ال ال ال الأو الذي الأو الاسة الاسب ال ال الذي الذي الأو الذي الاسم الأو الاسب ال ال ال ال ال ال ال ال ال ال ال ال ال الد الد الد ال الذي ال الد ال ال ال الد الاسة الذي الذي ال ال ال ال ال ال الد ال الذي الأو ال الد الد الأو الذي ال الد الذي الذي الد الد الد الد الد";
+  assert.equal(validateJon2ArabicAnswer(corrupted), false);
+  assert.equal(
+    validateJon2ArabicAnswer("مرحباً! أنا مساعد تجريبي من مشروع جون2، كيف يمكنني مساعدتك؟"),
+    true
+  );
+});
 
 test("Safari JavaScript tokenizer matches shared Python fixtures", () => {
   assert.equal(tokenizerFixtures.format, "jon2-tokenizer-parity-fixtures-v1");
