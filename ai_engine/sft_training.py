@@ -206,7 +206,12 @@ def train_sft(
         "validation_loss": validation_loss,
         "source_checkpoint_sha256": source_hash,
         "approval_manifest_sha256": manifest_hash,
-        "approved_source_hashes": [\n            {"file": item["file"], "sha256": item["sha256"]}\n            for item in json.loads(manifest_path.read_text(encoding="utf-8")).get(\n                "approved_sources", []\n            )\n        ],
+        "approved_source_hashes": [
+            {"file": item["file"], "sha256": item["sha256"]}
+            for item in json.loads(manifest_path.read_text(encoding="utf-8")).get(
+                "approved_sources", []
+            )
+        ],
     }
     # Keep the source checkpoint untouched; only the new output path is written.
     torch.save(result, output)
