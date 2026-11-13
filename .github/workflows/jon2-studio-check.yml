@@ -1,0 +1,45 @@
+name: Jon2 Studio syntax check
+on:
+  push:
+    branches:
+      - jon2-studio-private-bootstrap
+    paths:
+      - "studio/**"
+      - "functions/**"
+      - "server/jon2-studio-agent/**"
+      - ".github/workflows/jon2-studio-check.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  studio-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check Studio JavaScript syntax
+        run: |
+          node --check studio/studio.js
+          node --check studio/brain.js
+          node --check studio/bot.js
+          node --check functions/api/agent.js
+          node -e "JSON.parse(require('fs').readFileSync('studio/_routes.json','utf8'))"
+      - name: Check Python API syntax
+        run: python -m py_compile server/jon2-studio-agent/app.py
+      - name: Verify required Studio files
+        run: |
+          test -s studio/index.html
+          test -s studio/studio.css
+          test -s studio/studio.js
+          test -s studio/brain.js
+          test -s studio/bot.js
+          test -s functions/api/agent.js
+          test -s studio/_routes.json
+          test -s server/jon2-studio-agent/app.py
+          grep -q 'sandbox="allow-scripts"' studio/index.html
+          ! grep -R -E 'gh[pousr]_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}' studio/
