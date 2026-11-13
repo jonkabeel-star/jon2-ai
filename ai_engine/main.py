@@ -10,10 +10,6 @@ from pydantic import BaseModel, Field, ConfigDict
 
 from chat_engine import generate_reply, load_runtime, model_is_ready
 import chat_memory
-from knowledge_engine import (
-    format_knowledge_answer, local_greeting, local_identity, looks_like_fact_question,
-    retrieve_knowledge,
-)
 from external_models.jais2_routes import router as jais2_router
 from compute.routes import router as compute_router
 from model_profiles import PROFILES, describe_profile, list_profiles
@@ -383,8 +379,6 @@ def chat(request: ChatRequest):
             "experimental": False,
             "response_mode": "jon2_original_model_only",
         }
-    except ValueError as error:
-        raise HTTPException(status_code=400, detail=str(error))
     except Exception as error:
         print(f"Jon2 AI chat error: {type(error).__name__}: {error}")
         raise HTTPException(status_code=503, detail="عقل Jon2 غير جاهز للرد")
