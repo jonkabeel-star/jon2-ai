@@ -54,7 +54,9 @@ checks. Never expose a GitHub or Hugging Face access token in notebook output.
 - Streams rows and applies a per-language character cap.
 - Normalizes Unicode and whitespace, rejects very short/non-Arabic/URL-bearing
   articles, and removes exact duplicate articles.
-- Writes text and SHA-256 provenance into a separate quarantine folder.
+- Writes text plus a per-article JSONL attribution sidecar containing source ID, URL, title, text SHA-256, and declared license; the manifest also fingerprints both files.
+- Rejects records missing article-level ID/title/HTTP(S) URL so attribution is not silently lost.
+- Refuses any output directory inside `ai_engine/training_data`, even if `--output-dir` is manually overridden.
 - Marks the manifest `PENDING_HUMAN_LEGAL_AND_CONTENT_REVIEW`.
 - Does **not** write into `ai_engine/training_data`, modify
   `source_approvals.json`, start training, or change any checkpoint.
