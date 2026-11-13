@@ -389,7 +389,7 @@ function normalizeJon2ArabicIntent(value) {
     .replace(/[\u064B-\u065F\u0670\u0640]/g, "")
     .replace(/[إأآٱ]/g, "ا")
     .replace(/ى/g, "ي")
-    .replace(/[؟?!.,،؛:()[\]{}«»"'ـ]/g, " ")
+    .replace(/[؟?!.,،؛:(){}\[\]«»"'ـ]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
@@ -398,7 +398,7 @@ function normalizeJon2ArabicIntent(value) {
 function getJon2LocalIdentityReply(value) {
   const question = normalizeJon2ArabicIntent(value);
   const asksName =
-    /^(?:انت|انتي|انتو|حضرتك|ما اسمك|اسمك|اسم حضرتك|اسم المساعد)\s*(?:ايه|إيه|ما هو|ما|من|؟)?$/.test(question) ||
+    /^(?:انت|انتي|انتو|حضرتك|ما اسمك|اسمك|اسم حضرتك|اسم المساعد)\s*(?:ايه|ما هو|ما|من|؟)?$/.test(question) ||
     /^(?:انت|انتي|حضرتك)\s+(?:اسمك|مين|من انت)(?:\s+ايه)?$/.test(question) ||
     /^(?:ما اسمك|ما هو اسمك|ما اسم هذا المساعد)$/.test(question);
   if (!asksName) return null;
@@ -409,6 +409,12 @@ function getJon2LocalIdentityReply(value) {
   addMessage(value, "user");
   input.value = "";
   saveState();
+
+  if (localIntentReply) {
+    addMessage(localIntentReply, "assistant");
+    saveState();
+    return;
+  }
 
   if (localRuntimeReady && window.JON2_LOCAL_CLIENT) {  if (localIntentReply) {
     addMessage(localIntentReply, "assistant");
