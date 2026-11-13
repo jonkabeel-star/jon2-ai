@@ -32,12 +32,10 @@ self.addEventListener("message", async event => {
         throw new TypeError("Jon2 prompt must be non-empty text.");
       }
       const answer = runtime.model.generate(runtime.tokenizer, message.prompt, message.maxTokens ?? 256);
-      if (!validateJon2ArabicAnswer(answer)) {
-        const error = new Error("JON2_QUALITY_REJECTED");
-        error.code = "JON2_QUALITY_REJECTED";
-        throw error;
-      }
-      self.postMessage({ type: "generated", requestId, answer });
+      // Keep the quality gate as a diagnostic, not a hard stop:
+      // this private experimental build may show weak replies with a warning.
+      const qualityPassed = validateJon2ArabicAnswer(answer);
+      self.postMessage({ type: "generated", requestId, answer, qualityPassed });
       return;
     }
     throw new TypeError("Unsupported Jon2 worker message.");
