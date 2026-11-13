@@ -27,7 +27,7 @@ self.addEventListener("message", async event => {
       return;
     }
     if (message.type === "generate") {
-      if (!runtime) throw new Error("Original Jon2 browser model is not loaded.");
+      if (!runtime) throw new Error("عقل Jon2 غير جاهز للرد");
       if (typeof message.prompt !== "string" || !message.prompt.trim()) {
         throw new TypeError("Jon2 prompt must be non-empty text.");
       }
