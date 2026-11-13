@@ -43,7 +43,7 @@ async function runtimeFetch(config, path, init = {}) {
       ...(init.body ? { "Content-Type": "application/json" } : {}),
       ...(init.headers || {}),
     },
-    signal: AbortSignal.timeout(25000),
+    signal: AbortSignal.timeout(90000),
   });
 }
 
