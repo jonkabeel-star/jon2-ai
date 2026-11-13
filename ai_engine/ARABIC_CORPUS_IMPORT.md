@@ -22,7 +22,30 @@ privacy risks, source provenance, and the implications of training/distributing
 a model on adapted material. Keep this source quarantined until those questions
 are reviewed for Jon2's intended use.
 
-## Run from Kaggle
+## One-click GitHub Actions import (recommended)
+
+After the workflow change is merged, an owner can run the bounded import without
+opening Kaggle:
+
+1. Open the repository's **Actions** tab.
+2. Select **Jon2 Arabic corpus import and read-only audit**.
+3. Choose **Run workflow** and keep the default 10,000,000-character cap per language
+   (or choose a smaller cap for a first test).
+4. Wait for the run to finish, then open its artifact named
+   `jon2-arabic-corpus-audit-<run id>`.
+
+The artifact contains a metadata-only report, structural/privacy signal counts,
+source links, and SHA-256 fingerprints. It deliberately does not contain raw
+corpus text because this repository is currently public. The workflow downloads
+the text only into its temporary runner workspace, and deletes that workspace
+when the run ends.
+
+This workflow is import-and-audit only. It does not approve the license for
+Jon2's intended use, add files to the approved training corpus, or start
+training. A human must inspect the report and source material before any
+separate exact-file approval.
+
+## Run from Kaggle (fallback)
 
 The Jon2 GitHub repository is private. Do not use an anonymous `git clone`
 command or paste a GitHub password/token into a notebook.
