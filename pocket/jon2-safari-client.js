@@ -13,10 +13,10 @@ export class Jon2SafariClient {
       else pending.resolve(message);
     });
     this.worker.addEventListener("error", event => {
-      this._rejectAll(new Error(event.message || "Jon2 inference worker failed."));
+      this._rejectAll(new Error("عقل Jon2 غير جاهز للرد"));
     });
     this.worker.addEventListener("messageerror", () => {
-      this._rejectAll(new Error("Jon2 inference worker returned an unreadable message."));
+      this._rejectAll(new Error("عقل Jon2 غير جاهز للرد"));
     });
   }
 
