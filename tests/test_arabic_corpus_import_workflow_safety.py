@@ -14,7 +14,7 @@ class ArabicCorpusImportWorkflowSafetyTests(unittest.TestCase):
         self.assertNotIn("schedule:", trigger)
         self.assertNotIn("\n  push:", trigger)
         self.assertIn('default: "10000000"', trigger)
-        self.assertIn("200000 <= int(value) <= 10_000_000", WORKFLOW)
+        self.assertIn("200_000 <= int(value) <= 10_000_000", WORKFLOW)
 
     def test_import_is_quarantine_only_and_never_trains(self):
         self.assertIn("/tmp/jon2-arabic-quarantine", WORKFLOW)
