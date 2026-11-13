@@ -217,7 +217,7 @@ def local_greeting(message: str) -> str | None:
 
 def local_identity(message: str) -> str | None:
     """Answer a narrow set of direct Arabic questions about this assistant's identity."""
-    value = _normalize(message)
+    value = re.sub(r"[؟?!.،,;；。]+$", "", _normalize(message)).strip()
     accepted = {
         "انت اسمك ايه", "انتي اسمك ايه", "انت اسمك ما هو", "ما اسمك",
         "ما هو اسمك", "اسمك ايه", "ايه اسمك", "انت مين", "انتي مين",
