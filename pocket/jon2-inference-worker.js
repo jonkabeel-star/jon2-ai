@@ -1,4 +1,5 @@
 import { loadJon2SafariBundle } from "./jon2-safari-bundle.js";
+import { validateJon2ArabicAnswer } from "./jon2-answer-quality.js";
 
 let runtime = null;
 
@@ -31,6 +32,11 @@ self.addEventListener("message", async event => {
         throw new TypeError("Jon2 prompt must be non-empty text.");
       }
       const answer = runtime.model.generate(runtime.tokenizer, message.prompt, message.maxTokens ?? 256);
+      if (!validateJon2ArabicAnswer(answer)) {
+        const error = new Error("JON2_QUALITY_REJECTED");
+        error.code = "JON2_QUALITY_REJECTED";
+        throw error;
+      }
       self.postMessage({ type: "generated", requestId, answer });
       return;
     }
@@ -39,6 +45,7 @@ self.addEventListener("message", async event => {
     self.postMessage({
       type: "error",
       requestId,
+      code: error?.code || null,
       message: error instanceof Error ? error.message : String(error)
     });
   }
