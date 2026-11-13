@@ -139,6 +139,9 @@ def health():
         release_approved and loaded and checkpoint_available
         and inference_tested and quality_review_passed
     )
+    experimental_chat_ready = (
+        experimental and checkpoint_available
+    )
     model_status = (
         "checkpoint_missing" if not checkpoint_available
         else "checkpoint_available" if not loaded
@@ -169,6 +172,7 @@ def health():
         "kaggle_token_present": bool(os.getenv("KAGGLE_API_TOKEN")),
         "experimental_chat_enabled": _experimental_chat_enabled(),
         "chat_ready": chat_enabled,
+        "experimental_chat_ready": experimental_chat_ready,
         "release_approved": release_approved,
         "experimental_mode": experimental,
         "model_status": model_status,
@@ -187,13 +191,17 @@ def health():
 def runtime_v1_health():
     """Expose the versioned runtime contract without implying model readiness."""
     snapshot = health()
-    model_ready = bool(snapshot["chat_ready"])
+    model_ready = bool(snapshot["model_loaded"] and snapshot["checkpoint_configured"])
+    chat_ready = bool(snapshot["chat_ready"] or snapshot["experimental_chat_ready"])
     return {
         "contract_version": "1",
         "project": "Jon2 AI",
-        "status": "ready" if model_ready else "online",
+        "status": "ready" if chat_ready else "online",
         "api_ready": len(os.getenv("JON2_RUNTIME_TOKEN", "")) >= 32,
         "model_ready": model_ready,
+        "chat_ready": chat_ready,
+        "public_chat_ready": bool(snapshot["chat_ready"]),
+        "experimental_chat_ready": bool(snapshot["experimental_chat_ready"]),
         "model_type": "jon2_original",
         "inference_tested": bool(snapshot["inference_tested"]),
         "quality_review_passed": bool(snapshot["quality_review_passed"]),
@@ -332,17 +340,32 @@ def chat(request: ChatRequest):
     if not message:
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
 
-    if not _public_release_ready():
+    release_ready = _public_release_ready()
+    experimental_allowed = _experimental_chat_enabled() and _checkpoint_configured()
+    if not release_ready and not experimental_allowed:
         snapshot = health()
         raise HTTPException(
             status_code=503,
             detail={
                 "error": "public_release_gate_closed",
-                "message": "محادثة Jon2 مغلقة حتى اكتمال التدريب والاختبار والمراجعة البشرية واعتماد الإصدار.",
+                "message": "محادثة Jon2 مغلقة حتى اكتمال اعتماد الإصدار، أو تفعيل الوضع التجريبي صراحةً من إعدادات الخادم.",
                 "model_status": snapshot["model_status"],
                 "chat_ready": False,
             },
         )
+    if experimental_allowed and not model_is_ready():
+        try:
+            load_runtime()
+        except Exception as error:
+            print(f"Jon2 experimental model load failed: {type(error).__name__}: {error}")
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "error": "experimental_model_load_failed",
+                    "message": "تعذر تحميل أوزان Jon2 الأصلية. تحقق من ملف checkpoint وذاكرة الخادم.",
+                    "chat_ready": False,
+                },
+            )
 
     # Deterministic greetings and source-backed factual retrieval work without
     # loading the still-experimental language model. This does not train weights.
