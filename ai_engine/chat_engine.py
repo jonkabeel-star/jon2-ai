@@ -85,6 +85,11 @@ def build_conversation_prompt(message: str, history=None, memories=None, tokeniz
     token_limit = max(8, int(context or getattr(_model, "context", 128)))
     while True:
         sections = []
+        if reference_context:
+            sections.append(
+                "معلومات مرجعية مسترجعة للاسترشاد والتحقق، وليست إجابة جاهزة؛ "
+                "أجب بصياغتك أنت ولا تنسخ النص حرفيًا:\n" + reference_context
+            )
         if memory_items:
             sections.append("ذاكرة سابقة:\n" + "\n".join(memory_items))
         dialogue = list(turns) + [f"المستخدم: {question}\nJon2:"]
