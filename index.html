@@ -416,12 +416,7 @@ function getJon2LocalIdentityReply(value) {
     return;
   }
 
-  if (localRuntimeReady && window.JON2_LOCAL_CLIENT) {  if (localIntentReply) {
-    addMessage(localIntentReply, "assistant");
-    input.value = "";
-    saveState();
-    return;
-  }
+  if (localRuntimeReady && window.JON2_LOCAL_CLIENT) {
     chatBusy = true;
     syncChatControls();
     send.setAttribute("aria-busy", "true");
