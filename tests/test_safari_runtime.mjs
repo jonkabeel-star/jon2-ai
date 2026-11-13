@@ -241,13 +241,13 @@ test("Safari worker never bypasses the original model with canned small-talk rep
     new URL("../pocket/jon2-inference-worker.js", import.meta.url),
     "utf8"
   );
-  assert.doesNotMatch(workerSource, /function\\s+getLocalArabicReply/);
+  assert.doesNotMatch(workerSource, /function\s+getLocalArabicReply/);
   assert.match(
     workerSource,
-    /const generated = runtime\\.model\\.generate\\(runtime\\.tokenizer, message\\.prompt, message\\.maxTokens \\?\\? 256\\)/
+    /const generated = runtime\.model\.generate\(runtime\.tokenizer, message\.prompt, message\.maxTokens \?\? 256\)/
   );
   assert.match(
     workerSource,
-    /const qualityPassed = validateJon2ArabicAnswer\\(generated\\)/
+    /const qualityPassed = validateJon2ArabicAnswer\(generated\)/
   );
 });
