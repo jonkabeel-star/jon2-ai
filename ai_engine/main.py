@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from chat_engine import generate_reply, load_runtime, model_is_ready
 import chat_memory
 from knowledge_engine import (
-    format_knowledge_answer, local_greeting, looks_like_fact_question,
+    format_knowledge_answer, local_greeting, local_identity, looks_like_fact_question,
     retrieve_knowledge,
 )
 from external_models.jais2_routes import router as jais2_router
@@ -344,6 +344,18 @@ def chat(request: ChatRequest):
     message = request.message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
+
+    # Identity is a narrow product-level intent, not generated model content.
+    # It remains available while the experimental checkpoint is blocked.
+    identity = local_identity(message)
+    if identity:
+        if request.session_id:
+            chat_memory.add_exchange(request.session_id, message, identity)
+        return {
+            "project": "Jon2 AI", "reply": identity, "memory_used": False,
+            "session_id": request.session_id, "knowledge_used": False,
+            "response_mode": "local_identity",
+        }
 
     if not _public_release_ready():
         snapshot = health()
