@@ -92,15 +92,16 @@ export default {
       try {
         const upstream = await runtimeFetch(config, "/v1/health");
         const health = await upstream.json().catch(() => ({}));
-        if (!upstream.ok) {
+        if (!upstream.ok || health.api_ready !== true) {
           return json({
             project: "Jon2 Cloud",
             status: "online",
             gateway_ready: true,
             runtime_configured: true,
+            runtime_auth_ready: health.api_ready === true,
             model_ready: false,
             chat_ready: false,
-            model_status: "python_runtime_health_failed",
+            model_status: upstream.ok ? "python_runtime_auth_not_configured" : "python_runtime_health_failed",
           }, 503, origin);
         }
         const modelReady = Boolean(health.model_ready);
