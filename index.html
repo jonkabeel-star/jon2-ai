@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#090d18">
 <meta name="description" content="Jon2 AI — مساحة إبداعية لأدوات الذكاء الاصطناعي.">
 <title>Jon2 AI — ابتكر بلا حدود</title>
@@ -79,6 +79,44 @@ footer{border-top:1px solid rgba(130,157,207,.14);padding:25px 0 34px;color:var(
 button:disabled{opacity:.6;cursor:not-allowed}
 @media(max-width:850px){.hero{grid-template-columns:1fr;padding-top:54px}.hero-art{min-height:240px}.tools{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.wrap{width:min(100% - 26px,1120px)}header{height:72px}.logo{width:42px;height:42px}.brand-name{font-size:18px}.hero{padding:45px 0 35px;gap:15px}h1{font-size:39px}.hero p{font-size:14px}.hero-art{min-height:215px}.orbit{width:205px;height:205px}.core{width:88px;height:88px;font-size:30px}.f1{top:8px}.f2{bottom:17px}.tools{grid-template-columns:1fr 1fr;gap:9px}.tool{padding:14px;min-height:174px}.tool-icon{width:42px;height:42px;margin-bottom:12px}.tool h3{font-size:14px}.tool p{font-size:11px}.section-head h2{font-size:21px}.chat-top{padding:14px}.messages{height:280px;padding:12px}.composer{flex-direction:column}.send{min-height:48px}.footer-inner{flex-direction:column}}
+
+/* Mobile Safari and Arabic reading improvements */
+html{min-height:100%;-webkit-text-size-adjust:100%;scroll-padding-top:18px}
+body{min-height:100svh;min-height:100dvh;padding-bottom:env(safe-area-inset-bottom)}
+button,a,input,textarea{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#status{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border:1px solid var(--line);border-radius:999px;font-size:11px;line-height:1.5;background:#17243a}
+#status:before{content:"";width:7px;height:7px;border-radius:50%;background:#8b96aa;flex:0 0 7px}
+#status[data-state="ready"]:before{background:#51d6a2;box-shadow:0 0 10px #51d6a288}
+#status[data-state="experimental"]:before{background:#ffc66d;box-shadow:0 0 10px #ffc66d88}
+#status[data-state="testing"]:before{background:#8da5ff}
+#status[data-state="offline"]:before{background:#ff7c89}
+.messages{height:clamp(300px,48svh,560px);min-height:300px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.msg{max-width:min(88%,760px);font-size:15px;line-height:2;overflow-wrap:anywhere;text-align:start}
+.bot{margin-inline-end:auto}.user{margin-inline-start:auto}
+textarea{font-size:16px;line-height:1.8;direction:inherit;overscroll-behavior:contain}
+.send,.clear,.speech-action,.local-load,.lang,.nav-link{min-height:42px}
+.quality-section{padding:0 0 54px}
+.quality-shell{border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,rgba(17,26,43,.98),rgba(10,16,28,.98));padding:18px}
+.quality-intro{color:var(--muted);font-size:13px;line-height:1.9;margin:0 0 14px}
+.quality-status{padding:12px;border:1px solid var(--line);border-radius:12px;background:#0c1525;font-size:13px;line-height:1.9;margin:12px 0}
+.quality-prompt{color:#dce7ff;font-size:13px;line-height:1.9;margin:12px 0 6px}
+.quality-answer{white-space:pre-wrap;overflow-wrap:anywhere;line-height:2;font-size:15px;background:#0b1423;border:1px solid #344766;border-radius:13px;padding:14px;min-height:70px}
+.quality-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
+.quality-controls input[type=range]{flex:1;min-width:140px;accent-color:var(--blue)}
+.quality-action{border:0;border-radius:11px;padding:12px 16px;background:linear-gradient(120deg,#718cff,#596de9);color:white;font-weight:800;min-height:44px}
+.quality-action:disabled{opacity:.45}
+.quality-metrics{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+.quality-metric{padding:9px 12px;border:1px solid var(--line);border-radius:11px;background:#111d31;font-size:12px}
+@media(max-width:520px){
+  .header-actions{gap:6px}.nav-link,.lang{padding:9px 10px;font-size:11px}
+  .chat-top{align-items:flex-start;gap:10px}.chat-title{min-width:0;flex:1}
+  .messages{height:52svh;min-height:300px;padding:12px}
+  .msg{max-width:94%;font-size:15px;padding:12px}
+  .composer{padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+  textarea{min-height:58px;max-height:130px}
+  .quality-shell{padding:13px}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
@@ -121,10 +159,28 @@ button:disabled{opacity:.6;cursor:not-allowed}
         <div class="local-model-status" id="localModelStatus" role="status" aria-live="polite" data-t="localNotLoaded">لم يتم تحميل النموذج المحلي بعد.</div>
       </div>
     </details>
-    <div class="chat-top"><div class="chat-title"><div class="chat-avatar">J2</div><div><strong data-t="assistantName">المساعد الذكي</strong><small id="status" data-t="offline">الخادم غير متصل حاليًا</small></div></div><button class="clear" id="clear" data-t="clear">مسح المحادثة</button></div>
+    <div class="chat-top"><div class="chat-title"><div class="chat-avatar">J2</div><div><strong data-t="assistantName">المساعد الذكي</strong><small id="status" data-state="offline" data-t="offline">الخادم غير متصل حاليًا</small></div></div><button class="clear" id="clear" data-t="clear">مسح المحادثة</button></div>
     <div class="messages" id="messages" aria-live="polite"><div class="msg bot" data-t="welcome">أهلًا بك! واجهة المحادثة جاهزة، وسيتم تفعيل الردود الذكية بعد ربط نموذج Jon2 AI الحقيقي.</div></div>
     <form class="composer" id="form"><textarea id="input" placeholder="الردود متوقفة حتى جاهزية محرك Jon2 الأصلي" data-ph="placeholder" maxlength="2000" required disabled></textarea><button class="send" id="send" type="submit" data-t="send" disabled>إرسال ↑</button></form>
     <div class="status-note" id="statusNote" data-t="chatNote">المحادثة الذكية غير مفعّلة بعد؛ لن نعرض ردودًا وهمية.</div>
+  </div>
+</section>
+
+
+<section class="quality-section" id="quality">
+  <div class="section-head"><div><h2>اختبار جودة العربية</h2><p>اختبار عملي للنموذج المحلي، مع تقييم بشري لكل إجابة</p></div></div>
+  <div class="quality-shell">
+    <p class="quality-intro">شغّل سؤالًا واحدًا في كل مرة حتى لا نضغط على ذاكرة الآيفون. قيّم وضوح اللغة، وترابط المعنى، والالتزام بالسؤال من 0 إلى 8. لا يُعتبر النموذج ناجحًا إلا إذا حصل على 7/8 على الأقل في كل الأسئلة العشرة.</p>
+    <div class="quality-metrics"><span class="quality-metric" id="qualityProgress">التقدم: 0 من 10</span><span class="quality-metric" id="qualityScore">التقييم: لم يبدأ</span></div>
+    <div class="quality-status" id="qualityStatus" role="status" aria-live="polite">حمّل نموذج Jon2 المحلي أولًا من لوحة تشغيل النموذج بالأعلى، ثم ابدأ الاختبار.</div>
+    <div class="quality-prompt" id="qualityPrompt">سيظهر السؤال هنا.</div>
+    <div class="quality-answer" id="qualityAnswer" dir="rtl">لم يتم إنشاء إجابة بعد.</div>
+    <div class="quality-controls">
+      <label for="qualityRating">تقييم الإجابة: <strong id="qualityRatingValue">—</strong> / 8</label>
+      <input id="qualityRating" type="range" min="0" max="8" step="1" value="0" disabled>
+      <button class="quality-action" id="qualityNext" type="button">تشغيل السؤال الأول</button>
+    </div>
+    <p class="quality-intro">0 = إجابة غير مفهومة، 4 = مفهومة جزئيًا، 7 = جيدة وواضحة، 8 = ممتازة. التقييم يدوي ولا يدّعي قياس صحة المعلومات تلقائيًا.</p>
   </div>
 </section>
 
@@ -232,6 +288,7 @@ window.JON2_REFRESH_CHAT_STATE = function () {
 };
 
 function syncChatControls() {
+  paintEngineStatus();
   const input = document.getElementById("input");
   const send = document.getElementById("send");
   const enabled = (chatReady || localRuntimeReady) && !chatBusy;
@@ -245,6 +302,13 @@ function syncChatControls() {
     input.setAttribute("aria-disabled", "true");
     send.setAttribute("aria-disabled", "true");
   }
+}
+
+function paintEngineStatus() {
+  const status = document.getElementById("status");
+  if (!status) return;
+  const state = localRuntimeReady || apiStatusKey === "modelReady" ? "ready" : apiStatusKey === "experimentalReady" ? "experimental" : apiStatusKey === "apiOnline" ? "testing" : "offline";
+  status.dataset.state = state;
 }
 
 function updateChatNote() {
@@ -392,7 +456,7 @@ document.getElementById("form").addEventListener("submit", async event => {
       const promptParts = chatMessages.slice(-10).filter(item => item.kind === "user" || item.kind === "assistant").map(item =>
         item.kind === "user" ? "المستخدم: " + item.text : "Jon2: " + item.text
       );
-      const prompt = promptParts.join("\n") + "\nJon2:";
+      const prompt = "تعليمات: أجب بعربية واضحة ومختصرة، دون تكرار.\n" + promptParts.join("\n") + "\nJon2:";
       const result = await window.JON2_LOCAL_CLIENT.generate(prompt, 256);
       if (typeof result.answer !== "string" || !result.answer.trim()) throw new Error("Empty local Jon2 response.");
       addMessage(result.answer.trim(), "assistant");
