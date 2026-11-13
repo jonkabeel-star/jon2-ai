@@ -14,15 +14,16 @@ async function call(path, init = {}, env = {}) {
 }
 
 describe("production Cloudflare gateway uses original Jon2 only", () => {
-  it("reports the edge gateway alive without claiming model readiness", async () => {
+  it("reports a live gateway but keeps health unavailable until Python is configured", async () => {
     const response = await call("/api/health");
     const body = await response.json();
-    assert.equal(response.status, 200);
+    assert.equal(response.status, 503);
     assert.equal(body.api_ready, true);
+    assert.equal(body.gateway_ready, true);
+    assert.equal(body.runtime_configured, false);
     assert.equal(body.model_ready, false);
     assert.equal(body.chat_ready, false);
-    assert.equal(body.model_status, "original_model_runtime_not_connected");
-    assert.equal(body.model_type, "project_owned_checkpoint_required");
+    assert.equal(body.model_status, "runtime_configuration_missing");
   });
 
   it("fails chat closed and never calls a hosted AI binding", async () => {
@@ -35,13 +36,13 @@ describe("production Cloudflare gateway uses original Jon2 only", () => {
     }, env);
     const body = await response.json();
     assert.equal(response.status, 503);
-    assert.equal(body.error, "model_runtime_not_connected");
+    assert.equal(body.error, "runtime_not_configured");
     assert.equal(body.chat_ready, false);
     assert.equal(calls, 0);
   });
 
   it("allows the published GitHub Pages origin", async () => {
-    const response = await call("/api/health", {
+    const response = await call("/api/health/live", {
       headers: { Origin: "https://jonkabeel-star.github.io" },
     });
     assert.equal(response.status, 200);
