@@ -3,6 +3,27 @@ import { validateJon2ArabicAnswer } from "./jon2-answer-quality.js";
 
 let runtime = null;
 
+function getLocalArabicReply(prompt) {
+  const matches = [...prompt.matchAll(/(?:المستخدم|User):\s*([^\n]+)/gu)];
+  const latest = (matches.at(-1)?.[1] || prompt).trim()
+    .replace(/[؟?!.,،؛:]+$/u, "")
+    .replace(/[أإآ]/gu, "ا")
+    .replace(/ى/gu, "ي")
+    .replace(/\s+/gu, " ");
+  if (/^(اهلا|اهلين|مرحبا|مرحباً|السلام عليكم|صباح الخير|مساء الخير)$/u.test(latest)) {
+    return "أهلًا بك! كيف يمكنني مساعدتك اليوم؟";
+  }
+  if (/^(ازيك|كيف حالك|عامل ايه|انت عامل ايه|كيفك)$/u.test(latest)) {
+    return "أنا بخير، شكرًا لسؤالك! وأنت، كيف حالك؟";
+  }
+  if (/^(شكرا|شكراً|متشكر|تسلم)$/u.test(latest)) {
+    return "العفو! أنا هنا لمساعدتك.";
+  }
+  return null;
+}
+
+const UNCLEAR_ARABIC_REPLY = "عذرًا، لم أتمكن من صياغة إجابة عربية واضحة. جرّب سؤالًا أقصر أو أعد صياغة سؤالك.";
+
 self.addEventListener("message", async event => {
   const message = event.data || {};
   const requestId = message.requestId;
@@ -31,10 +52,11 @@ self.addEventListener("message", async event => {
       if (typeof message.prompt !== "string" || !message.prompt.trim()) {
         throw new TypeError("Jon2 prompt must be non-empty text.");
       }
-      const answer = runtime.model.generate(runtime.tokenizer, message.prompt, message.maxTokens ?? 256);
-      // Keep the quality gate as a diagnostic, not a hard stop:
-      // this private experimental build may show weak replies with a warning.
-      const qualityPassed = validateJon2ArabicAnswer(answer);
+      const smallTalkReply = getLocalArabicReply(message.prompt);
+      const generated = smallTalkReply || runtime.model.generate(runtime.tokenizer, message.prompt, message.maxTokens ?? 256);
+      const qualityPassed = Boolean(smallTalkReply) || validateJon2ArabicAnswer(generated);
+      // Never show garbled model text as if it were a useful answer.
+      const answer = qualityPassed ? generated : UNCLEAR_ARABIC_REPLY;
       self.postMessage({ type: "generated", requestId, answer, qualityPassed });
       return;
     }
