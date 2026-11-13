@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "policy": "Registry only. No external dataset is approved for training merely because its repository declares an open license. Exact-file hashes, source-level provenance, applicable terms, privacy review, and owner approval are required in the private source_approvals.json manifest.",
+  "sources": [
+    {
+      "id": "arabictext-large",
+      "repository": "Jr23xd23/ArabicText-Large",
+      "url": "https://huggingface.co/datasets/Jr23xd23/ArabicText-Large",
+      "declared_license": "apache-2.0",
+      "declared_scale": "244,153,780 words; 743,288 articles; 2.8 GB compressed (dataset card claims)",
+      "language": "Modern Standard Arabic",
+      "intended_role": "candidate_base_language_corpus",
+      "status": "QUARANTINED_PENDING_SOURCE_PROVENANCE",
+      "reason": "Large MSA candidate with Apache-2.0 declaration; underlying source-by-source rights and redistribution conditions still require review."
+    },
+    {
+      "id": "dia2-non-diacritized",
+      "repository": "DIA2-Arabic/DIA2-Dataset-Non-Diacritized",
+      "url": "https://huggingface.co/datasets/DIA2-Arabic/DIA2-Dataset-Non-Diacritized",
+      "declared_license": "apache-2.0",
+      "declared_scale": "98.9 GB repository file size shown",
+      "language": "Modern Standard Arabic",
+      "intended_role": "candidate_base_language_corpus",
+      "status": "QUARANTINED_ACCESS_AND_PROVENANCE_REVIEW",
+      "reason": "Apache-2.0 declared; access requires accepting a contact-information condition and source-level provenance still needs review."
+    },
+    {
+      "id": "arsyra-instruction-tuning",
+      "repository": "ArSyra/arsyra-instruction-tuning",
+      "url": "https://huggingface.co/datasets/ArSyra/arsyra-instruction-tuning",
+      "declared_license": "cc-by-nc-sa-4.0",
+      "declared_scale": "50-record public preview; full dataset advertised as 11,719 records",
+      "language": "Arabic dialects including Egyptian",
+      "intended_role": "instruction_tuning_and_dialect_evaluation_candidate",
+      "status": "NOT_APPROVED_FOR_COMMERCIAL_TRAINING",
+      "reason": "Preview is non-commercial/share-alike; full dataset requires separate licensing. Do not use for commercial or unrestricted training without suitable written license."
+    },
+    {
+      "id": "barec-10m",
+      "repository": "CAMeL-Lab/BAREC-10M",
+      "url": "https://huggingface.co/datasets/CAMeL-Lab/BAREC-10M",
+      "declared_license": "cc-by-sa-4.0",
+      "declared_scale": "10 million words",
+      "language": "Arabic",
+      "intended_role": "candidate_readability_and_domain_corpus",
+      "status": "QUARANTINED_PENDING_SOURCE_PROVENANCE",
+      "reason": "Assess attribution and share-alike obligations and inspect source-level rights before training."
+    },
+    {
+      "id": "3arablm-corpus",
+      "repository": "sherif1313/3arabLM-corpus",
+      "url": "https://huggingface.co/datasets/sherif1313/3arabLM-corpus",
+      "declared_license": "apache-2.0",
+      "declared_scale": "2.21 million rows (pre-tokenized)",
+      "language": "Arabic; source description emphasizes Shamela religious texts",
+      "intended_role": "specialized_domain_candidate_only",
+      "status": "QUARANTINED_PENDING_TOKENIZER_AND_SOURCE_REVIEW",
+      "reason": "Pre-tokenized corpus and domain-specific content require tokenizer provenance, source-rights review, and balanced-domain assessment."
+    }
+  ]
+}
