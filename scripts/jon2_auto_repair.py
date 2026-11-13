@@ -81,7 +81,6 @@ SAFE_IMPORTS: dict[str, str] = {
     "Path": "from pathlib import Path",
     "Counter": "from collections import Counter",
     "defaultdict": "from collections import defaultdict",
-    "datetime": "from datetime import datetime",
     "timezone": "from datetime import timezone",
 }
 NAME_ERROR = re.compile(r"NameError:\s*name ['\"]([A-Za-z_][A-Za-z0-9_]*)['\"] is not defined")
@@ -154,7 +153,9 @@ def generate_safe_repairs(root: Path, log_text: str) -> list[dict]:
             "symbol": missing_name,
         }]
 
-    trace_files = TRACEBACK_FILE.findall(log_text)
+    # Use the traceback immediately preceding this NameError. CI logs may contain multiple failures.
+    preceding_log = log_text[:match.start()]
+    trace_files = TRACEBACK_FILE.findall(preceding_log)
     target = next(
         (resolved for raw in reversed(trace_files) if (resolved := _repo_python_file(root, raw)) is not None),
         None,
@@ -197,6 +198,35 @@ def generate_safe_repairs(root: Path, log_text: str) -> list[dict]:
         "patch": import_line,
         "line": insertion + 1,
     }]
+
+
+def diagnose_failure(log_text: str) -> list[dict]:
+    """Classify common failures without attempting uncertain fixes."""
+    rules = (
+        ("missing_dependency", r"ModuleNotFoundError: No module named .+",
+         "Check the approved dependency manifest and the runtime environment."),
+        ("import_symbol_mismatch", r"ImportError: cannot import name .+",
+         "Compare the imported symbol with the installed package API."),
+        ("missing_path", r"FileNotFoundError: .+",
+         "Verify the path, working directory, and whether the file should exist."),
+        ("function_signature_mismatch", r"TypeError: .*(unexpected keyword argument|positional argument|keyword-only argument).*",
+         "Compare the function definition with every call site."),
+        ("missing_attribute", r"AttributeError: .+",
+         "Verify the object type and the supported module or class API."),
+        ("undefined_symbol", r"NameError: name .+ is not defined",
+         "Check spelling, scope, and whether an import is missing."),
+    )
+    findings = []
+    for category, pattern, guidance in rules:
+        for match in re.finditer(pattern, log_text):
+            findings.append({
+                "category": category,
+                "evidence": match.group(0)[:500],
+                "action": "diagnostic_only",
+                "guidance": guidance,
+            })
+    return findings
+
 
 def run_checks(root: Path) -> list[dict]:
     """Run a fixed allowlist of repository checks; never interpret log text as code."""
@@ -253,10 +283,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--root must point to the Jon2 repository root")
 
     repair_proposals: list[dict] = []
+    diagnostics: list[dict] = []
     if args.logs:
         log_path = args.logs if args.logs.is_absolute() else root / args.logs
         if log_path.is_file():
-            repair_proposals = generate_safe_repairs(root, log_path.read_text(encoding="utf-8", errors="replace"))
+            log_text = log_path.read_text(encoding="utf-8", errors="replace")
+            diagnostics = diagnose_failure(log_text)
+            repair_proposals = generate_safe_repairs(root, log_text)
         else:
             repair_proposals = [{"status": "no_log", "reason": "The supplied log file was not found."}]
 
@@ -276,9 +309,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         "tool": "Jon2 Auto Repair Engine",
         "version": 1,
         "repair_policy": "allowlisted_standard_library_imports_and_python_whitespace_only",
-        "coverage": ["python", "frontend_inline_javascript", "node_server_syntax_and_release_gate_tests"],
+        "coverage": ["python", "function_signature_diagnostics", "path_failure_diagnostics", "dependency_diagnostics", "frontend_inline_javascript", "node_server_syntax_and_release_gate_tests"],
         "unsupported_failures_are_diagnostic_only": True,
         "repair_proposals": repair_proposals,
+        "diagnostics": diagnostics,
         "changed_files": changed,
         "checks": checks,
         "all_checks_passed": bool(checks) and all(item["passed"] for item in checks),
