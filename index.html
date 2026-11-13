@@ -167,6 +167,8 @@ let chatReady = false;
 let localRuntimeReady = false;
 let chatBusy = false;
 let sessionId = "";
+window.JON2_OPEN_MODEL_REQUESTED = false;
+window.JON2_OPEN_MODEL_READY = false;
 
 function loadSavedState() {
   try {
@@ -320,6 +322,13 @@ function addMessage(value, kind) {
   renderMessages();
   saveState();
 }
+
+document.getElementById("loadOpenModel").addEventListener("click", () => {
+  // Lock the chat to local-only mode even if the separate model module fails to load.
+  window.JON2_OPEN_MODEL_REQUESTED = true;
+  updateChatNote();
+  syncChatControls();
+});
 
 document.getElementById("language").addEventListener("click", () => {
   setLang(lang === "ar" ? "en" : "ar");
