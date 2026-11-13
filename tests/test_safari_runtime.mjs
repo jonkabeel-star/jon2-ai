@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { Jon2ByteBPETokenizer } from "../pocket/jon2-tokenizer.js";
 import { Jon2TransformerCPU, makeJon2ParityWeights } from "../pocket/jon2-transformer.js";
 import { validateJon2ArabicAnswer } from "../pocket/jon2-answer-quality.js";
+import { jon2CacheKey, getLatestJon2BundleFromCache } from "../pocket/jon2-model-cache.js";
 
 const tokenizerFixtures = JSON.parse(await readFile(new URL("../pocket/tokenizer-parity-fixtures.json", import.meta.url), "utf8"));
 const transformerFixture = JSON.parse(await readFile(new URL("../pocket/transformer-parity-fixture.json", import.meta.url), "utf8"));
@@ -234,4 +235,36 @@ test("Safari generation skips tokens that would corrupt UTF-8", () => {
     tokenBytes: id => new Uint8Array([id === 88 ? 0xff : 65 + (id % 26)])
   };
   assert.equal(model.generate(tokenizer, "prompt", 1), "L");
+});
+
+
+test("Arabic quality benchmark covers core conversation tasks and requires human review", async () => {
+  const benchmark = JSON.parse(await readFile(new URL("./arabic-quality-benchmark.json", import.meta.url), "utf8"));
+  assert.equal(benchmark.format, "jon2-arabic-quality-benchmark-v1");
+  assert.ok(benchmark.cases.length >= 10);
+  const categories = new Set(benchmark.cases.map(item => item.category));
+  for (const category of ["greeting","factual","explanation","reasoning","summarization","multi_turn","uncertainty","instruction_following","coherence","conversation"]) {
+    assert.ok(categories.has(category), "missing benchmark category: " + category);
+  }
+  for (const item of benchmark.cases) {
+    assert.ok(item.id && item.expected && item.must_not, "incomplete benchmark case: " + item.id);
+  }
+  assert.match(benchmark.scoring.pass_rule, /human/i);
+});
+
+test("persistent Safari model cache uses checkpoint and bundle fingerprints", () => {
+  const checkpoint = "a".repeat(64);
+  const weights = "b".repeat(64);
+  assert.equal(jon2CacheKey(checkpoint, weights), checkpoint + ":" + weights);
+  assert.notEqual(jon2CacheKey(checkpoint, weights), jon2CacheKey(checkpoint, "c".repeat(64)));
+});
+
+test("persistent Safari model cache reports unavailable storage without pretending to save", async () => {
+  const original = globalThis.indexedDB;
+  try {
+    delete globalThis.indexedDB;
+    await assert.rejects(getLatestJon2BundleFromCache("a".repeat(64)), /IndexedDB is unavailable/);
+  } finally {
+    if (original !== undefined) globalThis.indexedDB = original;
+  }
 });
