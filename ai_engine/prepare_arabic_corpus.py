@@ -55,7 +55,22 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def ensure_quarantine_destination(output_dir: Path) -> Path:
+    """Reject any destination inside the repository's approved training corpus."""
+    destination = Path(output_dir).expanduser().resolve()
+    approved_training = (Path(__file__).resolve().parent / "training_data").resolve()
+    try:
+        destination.relative_to(approved_training)
+    except ValueError:
+        return destination
+    raise ValueError(
+        "Refusing to write imported third-party text inside ai_engine/training_data. "
+        "Choose a separate quarantine directory."
+    )
+
+
 def prepare(output_dir: Path, max_characters_per_language: int) -> dict:
+    output_dir = ensure_quarantine_destination(output_dir)
     if max_characters_per_language < 200_000:
         raise ValueError("Use at least 200,000 characters per language cap.")
     if output_dir.exists() and any(output_dir.iterdir()):
