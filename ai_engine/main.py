@@ -354,7 +354,7 @@ def chat(request: ChatRequest):
             status_code=503,
             detail={
                 "error": "public_release_gate_closed",
-                "message": "المحادثة العامة تحتاج إلى نموذج Jon2 أصلي مجرّب ومراجَع، واجتياز المراجعة البشرية الصريحة قبل فتحها.",
+                "message": "عقل Jon2 غير جاهز للرد",
                 "model_status": snapshot["model_status"],
                 "chat_ready": False,
             },
@@ -404,10 +404,10 @@ def chat(request: ChatRequest):
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
     except FileNotFoundError as error:
-        raise HTTPException(status_code=503, detail=str(error))
+        raise HTTPException(status_code=503, detail="عقل Jon2 غير جاهز للرد")
     except Exception as error:
         print(f"Jon2 AI chat error: {error}")
         raise HTTPException(
             status_code=503,
-            detail="تعذر تشغيل نموذج Jon2 الأصلي. راجع سجلات الخادم.",
+            detail="عقل Jon2 غير جاهز للرد",
         )
