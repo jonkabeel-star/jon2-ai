@@ -65,7 +65,7 @@ export default {
         model_status: "original_model_runtime_not_connected",
         model: "Jon2 Original Transformer",
         model_type: "project_owned_checkpoint_required",
-        message: "بوابة الواجهة تعمل، لكن محرك Jon2 المحلي غير متاح هنا. لن يتم الاتصال بخادم ذكاء اصطناعي خارجي.",
+        message: "عقل Jon2 غير جاهز للرد",
       }, 200, origin);
     }
 
@@ -74,7 +74,7 @@ export default {
         project: "Jon2 Cloud",
         error: "local_model_not_loaded",
         chat_ready: false,
-        message: "لم يتم تحميل نموذج Jon2 المحلي على هذا الجهاز بعد. لم يتم إرسال رسالتك إلى أي خادم خارجي.",
+        message: "عقل Jon2 غير جاهز للرد",
       }, 503, origin);
     }
 
