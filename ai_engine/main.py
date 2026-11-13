@@ -357,16 +357,6 @@ def chat(request: ChatRequest):
             "response_mode": "local_identity",
         }
 
-    greeting = local_greeting(message)
-    if greeting:
-        if request.session_id:
-            chat_memory.add_exchange(request.session_id, message, greeting)
-        return {
-            "project": "Jon2 AI", "reply": greeting, "memory_used": False,
-            "session_id": request.session_id, "knowledge_used": False,
-            "response_mode": "local_greeting",
-        }
-
     if looks_like_fact_question(message):
         knowledge = retrieve_knowledge(message)
         if knowledge:
@@ -389,11 +379,21 @@ def chat(request: ChatRequest):
             status_code=503,
             detail={
                 "error": "public_release_gate_closed",
-                "message": "المحادثة العامة تحتاج إلى نموذج Jon2 أصلي مجرّب ومراجَع قبل فتحها.",
+                "message": "المحادثة العامة تحتاج إلى نموذج Jon2 أصلي مجرّب ومراجَع بعد اجتياز المراجعة البشرية قبل فتحها.",
                 "model_status": snapshot["model_status"],
                 "chat_ready": False,
             },
         )
+
+    greeting = local_greeting(message)
+    if greeting:
+        if request.session_id:
+            chat_memory.add_exchange(request.session_id, message, greeting)
+        return {
+            "project": "Jon2 AI", "reply": greeting, "memory_used": False,
+            "session_id": request.session_id, "knowledge_used": False,
+            "response_mode": "local_greeting",
+        }
 
 
     try:
