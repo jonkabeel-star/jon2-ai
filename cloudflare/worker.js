@@ -104,8 +104,9 @@ export default {
             model_status: upstream.ok ? "python_runtime_auth_not_configured" : "python_runtime_health_failed",
           }, 503, origin);
         }
+        // Python v1 reports model_ready only when every public release gate is open.
         const modelReady = Boolean(health.model_ready);
-        const chatReady = Boolean(health.chat_ready);
+        const chatReady = modelReady;
         return json({
           project: "Jon2 Cloud",
           status: "online",
