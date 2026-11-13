@@ -12,3 +12,8 @@ __pycache__/
 
 # Collected third-party text stays private and quarantined; never commit it.
 private-corpus-quarantine/
+
+# Additional private-data boundary safeguards (future untracked files only)
+/private-data/
+/ai_engine/private-data/
+/ai_engine/training_data/*.local.json
