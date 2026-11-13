@@ -77,7 +77,7 @@ def main() -> int:
         default=str(Path(__file__).resolve().parent / "evaluation" / "review-report.json"),
     )
     parser.add_argument("--device", default=None, help="Optional torch device, e.g. cpu or cuda")
-    parser.add_argument("--expected-prompt-count", type=int, default=None)
+    parser.add_argument("--expected-prompt-count", type=int, default=100)
     parser.add_argument("--training-run-id", default=None)
     parser.add_argument("--checkpoint-sha256", default=None)
     args = parser.parse_args()
