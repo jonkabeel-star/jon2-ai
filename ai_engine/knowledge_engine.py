@@ -215,6 +215,19 @@ def local_greeting(message: str) -> str | None:
         return "أهلًا وسهلًا! أنا Jon2 AI. كيف أقدر أساعدك؟"
     return None
 
+def local_identity(message: str) -> str | None:
+    """Answer only direct questions about this assistant's name/identity."""
+    value = _normalize(message)
+    patterns = (
+        r"^(?:انت|انتي|انتو|حضرتك) (?:اسمك|اسم حضرتك)(?: ايه| ما هو)?$",
+        r"^(?:ما اسمك|ما هو اسمك|ما اسم هذا المساعد|اسمك ايه|انت مين|انتي مين)$",
+        r"^(?:ما اسم المساعد|اسم المساعد ايه)$",
+    )
+    if any(re.fullmatch(pattern, value) for pattern in patterns):
+        return "اسمي Jon2 AI، وأنا مساعدك الذكي. أستطيع مساعدتك في الإجابة عن الأسئلة والكتابة والتعلّم."
+    return None
+
+
 
 def looks_like_fact_question(message: str) -> bool:
     value = str(message or "").strip()
