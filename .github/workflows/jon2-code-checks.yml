@@ -13,7 +13,6 @@ on:
       - "wrangler.toml"
       - "index.html"
       - "pocket/**"
-      - "pocket/**"
       - "jon2-config.js"
       - "tests/**"
       - "pocket/**"
