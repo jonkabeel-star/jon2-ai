@@ -55,8 +55,11 @@ class Jon2ArchitectureBaselineTests(unittest.TestCase):
         with torch.inference_mode():
             separate_logits = self.model(first)
             combined_logits = self.model(combined)
+        # Batched and single-item CPU kernels can accumulate floating-point
+        # operations in a different order. Allow normal FP32 round-off while
+        # keeping a tight bound that still detects cross-item leakage.
         torch.testing.assert_close(
-            separate_logits[0], combined_logits[0], rtol=0, atol=1e-6
+            separate_logits[0], combined_logits[0], rtol=0, atol=5e-6
         )
 
     def test_inputs_longer_than_context_are_safely_truncated(self):
