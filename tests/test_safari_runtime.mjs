@@ -251,3 +251,11 @@ test("Safari worker never bypasses the original model with canned small-talk rep
     /const qualityPassed = validateJon2ArabicAnswer\(generated\)/
   );
 });
+
+test("Safari chat sends identity questions to the model and rejects failed quality checks", async () => {
+  const page = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.doesNotMatch(page, /function\\s+getJon2LocalIdentityReply/);
+  assert.doesNotMatch(page, /const\\s+localIntentReply\\s*=/);
+  assert.match(page, /result\\.qualityPassed\\s*!==\\s*true/);
+  assert.match(page, /JON2_QUALITY_REJECTED/);
+});
