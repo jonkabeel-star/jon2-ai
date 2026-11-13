@@ -257,6 +257,8 @@ test("Safari chat sends identity questions to the model and rejects failed quali
   const page = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.doesNotMatch(page, /function\s+getJon2LocalIdentityReply/);
   assert.doesNotMatch(page, /const\s+localIntentReply\s*=/);
+  assert.doesNotMatch(page, /window\.JON2_OPEN_MODEL\.generate\(history\)/);
+  assert.match(page, /alternate open-weight runtime is not the original Jon2 checkpoint/);
   assert.match(page, /result\.qualityPassed\s*!==\s*true/);
   assert.match(page, /result\.qualityPassed !== true/);
   assert.match(page, /throw new Error\("JON2_QUALITY_REJECTED"\)/);
