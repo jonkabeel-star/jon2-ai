@@ -383,11 +383,39 @@ document.getElementById("form").addEventListener("submit", async event => {
   const value = input.value.trim();
   if (!value || send.disabled || (!chatReady && !localRuntimeReady)) return;
 
+function normalizeJon2ArabicIntent(value) {
+  return String(value || "")
+    .normalize("NFKC")
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, "")
+    .replace(/[إأآٱ]/g, "ا")
+    .replace(/ى/g, "ي")
+    .replace(/[؟?!.,،؛:()[\]{}«»"'ـ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function getJon2LocalIdentityReply(value) {
+  const question = normalizeJon2ArabicIntent(value);
+  const asksName =
+    /^(?:انت|انتي|انتو|حضرتك|ما اسمك|اسمك|اسم حضرتك|اسم المساعد)\s*(?:ايه|إيه|ما هو|ما|من|؟)?$/.test(question) ||
+    /^(?:انت|انتي|حضرتك)\s+(?:اسمك|مين|من انت)(?:\s+ايه)?$/.test(question) ||
+    /^(?:ما اسمك|ما هو اسمك|ما اسم هذا المساعد)$/.test(question);
+  if (!asksName) return null;
+  return "اسمي Jon2 AI، وأنا مساعدك الذكي. أعمل على مساعدتك في الإجابة عن الأسئلة والكتابة والتعلّم.";
+}
+
+  const localIntentReply = getJon2LocalIdentityReply(value);
   addMessage(value, "user");
   input.value = "";
   saveState();
 
-  if (localRuntimeReady && window.JON2_LOCAL_CLIENT) {
+  if (localRuntimeReady && window.JON2_LOCAL_CLIENT) {  if (localIntentReply) {
+    addMessage(localIntentReply, "assistant");
+    input.value = "";
+    saveState();
+    return;
+  }
     chatBusy = true;
     syncChatControls();
     send.setAttribute("aria-busy", "true");
