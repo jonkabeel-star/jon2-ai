@@ -1,0 +1,129 @@
+name: Jon2 Arabic corpus import and read-only audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_characters_per_language:
+        description: "Maximum accepted characters per language (200000–10000000)"
+        required: true
+        default: "10000000"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jon2-arabic-corpus-import
+  cancel-in-progress: false
+
+jobs:
+  import-and-audit:
+    name: Import to quarantine and audit only
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Check out Jon2 source
+        uses: actions/checkout@v4
+
+      - name: Validate collection cap
+        env:
+          MAX_CHARS: ${{ inputs.max_characters_per_language }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          value = os.environ["MAX_CHARS"]
+          if not value.isdigit() or not 200_000 <= int(value) <= 10_000_000:
+              raise SystemExit("max_characters_per_language must be between 200000 and 10000000.")
+          PY
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dataset reader
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install datasets
+
+      - name: Stream Arabic and Egyptian Arabic into quarantine
+        env:
+          MAX_CHARS: ${{ inputs.max_characters_per_language }}
+        run: |
+          set -euo pipefail
+          python ai_engine/prepare_arabic_corpus.py \
+            --output-dir /tmp/jon2-arabic-quarantine \
+            --max-characters-per-language "$MAX_CHARS"
+
+      - name: Run structural quality and privacy-signal audit
+        run: |
+          set -euo pipefail
+          mkdir -p training-output/arabic-corpus-review
+          python ai_engine/audit_corpus_quality.py \
+            --data /tmp/jon2-arabic-quarantine \
+            --output training-output/arabic-corpus-review/quality-audit.json
+
+      - name: Build metadata-only review summary
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("/tmp/jon2-arabic-quarantine")
+          output = Path("training-output/arabic-corpus-review")
+          manifest = json.loads((root / "source_manifest.json").read_text(encoding="utf-8"))
+          quality = json.loads((output / "quality-audit.json").read_text(encoding="utf-8"))
+          entries = []
+          for item in manifest["files"]:
+              sidecar = root / item["provenance_file"]
+              rows = [json.loads(line) for line in sidecar.read_text(encoding="utf-8").splitlines() if line.strip()]
+              entries.append({
+                  "language_config": item["language_config"],
+                  "article_count": item["article_count"],
+                  "character_count": item["character_count"],
+                  "text_sha256": item["sha256"],
+                  "provenance_sha256": item["provenance_sha256"],
+                  "articles_rejected_for_missing_provenance": item["articles_rejected_for_missing_provenance"],
+                  "sample_source_links": [
+                      {"title": row["title"], "url": row["url"]}
+                      for row in rows[:25]
+                  ],
+              })
+          report = {
+              "status": "QUARANTINED_NOT_APPROVED",
+              "training_allowed": False,
+              "dataset": manifest["dataset"],
+              "license": manifest["dataset_license"],
+              "attribution_required": manifest["attribution_required"],
+              "approval_status": manifest["approval_status"],
+              "languages": entries,
+              "quality_audit_summary": {
+                  "file_count": quality["file_count"],
+                  "combined": quality["combined"],
+                  "limitations": quality["limitations"],
+              },
+              "explicitly_not_done": [
+                  "No legal approval was granted.",
+                  "No source was added to the approved training manifest.",
+                  "No training or fine-tuning was started.",
+                  "No checkpoint was read, replaced, or modified.",
+                  "No raw corpus text is included in this report artifact.",
+              ],
+          }
+          (output / "review-summary.json").write_text(
+              json.dumps(report, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(report, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Upload metadata-only audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jon2-arabic-corpus-audit-${{ github.run_id }}
+          path: training-output/arabic-corpus-review/
+          if-no-files-found: warn
+          retention-days: 14
