@@ -104,7 +104,7 @@ class EvaluationPromptTests(unittest.TestCase):
             checkpoint.write_bytes(b"real checkpoint bytes")
             prompts = root / "prompts.jsonl"
             prompts.write_text(
-                json.dumps({"id": "one", "prompt": "سؤال"}) + "\\n",
+                json.dumps({"id": "one", "prompt": "سؤال"}) + "\n",
                 encoding="utf-8",
             )
             with patch("evaluate_model.load_model") as loader:
