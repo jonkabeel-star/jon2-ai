@@ -474,6 +474,16 @@ const MODEL_KEY = "original-jon2-v1";
 const $ = id => document.getElementById(id);
 function localText(ar,en){ return document.documentElement.lang === "en" ? en : ar; }
 
+async function requestJon2PersistentStorage() {
+  try {
+    if (navigator.storage && typeof navigator.storage.persist === "function") {
+      await navigator.storage.persist();
+    }
+  } catch (error) {
+    console.info("Jon2 persistent storage request was not granted.", error);
+  }
+}
+
 function openJon2ModelDB() {
   return new Promise((resolve,reject) => {
     if (!("indexedDB" in window)) return reject(new Error("Local model storage is unavailable in this browser."));
@@ -488,6 +498,7 @@ function openJon2ModelDB() {
 }
 
 async function saveJon2Bundle(manifestText, weightsBuffer) {
+  await requestJon2PersistentStorage();
   const db = await openJon2ModelDB();
   try {
     await new Promise((resolve,reject) => {
@@ -532,6 +543,7 @@ function activateJon2Client(client) {
 let restorePromise = null;
 function restoreJon2Model() {
   if (window.JON2_LOCAL_RUNTIME_READY) return Promise.resolve(true);
+  requestJon2PersistentStorage();
   if (restorePromise) return restorePromise;
   restorePromise = (async () => {
     const status = $("localModelStatus");
@@ -539,8 +551,8 @@ function restoreJon2Model() {
       const saved = await readSavedJon2Bundle();
       if (!saved) {
         status.textContent = localText(
-          "لم تُحفظ الحزمة على هذا المتصفح بعد. اختر ملف ZIP مرة واحدة لتفعيل المحادثة.",
-          "The bundle is not saved in this browser yet. Select the ZIP once to activate chat."
+          "الحزمة غير محفوظة لهذا العنوان من الموقع على هذا المتصفح. اختر ZIP مرة واحدة، واستخدم نفس عنوان الموقع لاحقًا لاستعادتها تلقائيًا.",
+          "The bundle is not saved for this exact website address in this browser yet. Select the ZIP once; keep using the same website address to reuse it."
         );
         return false;
       }
