@@ -49,7 +49,11 @@ test("browser Transformer truncates context, rejects invalid IDs, and generates 
   );
   assert.equal(model.forward([1,2,3,4,5,6,7,8,9]).length, 8);
   assert.throws(() => model.forward([999]));
-  const tokenizer = { encode: () => [1,2], decode: ids => String.fromCharCode(...ids) };
+  const tokenizer = {
+    encode: () => [1,2],
+    decode: ids => String.fromCharCode(...ids),
+    tokenBytes: id => new Uint8Array([65 + (id % 26)])
+  };
   assert.equal(model.generate(tokenizer, "prompt", 3).length, 3);
   assert.throws(() => model.generate(tokenizer, "prompt", 1025));
 });
@@ -185,4 +189,39 @@ test("Safari worker client clears pending requests when closed", async () => {
   } finally {
     globalThis.Worker = originalWorker;
   }
+});
+
+
+test("Safari generation applies repetition penalty and blocks repeated trigrams", () => {
+  const model = new Jon2TransformerCPU(
+    transformerFixture.config,
+    makeJon2ParityWeights(transformerFixture.config)
+  );
+  const logits = new Float64Array(transformerFixture.config.vocab_size);
+  logits[88] = 10;
+  logits[89] = 9;
+  model.nextToken = () => ({logits});
+  const tokenizer = {
+    encode: () => [1,2],
+    decode: ids => String.fromCharCode(...ids),
+    tokenBytes: id => new Uint8Array([65 + (id % 26)])
+  };
+  assert.equal(model.generate(tokenizer, "prompt", 4), "KKKL");
+});
+
+test("Safari generation skips tokens that would corrupt UTF-8", () => {
+  const model = new Jon2TransformerCPU(
+    transformerFixture.config,
+    makeJon2ParityWeights(transformerFixture.config)
+  );
+  const logits = new Float64Array(transformerFixture.config.vocab_size);
+  logits[88] = 10;
+  logits[89] = 9;
+  model.nextToken = () => ({logits});
+  const tokenizer = {
+    encode: () => [1,2],
+    decode: ids => String.fromCharCode(...ids),
+    tokenBytes: id => new Uint8Array([id === 88 ? 0xff : 65 + (id % 26)])
+  };
+  assert.equal(model.generate(tokenizer, "prompt", 1), "L");
 });

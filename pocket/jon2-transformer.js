@@ -164,27 +164,127 @@ export class Jon2TransformerCPU {
   }
 
   generate(tokenizer, prompt, maxTokens = 256) {
-    if (!tokenizer || typeof tokenizer.encode !== "function" || typeof tokenizer.decode !== "function") {
+    if (!tokenizer || typeof tokenizer.encode !== "function" ||
+        typeof tokenizer.decode !== "function" || typeof tokenizer.tokenBytes !== "function") {
       throw new TypeError("Jon2 requires its native byte-BPE tokenizer.");
     }
     assertPositiveInteger(maxTokens, "maxTokens");
     if (maxTokens > 1024) throw new RangeError("Jon2 maxTokens cannot exceed 1024.");
     const promptIds = tokenizer.encode(prompt);
     if (!promptIds.length) throw new TypeError("Jon2 prompt produced no tokens.");
+
+    // Match the safeguards used by the native PyTorch runtime.
+    const repetitionPenalty = 1.10;
+    const noRepeatNgramSize = 3;
+    const temperature = 1.0;
+    const stopMarkers = ["\nالمستخدم:", "\nUser:"].map(value => new TextEncoder().encode(value));
     const allIds = promptIds.slice();
-    const generated = [];
+    const generatedIds = [];
+    const promptBytes = joinBytes(promptIds.map(id => tokenizer.tokenBytes(id)));
+    let generatedBytes = new Uint8Array(0);
+
+    function joinBytes(chunks) {
+      const length = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      const output = new Uint8Array(length);
+      let offset = 0;
+      for (const chunk of chunks) {
+        output.set(chunk, offset);
+        offset += chunk.length;
+      }
+      return output;
+    }
+
+    function findBytes(haystack, needle, from) {
+      if (!needle.length) return from;
+      outer: for (let i = from; i <= haystack.length - needle.length; i++) {
+        for (let j = 0; j < needle.length; j++) {
+          if (haystack[i + j] !== needle[j]) continue outer;
+        }
+        return i;
+      }
+      return -1;
+    }
+
+    function isValidUtf8Prefix(prefix, piece) {
+      try {
+        const decoder = new TextDecoder("utf-8", { fatal: true });
+        decoder.decode(prefix, { stream: true });
+        decoder.decode(piece, { stream: true });
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
     for (let step = 0; step < maxTokens; step++) {
-      const next = this.nextToken(allIds.slice(-this.config.context)).token_id;
-      allIds.push(next);
-      generated.push(next);
-      const decoded = tokenizer.decode(generated);
-      if (decoded.includes("\nالمستخدم:") || decoded.includes("\nUser:")) break;
+      const logits = this.nextToken(allIds.slice(-this.config.context)).logits;
+      const adjusted = Float64Array.from(logits, value => value / temperature);
+
+      // Penalize tokens already emitted in this answer, not tokens in the prompt.
+      if (repetitionPenalty > 1) {
+        for (const tokenId of new Set(generatedIds)) {
+          const value = adjusted[tokenId];
+          adjusted[tokenId] = value >= 0 ? value / repetitionPenalty : value * repetitionPenalty;
+        }
+      }
+
+      // Prevent repeating a trigram, matching ai_engine/jon2_core.py.
+      if (noRepeatNgramSize > 0 && allIds.length >= noRepeatNgramSize - 1) {
+        const prefixLength = noRepeatNgramSize - 1;
+        const prefix = allIds.slice(-prefixLength);
+        const banned = new Set();
+        for (let i = 0; i <= allIds.length - noRepeatNgramSize; i++) {
+          let matches = true;
+          for (let j = 0; j < prefixLength; j++) {
+            if (allIds[i + j] !== prefix[j]) { matches = false; break; }
+          }
+          if (matches) banned.add(allIds[i + prefixLength]);
+        }
+        for (const tokenId of banned) adjusted[tokenId] = -Infinity;
+      }
+
+      // Never append a byte sequence that would corrupt the UTF-8 answer.
+      let bestId = -1;
+      let bestLogit = -Infinity;
+      for (let candidate = 0; candidate < adjusted.length; candidate++) {
+        const score = adjusted[candidate];
+        if (!Number.isFinite(score) || score <= bestLogit) continue;
+        const piece = tokenizer.tokenBytes(candidate);
+        if (!isValidUtf8Prefix(joinBytes([promptBytes, generatedBytes]), piece)) continue;
+        bestId = candidate;
+        bestLogit = score;
+      }
+      if (bestId < 0) break;
+
+      const selectedPiece = tokenizer.tokenBytes(bestId);
+      allIds.push(bestId);
+      generatedIds.push(bestId);
+      generatedBytes = joinBytes([generatedBytes, selectedPiece]);
+
+      // Stop only on a complete marker produced after the prompt.
+      const completeStream = joinBytes([promptBytes, generatedBytes]);
+      let stopAt = -1;
+      for (const marker of stopMarkers) {
+        const found = findBytes(completeStream, marker, promptBytes.length);
+        if (found >= 0 && (stopAt < 0 || found < stopAt)) stopAt = found;
+      }
+      if (stopAt >= 0) {
+        generatedBytes = generatedBytes.slice(0, stopAt - promptBytes.length);
+        break;
+      }
     }
-    let answer = tokenizer.decode(generated).trim();
-    for (const marker of ["\nالمستخدم:", "\nUser:"]) {
-      if (answer.includes(marker)) answer = answer.split(marker, 1)[0].trim();
+
+    // Do not expose a dangling partial UTF-8 character at the token limit.
+    while (generatedIds.length) {
+      try {
+        return new TextDecoder("utf-8", { fatal: true }).decode(generatedBytes).trim();
+      } catch {
+        const removed = generatedIds.pop();
+        const removedBytes = tokenizer.tokenBytes(removed);
+        generatedBytes = generatedBytes.slice(0, generatedBytes.length - removedBytes.length);
+      }
     }
-    return answer;
+    return new TextDecoder("utf-8", { fatal: true }).decode(generatedBytes).trim();
   }
 }
 
