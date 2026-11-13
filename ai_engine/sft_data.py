@@ -60,7 +60,7 @@ def encode_conversation(
         marker = USER_MARKER if expected_role == "user" else ASSISTANT_MARKER
         marker_ids = tokenizer.encode(marker)
         content_ids = tokenizer.encode(content.strip())
-        end_ids = tokenizer.encode(TURN_END) if expected_role == "assistant" else tokenizer.encode(TURN_END)
+        end_ids = tokenizer.encode(TURN_END)
 
         input_ids.extend(marker_ids)
         labels.extend([IGNORE_INDEX] * len(marker_ids))
