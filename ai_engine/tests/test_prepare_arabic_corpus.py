@@ -53,9 +53,10 @@ class ArabicCorpusImporterTests(unittest.TestCase):
             def fake_load_dataset(dataset_id, config, split, streaming):
                 calls.append((dataset_id, config, split, streaming))
                 return [
-                    {"text": ARABIC_SAMPLE},
-                    {"text": ARABIC_SAMPLE},  # exact duplicate
-                    {"text": "English only " * 40},
+                    {"id": "1", "url": "https://ar.wikipedia.org/wiki/Test", "title": "اختبار", "text": ARABIC_SAMPLE},
+                    {"id": "2", "url": "https://ar.wikipedia.org/wiki/Test", "title": "اختبار", "text": ARABIC_SAMPLE},  # exact duplicate
+                    {"id": "3", "url": "https://ar.wikipedia.org/wiki/English", "title": "English", "text": "English only " * 40},
+                    {"id": "4", "title": "بدون رابط", "text": ARABIC_SAMPLE},  # missing provenance
                 ]
 
             fake_module = type("FakeDatasets", (), {"load_dataset": staticmethod(fake_load_dataset)})
@@ -72,6 +73,13 @@ class ArabicCorpusImporterTests(unittest.TestCase):
                 file_path = output / item["file"]
                 self.assertEqual(item["article_count"], 1)
                 self.assertEqual(item["sha256"], hashlib.sha256(file_path.read_bytes()).hexdigest())
+                provenance_path = output / item["provenance_file"]
+                self.assertEqual(item["provenance_sha256"], hashlib.sha256(provenance_path.read_bytes()).hexdigest())
+                provenance_rows = [json.loads(line) for line in provenance_path.read_text(encoding="utf-8").splitlines()]
+                self.assertEqual(len(provenance_rows), 1)
+                self.assertEqual(provenance_rows[0]["url"], "https://ar.wikipedia.org/wiki/Test")
+                self.assertEqual(provenance_rows[0]["license"], "CC-BY-SA-4.0")
+                self.assertEqual(item["articles_rejected_for_missing_provenance"], 1)
                 self.assertEqual(item["language_config"], next(
                     config for config in importer.DATASET_REVISION_CONFIGS
                     if config.endswith("." + item["file"].split("_")[1].split("_")[0])
