@@ -345,8 +345,8 @@ def chat(request: ChatRequest):
     if not message:
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
 
-    # Identity is a narrow product-level intent, not generated model content.
-    # It remains available while the experimental checkpoint is blocked.
+    # Narrow local intents and attributed factual retrieval do not require
+    # model weights. Web retrieval uses a free public encyclopedia API, not an AI API.
     identity = local_identity(message)
     if identity:
         if request.session_id:
@@ -357,20 +357,6 @@ def chat(request: ChatRequest):
             "response_mode": "local_identity",
         }
 
-    if not _public_release_ready():
-        snapshot = health()
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "error": "public_release_gate_closed",
-                "message": "محادثة Jon2 مغلقة حتى اكتمال التدريب والاختبار والمراجعة البشرية واعتماد الإصدار.",
-                "model_status": snapshot["model_status"],
-                "chat_ready": False,
-            },
-        )
-
-    # Deterministic greetings and source-backed factual retrieval work without
-    # loading the still-experimental language model. This does not train weights.
     greeting = local_greeting(message)
     if greeting:
         if request.session_id:
@@ -394,6 +380,20 @@ def chat(request: ChatRequest):
                 "knowledge_source": knowledge.get("source_url"),
                 "response_mode": "source_retrieval",
             }
+
+    # General free-form conversation remains protected until the original
+    # checkpoint passes inference tests and explicit human quality approval.
+    if not _public_release_ready():
+        snapshot = health()
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "public_release_gate_closed",
+                "message": "المحادثة العامة تحتاج إلى نموذج Jon2 أصلي مجرّب ومراجَع قبل فتحها.",
+                "model_status": snapshot["model_status"],
+                "chat_ready": False,
+            },
+        )
 
 
     try:
