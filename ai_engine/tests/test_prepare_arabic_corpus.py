@@ -4,7 +4,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from ai_engine import prepare_arabic_corpus as importer
 
@@ -39,7 +39,7 @@ class ArabicCorpusImporterTests(unittest.TestCase):
             output = Path(directory) / "existing"
             output.mkdir()
             (output / "keep.txt").write_text("keep", encoding="utf-8")
-            fake_datasets = {"load_dataset": unittest.mock.Mock()}
+            fake_datasets = {"load_dataset": Mock()}
             with patch.dict("sys.modules", {"datasets": type("FakeDatasets", (), fake_datasets)()}):
                 with self.assertRaises(FileExistsError):
                     importer.prepare(output, 200_000)
