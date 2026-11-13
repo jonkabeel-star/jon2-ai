@@ -338,6 +338,8 @@ document.getElementById("clear").addEventListener("click", async () => {
 document.getElementById("input").addEventListener("input", saveState);
 
 function checkApiHealth() {
+  // Future server mode must pass GET "/api/health" with health.model_ready === true before enabling server replies.
+  // This Safari build deliberately uses the private local model and does not call that endpoint.
   const status = document.getElementById("status");
   chatReady = Boolean(localRuntimeReady);
   apiStatusKey = localRuntimeReady ? "localReady" : "offline";
