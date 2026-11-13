@@ -377,29 +377,6 @@ async function checkApiHealth() {
   syncChatControls();
 }
 
-function normalizeJon2ArabicIntent(value) {
-  return String(value || "")
-    .normalize("NFKC")
-    .replace(/[\u064B-\u065F\u0670\u0640]/g, "")
-    .replace(/[إأآٱ]/g, "ا")
-    .replace(/ى/g, "ي")
-    .replace(/[؟?!.,،؛:(){}\[\]«»"'ـ]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-}
-
-function getJon2LocalIdentityReply(value) {
-  const question = normalizeJon2ArabicIntent(value);
-  const asksName =
-    /^(?:انت|انتي|انتو|حضرتك|ما اسمك|اسمك|اسم حضرتك|اسم المساعد)\s*(?:ايه|ما هو|ما|من|؟)?$/.test(question) ||
-    /^(?:انت|انتي|حضرتك)\s+(?:اسمك|مين|من انت)(?:\s+ايه)?$/.test(question) ||
-    /^(?:ما اسمك|ما هو اسمك|ما اسم هذا المساعد)$/.test(question);
-  if (!asksName) return null;
-  return "اسمي Jon2 AI، وأنا مساعدك الذكي. أعمل على مساعدتك في الإجابة عن الأسئلة والكتابة والتعلّم.";
-}
-
-
 document.getElementById("form").addEventListener("submit", async event => {
   event.preventDefault();
   const input = document.getElementById("input");
@@ -407,16 +384,9 @@ document.getElementById("form").addEventListener("submit", async event => {
   const value = input.value.trim();
   if (!value || chatBusy) return;
 
-  const localIntentReply = getJon2LocalIdentityReply(value);
   addMessage(value, "user");
   input.value = "";
   saveState();
-
-  if (localIntentReply) {
-    addMessage(localIntentReply, "assistant");
-    saveState();
-    return;
-  }
 
   if (localRuntimeReady && window.JON2_LOCAL_CLIENT) {
     chatBusy = true;
@@ -428,6 +398,7 @@ document.getElementById("form").addEventListener("submit", async event => {
       );
       const prompt = promptParts.join("\n") + "\nJon2:";
       const result = await window.JON2_LOCAL_CLIENT.generate(prompt, 256);
+      if (result.qualityPassed !== true) throw new Error("JON2_QUALITY_REJECTED");
       if (typeof result.answer !== "string" || !result.answer.trim()) throw new Error("Empty local Jon2 response.");
       addMessage(result.answer.trim(), "assistant");
     } catch (error) {
