@@ -258,7 +258,9 @@ test("Safari chat sends identity questions to the model and rejects failed quali
   assert.doesNotMatch(page, /function\s+getJon2LocalIdentityReply/);
   assert.doesNotMatch(page, /const\s+localIntentReply\s*=/);
   assert.match(page, /result\.qualityPassed\s*!==\s*true/);
-  assert.match(page, /JON2_QUALITY_REJECTED/);
+  assert.match(page, /result\.qualityPassed !== true/);
+  assert.match(page, /throw new Error\("JON2_QUALITY_REJECTED"\)/);
+  assert.doesNotMatch(page, /Keep the quality signal visible, but do not hide/);
 });
 
 test("Safari only exposes non-empty model output that passes Arabic integrity checks", () => {
