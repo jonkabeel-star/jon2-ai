@@ -223,7 +223,7 @@ export class Jon2TransformerCPU {
 
     for (let step = 0; step < maxTokens; step++) {
       const logits = this.nextToken(allIds.slice(-this.config.context)).logits;
-      const adjusted = Float64Array.from(logits, value => value / temperature);
+      const adjusted = Float64Array.from(logits);
 
       // Penalize tokens already emitted in this answer, not tokens in the prompt.
       if (repetitionPenalty > 1) {
