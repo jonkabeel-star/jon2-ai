@@ -56,7 +56,7 @@ export class Jon2SafariClient {
 
   async load(manifestFile, weightsFile, expectedCheckpointSha256, expectedWeightsSha256) {
     if (!(manifestFile instanceof Blob) || !(weightsFile instanceof Blob)) {
-      throw new TypeError("Select the private manifest.json and weights.bin files first.");
+      throw new TypeError("عقل Jon2 غير جاهز للرد");
     }
     const [manifestText, weightsBuffer] = await Promise.all([
       manifestFile.text(),
