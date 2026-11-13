@@ -8,7 +8,7 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
 
-from chat_engine import generate_reply, model_is_ready
+from chat_engine import generate_reply, load_runtime, model_is_ready
 import chat_memory
 from knowledge_engine import (
     format_knowledge_answer, local_greeting, looks_like_fact_question,
@@ -26,6 +26,19 @@ app = FastAPI(
 
 app.include_router(jais2_router)
 app.include_router(compute_router)
+
+
+@app.on_event("startup")
+def preload_original_jon2_model() -> None:
+    """Optionally load the existing private checkpoint without opening chat."""
+    if os.getenv("JON2_PRELOAD_MODEL", "false").strip().lower() != "true":
+        return
+    try:
+        load_runtime()
+        print("Jon2 original checkpoint loaded successfully; chat release gates remain unchanged.")
+    except Exception as error:
+        # Keep health endpoints available so the host can report the load failure.
+        print(f"Jon2 original checkpoint preload failed: {type(error).__name__}: {error}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -139,9 +152,6 @@ def health():
         release_approved and loaded and checkpoint_available
         and inference_tested and quality_review_passed
     )
-    experimental_chat_ready = (
-        experimental and checkpoint_available
-    )
     model_status = (
         "checkpoint_missing" if not checkpoint_available
         else "checkpoint_available" if not loaded
@@ -172,7 +182,6 @@ def health():
         "kaggle_token_present": bool(os.getenv("KAGGLE_API_TOKEN")),
         "experimental_chat_enabled": _experimental_chat_enabled(),
         "chat_ready": chat_enabled,
-        "experimental_chat_ready": experimental_chat_ready,
         "release_approved": release_approved,
         "experimental_mode": experimental,
         "model_status": model_status,
@@ -191,17 +200,13 @@ def health():
 def runtime_v1_health():
     """Expose the versioned runtime contract without implying model readiness."""
     snapshot = health()
-    model_ready = bool(snapshot["model_loaded"] and snapshot["checkpoint_configured"])
-    chat_ready = bool(snapshot["chat_ready"] or snapshot["experimental_chat_ready"])
+    model_ready = bool(snapshot["chat_ready"])
     return {
         "contract_version": "1",
         "project": "Jon2 AI",
-        "status": "ready" if chat_ready else "online",
+        "status": "ready" if model_ready else "online",
         "api_ready": len(os.getenv("JON2_RUNTIME_TOKEN", "")) >= 32,
         "model_ready": model_ready,
-        "chat_ready": chat_ready,
-        "public_chat_ready": bool(snapshot["chat_ready"]),
-        "experimental_chat_ready": bool(snapshot["experimental_chat_ready"]),
         "model_type": "jon2_original",
         "inference_tested": bool(snapshot["inference_tested"]),
         "quality_review_passed": bool(snapshot["quality_review_passed"]),
@@ -340,32 +345,17 @@ def chat(request: ChatRequest):
     if not message:
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
 
-    release_ready = _public_release_ready()
-    experimental_allowed = _experimental_chat_enabled() and _checkpoint_configured()
-    if not release_ready and not experimental_allowed:
+    if not _public_release_ready():
         snapshot = health()
         raise HTTPException(
             status_code=503,
             detail={
                 "error": "public_release_gate_closed",
-                "message": "محادثة Jon2 مغلقة حتى اكتمال اعتماد الإصدار، أو تفعيل الوضع التجريبي صراحةً من إعدادات الخادم.",
+                "message": "محادثة Jon2 مغلقة حتى اكتمال التدريب والاختبار والمراجعة البشرية واعتماد الإصدار.",
                 "model_status": snapshot["model_status"],
                 "chat_ready": False,
             },
         )
-    if experimental_allowed and not model_is_ready():
-        try:
-            load_runtime()
-        except Exception as error:
-            print(f"Jon2 experimental model load failed: {type(error).__name__}: {error}")
-            raise HTTPException(
-                status_code=503,
-                detail={
-                    "error": "experimental_model_load_failed",
-                    "message": "تعذر تحميل أوزان Jon2 الأصلية. تحقق من ملف checkpoint وذاكرة الخادم.",
-                    "chat_ready": False,
-                },
-            )
 
     # Deterministic greetings and source-backed factual retrieval work without
     # loading the still-experimental language model. This does not train weights.
