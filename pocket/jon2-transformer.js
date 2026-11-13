@@ -223,7 +223,8 @@ export class Jon2TransformerCPU {
 
     for (let step = 0; step < maxTokens; step++) {
       const logits = this.nextToken(allIds.slice(-this.config.context)).logits;
-      const adjusted = Float64Array.from(logits);
+      // Match ai_engine/jon2_core.py: temperature is applied before repetition penalty.
+      const adjusted = Float64Array.from(logits, value => value / temperature);
 
       // Penalize tokens already emitted in this answer, not tokens in the prompt.
       if (repetitionPenalty > 1) {
@@ -236,7 +237,8 @@ export class Jon2TransformerCPU {
       // Prevent repeating a trigram, matching ai_engine/jon2_core.py.
       if (noRepeatNgramSize > 0 && allIds.length >= noRepeatNgramSize - 1) {
         const prefixLength = noRepeatNgramSize - 1;
-        const prefix = allIds.slice(-prefixLength);
+        // slice(-0) means slice(0), not an empty suffix; handle unigram blocking explicitly.
+        const prefix = prefixLength === 0 ? [] : allIds.slice(-prefixLength);
         const banned = new Set();
         for (let i = 0; i <= allIds.length - noRepeatNgramSize; i++) {
           let matches = true;
@@ -270,7 +272,7 @@ export class Jon2TransformerCPU {
         bestId = candidates[0];
       } else {
         const maxLogit = adjusted[candidates[0]];
-        const weights = candidates.map(id => Math.exp((adjusted[id] - maxLogit) / temperature));
+        const weights = candidates.map(id => Math.exp(adjusted[id] - maxLogit));
         const total = weights.reduce((sum, weight) => sum + weight, 0);
         let draw = Math.random() * total;
         bestId = candidates[candidates.length - 1];
