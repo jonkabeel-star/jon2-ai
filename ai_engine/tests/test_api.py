@@ -76,7 +76,7 @@ class Jon2ApiTests(unittest.TestCase):
         }), patch.object(jon2_api, "generate_reply") as generate:
             response = self.client.post("/api/chat", json={"message": "اكتب شرحًا عن الذكاء الاصطناعي"})
         self.assertEqual(response.status_code, 503)
-        self.assertIn("المراجعة البشرية", response.json()["detail"]["message"])
+        self.assertEqual(response.json()["detail"]["message"], "عقل Jon2 غير جاهز للرد")
         generate.assert_not_called()
 
     def test_experimental_mode_never_opens_chat(self):
@@ -119,37 +119,24 @@ class Jon2ApiTests(unittest.TestCase):
         ):
             response = self.client.post("/api/chat", json={"message": "اكتب شرحًا عن الذكاء الاصطناعي"})
         self.assertEqual(response.status_code, 503)
-        self.assertIn("missing trained checkpoint", response.json()["detail"])
+        self.assertEqual(response.json()["detail"], "عقل Jon2 غير جاهز للرد")
 
-    def test_source_retrieval_is_blocked_when_model_release_is_not_ready(self):
-        item = {"title": "القاهرة", "extract": "القاهرة عاصمة مصر.", "source_url": "https://ar.wikipedia.org/wiki/القاهرة", "cached": False}
-        with patch.dict(jon2_api.os.environ, {"JON2_CHAT_RELEASE_APPROVED": "false"}), patch.object(jon2_api, "retrieve_knowledge", return_value=item) as retrieve, patch.object(jon2_api, "generate_reply") as generate:
-            response = self.client.post("/api/chat", json={"message": "ما عاصمة مصر؟"})
-        self.assertEqual(response.status_code, 503)
-        self.assertEqual(response.json()["detail"]["error"], "public_release_gate_closed")
-        retrieve.assert_not_called()
-        generate.assert_not_called()
-
-    def test_factual_retrieval_is_context_for_model_generated_reply(self):
-        item = {
-            "title": "القاهرة",
-            "extract": "القاهرة عاصمة جمهورية مصر العربية.",
-            "source_url": "https://ar.wikipedia.org/wiki/القاهرة",
-            "cached": False,
-        }
-        with patch.object(jon2_api, "retrieve_knowledge", return_value=item) as retrieve, patch.object(
-            jon2_api, "generate_reply", return_value="القاهرة هي عاصمة مصر، وفقًا للمعلومات المرجعية."
+    def test_chat_has_no_retrieval_or_canned_answer_path(self):
+        with patch.object(
+            jon2_api, "generate_reply", return_value="إجابة أنشأها نموذج Jon2 للاختبار."
         ) as generate:
-            response = self.client.post("/api/chat", json={"message": "ما عاصمة مصر؟"})
+            response = self.client.post("/api/chat", json={"message": "سؤال اختباري"})
         self.assertEqual(response.status_code, 200)
-        payload = response.json()
-        self.assertEqual(payload["reply"], "القاهرة هي عاصمة مصر، وفقًا للمعلومات المرجعية.")
-        self.assertEqual(payload["response_mode"], "jon2_generated_with_retrieval")
-        self.assertTrue(payload["knowledge_used"])
-        self.assertEqual(payload["knowledge_source"], item["source_url"])
-        self.assertIn(item["extract"], generate.call_args.kwargs["knowledge_context"])
-        retrieve.assert_called_once()
-        generate.assert_called_once()
+        self.assertEqual(response.json()["reply"], "إجابة أنشأها نموذج Jon2 للاختبار.")
+        self.assertEqual(response.json()["response_mode"], "jon2_original_model_only")
+        self.assertNotIn("knowledge_used", response.json())
+        generate.assert_called_once_with("سؤال اختباري", [], [])
+
+    def test_empty_model_output_is_never_returned_as_a_reply(self):
+        with patch.object(jon2_api, "generate_reply", return_value="   "):
+            response = self.client.post("/api/chat", json={"message": "سؤال اختباري"})
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json()["detail"], "عقل Jon2 غير جاهز للرد")
 
     def test_chat_returns_generated_reply(self):
         with patch.object(jon2_api, "local_greeting", return_value=None), patch.object(
