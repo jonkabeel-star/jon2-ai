@@ -68,5 +68,33 @@ class MultilingualResearchTests(unittest.TestCase):
         self.assertFalse(knowledge.looks_like_fact_question("Write a short story"))
 
 
+    def test_egyptian_arabic_question_starters_are_removed_before_search(self):
+        cases = {
+            "ايه عاصمة مصر؟": "عاصمة مصر",
+            "إيه هو الذكاء الاصطناعي؟": "الذكاء الاصطناعي",
+            "ممكن أعرف معلومات عن الطاقة الشمسية؟": "معلومات عن الطاقة الشمسية",
+            "عايز اعرف ما معنى الجاذبية؟": "ما معنى الجاذبية",
+            "ازاي تعمل الخلايا الشمسية؟": "تعمل الخلايا الشمسية",
+            "فين تقع مكتبة الإسكندرية؟": "تقع مكتبة الإسكندرية",
+        }
+        for question, expected in cases.items():
+            with self.subTest(question=question):
+                self.assertEqual(knowledge.detect_query_language(question), "ar")
+                self.assertEqual(knowledge._clean_search_query(question, "ar"), expected)
+                self.assertTrue(knowledge.looks_like_fact_question(question))
+
+    def test_egyptian_query_searches_with_topic_not_conversational_wrapper(self):
+        with patch.object(knowledge, "_fetch_json", side_effect=[
+            {"query": {"search": [{"title": "القاهرة"}]}},
+            {"extract": "القاهرة عاصمة مصر.", "content_urls": {
+                "desktop": {"page": "https://ar.wikipedia.org/wiki/Cairo"}
+            }},
+        ]) as fetch:
+            item = knowledge._search_wikipedia("ايه عاصمة مصر؟")
+        self.assertEqual(item["language"], "ar")
+        query = parse_qs(urlparse(fetch.call_args_list[0].args[0]).query)
+        self.assertEqual(query["srsearch"], ["عاصمة مصر"])
+
+
 if __name__ == "__main__":
     unittest.main()
