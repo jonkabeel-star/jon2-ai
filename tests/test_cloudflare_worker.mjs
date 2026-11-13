@@ -48,6 +48,15 @@ describe("production Cloudflare gateway uses original Jon2 only", () => {
     assert.equal(response.headers.get("Access-Control-Allow-Origin"), "https://jonkabeel-star.github.io");
   });
 
+  it("allows the stable public branch preview origin", async () => {
+    const origin = "https://feat-safari-persistent-model.jon2-ai.pages.dev";
+    const response = await call("/api/health", {
+      headers: { Origin: origin },
+    });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("Access-Control-Allow-Origin"), origin);
+  });
+
   it("rejects unapproved browser origins", async () => {
     const response = await call("/api/health", {
       headers: { Origin: "https://untrusted.example" },
