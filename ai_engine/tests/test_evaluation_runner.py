@@ -90,8 +90,31 @@ class EvaluationPromptTests(unittest.TestCase):
                             self.assertEqual(main(), 0)
             self.assertEqual(generator.call_args.kwargs["stop_sequences"], ["المستخدم:"])
             report = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(report["checkpoint_sha256"], __import__("hashlib").sha256(b"checkpoint placeholder").hexdigest())
             self.assertFalse(report["release_approved"])
             self.assertIsNone(report["automated_quality_verdict"])
+
+
+    def test_cli_rejects_checkpoint_fingerprint_mismatch_before_loading(self):
+        from unittest.mock import patch
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            checkpoint = root / "trained.pt"
+            checkpoint.write_bytes(b"real checkpoint bytes")
+            prompts = root / "prompts.jsonl"
+            prompts.write_text(
+                json.dumps({"id": "one", "prompt": "سؤال"}) + "\\n",
+                encoding="utf-8",
+            )
+            with patch("evaluate_model.load_model") as loader:
+                with patch("sys.argv", [
+                    "evaluate_model.py", "--checkpoint", str(checkpoint),
+                    "--prompts", str(prompts), "--checkpoint-sha256", "0" * 64,
+                ]):
+                    with self.assertRaisesRegex(ValueError, "SHA-256 mismatch"):
+                        main()
+                loader.assert_not_called()
 
     def test_cli_refuses_missing_checkpoint(self):
         from contextlib import redirect_stdout
