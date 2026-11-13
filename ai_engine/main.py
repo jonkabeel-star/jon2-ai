@@ -345,9 +345,8 @@ def chat(request: ChatRequest):
     if not message:
         raise HTTPException(status_code=400, detail="اكتب رسالتك أولًا.")
 
-    # Every user-facing answer must come from the original Jon2 model.
-    # Check the same fail-closed release gate before any factual retrieval:
-    # retrieved text is context for Jon2, never a standalone answer or fallback.
+    # Fail closed before inference. No canned replies, FAQ answer bank,
+    # retrieval-answer shortcut, or external model fallback is permitted.
     if not _public_release_ready():
         snapshot = health()
         raise HTTPException(
@@ -364,34 +363,28 @@ def chat(request: ChatRequest):
         history = [item.model_dump() for item in request.history]
         memories = []
         if request.session_id:
-            # Read context before storing the current turn, preventing duplicate prompt entries.
+            # Conversation history is context only; every new answer is generated anew.
             history = chat_memory.recent_messages(request.session_id, limit=8)
             memories = chat_memory.relevant_memories(request.session_id, message, limit=4)
 
-        reply = generate_reply(
-            message, history, memories, knowledge_context=knowledge_context
-        )
+        # The original Jon2 checkpoint is the only source of the answer.
+        reply = generate_reply(message, history, memories)
+        if not isinstance(reply, str) or not reply.strip():
+            raise RuntimeError("empty original-model output")
+
         if request.session_id:
-            # Persist only the actual model-generated exchange after inference succeeds.
             chat_memory.add_exchange(request.session_id, message, reply)
 
-        response = {
+        return {
             "project": "Jon2 AI",
             "reply": reply,
             "memory_used": bool(memories),
             "session_id": request.session_id,
-            "experimental": _experimental_chat_enabled() and not _chat_release_approved(),
-            "response_mode": "jon2_generated_with_retrieval" if knowledge_context else "jon2_generated",
-            "knowledge_used": bool(knowledge_context),
+            "experimental": False,
+            "response_mode": "jon2_original_model_only",
         }
-        return response
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
-    except FileNotFoundError as error:
-        raise HTTPException(status_code=503, detail="عقل Jon2 غير جاهز للرد")
     except Exception as error:
-        print(f"Jon2 AI chat error: {error}")
-        raise HTTPException(
-            status_code=503,
-            detail="عقل Jon2 غير جاهز للرد",
-        )
+        print(f"Jon2 AI chat error: {type(error).__name__}: {error}")
+        raise HTTPException(status_code=503, detail="عقل Jon2 غير جاهز للرد")
