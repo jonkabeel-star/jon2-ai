@@ -23,8 +23,8 @@ DATASET_ATTRIBUTION = (
     "built from Wikimedia dumps; CC-BY-SA-4.0. "
     "Dataset: https://huggingface.co/datasets/omarkamali/wikipedia-monthly"
 )
-ARABIC_LETTERS = re.compile(r"[\\u0621-\\u064A\\u066E-\\u06D3]")
-URL_OR_EMAIL = re.compile(r"(?:https?://|www\\.|[\\w.+-]+@[\\w.-]+)", re.IGNORECASE)
+ARABIC_LETTERS = re.compile(r"[\u0621-\u064A\u066E-\u06D3]")
+URL_OR_EMAIL = re.compile(r"(?:https?://|www\.|[\w.+-]+@[\w.-]+)", re.IGNORECASE)
 
 
 def clean_article(value: object) -> str:
@@ -32,15 +32,15 @@ def clean_article(value: object) -> str:
     if not isinstance(value, str):
         return ""
     text = unicodedata.normalize("NFC", value)
-    text = text.replace("\\x00", " ")
-    text = re.sub(r"[\\t\\r\\f\\v]+", " ", text)
-    text = re.sub(r" *\\n *", "\\n", text)
+    text = text.replace("\x00", " ")
+    text = re.sub(r"[\t\r\f\v]+", " ", text)
+    text = re.sub(r" *\n *", "\n", text)
     text = re.sub(r" {2,}", " ", text)
-    text = re.sub(r"\\n{3,}", "\\n\\n", text).strip()
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
     if len(text) < 200:
         return ""
     letters = ARABIC_LETTERS.findall(text)
-    if len(letters) / max(1, len(re.sub(r"\\s", "", text))) < 0.25:
+    if len(letters) / max(1, len(re.sub(r"\s", "", text))) < 0.25:
         return ""
     if URL_OR_EMAIL.search(text):
         return ""
@@ -78,14 +78,13 @@ def prepare(output_dir: Path, max_characters_per_language: int) -> dict:
         seen = set()
         total_chars = 0
         article_count = 0
-        # Streaming avoids downloading the full multi-language archive.
         rows = load_dataset(
             DATASET_ID,
             config,
             split="train",
             streaming=True,
         )
-        with output_file.open("w", encoding="utf-8", newline="\\n") as handle:
+        with output_file.open("w", encoding="utf-8", newline="\n") as handle:
             for row in rows:
                 text = clean_article(row.get("text"))
                 if not text:
@@ -96,7 +95,7 @@ def prepare(output_dir: Path, max_characters_per_language: int) -> dict:
                 if total_chars + len(text) > max_characters_per_language:
                     break
                 seen.add(fingerprint)
-                handle.write(text + "\\n\\n")
+                handle.write(text + "\n\n")
                 total_chars += len(text)
                 article_count += 1
 
@@ -129,7 +128,7 @@ def prepare(output_dir: Path, max_characters_per_language: int) -> dict:
     }
     manifest_path = output_dir / "source_manifest.json"
     manifest_path.write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2) + "\\n",
+        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     return manifest
