@@ -503,11 +503,12 @@ async function activateJon2Bundle(manifestBlob, weightsBlob, weightsHash) {
 }
 
 async function restoreJon2BundleFromCache(statusElement) {
+  let weightsHash = "";
   try {
     statusElement.textContent = localText("جارٍ البحث عن النموذج المحفوظ…", "Looking for your saved model…");
     const cached = await getLatestJon2BundleFromCache(CHECKPOINT_SHA256);
     if (!cached) return false;
-    const weightsHash = cached.weightsSha256;
+    weightsHash = cached.weightsSha256;
     await activateJon2Bundle(cached.manifestBlob, cached.weightsBlob, weightsHash);
     statusElement.textContent = localText("تم استرجاع النموذج المحفوظ والتحقق منه. يمكنك المحادثة دون اختيار الملف مجددًا.", "Saved model restored and verified. You can chat without selecting the ZIP again.");
     $("assistant").scrollIntoView({behavior:"smooth",block:"start"});
