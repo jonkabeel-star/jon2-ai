@@ -18,6 +18,12 @@ test("Safari Arabic answer guard rejects the observed fragmented output", () => 
   );
 });
 
+test("Arabic quality guard rejects the fragmented Safari sample", () => {
+  const fragmented = "ها وما ال؟ المستخدمين أف المعلومات مًا، الشخص أول والع والر وحدد الرسالة الوصوليساعدة وسخاطر المتوى. الاختبار الال واستعلي والف مح وب وافترك المولاك وعديل والد وتحتاج الذاكرة والجه والخطاء الحدود.";
+  assert.equal(validateJon2ArabicAnswer(fragmented), false);
+  assert.equal(validateJon2ArabicAnswer("مرحباً! أنا مساعد تجريبي من مشروع جون2، كيف يمكنني مساعدتك؟"), true);
+});
+
 test("Safari JavaScript tokenizer matches shared Python fixtures", () => {
   assert.equal(tokenizerFixtures.format, "jon2-tokenizer-parity-fixtures-v1");
   for (const fixture of tokenizerFixtures.cases) {
