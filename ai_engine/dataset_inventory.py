@@ -3,6 +3,10 @@
 The report contains file metadata and approval-gate status only; it never copies
 training text into the report. Token counts use a temporary BPE tokenizer trained
 on the selected corpus and are estimates for that exact corpus/configuration.
+
+Optional source-provenance fields are reported when present in the approval
+manifest. Missing provenance is surfaced for human review, but this descriptive
+audit never grants rights or changes the existing training approval decision.
 """
 from __future__ import annotations
 
@@ -14,6 +18,40 @@ from pathlib import Path
 
 from source_approval import validate_source_approvals
 from tokenizer import ByteBPETokenizer
+
+
+PROVENANCE_FIELDS = (
+    "source_url",
+    "publisher",
+    "language",
+    "dialect",
+    "license",
+    "attribution_requirements",
+    "retrieval_date",
+)
+
+
+def _manifest_records(manifest_path: Path) -> dict[str, dict]:
+    """Read optional provenance metadata without replacing the strict approval gate."""
+    try:
+        manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return {}
+    records = manifest.get("approved_sources") if isinstance(manifest, dict) else None
+    if not isinstance(records, list):
+        return {}
+    result = {}
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        name = record.get("file")
+        if isinstance(name, str) and name not in result:
+            result[name] = record
+    return result
+
+
+def _optional_text(value) -> str | None:
+    return value.strip() if isinstance(value, str) and value.strip() else None
 
 
 def build_inventory(
@@ -28,6 +66,7 @@ def build_inventory(
     if vocab_size < 256:
         raise ValueError("vocab_size must be at least 256.")
 
+    approval_records = _manifest_records(Path(approval_manifest))
     entries = []
     texts = []
     total_bytes = total_chars = total_lines = total_nonempty_lines = 0
@@ -42,13 +81,38 @@ def build_inventory(
         relative = path.relative_to(data_dir).as_posix()
         lines = decoded.splitlines()
         nonempty = sum(1 for line in lines if line.strip())
+        checksum = hashlib.sha256(raw).hexdigest()
+        approval_record = approval_records.get(relative, {})
+        provenance = {
+            field: _optional_text(approval_record.get(field))
+            for field in PROVENANCE_FIELDS
+        }
+        missing_fields = [
+            field for field in PROVENANCE_FIELDS if provenance[field] is None
+        ]
         entries.append({
             "file": relative,
-            "sha256": hashlib.sha256(raw).hexdigest(),
+            "sha256": checksum,
             "bytes": len(raw),
             "characters": len(decoded),
             "lines": len(lines),
             "nonempty_lines": nonempty,
+            "provenance": {
+                **provenance,
+                "checksum_sha256": checksum,
+                "approval_recorded_checksum_sha256": _optional_text(
+                    approval_record.get("sha256")
+                ),
+                "status": "COMPLETE" if not missing_fields else "INCOMPLETE",
+                "missing_fields": missing_fields,
+            },
+            "rights_review": {
+                "status": _optional_text(approval_record.get("status")),
+                "reviewer": _optional_text(approval_record.get("reviewer")),
+                "review_date": _optional_text(approval_record.get("review_date")),
+                "rights_basis": _optional_text(approval_record.get("rights_basis")),
+                "intended_use": _optional_text(approval_record.get("intended_use")),
+            },
         })
         texts.append(decoded)
         total_bytes += len(raw)
@@ -74,8 +138,19 @@ def build_inventory(
             "reason": str(exc),
         }
 
+    missing_field_counts = {
+        field: sum(
+            1 for entry in entries
+            if entry["provenance"][field] is None
+        )
+        for field in PROVENANCE_FIELDS
+    }
+    complete_count = sum(
+        1 for entry in entries if entry["provenance"]["status"] == "COMPLETE"
+    )
+
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "tool": "Jon2 AI dataset inventory",
         "tokenizer": {
             "type": "temporary_byte_bpe",
@@ -92,6 +167,17 @@ def build_inventory(
             "tokens": sum(item["tokens"] for item in entries),
         },
         "approval_gate": approval,
+        "provenance_audit": {
+            "fields_checked": list(PROVENANCE_FIELDS),
+            "files_with_complete_metadata": complete_count,
+            "files_with_incomplete_metadata": len(entries) - complete_count,
+            "missing_field_counts": missing_field_counts,
+            "note": (
+                "Informational metadata audit only. Missing fields do not grant or "
+                "deny reuse rights and do not change the exact-file approval gate. "
+                "The checksum is computed from the current source bytes."
+            ),
+        },
         "files": entries,
         "training_permitted": approval["status"] == "APPROVED",
     }
@@ -133,7 +219,9 @@ def main() -> int:
         f"Inventory: {report['totals']['files']} files, "
         f"{report['totals']['characters']:,} characters, "
         f"{report['totals']['tokens']:,} tokens; "
-        f"approval={report['approval_gate']['status']}.",
+        f"approval={report['approval_gate']['status']}; "
+        f"provenance_complete={report['provenance_audit']['files_with_complete_metadata']}/"
+        f"{report['totals']['files']}.",
         file=sys.stderr,
     )
     return 0

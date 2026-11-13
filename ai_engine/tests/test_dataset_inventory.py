@@ -24,8 +24,10 @@ class DatasetInventoryTests(unittest.TestCase):
             self.assertNotIn(source, json.dumps(report, ensure_ascii=False))
             self.assertFalse(report["training_permitted"])
             self.assertEqual(report["approval_gate"]["status"], "BLOCKED")
+            self.assertEqual(report["files"][0]["provenance"]["status"], "INCOMPLETE")
+            self.assertIn("source_url", report["files"][0]["provenance"]["missing_fields"])
 
-    def test_exact_matching_approval_is_reported_but_not_inferred(self):
+    def test_exact_matching_approval_does_not_infer_missing_provenance(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp) / "data"
             root.mkdir()
@@ -48,6 +50,64 @@ class DatasetInventoryTests(unittest.TestCase):
             report = build_inventory(root, manifest, vocab_size=300)
             self.assertTrue(report["training_permitted"])
             self.assertEqual(report["approval_gate"]["status"], "APPROVED")
+            self.assertEqual(report["provenance_audit"]["files_with_incomplete_metadata"], 1)
+            self.assertEqual(
+                report["files"][0]["provenance"]["missing_fields"],
+                [
+                    "source_url",
+                    "publisher",
+                    "language",
+                    "dialect",
+                    "license",
+                    "attribution_requirements",
+                    "retrieval_date",
+                ],
+            )
+
+    def test_explicit_provenance_is_reported_with_current_checksum(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "data"
+            root.mkdir()
+            source = "مثال عربي للاختبار\n"
+            raw = source.encode("utf-8")
+            checksum = hashlib.sha256(raw).hexdigest()
+            (root / "sample.txt").write_bytes(raw)
+            manifest = Path(temp) / "approvals.json"
+            manifest.write_text(json.dumps({
+                "approved_sources": [{
+                    "file": "sample.txt",
+                    "sha256": checksum,
+                    "character_count": len(source),
+                    "status": "APPROVED",
+                    "reviewer": "Human reviewer",
+                    "review_date": "2026-11-12",
+                    "rights_basis": "Explicit written permission verified by reviewer",
+                    "intended_use": "research_training",
+                    "source_url": "https://example.org/dataset",
+                    "publisher": "Example Research Publisher",
+                    "language": "ar",
+                    "dialect": "Egyptian Arabic",
+                    "license": "CC BY 4.0",
+                    "attribution_requirements": "Credit the named publisher and link the licence",
+                    "retrieval_date": "2026-11-12",
+                }]
+            }), encoding="utf-8")
+
+            report = build_inventory(root, manifest, vocab_size=300)
+            item = report["files"][0]
+            provenance = item["provenance"]
+            self.assertTrue(report["training_permitted"])
+            self.assertEqual(provenance["status"], "COMPLETE")
+            self.assertEqual(provenance["missing_fields"], [])
+            self.assertEqual(provenance["source_url"], "https://example.org/dataset")
+            self.assertEqual(provenance["publisher"], "Example Research Publisher")
+            self.assertEqual(provenance["language"], "ar")
+            self.assertEqual(provenance["dialect"], "Egyptian Arabic")
+            self.assertEqual(provenance["license"], "CC BY 4.0")
+            self.assertEqual(provenance["retrieval_date"], "2026-11-12")
+            self.assertEqual(provenance["checksum_sha256"], checksum)
+            self.assertEqual(provenance["approval_recorded_checksum_sha256"], checksum)
+            self.assertEqual(report["provenance_audit"]["files_with_complete_metadata"], 1)
 
     def test_invalid_utf8_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
