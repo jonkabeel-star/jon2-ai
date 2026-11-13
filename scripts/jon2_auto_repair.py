@@ -35,16 +35,31 @@ CHECKS: tuple[tuple[str, tuple[str, ...], tuple[int, ...]], ...] = (
 )
 
 
-def normalize_python_whitespace(root: Path) -> list[str]:
-    """Remove trailing horizontal whitespace and ensure final LF, preserving CRLF."""
+def normalize_python_whitespace(root: Path, *, enabled: bool = True) -> list[str]:
+    """Remove trailing horizontal whitespace only from regular in-scope files."""
+    if not enabled:
+        return []
     changed: list[str] = []
     for base in (root / "ai_engine", root / "tests"):
         if not base.exists():
             continue
         for path in sorted(base.rglob("*.py")):
-            if any(part in {".git", "__pycache__", ".venv", "venv"} | PROTECTED_PATH_PARTS for part in path.parts):
+            # Never follow symlinks: their targets may be outside the repair scope.
+            if path.is_symlink():
                 continue
-            raw = path.read_bytes()
+            try:
+                resolved = path.resolve()
+                relative = resolved.relative_to(root.resolve())
+            except (OSError, ValueError):
+                continue
+            if (
+                not relative.parts
+                or relative.parts[0] not in {"ai_engine", "tests"}
+                or any(part in {".git", "__pycache__", ".venv", "venv"} | PROTECTED_PATH_PARTS for part in relative.parts)
+                or not resolved.is_file()
+            ):
+                continue
+            raw = resolved.read_bytes()
             try:
                 source = raw.decode("utf-8")
             except UnicodeDecodeError:
@@ -64,9 +79,53 @@ def normalize_python_whitespace(root: Path) -> list[str]:
                 fixed += newline
             updated = fixed.encode("utf-8")
             if updated != raw:
-                path.write_bytes(updated)
-                changed.append(path.relative_to(root).as_posix())
+                resolved.write_bytes(updated)
+                changed.append(relative.as_posix())
     return changed
+
+
+def snapshot_repair_scope(root: Path) -> dict[Path, bytes]:
+    """Capture original bytes for every eligible Python source before mutation."""
+    snapshot: dict[Path, bytes] = {}
+    for base in (root / "ai_engine", root / "tests"):
+        if not base.is_dir():
+            continue
+        for path in sorted(base.rglob("*.py")):
+            # Snapshot only real files, never symlinks (even links pointing back into the repo).
+            if path.is_symlink():
+                continue
+            try:
+                resolved = path.resolve()
+                relative = resolved.relative_to(root.resolve())
+            except (OSError, ValueError):
+                continue
+            if (
+                relative.parts
+                and relative.parts[0] in {"ai_engine", "tests"}
+                and not any(part in {".git", "__pycache__", ".venv", "venv"} | PROTECTED_PATH_PARTS for part in relative.parts)
+                and resolved.is_file()
+            ):
+                snapshot[resolved] = resolved.read_bytes()
+    return snapshot
+
+
+def restore_snapshot(snapshot: dict[Path, bytes]) -> list[str]:
+    """Restore original source bytes after any failed validation check."""
+    restored: list[str] = []
+    for path, original in snapshot.items():
+        try:
+            # Recreate a snapshotted file if a future bounded repair removes it.
+            if path.is_symlink():
+                restored.append(f"RESTORE_FAILED:{path}")
+                continue
+            if not path.exists() or not path.is_file() or path.read_bytes() != original:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(original)
+                restored.append(str(path))
+        except OSError:
+            # A failed restore is surfaced in the report rather than hidden.
+            restored.append(f"RESTORE_FAILED:{path}")
+    return sorted(restored)
 
 
 
@@ -81,7 +140,6 @@ SAFE_IMPORTS: dict[str, str] = {
     "Path": "from pathlib import Path",
     "Counter": "from collections import Counter",
     "defaultdict": "from collections import defaultdict",
-    "datetime": "from datetime import datetime",
     "timezone": "from datetime import timezone",
 }
 NAME_ERROR = re.compile(r"NameError:\s*name ['\"]([A-Za-z_][A-Za-z0-9_]*)['\"] is not defined")
@@ -154,7 +212,9 @@ def generate_safe_repairs(root: Path, log_text: str) -> list[dict]:
             "symbol": missing_name,
         }]
 
-    trace_files = TRACEBACK_FILE.findall(log_text)
+    # Use the traceback immediately preceding this NameError. CI logs may contain multiple failures.
+    preceding_log = log_text[:match.start()]
+    trace_files = TRACEBACK_FILE.findall(preceding_log)
     target = next(
         (resolved for raw in reversed(trace_files) if (resolved := _repo_python_file(root, raw)) is not None),
         None,
@@ -197,6 +257,66 @@ def generate_safe_repairs(root: Path, log_text: str) -> list[dict]:
         "patch": import_line,
         "line": insertion + 1,
     }]
+
+
+def diagnose_failure(log_text: str) -> list[dict]:
+    """Classify common failures without attempting uncertain fixes."""
+    rules = (
+        ("missing_dependency", r"ModuleNotFoundError: No module named .+",
+         "Check the approved dependency manifest and the runtime environment."),
+        ("import_symbol_mismatch", r"ImportError: cannot import name .+",
+         "Compare the imported symbol with the installed package API."),
+        ("missing_path", r"FileNotFoundError: .+",
+         "Verify the path, working directory, and whether the file should exist."),
+        ("function_signature_mismatch", r"TypeError: .*(unexpected keyword argument|positional argument|keyword-only argument).*",
+         "Compare the function definition with every call site."),
+        ("missing_attribute", r"AttributeError: .+",
+         "Verify the object type and the supported module or class API."),
+        ("undefined_symbol", r"NameError: name .+ is not defined",
+         "Check spelling, scope, and whether an import is missing."),
+    )
+    findings = []
+    for category, pattern, guidance in rules:
+        for match in re.finditer(pattern, log_text):
+            findings.append({
+                "category": category,
+                "evidence": match.group(0)[:500],
+                "action": "diagnostic_only",
+                "guidance": guidance,
+            })
+    return findings
+
+
+
+def analyze_incident_log(root: Path, log_text: str, allow_repairs: bool = True) -> tuple[list[dict], list[dict]]:
+    """Classify an incident log; untrusted user reports can be diagnostic-only."""
+    diagnostics = diagnose_failure(log_text)
+    if allow_repairs:
+        return diagnostics, generate_safe_repairs(root, log_text)
+    return diagnostics, [{"status": "diagnostic_only", "reason": "Untrusted user-submitted reports cannot authorize source edits."}]
+
+
+def collect_failed_check_output(checks: list[dict]) -> str:
+    """Collect only failed check output as untrusted diagnostic text."""
+    sections = []
+    for item in checks:
+        if not item.get("passed"):
+            sections.append(
+                f"=== FAILED CHECK: {item.get('name', 'unknown')} ===\n"
+                f"{str(item.get('output', ''))[-30000:]}"
+            )
+    return "\n".join(sections)
+
+
+def analyze_failed_checks(checks: list[dict]) -> tuple[str, list[dict]]:
+    """Turn failed check output into structured findings; never execute log content."""
+    failure_text = collect_failed_check_output(checks)
+    return failure_text, diagnose_failure(failure_text) if failure_text else []
+
+
+def should_discover_repository_repairs(*, incident_log_supplied: bool, diagnostic_only: bool) -> bool:
+    """Only autonomous scans without incident input may attempt source repairs."""
+    return not incident_log_supplied and not diagnostic_only
 
 def run_checks(root: Path) -> list[dict]:
     """Run a fixed allowlist of repository checks; never interpret log text as code."""
@@ -246,42 +366,81 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--root", type=Path, default=Path.cwd())
     parser.add_argument("--report", type=Path, default=Path("auto-repair-output/report.json"))
     parser.add_argument("--logs", type=Path, help="Path to a failed GitHub Actions log; logs are parsed as data only.")
+    parser.add_argument("--diagnostic-only", action="store_true", help="Never propose source edits from this incident log.")
     args = parser.parse_args(argv)
     root = args.root.resolve()
     report_path = (root / args.report).resolve()
     if not (root / "ai_engine").is_dir() or not (root / "tests").is_dir():
         parser.error("--root must point to the Jon2 repository root")
 
+    # Snapshot before every possible source mutation; protected files are never included.
+    original_snapshot = snapshot_repair_scope(root)
     repair_proposals: list[dict] = []
+    diagnostics: list[dict] = []
+    diagnostic_source = "scheduled_repository_scan"
+    external_log_text = ""
+
     if args.logs:
         log_path = args.logs if args.logs.is_absolute() else root / args.logs
         if log_path.is_file():
-            repair_proposals = generate_safe_repairs(root, log_path.read_text(encoding="utf-8", errors="replace"))
+            external_log_text = log_path.read_text(encoding="utf-8", errors="replace")
+            diagnostic_source = "submitted_or_workflow_log"
+            diagnostics, repair_proposals = analyze_incident_log(
+                root, external_log_text, allow_repairs=not args.diagnostic_only
+            )
         else:
             repair_proposals = [{"status": "no_log", "reason": "The supplied log file was not found."}]
 
-    changed = normalize_python_whitespace(root)
+    # Untrusted issue reports are strictly read-only: no formatting or source edits.
+    changed = normalize_python_whitespace(root, enabled=not args.diagnostic_only)
     for proposal in repair_proposals:
         if proposal.get("status") == "patched":
             target = proposal.get("file")
             if isinstance(target, str) and target not in changed:
                 changed.append(target)
-    changed.sort()
-    print(f"Safe allowlisted repairs: {len(changed)} file(s)", flush=True)
-    for path in changed:
-        print(f"  repaired: {path}", flush=True)
 
+    # With no supplied incident log, discover failures by running the fixed check suite.
     checks = run_checks(root)
+    # Only an autonomous repository scan may discover and attempt repairs.
+    # A supplied incident log remains diagnostic-only when its contents are empty,
+    # unavailable, or explicitly marked diagnostic-only.
+    if should_discover_repository_repairs(incident_log_supplied=args.logs is not None, diagnostic_only=args.diagnostic_only):
+        failure_text, discovered_diagnostics = analyze_failed_checks(checks)
+        diagnostics = discovered_diagnostics
+        if failure_text:
+            discovered_repairs = generate_safe_repairs(root, failure_text)
+            repair_proposals.extend(discovered_repairs)
+            if any(item.get("status") == "patched" for item in discovered_repairs):
+                diagnostic_source = "scheduled_repository_scan"
+                for proposal in discovered_repairs:
+                    target = proposal.get("file")
+                    if proposal.get("status") == "patched" and isinstance(target, str) and target not in changed:
+                        changed.append(target)
+                # A repair is not trusted until the complete fixed suite passes again.
+                checks = run_checks(root)
+
+    changed.sort()
+    all_checks_passed = bool(checks) and all(item["passed"] for item in checks)
+    rolled_back_files: list[str] = []
+    if not all_checks_passed:
+        rolled_back_files = restore_snapshot(original_snapshot)
+        print(f"Validation failed; rolled back {len(rolled_back_files)} source file(s).", flush=True)
+
     report = {
         "tool": "Jon2 Auto Repair Engine",
-        "version": 1,
+        "version": 2,
         "repair_policy": "allowlisted_standard_library_imports_and_python_whitespace_only",
-        "coverage": ["python", "frontend_inline_javascript", "node_server_syntax_and_release_gate_tests"],
+        "coverage": ["scheduled_repository_scan", "submitted_error_logs", "dependency_diagnostics", "path_failure_diagnostics", "function_signature_diagnostics", "missing_attribute_diagnostics", "frontend_inline_javascript", "node_server_syntax_and_release_gate_tests"],
+        "diagnostic_source": diagnostic_source,
+        "diagnostic_only": bool(args.diagnostic_only),
         "unsupported_failures_are_diagnostic_only": True,
         "repair_proposals": repair_proposals,
+        "diagnostics": diagnostics,
         "changed_files": changed,
+        "rolled_back_files": rolled_back_files,
+        "changes_retained": all_checks_passed and bool(changed),
         "checks": checks,
-        "all_checks_passed": bool(checks) and all(item["passed"] for item in checks),
+        "all_checks_passed": all_checks_passed,
         "automatic_code_rewrites": any(item.get("status") == "patched" for item in repair_proposals),
         "model_checkpoint_changes": False,
         "direct_push": False,
