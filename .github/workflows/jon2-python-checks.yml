@@ -56,6 +56,12 @@ jobs:
       - name: Audit current training text
         run: python ai_engine/audit_data.py
 
+      - name: Test held-out evaluation leakage audit
+        run: python -m unittest ai_engine.test_audit_evaluation_leakage -v
+
+      - name: Audit held-out Arabic evaluation prompt leakage
+        run: python ai_engine/audit_evaluation_leakage.py --data ai_engine/training_data --output training-output/evaluation-leakage-audit.json
+
       - name: Audit Arabic character and vocabulary coverage
         run: python ai_engine/audit_language.py --data ai_engine/training_data
 
