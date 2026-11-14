@@ -35,7 +35,7 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def get_secrets() -> tuple[str, str]:
+def get_secrets() -> tuple[str, str, str]:
     try:
         from kaggle_secrets import UserSecretsClient
     except Exception as exc:
@@ -83,7 +83,7 @@ class GitHubBridge:
     def read_json(self, path: str) -> dict[str, Any]:
         response = self.session.get(
             f"{API}/repos/{self.repo}/contents/{path}",
-            params={"ref": self.default_branch},
+            params={"ref": self.branch},
             timeout=20,
         )
         response.raise_for_status()
@@ -96,7 +96,7 @@ class GitHubBridge:
     def exists(self, path: str) -> bool:
         response = self.session.get(
             f"{API}/repos/{self.repo}/contents/{path}",
-            params={"ref": self.default_branch},
+            params={"ref": self.branch},
             timeout=20,
         )
         if response.status_code == 404:
