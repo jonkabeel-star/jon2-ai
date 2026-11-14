@@ -53,6 +53,21 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_source_approval.py' -v
       - name: Test quarantined Arabic corpus collector
         run: python -m unittest ai_engine.tests.test_collect_wikipedia_ar -v
+      - name: Test quarantined dialogue audit unit tests
+        run: python -m unittest ai_engine.test_audit_quarantined_dialogue -v
+      - name: Audit quarantined Arabic dialogue proposal
+        run: |
+          mkdir -p training-output
+          python ai_engine/audit_quarantined_dialogue.py \
+            ai_engine/proposals/arabic_dialogue_seed_proposed.jsonl \
+            --output training-output/quarantined-arabic-dialogue-audit.json
+      - name: Upload quarantined dialogue audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jon2-quarantined-arabic-dialogue-audit
+          path: training-output/quarantined-arabic-dialogue-audit.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
