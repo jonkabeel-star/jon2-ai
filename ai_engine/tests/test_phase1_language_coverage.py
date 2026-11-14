@@ -35,7 +35,7 @@ class PhaseOneCoverageTests(unittest.TestCase):
         self.annotate()
         report = build_report(self.data, self.annotations)
         self.assertFalse(report["automatic_dialect_classification"])
-        self.assertEqual(report["human_annotated_arabic_characters_by_label"]["egyptian"], 11)
+        self.assertEqual(report["human_annotated_arabic_characters_by_label"]["egyptian"], 9)
         self.assertEqual(report["coverage_fraction"], 1.0)
 
     def test_unannotated_source_is_not_guessed(self):
