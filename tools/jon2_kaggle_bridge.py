@@ -16,6 +16,8 @@ from pathlib import Path
 from typing import Any
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 API = "https://api.github.com"
 POLL_SECONDS = 30
@@ -59,6 +61,20 @@ class GitHubBridge:
             raise ValueError("Invalid bridge branch name")
         self.branch = branch
         self.session = requests.Session()
+        # Retry transient network disconnects on safe read requests.
+        retry = Retry(
+            total=6,
+            connect=6,
+            read=6,
+            status=4,
+            backoff_factor=1.5,
+            status_forcelist=(429, 500, 502, 503, 504),
+            allowed_methods=frozenset({"GET", "HEAD", "OPTIONS"}),
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
         self.session.headers.update({
             "Authorization": f"Bearer {token}",
             "Accept": "application/vnd.github+json",
@@ -308,11 +324,17 @@ def main() -> None:
     started = time.monotonic()
     processed = 0
     while time.monotonic() - started < MAX_RUNTIME_SECONDS and processed < MAX_TASKS_PER_SESSION:
-        for item in bridge.list_inbox():
-            if processed >= MAX_TASKS_PER_SESSION:
-                break
-            if process_task(bridge, item):
-                processed += 1
+        try:
+            for item in bridge.list_inbox():
+                if processed >= MAX_TASKS_PER_SESSION:
+                    break
+                if process_task(bridge, item):
+                    processed += 1
+        except requests.RequestException as exc:
+            # A temporary Kaggle/GitHub network drop must not kill the bridge.
+            print(f"Temporary GitHub connection error: {type(exc).__name__}. Retrying after delay.")
+            time.sleep(min(POLL_SECONDS * 2, 60))
+            continue
         time.sleep(POLL_SECONDS)
     print(f"Bridge stopped. Processed tasks this session: {processed}")
 
