@@ -29,7 +29,7 @@ class PhaseFiveRunnerTests(unittest.TestCase):
                  "split": "train", "training_eligible": False}
                 for i in range(50)
             ]
-            path.write_text("\\n".join(json.dumps(row, ensure_ascii=False) for row in rows), encoding="utf-8")
+            path.write_text("\n".join(json.dumps(row, ensure_ascii=False) for row in rows), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "not explicitly held out"):
                 load_phase5_prompts(path)
 
