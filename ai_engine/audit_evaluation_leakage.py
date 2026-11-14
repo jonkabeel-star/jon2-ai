@@ -5,7 +5,10 @@ import json
 import re
 import unicodedata
 from pathlib import Path
-from corpus_reader import read_corpus
+try:
+    from .corpus_reader import read_corpus
+except ImportError:
+    from corpus_reader import read_corpus
 
 DEFAULT_EVALUATION_FILES = (
     Path("ai_engine/evaluation/prompts_ar.jsonl"),
