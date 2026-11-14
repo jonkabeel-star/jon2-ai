@@ -445,11 +445,13 @@ document.getElementById("form").addEventListener("submit", async event => {
       }
       addMessage(result.answer.trim(), "assistant");
     } catch (error) {
-      const message = error?.message === "JON2_QUALITY_REJECTED"
-        ? translations[lang].localQualityRejected
-        : translations[lang].localRequestFailed;
-      addMessage(message, "bot");
-      console.warn("Local Jon2 inference failed.", error);
+      // Keep the public failure state consistent; technical detail stays in diagnostics.
+      addMessage("عقل Jon2 غير جاهز للرد", "bot");
+      console.warn("Local original-Jon2 inference failed.", {
+        code: error?.code || "JON2_INFERENCE_FAILED",
+        message: error?.message || "Unknown local inference failure",
+        cause: error?.cause || null
+      });
     } finally {
       chatBusy = false;
       syncChatControls();

@@ -9,14 +9,22 @@ export class Jon2SafariClient {
       const pending = this.pending.get(message.requestId);
       if (!pending) return;
       this._settle(message.requestId);
-      if (message.type === "error") pending.reject(new Error(message.message));
+      if (message.type === "error") {
+        const error = new Error(message.message || "عقل Jon2 غير جاهز للرد");
+        error.code = message.code || "JON2_INFERENCE_FAILED";
+        pending.reject(error);
+      }
       else pending.resolve(message);
     });
     this.worker.addEventListener("error", event => {
-      this._rejectAll(new Error("عقل Jon2 غير جاهز للرد"));
+      const error = new Error("عقل Jon2 غير جاهز للرد");
+      error.code = "JON2_WORKER_CRASH";
+      this._rejectAll(error);
     });
     this.worker.addEventListener("messageerror", () => {
-      this._rejectAll(new Error("عقل Jon2 غير جاهز للرد"));
+      const error = new Error("عقل Jon2 غير جاهز للرد");
+      error.code = "JON2_WORKER_MESSAGE_ERROR";
+      this._rejectAll(error);
     });
   }
 
@@ -40,16 +48,21 @@ export class Jon2SafariClient {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         const pending = this._settle(requestId);
-        if (pending) pending.reject(new Error(
-          "عقل Jon2 غير جاهز للرد"
-        ));
+        if (pending) {
+          const error = new Error("عقل Jon2 غير جاهز للرد");
+          error.code = type === "generate" ? "JON2_WORKER_TIMEOUT" : "JON2_LOAD_TIMEOUT";
+          pending.reject(error);
+        }
       }, timeoutMs);
       this.pending.set(requestId, { resolve, reject, timer });
       try {
         this.worker.postMessage({ type, requestId, ...payload }, transfer);
       } catch (error) {
         const pending = this._settle(requestId);
-        if (pending) pending.reject(error);
+        if (pending) {
+          error.code = error.code || "JON2_WORKER_POST_MESSAGE_FAILED";
+          pending.reject(error);
+        }
       }
     });
   }
