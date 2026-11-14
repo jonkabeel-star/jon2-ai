@@ -53,6 +53,8 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_source_approval.py' -v
       - name: Test quarantined Arabic corpus collector
         run: python -m unittest ai_engine.tests.test_collect_wikipedia_ar -v
+      - name: Test quarantined dialogue audit unit tests
+        run: python -m unittest ai_engine.test_audit_quarantined_dialogue -v
       - name: Audit quarantined Arabic dialogue proposal
         run: |
           mkdir -p training-output
