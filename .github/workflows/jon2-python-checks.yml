@@ -62,6 +62,15 @@ jobs:
       - name: Audit held-out Arabic evaluation prompt leakage
         run: python ai_engine/audit_evaluation_leakage.py --data ai_engine/training_data --output training-output/evaluation-leakage-audit.json
 
+      - name: Upload held-out evaluation leakage report
+        if: always() && hashFiles('training-output/evaluation-leakage-audit.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: jon2-heldout-evaluation-leakage-audit
+          path: training-output/evaluation-leakage-audit.json
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Audit Arabic character and vocabulary coverage
         run: python ai_engine/audit_language.py --data ai_engine/training_data
 
