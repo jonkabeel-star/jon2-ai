@@ -3,7 +3,10 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from audit_evaluation_leakage import audit_overlap, normalize_prompt
+try:
+    from .audit_evaluation_leakage import audit_overlap, normalize_prompt
+except ImportError:
+    from audit_evaluation_leakage import audit_overlap, normalize_prompt
 
 class EvaluationLeakageTests(unittest.TestCase):
     def test_normalization_handles_unicode_and_whitespace(self):
