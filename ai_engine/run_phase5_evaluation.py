@@ -68,12 +68,12 @@ def run_evaluation(checkpoint: Path, prompts_path: Path, output: Path, code_comm
 
     results = []
     for row in prompts:
-        prefix = f"المستخدم: {row['prompt']}\\nJon2:"
+        prefix = f"المستخدم: {row['prompt']}\nJon2:"
         try:
             generated = generate(
                 model, tokenizer, prefix, device,
                 max_new_chars=240, temperature=0.8,
-                do_sample=False, stop_sequences=["المستخدم:", "\\nالمستخدم:"],
+                do_sample=False, stop_sequences=["المستخدم:", "\nالمستخدم:"],
             )
             answer = generated[len(prefix):].strip() if generated.startswith(prefix) else generated.strip()
             results.append({
@@ -110,7 +110,7 @@ def run_evaluation(checkpoint: Path, prompts_path: Path, output: Path, code_comm
     }
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = output.with_suffix(output.suffix + ".tmp")
-    temporary.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    temporary.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     temporary.replace(output)
     return report
 
