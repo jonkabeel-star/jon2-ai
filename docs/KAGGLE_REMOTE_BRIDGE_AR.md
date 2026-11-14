@@ -10,7 +10,7 @@
 - Kaggle Secrets:
   - `JON2_BRIDGE_TOKEN`: Fine-grained PAT لمستودع التحكم الخاص فقط، بصلاحية Contents: Read and write وMetadata: Read.
   - `JON2_BRIDGE_REPO`: اسم المستودع بصيغة `owner/private-repo`.
-  - `JON2_BRIDGE_BRANCH`: فرع قناة التحكم الذي يحتوي `bridge/inbox` و`bridge/outbox` و`bridge/receipts`. في الإعداد الحالي استخدم `setup/kaggle-bridge-control-plane`. القيمة مطلوبة، ويجب أن تكون `setup/kaggle-bridge-control-plane` في الإعداد الحالي.
+  - `JON2_BRIDGE_BRANCH`: فرع قناة التحكم الذي يحتوي `bridge/inbox` و`bridge/outbox` و`bridge/receipts`. في الإعداد الحالي استخدم `main` لأن مجلدات قناة التحكم موجودة بالفعل في الفرع الرئيسي للمستودع الخاص.
 - شغّل Notebook `notebooks/Jon2_Kaggle_Remote_Bridge.ipynb` في Kaggle بعد ربط الـSecrets.
 - ينشئ مرسل المهام ملفًا جديدًا مثل `bridge/inbox/audit-001.json`.
 - يقرأ الجسر النتائج من `bridge/outbox/audit-001.json` وإيصال التنفيذ من `bridge/receipts/audit-001.json`.
