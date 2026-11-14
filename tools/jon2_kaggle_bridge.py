@@ -44,12 +44,12 @@ def get_secrets() -> tuple[str, str]:
     token = client.get_secret("JON2_BRIDGE_TOKEN")
     repo = client.get_secret("JON2_BRIDGE_REPO")
     control_branch = client.get_secret("JON2_BRIDGE_BRANCH")
-    if not token or not repo or "/" not in repo:
+    if not token or not repo or "/" not in repo or not control_branch:
         raise RuntimeError(
-            "Add Kaggle Secrets JON2_BRIDGE_TOKEN and JON2_BRIDGE_REPO "
-            "(owner/private-repo). Values are never printed."
+            "Add Kaggle Secrets JON2_BRIDGE_TOKEN, JON2_BRIDGE_REPO "
+            "(owner/private-repo), and JON2_BRIDGE_BRANCH. Values are never printed."
         )
-    return token.strip(), repo.strip(), (control_branch.strip() if control_branch else "main")
+    return token.strip(), repo.strip(), control_branch.strip()
 
 
 class GitHubBridge:
@@ -238,8 +238,23 @@ def process_task(bridge: GitHubBridge, item: dict[str, Any]) -> bool:
         print(f"Skipping invalid task filename: {filename}")
         return False
     receipt_path = f"bridge/receipts/{task_id}.json"
+    result_path = f"bridge/outbox/{task_id}.json"
     if bridge.exists(receipt_path):
         return False
+
+    # Recover cleanly if the result was written but the receipt write failed.
+    if bridge.exists(result_path):
+        existing_result = bridge.read_json(result_path)
+        if existing_result.get("task_id") != task_id:
+            raise RuntimeError(f"Existing result belongs to another task: {result_path}")
+        bridge.write_json_once(receipt_path, {
+            "task_id": task_id,
+            "status": existing_result.get("status", "unknown"),
+            "completed_at": existing_result.get("completed_at", utc_now()),
+            "result_path": result_path,
+        })
+        print(f"Task {task_id}: receipt recovered")
+        return True
 
     started = utc_now()
     result: dict[str, Any] = {
@@ -272,7 +287,7 @@ def process_task(bridge: GitHubBridge, item: dict[str, Any]) -> bool:
             "error": f"{type(exc).__name__}: {exc}",
         })
 
-    bridge.write_json_once(f"bridge/outbox/{task_id}.json", result)
+    bridge.write_json_once(result_path, result)
     bridge.write_json_once(receipt_path, {
         "task_id": task_id,
         "status": result["status"],
