@@ -1,36 +1,23 @@
-"""Read-only exact-prompt leakage audit for Jon2 held-out Arabic evaluations.
-
-Uses the same approved corpus reader as training (TXT only by default). This
-detects exact normalized evaluation-prompt copies, not paraphrases or semantic
-leakage. It never edits data, approvals, checkpoints, or training settings.
-"""
+"""Read-only exact-prompt leakage audit for Jon2 held-out Arabic evaluations."""
 from __future__ import annotations
-
 import argparse
 import json
 import re
 import unicodedata
 from pathlib import Path
-
 from corpus_reader import read_corpus
-
 
 DEFAULT_EVALUATION_FILES = (
     Path("ai_engine/evaluation/prompts_ar.jsonl"),
     Path("ai_engine/evaluation/prompts_egyptian_ar.jsonl"),
 )
 
-
 def normalize_prompt(value: str) -> str:
-    """Normalize Unicode and whitespace for conservative exact-text matching."""
     value = unicodedata.normalize("NFKC", value).casefold()
-    value = re.sub(r"\s+", " ", value).strip()
-    return value
-
+    return re.sub(r"\s+", " ", value).strip()
 
 def load_evaluation_prompts(paths: list[Path]) -> list[dict]:
-    prompts: list[dict] = []
-    seen_ids: set[str] = set()
+    prompts, seen_ids = [], set()
     for path in paths:
         for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             if not line.strip() or line.lstrip().startswith("#"):
@@ -51,7 +38,6 @@ def load_evaluation_prompts(paths: list[Path]) -> list[dict]:
             seen_ids.add(prompt_id)
             prompts.append({"id": prompt_id, "prompt": prompt, "source": str(path)})
     return prompts
-
 
 def audit_overlap(training_dir: Path, evaluation_files: list[Path], include_jsonl: bool = False) -> dict:
     corpus = read_corpus(training_dir, include_jsonl=include_jsonl)
@@ -75,7 +61,6 @@ def audit_overlap(training_dir: Path, evaluation_files: list[Path], include_json
         ],
     }
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Audit exact held-out prompt overlap without modifying data.")
     parser.add_argument("--data", type=Path, default=Path("ai_engine/training_data"))
@@ -84,13 +69,12 @@ def main() -> int:
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     report = audit_overlap(args.data, args.evaluation_files or list(DEFAULT_EVALUATION_FILES), args.include_jsonl)
-    rendered = json.dumps(report, ensure_ascii=False, indent=2) + "\\n"
+    rendered = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(rendered, encoding="utf-8")
     print(rendered, end="")
     return 1 if report["exact_normalized_prompt_matches"] else 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())
