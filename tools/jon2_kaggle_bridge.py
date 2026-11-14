@@ -43,17 +43,21 @@ def get_secrets() -> tuple[str, str]:
     client = UserSecretsClient()
     token = client.get_secret("JON2_BRIDGE_TOKEN")
     repo = client.get_secret("JON2_BRIDGE_REPO")
+    control_branch = client.get_secret("JON2_BRIDGE_BRANCH")
     if not token or not repo or "/" not in repo:
         raise RuntimeError(
             "Add Kaggle Secrets JON2_BRIDGE_TOKEN and JON2_BRIDGE_REPO "
             "(owner/private-repo). Values are never printed."
         )
-    return token.strip(), repo.strip()
+    return token.strip(), repo.strip(), (control_branch.strip() if control_branch else "main")
 
 
 class GitHubBridge:
-    def __init__(self, token: str, repo: str):
+    def __init__(self, token: str, repo: str, branch: str):
         self.repo = repo
+        if not re.fullmatch(r"[A-Za-z0-9._/-]{1,200}", branch) or ".." in branch.split("/"):
+            raise ValueError("Invalid bridge branch name")
+        self.branch = branch
         self.session = requests.Session()
         self.session.headers.update({
             "Authorization": f"Bearer {token}",
@@ -69,7 +73,7 @@ class GitHubBridge:
 
     def list_inbox(self) -> list[dict[str, Any]]:
         url = f"{API}/repos/{self.repo}/contents/bridge/inbox"
-        response = self.session.get(url, params={"ref": self.default_branch}, timeout=20)
+        response = self.session.get(url, params={"ref": self.branch}, timeout=20)
         if response.status_code == 404:
             return []
         response.raise_for_status()
@@ -102,14 +106,17 @@ class GitHubBridge:
 
     def write_json_once(self, path: str, value: dict[str, Any]) -> None:
         if self.exists(path):
-            raise RuntimeError(f"Refusing to overwrite existing bridge record: {path}")
+            existing = self.read_json(path)
+            if existing == value:
+                return
+            raise RuntimeError(f"Refusing to overwrite a different bridge record: {path}")
         body = json.dumps(value, ensure_ascii=False, indent=2).encode("utf-8")
         response = self.session.put(
             f"{API}/repos/{self.repo}/contents/{path}",
             json={
                 "message": f"Jon2 bridge result: {Path(path).stem}",
                 "content": base64.b64encode(body).decode("ascii"),
-                "branch": self.default_branch,
+                "branch": self.branch,
             },
             timeout=20,
         )
@@ -277,9 +284,10 @@ def process_task(bridge: GitHubBridge, item: dict[str, Any]) -> bool:
 
 
 def main() -> None:
-    token, repo = get_secrets()
-    bridge = GitHubBridge(token, repo)
+    token, repo, branch = get_secrets()
+    bridge = GitHubBridge(token, repo, branch)
     print("Jon2 Kaggle Bridge connected to a verified private repository.")
+    print(f"Control branch: {branch}")
     print("Allow-listed read-only commands:", ", ".join(sorted(ALLOWED_COMMANDS)))
     print("No shell execution, training, checkpoint writes, deletes, or deployment.")
     started = time.monotonic()
