@@ -50,10 +50,31 @@ class ArabicAnswerQualityTests(unittest.TestCase):
         result = diagnose_answer("هذا نص عربي هذا نص عربي")
         self.assertIn("repeated_three_word_sequence", result["surface_warnings"])
 
+    def test_prompt_aware_diagnostic_flags_short_explanation(self):
+        prompt = "اشرح لماذا لا يمكن تحديد ذلك من الجملة وحدها."
+        answer = "مية، والفة. الدوزعا ومحيح."
+        result = diagnose_answer(answer, prompt=prompt)
+        self.assertIn(
+            "possibly_incomplete_for_explanatory_prompt",
+            result["surface_warnings"],
+        )
+        self.assertTrue(result["human_semantic_review_required"])
+        self.assertFalse(result["semantic_quality_assessed"])
+
+    def test_prompt_aware_diagnostic_does_not_flag_long_explanation(self):
+        prompt = "اشرح لماذا لا يمكن تحديد ذلك من الجملة وحدها."
+        answer = "لا يمكن الجزم بالمقصود؛ فقد يعود الضمير إلى مريم أو أختها."
+        result = diagnose_answer(answer, prompt=prompt)
+        self.assertNotIn(
+            "possibly_incomplete_for_explanatory_prompt",
+            result["surface_warnings"],
+        )
+
     def test_diagnostics_do_not_claim_semantic_approval(self):
         result = diagnose_answer("إجابة عربية واضحة ومترابطة للاختبار.")
         self.assertIsNone(result.get("quality_score"))
         self.assertTrue(result["human_semantic_review_required"])
+        self.assertFalse(result["semantic_quality_assessed"])
 
 
 if __name__ == "__main__":

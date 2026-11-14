@@ -125,7 +125,7 @@ def main() -> int:
             "id": item["id"],
             "prompt": item["prompt"],
             "generated_answer": answer,
-            "automated_diagnostics": diagnose_answer(answer),
+            "automated_diagnostics": diagnose_answer(answer, prompt=item["prompt"]),
             "human_review": {
                 "reviewed": False,
                 "reviewer": None,

@@ -1,4 +1,4 @@
-"""Dependency-free sanity checks for generated Arabic answers."""
+"""Conservative Arabic output diagnostics; never a semantic quality judge."""
 import re
 
 # This is a conservative output sanity check, not a proof of factual accuracy.
@@ -6,6 +6,9 @@ _ALLOWED_ANSWER = re.compile(
     r"^[\u0600-\u06FF\s،؛؟.!…ـ0-9٠-٩()«»\"'\-]+$"
 )
 _ARABIC_LETTERS = re.compile(r"[\u0621-\u064A\u066E-\u06D3]")
+_MULTI_STEP_OR_EXPLANATORY = re.compile(
+    r"(اشرح|وضح|فسر|حلل|قارن|استنتج|اذكر|رتب|بيّن|بيّن|لماذا|ما السبب)"
+)
 
 
 def validate_generated_answer(answer: str) -> bool:
@@ -40,12 +43,13 @@ def validate_generated_answer(answer: str) -> bool:
     return True
 
 
-def diagnose_answer(answer: str) -> dict:
-    """Report surface-level warning signals without pretending to judge meaning."""
+def diagnose_answer(answer: str, prompt: str | None = None) -> dict:
+    """Report surface and prompt-length warning signals; semantic review is always required."""
     text = answer.strip() if isinstance(answer, str) else ""
+    prompt_text = prompt.strip() if isinstance(prompt, str) else ""
     words = re.findall(r"\S+", text)
     visible = [char for char in text if not char.isspace()]
-    arabic = len(re.findall(r"[\u0621-\u064A\u066E-\u06D3]", text))
+    arabic = len(_ARABIC_LETTERS.findall(text))
     unique_ratio = len(set(words)) / max(1, len(words))
     repeated_trigram = any(
         words[index:index + 3] == words[index + 3:index + 6]
@@ -64,11 +68,18 @@ def diagnose_answer(answer: str) -> dict:
         warnings.append("repeated_three_word_sequence")
     if not text:
         warnings.append("empty_answer")
+
+    prompt_requires_explanation = bool(_MULTI_STEP_OR_EXPLANATORY.search(prompt_text))
+    if prompt_requires_explanation and len(words) < 6:
+        warnings.append("possibly_incomplete_for_explanatory_prompt")
+
     return {
         "character_count": len(text),
         "word_count": len(words),
         "arabic_character_ratio": round(arabic / max(1, len(visible)), 3),
         "unique_word_ratio": round(unique_ratio, 3),
+        "prompt_requires_explanation": prompt_requires_explanation,
         "surface_warnings": warnings,
         "human_semantic_review_required": True,
+        "semantic_quality_assessed": False,
     }
