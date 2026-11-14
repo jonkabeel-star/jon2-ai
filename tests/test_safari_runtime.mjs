@@ -273,7 +273,7 @@ test("Safari worker never bypasses the original model with canned small-talk rep
   assert.doesNotMatch(workerSource, /function\s+getLocalArabicReply/);
   assert.match(
     workerSource,
-    /const rawGenerated = runtime\.model\.generate\(/
+    /let rawGenerated;[\s\S]*?rawGenerated = runtime\.model\.generate\(/
   );
   assert.match(
     workerSource,
