@@ -14,7 +14,7 @@ from audit_quarantined_dialogue import audit_jsonl
 
 def write_records(path, records):
     path.write_text(
-        "\\n".join(json.dumps(item, ensure_ascii=False) for item in records) + "\\n",
+        "\n".join(json.dumps(item, ensure_ascii=False) for item in records) + "\n",
         encoding="utf-8",
     )
 
@@ -57,7 +57,7 @@ class QuarantinedDialogueAuditTests(unittest.TestCase):
         self.assertFalse(report["structurally_valid"])
 
     def test_audit_rejects_invalid_jsonl(self):
-        self.source.write_text("{not-json}\\n", encoding="utf-8")
+        self.source.write_text("{not-json}\n", encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "Invalid JSON"):
             audit_jsonl(self.source)
 
