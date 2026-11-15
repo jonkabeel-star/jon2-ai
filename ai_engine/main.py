@@ -13,6 +13,7 @@ import chat_memory
 from external_models.jais2_routes import router as jais2_router
 from compute.routes import router as compute_router
 from model_profiles import PROFILES, describe_profile, list_profiles
+from answer_quality import validate_generated_answer
 
 app = FastAPI(
     title="Jon2 AI API",
@@ -367,6 +368,11 @@ def chat(request: ChatRequest):
         reply = generate_reply(message, history, memories)
         if not isinstance(reply, str) or not reply.strip():
             raise RuntimeError("empty original-model output")
+        # Reject obviously corrupted, non-Arabic, or looping generations before
+        # returning them or persisting them as conversation memory. This is a
+        # surface sanity gate only; it does not certify semantic correctness.
+        if not validate_generated_answer(reply):
+            raise RuntimeError("original-model output failed Arabic surface checks")
 
         if request.session_id:
             chat_memory.add_exchange(request.session_id, message, reply)

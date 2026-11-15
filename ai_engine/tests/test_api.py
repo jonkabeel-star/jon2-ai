@@ -116,11 +116,11 @@ class Jon2ApiTests(unittest.TestCase):
 
     def test_chat_has_no_retrieval_or_canned_answer_path(self):
         with patch.object(
-            jon2_api, "generate_reply", return_value="إجابة أنشأها نموذج Jon2 للاختبار."
+            jon2_api, "generate_reply", return_value="إجابة أنشأها نموذج جون تو للاختبار."
         ) as generate:
             response = self.client.post("/api/chat", json={"message": "سؤال اختباري"})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["reply"], "إجابة أنشأها نموذج Jon2 للاختبار.")
+        self.assertEqual(response.json()["reply"], "إجابة أنشأها نموذج جون تو للاختبار.")
         self.assertEqual(response.json()["response_mode"], "jon2_original_model_only")
         self.assertNotIn("knowledge_used", response.json())
         generate.assert_called_once_with("سؤال اختباري", [], [])
@@ -130,6 +130,26 @@ class Jon2ApiTests(unittest.TestCase):
             response = self.client.post("/api/chat", json={"message": "سؤال اختباري"})
         self.assertEqual(response.status_code, 503)
         self.assertEqual(response.json()["detail"], "عقل Jon2 غير جاهز للرد")
+
+    def test_obviously_repetitive_arabic_generation_is_blocked(self):
+        with patch.object(
+            jon2_api, "generate_reply",
+            return_value="كلام واضح كلام واضح كلام واضح كلام واضح",
+        ):
+            response = self.client.post("/api/chat", json={"message": "سؤال اختباري"})
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json()["detail"], "عقل Jon2 غير جاهز للرد")
+
+    def test_malformed_generation_is_not_saved_to_conversation_memory(self):
+        session_id = "123e4567-e89b-12d3-a456-426614174000"
+        with patch.object(
+            jon2_api, "generate_reply", return_value="This is not an Arabic answer"
+        ), patch.object(jon2_api.chat_memory, "add_exchange") as save:
+            response = self.client.post("/api/chat", json={
+                "message": "مرحبا", "session_id": session_id
+            })
+        self.assertEqual(response.status_code, 503)
+        save.assert_not_called()
 
     def test_chat_returns_only_the_generated_original_model_reply(self):
         with patch.object(jon2_api, "generate_reply", return_value="أهلًا بك") as generate:
