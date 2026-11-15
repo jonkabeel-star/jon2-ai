@@ -253,6 +253,19 @@ def tokenizer_checkpoint_audit(args: dict[str, Any]) -> dict[str, Any]:
         data_dir == root or root in data_dir.parents for root in SAFE_ROOTS
     ):
         raise ValueError("data_dir must be inside /kaggle/input or /kaggle/working")
+    txt_files = sorted(data_dir.rglob("*.txt"))
+    if not txt_files:
+        raise FileNotFoundError("No .txt corpus files found in data_dir")
+    parts = []
+    for source in txt_files:
+        lines = source.read_text(encoding="utf-8", errors="strict").splitlines()
+        useful = [line for line in lines if not line.lstrip().startswith("#")]
+        cleaned = "\\n".join(useful).strip()
+        if cleaned:
+            parts.append(cleaned)
+    corpus = "\\n\\n".join(parts).strip()
+    if len(corpus) < 1000:
+        raise ValueError("Reconstructed corpus is unexpectedly short")
     import importlib.util
     import torch
     spec = importlib.util.spec_from_file_location("jon2_audit_tokenizer", tokenizer_file)
@@ -260,10 +273,6 @@ def tokenizer_checkpoint_audit(args: dict[str, Any]) -> dict[str, Any]:
         raise RuntimeError("Could not load the supplied Jon2 tokenizer module")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    read_corpus = getattr(module, "read_corpus", None)
-    if not callable(read_corpus):
-        raise RuntimeError("tokenizer module does not expose read_corpus")
-    corpus = read_corpus(data_dir)
     corpus_hash = hashlib.sha256(corpus.encode("utf-8")).hexdigest()
     checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
     if not isinstance(checkpoint, dict) or not isinstance(checkpoint.get("tokenizer"), dict):
