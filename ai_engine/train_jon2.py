@@ -15,7 +15,9 @@ from pathlib import Path
 import torch
 from torch import nn
 
-from jon2_core import Jon2Transformer, _batch, _estimate_loss, read_corpus
+from jon2_core import Jon2Transformer, _batch, _estimate_loss
+from corpus_reader import read_corpus_sources
+from source_split import split_corpus_sources
 from tokenizer import ByteBPETokenizer
 from source_approval import validate_source_approvals
 from model_profiles import PROFILES, describe_profile
@@ -60,7 +62,7 @@ def _training_plan(args):
         "tokenizer_min_frequency", "seed", "no_amp",
     )
     plan = {name: getattr(args, name) for name in names}
-    plan["validation_split_algorithm"] = "seeded_paragraph_blocks_v1"
+    plan["validation_split_algorithm"] = "seeded_source_files_v1"
     # Keep legacy TXT-only checkpoint plans byte-for-byte compatible.
     if getattr(args, "include_jsonl", False):
         plan["include_jsonl"] = True
@@ -146,7 +148,8 @@ def train(args):
     validate_source_approvals(
         data_dir, Path(args.approval_manifest), include_jsonl=args.include_jsonl
     )
-    corpus = read_corpus(data_dir, include_jsonl=args.include_jsonl)
+    sources = read_corpus_sources(data_dir, include_jsonl=args.include_jsonl)
+    corpus = "\n\n".join(text for _, text in sources)
     args.corpus_characters = len(corpus)
     if len(corpus) < args.minimum_chars:
         raise ValueError(
@@ -156,8 +159,8 @@ def train(args):
         )
 
     corpus_sha256 = hashlib.sha256(corpus.encode("utf-8")).hexdigest()
-    train_text, validation_text = split_corpus_blocks(
-        corpus, args.validation_fraction, args.seed
+    train_text, validation_text = split_corpus_sources(
+        sources, args.validation_fraction, args.seed
     )
     # Fit vocabulary/merges on training text only: validation data stays unseen.
     tokenizer = ByteBPETokenizer.train(
