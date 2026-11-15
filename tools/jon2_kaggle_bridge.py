@@ -30,6 +30,7 @@ ALLOWED_COMMANDS = {
     "list_training_files",
     "checkpoint_metadata",
     "sha256_file",
+    "tokenizer_checkpoint_audit",
 }
 
 
@@ -238,11 +239,81 @@ def sha256_file(args: dict[str, Any]) -> dict[str, Any]:
     return {"path": str(path), "size_bytes": path.stat().st_size, "sha256": digest.hexdigest()}
 
 
+
+def tokenizer_checkpoint_audit(args: dict[str, Any]) -> dict[str, Any]:
+    """Rebuild the historical tokenizer from an approved corpus without training or writes."""
+    data_dir = Path(args.get("data_dir", "")).resolve()
+    checkpoint_path = safe_path(args.get("checkpoint_path"))
+    tokenizer_file = safe_path(args.get("tokenizer_file"))
+    if checkpoint_path.suffix.lower() not in {".pt", ".pth"}:
+        raise ValueError("checkpoint_path must point to a .pt or .pth file")
+    if tokenizer_file.name != "tokenizer.py":
+        raise ValueError("tokenizer_file must be the project's tokenizer.py")
+    if not data_dir.is_dir() or not any(
+        data_dir == root or root in data_dir.parents for root in SAFE_ROOTS
+    ):
+        raise ValueError("data_dir must be inside /kaggle/input or /kaggle/working")
+    import importlib.util
+    import torch
+    spec = importlib.util.spec_from_file_location("jon2_audit_tokenizer", tokenizer_file)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Could not load the supplied Jon2 tokenizer module")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    read_corpus = getattr(module, "read_corpus", None)
+    if not callable(read_corpus):
+        raise RuntimeError("tokenizer module does not expose read_corpus")
+    corpus = read_corpus(data_dir)
+    corpus_hash = hashlib.sha256(corpus.encode("utf-8")).hexdigest()
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+    if not isinstance(checkpoint, dict) or not isinstance(checkpoint.get("tokenizer"), dict):
+        raise ValueError("Checkpoint does not contain a serialized tokenizer")
+    plan = checkpoint.get("training_plan") or {}
+    split_name = plan.get("validation_split_algorithm")
+    if split_name != "seeded_paragraph_blocks_v1":
+        raise ValueError(f"Unsupported historical split algorithm: {split_name!r}")
+    import math
+    import random
+    blocks = [b.strip() for b in re.split(r"\\n\\s*\\n", corpus) if b.strip()]
+    indices = list(range(len(blocks)))
+    seed = int(plan.get("seed", 42))
+    fraction = float(plan.get("validation_fraction", checkpoint.get("validation_fraction", 0.1)))
+    random.Random(seed).shuffle(indices)
+    validation_count = max(1, math.ceil(len(blocks) * fraction))
+    validation_indices = set(indices[:validation_count])
+    train_text = "\\n\\n".join(b for i, b in enumerate(blocks) if i not in validation_indices)
+    expected_corpus_hash = checkpoint.get("corpus_sha256")
+    tokenizer_config = checkpoint["tokenizer"]
+    vocab_size = int(plan.get("tokenizer_vocab_size", 512))
+    min_frequency = int(plan.get("tokenizer_min_frequency", 2))
+    rebuilt = module.ByteBPETokenizer.train(
+        train_text, vocab_size=vocab_size, min_frequency=min_frequency
+    )
+    rebuilt_dict = rebuilt.to_dict()
+    return {
+        "corpus_characters": len(corpus),
+        "corpus_sha256": corpus_hash,
+        "checkpoint_corpus_sha256": expected_corpus_hash,
+        "corpus_matches_checkpoint": corpus_hash == expected_corpus_hash,
+        "paragraph_blocks": len(blocks),
+        "training_blocks": len(blocks) - validation_count,
+        "validation_blocks": validation_count,
+        "training_characters": len(train_text),
+        "validation_fraction": fraction,
+        "seed": seed,
+        "tokenizer_matches_checkpoint": rebuilt_dict == tokenizer_config,
+        "rebuilt_vocab_size": getattr(rebuilt, "vocab_size", None),
+        "checkpoint_sha256": hashlib.sha256(checkpoint_path.read_bytes()).hexdigest(),
+        "note": "Read-only audit. No training, checkpoint writes, or model-weight changes.",
+    }
+
+
 HANDLERS = {
     "audit_environment": audit_environment,
     "list_training_files": list_training_files,
     "checkpoint_metadata": checkpoint_metadata,
     "sha256_file": sha256_file,
+    "tokenizer_checkpoint_audit": tokenizer_checkpoint_audit,
 }
 
 
@@ -319,7 +390,7 @@ def main() -> None:
     bridge = GitHubBridge(token, repo, branch)
     print("Jon2 Kaggle Bridge connected to a verified private repository.")
     print(f"Control branch: {branch}")
-    print("Allow-listed read-only commands:", ", ".join(sorted(ALLOWED_COMMANDS)))
+    print("Allow-listed commands (read-only audits):", ", ".join(sorted(ALLOWED_COMMANDS)))
     print("No shell execution, training, checkpoint writes, deletes, or deployment.")
     started = time.monotonic()
     processed = 0
