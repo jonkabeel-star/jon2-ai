@@ -24,7 +24,7 @@ class SourceSplitTests(unittest.TestCase):
             ("b.txt", "مَرْحَبًا   يا صديقي"),
         ]
         with self.assertRaisesRegex(ValueError, "duplicate content crosses"):
-            split_corpus_sources(sources, 0.5, 1)
+            split_corpus_sources(sources, 0.25, 1)
 
     def test_requires_two_independent_sources(self):
         with self.assertRaisesRegex(ValueError, "At least two"):
@@ -32,7 +32,7 @@ class SourceSplitTests(unittest.TestCase):
 
     def test_rejects_duplicate_source_ids(self):
         with self.assertRaisesRegex(ValueError, "Duplicate corpus source ID"):
-            split_corpus_sources([("same.txt", "A"), ("same.txt", "B")], 0.5, 42)
+            split_corpus_sources([("same.txt", "A"), ("same.txt", "B")], 0.25, 42)
 
     def test_is_deterministic(self):
         sources = [(f"{i}.txt", f"unique text {i}") for i in range(10)]
