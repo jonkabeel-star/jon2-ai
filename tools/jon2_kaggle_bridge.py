@@ -330,6 +330,16 @@ def model_quality_audit(args: dict[str, Any]) -> dict[str, Any]:
     import importlib.util
     import sys
     sys.path.insert(0, str(core_file.parent))
+    # Older Kaggle Dataset snapshots may omit corpus_reader.py. The inference
+    # functions do not use it; provide a fail-closed training-only stub so the
+    # core module can be imported for load_model/generate without enabling train().
+    if importlib.util.find_spec("corpus_reader") is None:
+        import types
+        corpus_reader_stub = types.ModuleType("corpus_reader")
+        def _training_only_read_corpus(*_args, **_kwargs):
+            raise RuntimeError("corpus_reader is unavailable; training is disabled in this audit")
+        corpus_reader_stub.read_corpus = _training_only_read_corpus
+        sys.modules["corpus_reader"] = corpus_reader_stub
     spec = importlib.util.spec_from_file_location("jon2_quality_core", core_file)
     if spec is None or spec.loader is None:
         raise RuntimeError("Could not load the supplied Jon2 core module")
