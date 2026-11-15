@@ -76,14 +76,14 @@ def read_corpus_sources(folder: Path, include_jsonl: bool = False) -> list[tuple
     for path in files:
         if path.suffix.lower() == ".jsonl":
             parts = _read_dialogue_jsonl(path)
-            text = "\\n\\n".join(parts).strip()
+            text = "\n\n".join(parts).strip()
         else:
             raw_text = path.read_text(encoding="utf-8", errors="strict")
             useful = [
                 line for line in raw_text.splitlines()
                 if not line.lstrip().startswith("#")
             ]
-            text = "\\n".join(useful).strip()
+            text = "\n".join(useful).strip()
         if text:
             source_id = path.relative_to(folder).as_posix()
             sources.append((source_id, text))
@@ -101,4 +101,4 @@ def read_corpus(folder: Path, include_jsonl: bool = False) -> str:
     sources = read_corpus_sources(folder, include_jsonl=include_jsonl)
     parts = [text for _, text in sources]
     unique_parts = list(dict.fromkeys(part.strip() for part in parts if part.strip()))
-    return "\\n\\n".join(unique_parts).strip()
+    return "\n\n".join(unique_parts).strip()
