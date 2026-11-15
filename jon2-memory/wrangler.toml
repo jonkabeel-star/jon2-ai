@@ -1,0 +1,11 @@
+name = "jon2-memory"
+main = "worker.js"
+compatibility_date = "2026-11-10"
+
+[[d1_databases]]
+binding = "MEMORY_DB"
+database_name = "jon2-memory"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+[vars]
+ALLOWED_ORIGINS = "https://jon2-ai.pages.dev,https://jon2-ai.jonkabeel.workers.dev"
