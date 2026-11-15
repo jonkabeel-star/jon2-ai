@@ -20,16 +20,19 @@ Every candidate stays quarantined until its exact version, upstream provenance, 
 
 | Candidate | Publicly declared terms / scope | Proposed treatment |
 |---|---|---|
-| UBC-NLP/Alexandria | CC BY-NC 4.0; multi-turn Arabic dialect conversations including Egyptian; published train/test splits | Quarantine. Non-commercial restriction is incompatible with commercial use. Never merge its test split into training. |
-| Almheiri/ArabCulture-Dialogue | CC BY-SA 4.0; human-curated MSA and country dialect multi-turn dialogue; includes Egypt; published eval split | Evaluation candidate only, subject to share-alike and adaptation review. Preserve its eval split; do not train on it. |
+| UBC-NLP/Alexandria | Current dataset card declares CC BY-NC 4.0; a separately surfaced historical/revision-specific README declares CC BY-NC-ND 4.0. Multi-turn Arabic dialect conversations including Egyptian; published train/dev/public-test/private-test splits | **Quarantine / license conflict.** Pin an exact immutable revision and obtain written clarification from the publisher before any use. NC blocks commercial use; ND adds a separate adaptation concern. Never merge any test split into training. |
+| Almheiri/ArabCulture-Dialogue | CC BY-SA 4.0; human-curated MSA and country dialect multi-turn dialogue; includes Egypt; currently exposes a single `eval` split per country | **Evaluation-only candidate.** Keep entirely outside training. Review share-alike implications and the upstream ArabCulture rights chain before use, even for evaluation. |
 | ArSyra Arabic instruction/chatbot collections | Dataset cards declare CC BY-NC-SA 4.0; access/preview and paid full-data terms vary by collection | Quarantine pending exact file access terms and non-commercial/share-alike review. No paid data is assumed licensed. |
 | Owner-authored Jon2 dialogues | Must be created by the project owner or contributors under a written assignment/license explicitly covering model training and intended distribution | Preferred source family. Store signed provenance/consent evidence privately; never put private records or signatures in the public repository. |
 | Commissioned/native-speaker Egyptian dialogue | Requires contributor contracts covering recording/transcription, model training, derivative weights, commercial use if applicable, privacy, and withdrawal terms | Preferred source family for authentic Egyptian conversation, after written rights and privacy review. |
+| LDC JANA Egyptian human-human dialogue corpus | LDC publishes a separate for-profit agreement allowing incorporation of portions into commercial work products for linguistic education/research/technology development; redistribution/display of the source data is restricted and access is licensed | **Commercial licensing lead only.** Obtain the actual license, confirm intended product use with LDC, price, access terms, and derivative-weight scope before considering it. Not downloaded or approved. |
 
 References reviewed during planning:
 - Alexandria dataset card: https://huggingface.co/datasets/UBC-NLP/alexandria
 - ArabCulture-Dialogue dataset card: https://huggingface.co/datasets/Almheiri/ArabCulture-Dialogue
 - ArSyra chatbot dataset card: https://huggingface.co/datasets/ArSyra/arsyra-chatbot
+- Alexandria project split description: https://alexandria.dlnlp.ai/
+- LDC JANA for-profit license agreement: https://catalog.ldc.upenn.edu/license/jana-a-human-human-dialogues-corpus-for-egyptian-dialect-agreement-for-profit.pdf
 - Arabic dataset catalogue (discovery only): https://arbml.github.io/masader/
 
 No external source above is approved for Jon2 training by this plan.
@@ -46,7 +49,7 @@ For each exact dataset revision, record privately:
 - exact downloaded file names, byte counts, SHA-256 hashes, and collection date;
 - reviewer identity, decision, and decision date.
 
-Unknown, missing, NC, SA, research-only, or otherwise incompatible terms remain excluded unless a qualified reviewer confirms compatibility for the actual intended use. Do not infer permission from public availability.
+Unknown, missing, NC, ND, SA, research-only, or otherwise incompatible terms remain excluded unless a qualified reviewer confirms compatibility for the actual intended use. Do not infer permission from public availability. A changing dataset-card badge is not enough: record the exact immutable revision and archive the license text that applied to that revision.
 
 ## 5. Data design and split discipline
 
@@ -89,6 +92,9 @@ A UI change, health endpoint, low validation loss, or successful model load cann
 ## 8. Immediate next actions
 
 - Confirm whether Jon2 is intended for commercial use. This determines whether NC datasets are categorically excluded.
+- Resolve Alexandria's surfaced license discrepancy against the exact pinned revision; until then, exclude it.
+- Treat ArabCulture-Dialogue as an external eval-only set, not a source for training examples.
+- If commercial development is intended, request LDC's current JANA commercial terms and written confirmation of the intended model/weight use.
 - Build a rights-reviewed owner-authored Egyptian/MSA conversation set and/or commission contributors with explicit model-training rights.
 - Keep public benchmark/eval datasets separate from training.
 - Only after the approved corpus and private GPU environment exist, run preflight and training.
