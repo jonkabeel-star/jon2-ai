@@ -31,6 +31,7 @@ ALLOWED_COMMANDS = {
     "checkpoint_metadata",
     "sha256_file",
     "tokenizer_checkpoint_audit",
+    "model_quality_audit",
 }
 
 
@@ -317,12 +318,62 @@ def tokenizer_checkpoint_audit(args: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+
+def model_quality_audit(args: dict[str, Any]) -> dict[str, Any]:
+    """Run fixed deterministic inference prompts; never train or write model files."""
+    checkpoint_path = safe_path(args.get("checkpoint_path"))
+    core_file = safe_path(args.get("core_file"))
+    if checkpoint_path.suffix.lower() not in {".pt", ".pth"}:
+        raise ValueError("checkpoint_path must point to a .pt or .pth file")
+    if core_file.name != "jon2_core.py":
+        raise ValueError("core_file must be the project's jon2_core.py")
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("jon2_quality_core", core_file)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Could not load the supplied Jon2 core module")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    load_model = getattr(module, "load_model", None)
+    generate = getattr(module, "generate", None)
+    if not callable(load_model) or not callable(generate):
+        raise RuntimeError("Jon2 core must expose load_model and generate")
+    model, tokenizer, device = load_model(str(checkpoint_path), device="cpu")
+    prompts = [
+        "المستخدم: ما عاصمة مصر؟\nJon2: ",
+        "المستخدم: إزيك يا صاحبي؟ عامل إيه؟\nJon2: ",
+        "المستخدم: اشرح معنى الصداقة باختصار.\nJon2: ",
+        "المستخدم: كم يساوي اثنان زائد ثلاثة؟\nJon2: ",
+        "المستخدم: لماذا نتعلم اللغة العربية؟\nJon2: ",
+    ]
+    outputs = []
+    for prompt in prompts:
+        answer = generate(
+            model, tokenizer, prompt, device,
+            max_new_chars=220,
+            temperature=0.8,
+            do_sample=False,
+            repetition_penalty=1.12,
+            no_repeat_ngram_size=3,
+            top_k=40,
+        )
+        outputs.append({"prompt": prompt, "output": str(answer)})
+    return {
+        "checkpoint_path": str(checkpoint_path),
+        "checkpoint_sha256": hashlib.sha256(checkpoint_path.read_bytes()).hexdigest(),
+        "device": str(device),
+        "tokenizer_vocab_size": getattr(tokenizer, "vocab_size", None),
+        "samples": outputs,
+        "note": "Deterministic inference-only quality snapshot. No optimizer, training, or checkpoint writes.",
+    }
+
+
 HANDLERS = {
     "audit_environment": audit_environment,
     "list_training_files": list_training_files,
     "checkpoint_metadata": checkpoint_metadata,
     "sha256_file": sha256_file,
     "tokenizer_checkpoint_audit": tokenizer_checkpoint_audit,
+    "model_quality_audit": model_quality_audit,
 }
 
 
