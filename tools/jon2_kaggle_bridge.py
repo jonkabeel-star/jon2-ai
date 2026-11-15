@@ -284,7 +284,7 @@ def tokenizer_checkpoint_audit(args: dict[str, Any]) -> dict[str, Any]:
         raise ValueError(f"Unsupported historical split algorithm: {split_name!r}")
     import math
     import random
-    blocks = [b.strip() for b in re.split(r"\n\\s*\n", corpus) if b.strip()]
+    blocks = [b.strip() for b in re.split(r"\n\s*\n", corpus) if b.strip()]
     indices = list(range(len(blocks)))
     seed = int(plan.get("seed", 42))
     fraction = float(plan.get("validation_fraction", checkpoint.get("validation_fraction", 0.1)))
