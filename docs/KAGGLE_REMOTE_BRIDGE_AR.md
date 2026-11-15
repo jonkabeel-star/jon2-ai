@@ -76,3 +76,22 @@
 ```
 
 تُرجع المهمة بصمة corpus، وعدد فقرات التدريب والتحقق، ونتيجة مقارنة tokenizer المعاد بناؤه بالنسخة المحفوظة في checkpoint. لا تعتمد النتيجة إلا بعد ظهور ملف النتيجة والإيصال في مستودع التحكم الخاص.
+
+
+## تقييم جودة النموذج (استدلال فقط)
+
+الأمر `model_quality_audit` يشغّل خمسة أسئلة عربية ثابتة على CPU وبطريقة greedy deterministic، ثم يعيد النصوص الناتجة وبصمة checkpoint. لا يستخدم optimizer ولا ينفذ تدريبًا ولا يكتب أوزانًا.
+
+مثال مهمة:
+
+```json
+{
+  "id": "model-quality-audit-20261115",
+  "command": "model_quality_audit",
+  "args": {
+    "checkpoint_path": "/kaggle/input/datasets/jon2kabeel/jon2-private-model-checkpoint/jon2-last.pt",
+    "core_file": "/kaggle/input/datasets/jon2kabeel/jon2-approved-training-data/jon2_core.py"
+  }
+}
+```
+
