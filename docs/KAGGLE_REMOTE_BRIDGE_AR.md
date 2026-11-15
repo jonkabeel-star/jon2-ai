@@ -51,3 +51,28 @@
 3. تشغّل Notebook في جلسة Kaggle.
 
 لا توجد خدمة inbound أو جلسة Kaggle دائمة. أي مهمة ستنتظر حتى تكون Notebook تعمل.
+
+
+## فحص تطابق tokenizer مع checkpoint (قراءة فقط)
+
+بعد تشغيل الخلية التي تنزّل الجسر المحدّث، يمكن إرسال مهمة باسم `tokenizer_checkpoint_audit`.
+تحتاج المهمة إلى:
+- `data_dir`: مجلد ملفات النصوص التاريخية الستة بعد تنزيلها إلى `/kaggle/working/jon2_historical_audit`.
+- `checkpoint_path`: مسار checkpoint داخل `/kaggle/input`.
+- `tokenizer_file`: مسار ملف `tokenizer.py` داخل Dataset المشروع.
+
+مثال مهمة (لا تنفذ تدريبًا ولا تكتب checkpoint):
+
+```json
+{
+  "id": "tokenizer-checkpoint-audit-20261115",
+  "command": "tokenizer_checkpoint_audit",
+  "args": {
+    "data_dir": "/kaggle/working/jon2_historical_audit",
+    "checkpoint_path": "/kaggle/input/datasets/jon2kabeel/jon2-private-model-checkpoint/jon2-last.pt",
+    "tokenizer_file": "/kaggle/input/datasets/jon2kabeel/jon2-approved-training-data/tokenizer.py"
+  }
+}
+```
+
+تُرجع المهمة بصمة corpus، وعدد فقرات التدريب والتحقق، ونتيجة مقارنة tokenizer المعاد بناؤه بالنسخة المحفوظة في checkpoint. لا تعتمد النتيجة إلا بعد ظهور ملف النتيجة والإيصال في مستودع التحكم الخاص.
