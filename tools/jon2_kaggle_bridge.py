@@ -328,6 +328,8 @@ def model_quality_audit(args: dict[str, Any]) -> dict[str, Any]:
     if core_file.name != "jon2_core.py":
         raise ValueError("core_file must be the project's jon2_core.py")
     import importlib.util
+    import sys
+    sys.path.insert(0, str(core_file.parent))
     spec = importlib.util.spec_from_file_location("jon2_quality_core", core_file)
     if spec is None or spec.loader is None:
         raise RuntimeError("Could not load the supplied Jon2 core module")
