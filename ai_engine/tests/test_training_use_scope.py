@@ -39,6 +39,19 @@ class TrainingUseScopeCliTests(unittest.TestCase):
         plan = train_jon2._training_plan(args)
         self.assertEqual(plan["required_intended_use"], "research_training")
 
+    def test_legacy_checkpoint_plan_defaults_to_research_only(self):
+        current = {"required_intended_use": "research_training", "batch_size": 4}
+        saved = {"batch_size": 4}
+        self.assertEqual(
+            train_jon2.resume_plan_differences(saved, current), {}
+        )
+
+    def test_legacy_checkpoint_cannot_resume_for_public_training(self):
+        current = {"required_intended_use": "public_model", "batch_size": 4}
+        saved = {"batch_size": 4}
+        differences = train_jon2.resume_plan_differences(saved, current)
+        self.assertIn("required_intended_use", differences)
+
 
 if __name__ == "__main__":
     unittest.main()
