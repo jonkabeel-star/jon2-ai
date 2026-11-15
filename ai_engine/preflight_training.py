@@ -12,11 +12,11 @@ import json
 import re
 from pathlib import Path
 
-from corpus_reader import read_corpus
+from corpus_reader import read_corpus_sources
 from model_profiles import describe_profile, estimate_parameters
 from source_approval import validate_source_approvals
 from tokenizer import ByteBPETokenizer
-from train_jon2 import split_corpus_blocks
+from source_split import split_corpus_sources
 
 MINIMUM_CORPUS_CHARACTERS = 1_000_000
 MINIMUM_TOKENS_PER_PARAMETER = 20.0
@@ -107,9 +107,10 @@ def build_report(
     validate_source_approvals(
         data_dir, approval_manifest, include_jsonl=include_jsonl
     )
-    corpus = read_corpus(data_dir, include_jsonl=include_jsonl)
+    sources = read_corpus_sources(data_dir, include_jsonl=include_jsonl)
+    corpus = "\n\n".join(text for _, text in sources)
     profile = describe_profile(profile_name)
-    train_text, validation_text = split_corpus_blocks(corpus, 0.1, seed)
+    train_text, validation_text = split_corpus_sources(sources, 0.1, seed)
     estimated_target_parameters = profile["estimated_parameters"]
     probe_vocab_size = min(profile["tokenizer_vocab_size"], 512)
     probe_tokenizer = ByteBPETokenizer.train(
@@ -187,6 +188,7 @@ def build_report(
         "warnings": [
             "Parameter counts are architecture estimates from configuration; this preflight does not instantiate a model or inspect trained weights.",
             "Script counts do not identify MSA versus Egyptian dialect.",
+            "Train/validation are split by approved source file; exact normalized Arabic paragraph overlap blocks the run.",
             "Token counts and validation loss do not prove semantic understanding.",
             "A human must review source quality, factuality, privacy, and rights.",
         ],
