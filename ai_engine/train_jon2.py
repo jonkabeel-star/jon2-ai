@@ -76,6 +76,10 @@ def resume_plan_differences(saved_plan, current_plan):
         return {}
     saved = dict(saved_plan)
     current = dict(current_plan)
+    # Checkpoints created before use-scope metadata existed are treated as
+    # private research only. They must never silently resume into public or
+    # commercial training.
+    saved.setdefault("required_intended_use", "research_training")
     # Continuation runs increase the total target; exclude steps on BOTH sides.
     saved.pop("steps", None)
     current.pop("steps", None)
