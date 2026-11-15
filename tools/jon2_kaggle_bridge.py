@@ -261,10 +261,10 @@ def tokenizer_checkpoint_audit(args: dict[str, Any]) -> dict[str, Any]:
     for source in txt_files:
         lines = source.read_text(encoding="utf-8", errors="strict").splitlines()
         useful = [line for line in lines if not line.lstrip().startswith("#")]
-        cleaned = "\\n".join(useful).strip()
+        cleaned = "\n".join(useful).strip()
         if cleaned:
             parts.append(cleaned)
-    corpus = "\\n\\n".join(parts).strip()
+    corpus = "\n\n".join(parts).strip()
     if len(corpus) < 1000:
         raise ValueError("Reconstructed corpus is unexpectedly short")
     import importlib.util
@@ -284,14 +284,14 @@ def tokenizer_checkpoint_audit(args: dict[str, Any]) -> dict[str, Any]:
         raise ValueError(f"Unsupported historical split algorithm: {split_name!r}")
     import math
     import random
-    blocks = [b.strip() for b in re.split(r"\\n\\s*\\n", corpus) if b.strip()]
+    blocks = [b.strip() for b in re.split(r"\n\\s*\n", corpus) if b.strip()]
     indices = list(range(len(blocks)))
     seed = int(plan.get("seed", 42))
     fraction = float(plan.get("validation_fraction", checkpoint.get("validation_fraction", 0.1)))
     random.Random(seed).shuffle(indices)
     validation_count = max(1, math.ceil(len(blocks) * fraction))
     validation_indices = set(indices[:validation_count])
-    train_text = "\\n\\n".join(b for i, b in enumerate(blocks) if i not in validation_indices)
+    train_text = "\n\n".join(b for i, b in enumerate(blocks) if i not in validation_indices)
     expected_corpus_hash = checkpoint.get("corpus_sha256")
     tokenizer_config = checkpoint["tokenizer"]
     vocab_size = int(plan.get("tokenizer_vocab_size", 512))
