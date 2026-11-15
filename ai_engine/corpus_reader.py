@@ -52,12 +52,11 @@ def _read_dialogue_jsonl(path: Path) -> list[str]:
     return conversations
 
 
-def read_corpus(folder: Path, include_jsonl: bool = False) -> str:
-    """Read UTF-8 .txt sources; optionally format JSONL messages as complete conversations.
+def read_corpus_sources(folder: Path, include_jsonl: bool = False) -> list[tuple[str, str]]:
+    """Read approved files without flattening away their source boundaries.
 
-    JSONL is opt-in so unapproved dialogue files cannot silently enter training.
-    Each conversation is kept in its own blank-line-delimited block for splitting.
-    Minimum corpus-size checks are enforced by the training entry point.
+    Each TXT or JSONL file remains one indivisible source group. JSONL
+    conversations in the same file are never separated into different splits.
     """
     folder = Path(folder)
     if not folder.is_dir():
@@ -73,18 +72,33 @@ def read_corpus(folder: Path, include_jsonl: bool = False) -> str:
         expected = ".txt or approved .jsonl" if include_jsonl else ".txt"
         raise FileNotFoundError(f"No {expected} training files found in {folder}.")
 
-    parts: list[str] = []
+    sources: list[tuple[str, str]] = []
     for path in files:
         if path.suffix.lower() == ".jsonl":
-            parts.extend(_read_dialogue_jsonl(path))
-            continue
-        raw_text = path.read_text(encoding="utf-8", errors="strict")
-        lines = raw_text.splitlines()
-        useful = [line for line in lines if not line.lstrip().startswith("#")]
-        text = "\n".join(useful).strip()
+            parts = _read_dialogue_jsonl(path)
+            text = "\\n\\n".join(parts).strip()
+        else:
+            raw_text = path.read_text(encoding="utf-8", errors="strict")
+            useful = [
+                line for line in raw_text.splitlines()
+                if not line.lstrip().startswith("#")
+            ]
+            text = "\\n".join(useful).strip()
         if text:
-            parts.append(text)
+            source_id = path.relative_to(folder).as_posix()
+            sources.append((source_id, text))
+    if not sources:
+        raise ValueError(f"No usable training text found in {folder}.")
+    return sources
 
-    # Remove exact duplicate blocks without reordering the original examples.
+
+def read_corpus(folder: Path, include_jsonl: bool = False) -> str:
+    """Read approved text while retaining the legacy flattened corpus API.
+
+    New training and preflight paths must use read_corpus_sources so the split
+    algorithm can keep each exact approved file in one partition.
+    """
+    sources = read_corpus_sources(folder, include_jsonl=include_jsonl)
+    parts = [text for _, text in sources]
     unique_parts = list(dict.fromkeys(part.strip() for part in parts if part.strip()))
-    return "\n\n".join(unique_parts).strip()
+    return "\\n\\n".join(unique_parts).strip()
