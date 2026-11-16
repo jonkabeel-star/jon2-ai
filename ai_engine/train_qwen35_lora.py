@@ -1,4 +1,4 @@
-"""QLoRA fine-tuning for Jon2 on Qwen3.5-9B.
+"""QLoRA fine-tuning for Jon2 on Qwen3.5-4B.
 
 Fail-closed: CUDA only, separately approved train/eval JSONL, exact SHA-256
 source manifests, held-out leakage checks, assistant-only loss, private adapter.
@@ -170,7 +170,7 @@ def main() -> None:
         raise ValueError("Duplicate conversations detected; deduplicate before training.")
 
     from datasets import Dataset
-    from transformers import AutoTokenizer, Qwen3_5ForCausalLM, BitsAndBytesConfig, Trainer, TrainingArguments
+    from transformers import AutoProcessor, Qwen3_5ForConditionalGeneration, BitsAndBytesConfig, Trainer, TrainingArguments
     from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
     if "eval_strategy" not in inspect.signature(TrainingArguments.__init__).parameters:
@@ -187,11 +187,12 @@ def main() -> None:
         load_in_4bit=True, bnb_4bit_quant_type="nf4",
         bnb_4bit_use_double_quant=True, bnb_4bit_compute_dtype=compute_dtype,
     )
-    tokenizer = AutoTokenizer.from_pretrained(args.model_id, trust_remote_code=False)
+    processor = AutoProcessor.from_pretrained(args.model_id, trust_remote_code=False)
+    tokenizer = processor.tokenizer
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
-    model = Qwen3_5ForCausalLM.from_pretrained(
+    model = Qwen3_5ForConditionalGeneration.from_pretrained(
         args.model_id, quantization_config=quant, device_map={"": 0},
         torch_dtype=compute_dtype, low_cpu_mem_usage=True,
         trust_remote_code=False, attn_implementation="sdpa",
@@ -277,7 +278,7 @@ def main() -> None:
     trainer.train(resume_from_checkpoint=args.resume_from_checkpoint)
     evaluation = trainer.evaluate()
 
-    adapter_dir = args.output_dir / "jon2-qwen35-9b-lora"
+    adapter_dir = args.output_dir / "jon2-qwen35-4b-lora"
     model.save_pretrained(adapter_dir, safe_serialization=True)
     tokenizer.save_pretrained(adapter_dir)
     files = {
@@ -287,7 +288,7 @@ def main() -> None:
         for path in sorted(adapter_dir.rglob("*")) if path.is_file()
     }
     manifest = {
-        "format": "jon2-qwen35-lora-manifest-v2",
+        "format": "jon2-qwen35-4b-lora-manifest-v3",
         "base_model": args.model_id, "base_model_is_third_party": True,
         "jon2_artifact": "LoRA adapter only; base model weights are not copied",
         "created_at": datetime.now(timezone.utc).isoformat(),
