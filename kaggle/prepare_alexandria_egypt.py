@@ -25,37 +25,28 @@ def digest(path: Path) -> str:
     return h.hexdigest()
 
 
-def convert_conversation(row: dict) -> dict | None:
+def convert_conversation(row: dict) -> list[dict]:
     turns = row.get("dialectal_conversation")
     if not isinstance(turns, list):
-        return None
+        return []
     turns = sorted(
         [t for t in turns if isinstance(t, dict) and isinstance(t.get("text"), str)
          and t["text"].strip()],
         key=lambda t: int(t.get("turn_order", 0)),
     )
-    # The source contains two-person dialogues. Preserve turn order, map the
-    # first participant to user and the second to assistant, and reject
-    # non-alternating/ambiguous sequences rather than inventing role labels.
-    if len(turns) < 2:
-        return None
-    usable = turns[:len(turns) - (len(turns) % 2)]
-    messages = []
-    previous_speaker = None
-    for index, turn in enumerate(usable):
-        speaker = str(turn.get("speaker", "")).strip()
-        text = turn["text"].strip()
-        if not speaker or speaker == previous_speaker:
-            return None
-        previous_speaker = speaker
-        messages.append({
-            "role": "user" if index % 2 == 0 else "assistant",
-            "content": text,
-        })
-    if len(messages) < 2:
-        return None
-    return {"messages": messages}
-
+    # Preserve adjacent exchanges; do not invent a global alternating speaker
+    # map because source speaker labels can vary between conversations.
+    examples = []
+    for first, second in zip(turns, turns[1:]):
+        speaker_a = str(first.get("speaker", "")).strip()
+        speaker_b = str(second.get("speaker", "")).strip()
+        if not speaker_a or not speaker_b or speaker_a == speaker_b:
+            continue
+        examples.append({"messages": [
+            {"role": "user", "content": first["text"].strip()},
+            {"role": "assistant", "content": second["text"].strip()},
+        ]})
+    return examples
 
 def write_split(dataset, target: Path) -> tuple[int, int]:
     target.mkdir(parents=True, exist_ok=True)
@@ -65,16 +56,14 @@ def write_split(dataset, target: Path) -> tuple[int, int]:
     chars = 0
     with output.open("w", encoding="utf-8") as f:
         for row in dataset:
-            item = convert_conversation(row)
-            if item is None:
-                continue
-            key = json.dumps(item, ensure_ascii=False, sort_keys=True)
-            if key in seen:
-                continue
-            seen.add(key)
-            f.write(json.dumps(item, ensure_ascii=False) + "\n")
-            count += 1
-            chars += sum(len(m["content"]) for m in item["messages"])
+            for item in convert_conversation(row):
+                key = json.dumps(item, ensure_ascii=False, sort_keys=True)
+                if key in seen:
+                    continue
+                seen.add(key)
+                f.write(json.dumps(item, ensure_ascii=False) + "\\n")
+                count += 1
+                chars += sum(len(m["content"]) for m in item["messages"])
     manifest = {
         "dataset": DATASET_ID,
         "config": DATASET_CONFIG,
@@ -109,10 +98,19 @@ def main():
         shutil.rmtree(root)
     print("Loading Egyptian subset from", DATASET_ID)
     print("License:", LICENSE, "| PRIVATE NON-COMMERCIAL RESEARCH ONLY")
+    from datasets import get_dataset_split_names
+    available_splits = get_dataset_split_names(DATASET_ID, config_name=DATASET_CONFIG)
+    print("Available Egyptian splits:", available_splits)
+    heldout_name = next((name for name in ("test", "validation", "dev") if name in available_splits), None)
+    if "train" not in available_splits or heldout_name is None:
+        raise RuntimeError(
+            "Expected train plus a separate test/validation/dev split. "
+            "Refusing to create a random split from training data."
+        )
     train = load_dataset(DATASET_ID, name=DATASET_CONFIG, split="train")
-    test = load_dataset(DATASET_ID, name=DATASET_CONFIG, split="test")
+    heldout = load_dataset(DATASET_ID, name=DATASET_CONFIG, split=heldout_name)
     train_count, train_chars = write_split(train, root / "train")
-    eval_count, eval_chars = write_split(test, root / "eval")
+    eval_count, eval_chars = write_split(heldout, root / "eval")
     print("\nPREPARATION REPORT")
     print("Train conversations:", train_count, "| characters:", train_chars)
     print("Held-out test conversations:", eval_count, "| characters:", eval_chars)
