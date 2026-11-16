@@ -204,14 +204,19 @@ def main() -> None:
         "q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj",
         "in_proj_qkv", "in_proj_z", "in_proj_a", "in_proj_b", "out_proj",
     }
-    linear_suffixes = set()
-    for name, module in model.named_modules():
-        if hasattr(module, "weight") and module.__class__.__name__.lower().find("linear") >= 0:
-            linear_suffixes.add(name.rsplit(".", 1)[-1])
-    targets = sorted(candidate_targets & linear_suffixes)
+    # Restrict LoRA to the language backbone. Suffix-only matching could
+    # unintentionally attach adapters to same-named vision-tower projections.
+    targets = sorted(
+        name for name, module in model.named_modules()
+        if name.startswith("model.language_model.")
+        and name.rsplit(".", 1)[-1] in candidate_targets
+        and hasattr(module, "weight")
+        and "linear" in module.__class__.__name__.lower()
+    )
     if not targets:
-        raise RuntimeError("No supported Qwen3.5 linear target modules found; refusing to train with an empty LoRA target set.")
-    print("LoRA target modules:", targets)
+        raise RuntimeError("No supported Qwen3.5 language-backbone LoRA targets found; refusing to train with an empty target set.")
+    print("LoRA language-backbone target count:", len(targets))
+    print("LoRA target examples:", targets[:12])
     model = get_peft_model(model, LoraConfig(
         r=args.lora_r, lora_alpha=args.lora_r * 2, lora_dropout=0.05,
         bias="none", task_type="CAUSAL_LM", target_modules=targets,
