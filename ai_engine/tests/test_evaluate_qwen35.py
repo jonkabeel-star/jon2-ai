@@ -31,8 +31,8 @@ class Qwen35EvaluationContractTests(unittest.TestCase):
             path = Path(directory) / "bad.jsonl"
             item = {"id": "same", "prompt": "مرحبا"}
             path.write_text(
-                json.dumps(item, ensure_ascii=False) + "\\n"
-                + json.dumps(item, ensure_ascii=False) + "\\n",
+                json.dumps(item, ensure_ascii=False) + "\n"
+                + json.dumps(item, ensure_ascii=False) + "\n",
                 encoding="utf-8",
             )
             with self.assertRaisesRegex(ValueError, "duplicate"):
@@ -46,7 +46,7 @@ class Qwen35EvaluationContractTests(unittest.TestCase):
                 "prompt": "مرحبا",
                 "turns": [{"role": "user", "content": "مرحبا"}],
             }
-            path.write_text(json.dumps(item, ensure_ascii=False) + "\\n", encoding="utf-8")
+            path.write_text(json.dumps(item, ensure_ascii=False) + "\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "exactly one"):
                 load_records(path)
 
@@ -60,7 +60,7 @@ class Qwen35EvaluationContractTests(unittest.TestCase):
                     {"role": "assistant", "content": "رد"},
                 ],
             }
-            path.write_text(json.dumps(item, ensure_ascii=False) + "\\n", encoding="utf-8")
+            path.write_text(json.dumps(item, ensure_ascii=False) + "\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "Last turn must be user"):
                 load_records(path)
 
@@ -69,7 +69,7 @@ class Qwen35EvaluationContractTests(unittest.TestCase):
         notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
         self.assertEqual(notebook.get("nbformat"), 4)
         self.assertTrue(notebook.get("cells"))
-        source = "\\n".join(
+        source = "\n".join(
             "".join(cell.get("source", []))
             for cell in notebook["cells"]
             if cell.get("cell_type") == "code"
