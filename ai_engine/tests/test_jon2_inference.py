@@ -11,6 +11,9 @@ class Jon2InferenceTests(unittest.TestCase):
         self.assertIn("المصري الطبيعي", JON2_SYSTEM_PROMPT)
         self.assertIn("شنو", JON2_SYSTEM_PROMPT)
         self.assertIn("ما تناديش المستخدم باسم", JON2_SYSTEM_PROMPT)
+        self.assertIn("تجنب افتراض نوعه", JON2_SYSTEM_PROMPT)
+        self.assertIn("ما تخترعش سبب أو عذر", JON2_SYSTEM_PROMPT)
+        self.assertIn("كلمات زي «مخنوق» أو «مضايق»", JON2_SYSTEM_PROMPT)
         self.assertIn("اكتب كلمتين فقط", JON2_SYSTEM_PROMPT)
         self.assertIn("اكتب الرسالة الجاهزة مباشرة", JON2_SYSTEM_PROMPT)
         self.assertIn("اسأل سؤال توضيحي واحد", JON2_SYSTEM_PROMPT)
@@ -59,6 +62,21 @@ class Jon2InferenceTests(unittest.TestCase):
         self.assertNotIn("123", cleaned)
         self.assertNotIn("155", cleaned)
         self.assertIn("رقم غير متحقق", cleaned)
+
+
+    def test_sanitizer_removes_latin_and_arabic_phone_patterns(self):
+        unsafe = "أرقام غير متحققة: 01012345678 و +20 1012345678 و ٠١٠١٢٣٤٥٦٧٨."
+        cleaned = sanitize_safety_answer(unsafe, "eg_safety")
+        for digits in ("01012345678", "1012345678", "٠١٠١٢٣٤٥٦٧٨"):
+            self.assertNotIn(digits, cleaned)
+        self.assertGreaterEqual(cleaned.count("رقم غير متحقق"), 3)
+
+    def test_emotional_distress_word_is_not_a_chemical_exposure_trigger(self):
+        self.assertIn("ما تعتبرهاش تعرضًا كيميائيًا", JON2_SYSTEM_PROMPT)
+        self.assertIn("مخنوق", JON2_SYSTEM_PROMPT)
+
+    def test_apology_must_not_invent_a_reason(self):
+        self.assertIn("لو السبب مش مذكور، اعتذر من غير ذكر سبب", JON2_SYSTEM_PROMPT)
 
     def test_sanitizer_does_not_change_non_safety_answers(self):
         answer = "اتصل بالرقم 123 لحجز موعد."
