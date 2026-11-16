@@ -74,7 +74,7 @@ def main() -> int:
         raise RuntimeError("No CUDA device detected.")
 
     try:
-        from transformers import AutoProcessor, AutoModelForImageTextToText, BitsAndBytesConfig
+        from transformers import AutoProcessor, AutoModelForMultimodalLM, BitsAndBytesConfig
         import bitsandbytes  # noqa: F401
     except ImportError as exc:
         raise RuntimeError(
@@ -94,7 +94,7 @@ def main() -> int:
         bnb_4bit_compute_dtype=torch.float16,
     )
     processor = AutoProcessor.from_pretrained(MODEL_ID, trust_remote_code=False)
-    model = AutoModelForImageTextToText.from_pretrained(
+    model = AutoModelForMultimodalLM.from_pretrained(
         MODEL_ID,
         quantization_config=quant_config,
         device_map="auto",
