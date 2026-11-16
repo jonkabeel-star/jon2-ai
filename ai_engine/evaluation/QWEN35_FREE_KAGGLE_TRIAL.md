@@ -18,16 +18,28 @@ License shown on the official model card: Apache-2.0. Re-check the model card an
 
 ## Run in Kaggle
 
-Upload or attach the repository's approved benchmark and this script to the notebook, then run:
+### Easiest path: use the prepared notebook
 
-    !pip install -U transformers bitsandbytes accelerate
+1. Open the repository file `kaggle/qwen35-9b-free-evaluation.ipynb` on GitHub.
+2. Download the notebook file, then upload it to Kaggle Notebooks.
+3. In Kaggle notebook settings, select a free GPU accelerator.
+4. Run the cells from top to bottom. The first model response is a smoke test; inspect it before continuing to the benchmark cells.
+5. Download `jon2_qwen35_egyptian_evaluation.jsonl` from the Kaggle output files for private review.
+
+The notebook includes Egyptian Arabic single-turn and multi-turn cases. It does not train or fine-tune the model.
+
+### Alternative: run the repository script
+
+If the repository and its benchmark are already available in the Kaggle session, run:
+
+    %pip install -U transformers bitsandbytes accelerate
     !python ai_engine/evaluate_qwen35.py --limit 2 --output /kaggle/working/qwen35_smoke.jsonl
 
 After the smoke test succeeds, run the full benchmark:
 
     !python ai_engine/evaluate_qwen35.py --output /kaggle/working/qwen35_egyptian_trial.jsonl
 
-Keep the notebook private. Download the output for private human review; do not publish raw prompts or user data.
+Keep the notebook private. Download outputs for private human review; do not publish raw prompts or user data.
 
 ## Review
 
