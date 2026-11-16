@@ -74,7 +74,7 @@ def main() -> int:
         raise RuntimeError("No CUDA device detected.")
 
     try:
-        from transformers import AutoProcessor, AutoModelForMultimodalLM, BitsAndBytesConfig
+        from transformers import AutoTokenizer, Qwen3_5ForCausalLM, BitsAndBytesConfig
         import bitsandbytes  # noqa: F401
     except ImportError as exc:
         raise RuntimeError(
@@ -93,8 +93,8 @@ def main() -> int:
         bnb_4bit_use_double_quant=True,
         bnb_4bit_compute_dtype=torch.float16,
     )
-    processor = AutoProcessor.from_pretrained(MODEL_ID, trust_remote_code=False)
-    model = AutoModelForMultimodalLM.from_pretrained(
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=False)
+    model = Qwen3_5ForCausalLM.from_pretrained(
         MODEL_ID,
         quantization_config=quant_config,
         device_map="auto",
@@ -118,13 +118,13 @@ def main() -> int:
             }
             try:
                 messages = to_messages(item)
-                prompt = processor.apply_chat_template(
+                prompt = tokenizer.apply_chat_template(
                     messages,
                     tokenize=False,
                     add_generation_prompt=True,
                     enable_thinking=False,
                 )
-                inputs = processor(text=[prompt], return_tensors="pt", truncation=False)
+                inputs = tokenizer(text=[prompt], return_tensors="pt", truncation=False)
                 if inputs["input_ids"].shape[-1] > args.max_input_tokens:
                     raise ValueError("Input exceeds configured token limit; prompt was not truncated.")
                 input_device = model.get_input_embeddings().weight.device
@@ -137,7 +137,7 @@ def main() -> int:
                         repetition_penalty=1.08,
                     )
                 new_tokens = generated[:, inputs["input_ids"].shape[-1]:]
-                answer = processor.batch_decode(
+                answer = tokenizer.batch_decode(
                     new_tokens, skip_special_tokens=True, clean_up_tokenization_spaces=False
                 )[0].strip()
                 result["answer"] = answer
