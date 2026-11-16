@@ -58,7 +58,7 @@ def with_jon2_system_prompt(messages: list[dict[str, str]]) -> list[dict[str, st
     copied = [{"role": str(m["role"]), "content": str(m["content"])} for m in messages]
     if copied[0]["role"] == "system":
         if JON2_SYSTEM_PROMPT not in copied[0]["content"]:
-            copied[0]["content"] = copied[0]["content"].rstrip() + "\\n\\n" + JON2_SYSTEM_PROMPT
+            copied[0]["content"] = copied[0]["content"].rstrip() + "\n\n" + JON2_SYSTEM_PROMPT
     else:
         copied.insert(0, {"role": "system", "content": JON2_SYSTEM_PROMPT})
     return copied
