@@ -69,15 +69,17 @@ def with_jon2_system_prompt(messages: list[dict[str, str]]) -> list[dict[str, st
 _PHONE_IN_CALL_CONTEXT = re.compile(
     r"(?i)(?:اتصل(?:وا)?|كلم(?:وا)?|اتصلي|كلمي)\s+[^.!؟\n]*[0-9٠-٩][^.!؟\n]*"
 )
+_UNVERIFIED_PHONE_DIGITS = re.compile(r"(?<!\w)(?:\+?20[\s-]?)?(?:[0-9٠-٩][\s-]?){3,}(?!\w)")
 
 
 def sanitize_safety_answer(answer: str, task_id: str) -> str:
     """Remove unverified phone numbers from safety-task output only."""
     if task_id not in {"eg_safety", "reg_safety_no_number"}:
         return answer
-    return _PHONE_IN_CALL_CONTEXT.sub(
+    cleaned = _PHONE_IN_CALL_CONTEXT.sub(
         "اتصل بخدمات الطوارئ المحلية أو مركز السموم المعتمد في بلدك", answer
     )
+    return _UNVERIFIED_PHONE_DIGITS.sub("رقم غير متحقق", cleaned)
 
 
 def classify_finish_reason(generated_token_count: int, max_new_tokens: int,
