@@ -12,6 +12,8 @@ import inspect
 import json
 import os
 import platform
+import shutil
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -50,6 +52,60 @@ def load_jsonl(path: Path) -> list[dict]:
 def conversation_fingerprint(row: dict) -> str:
     canonical = json.dumps(row["messages"], ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+
+def check_model_cache_capacity(model_id: str, minimum_free_margin_gib: float = 5.0) -> None:
+    """Refuse a fresh base-model download when cache storage is too tight."""
+    metadata_url = f"https://huggingface.co/api/models/{model_id}?blobs=true"
+    request = urllib.request.Request(
+        metadata_url, headers={"User-Agent": "Jon2-AI-training-preflight"}
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=45) as response:
+            metadata = json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        raise RuntimeError(
+            "Cannot verify base-model shard sizes; refusing to start model download."
+        ) from exc
+
+    weight_bytes = 0
+    shard_count = 0
+    for item in metadata.get("siblings", []):
+        name = item.get("rfilename", "")
+        if name.endswith(".safetensors"):
+            size = item.get("size")
+            if size is None:
+                size = (item.get("lfs") or {}).get("size")
+            if not isinstance(size, int) or size <= 0:
+                raise RuntimeError(
+                    f"Cannot verify size for {name}; refusing to start model download."
+                )
+            weight_bytes += size
+            shard_count += 1
+    if not shard_count:
+        raise RuntimeError("No safetensors shard metadata found; refusing model download.")
+
+    hf_cache = Path(
+        os.environ.get(
+            "HF_HUB_CACHE",
+            str(Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface")) / "hub"),
+        )
+    )
+    hf_cache.mkdir(parents=True, exist_ok=True)
+    free_bytes = shutil.disk_usage(hf_cache).free
+    required_bytes = weight_bytes + int(minimum_free_margin_gib * 1024**3)
+    print(
+        f"Model shards: {shard_count} | "
+        f"base weights: {weight_bytes / 1024**3:.2f} GiB | "
+        f"cache free: {free_bytes / 1024**3:.2f} GiB | "
+        f"required safety minimum: {required_bytes / 1024**3:.2f} GiB"
+    )
+    if free_bytes < required_bytes:
+        raise RuntimeError(
+            "Insufficient cache storage for a safe QLoRA setup. "
+            "Free more disk or use a runtime with more storage; no model weights were downloaded."
+        )
 
 
 def main() -> None:
@@ -123,6 +179,7 @@ def main() -> None:
         props = torch.cuda.get_device_properties(i)
         print(f"GPU {i}: {props.name} | {props.total_memory / 1024**3:.2f} GiB")
     print("Base:", MODEL_ID, "| training on GPU 0 only to avoid unsupported multi-GPU device_map training.")
+    check_model_cache_capacity(MODEL_ID)
 
     compute_dtype = torch.float16
     quant = BitsAndBytesConfig(
