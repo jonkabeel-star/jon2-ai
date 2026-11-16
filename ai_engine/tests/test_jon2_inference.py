@@ -10,7 +10,10 @@ class Jon2InferenceTests(unittest.TestCase):
     def test_prompt_contains_egyptian_dialect_rules(self):
         self.assertIn("المصري الطبيعي", JON2_SYSTEM_PROMPT)
         self.assertIn("شنو", JON2_SYSTEM_PROMPT)
-        self.assertIn("ما تناديش المستخدم باسم", JON2_SYSTEM_PROMPT)\n        self.assertIn("اكتب كلمتين فقط", JON2_SYSTEM_PROMPT)\n        self.assertIn("اكتب الرسالة الجاهزة مباشرة", JON2_SYSTEM_PROMPT)\n        self.assertIn("اسأل سؤال توضيحي واحد", JON2_SYSTEM_PROMPT)
+        self.assertIn("ما تناديش المستخدم باسم", JON2_SYSTEM_PROMPT)
+        self.assertIn("اكتب كلمتين فقط", JON2_SYSTEM_PROMPT)
+        self.assertIn("اكتب الرسالة الجاهزة مباشرة", JON2_SYSTEM_PROMPT)
+        self.assertIn("اسأل سؤال توضيحي واحد", JON2_SYSTEM_PROMPT)
 
     def test_prompt_contains_honesty_and_safety_rules(self):
         self.assertIn("ما تخترعش أرقام", JON2_SYSTEM_PROMPT)
@@ -31,7 +34,9 @@ class Jon2InferenceTests(unittest.TestCase):
 
     def test_task_budgets_are_bounded(self):
         self.assertEqual(max_new_tokens_for("eg_greeting"), 64)
-        self.assertEqual(max_new_tokens_for("eg_multi_step"), 384)\n        self.assertEqual(max_new_tokens_for("reg_short_answer"), 64)\n        self.assertEqual(max_new_tokens_for("reg_friendly_apology"), 128)
+        self.assertEqual(max_new_tokens_for("eg_multi_step"), 384)
+        self.assertEqual(max_new_tokens_for("reg_short_answer"), 64)
+        self.assertEqual(max_new_tokens_for("reg_friendly_apology"), 128)
         self.assertEqual(max_new_tokens_for("eg_safety"), 256)
         self.assertEqual(max_new_tokens_for("unknown"), DEFAULT_MAX_NEW_TOKENS)
         self.assertLessEqual(max_new_tokens_for("eg_multi_step"), MAX_ALLOWED_NEW_TOKENS)
@@ -46,7 +51,14 @@ class Jon2InferenceTests(unittest.TestCase):
         cleaned = sanitize_safety_answer(unsafe, "eg_safety")
         self.assertNotIn("123", cleaned)
         self.assertNotIn("155", cleaned)
-        self.assertIn("خدمات الطوارئ المحلية", cleaned)\n\n    def test_sanitizer_removes_unverified_phone_digits_without_call_word(self):\n        unsafe = "رقم الطوارئ 123 أو 155."\n        cleaned = sanitize_safety_answer(unsafe, "eg_safety")\n        self.assertNotIn("123", cleaned)\n        self.assertNotIn("155", cleaned)\n        self.assertIn("رقم غير متحقق", cleaned)
+        self.assertIn("خدمات الطوارئ المحلية", cleaned)
+
+    def test_sanitizer_removes_unverified_phone_digits_without_call_word(self):
+        unsafe = "رقم الطوارئ 123 أو 155."
+        cleaned = sanitize_safety_answer(unsafe, "eg_safety")
+        self.assertNotIn("123", cleaned)
+        self.assertNotIn("155", cleaned)
+        self.assertIn("رقم غير متحقق", cleaned)
 
     def test_sanitizer_does_not_change_non_safety_answers(self):
         answer = "اتصل بالرقم 123 لحجز موعد."
