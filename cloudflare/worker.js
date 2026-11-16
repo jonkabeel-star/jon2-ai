@@ -179,8 +179,9 @@ export default {
       return json({
         project: PROJECT,
         status: "online",
-        api_ready: true,
         ...health,
+        api_ready: true,
+        runtime_api_ready: health.api_ready,
         chat_ready: health.public_chat_ready,
         message: health.public_chat_ready
           ? "محرك Jon2 متصل وجاهز."
