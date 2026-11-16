@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-import shutil
+import os
 from pathlib import Path
 
 DATASET_ID = "UBC-NLP/alexandria"
@@ -93,9 +93,12 @@ def write_split(dataset, target: Path) -> tuple[int, int]:
 def main():
     from datasets import load_dataset
 
-    root = Path("/tmp/jon2_alexandria_egypt")
+    root = Path(os.environ.get("JON2_DATA_DIR", "/kaggle/working/jon2_alexandria_egypt"))
     if root.exists():
-        shutil.rmtree(root)
+        raise FileExistsError(
+            f"Output directory already exists: {root}. Preserve existing data; " 
+            "set JON2_DATA_DIR to a new empty directory to prepare another copy."
+        )
     print("Loading Egyptian subset from", DATASET_ID)
     print("License:", LICENSE, "| PRIVATE NON-COMMERCIAL RESEARCH ONLY")
     from datasets import get_dataset_split_names
