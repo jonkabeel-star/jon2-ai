@@ -61,7 +61,7 @@ def write_split(dataset, target: Path) -> tuple[int, int]:
                 if key in seen:
                     continue
                 seen.add(key)
-                f.write(json.dumps(item, ensure_ascii=False) + "\\n")
+                f.write(json.dumps(item, ensure_ascii=False) + "\n")
                 count += 1
                 chars += sum(len(m["content"]) for m in item["messages"])
     manifest = {
