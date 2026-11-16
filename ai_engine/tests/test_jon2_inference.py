@@ -11,6 +11,12 @@ class Jon2InferenceTests(unittest.TestCase):
         self.assertIn("المصري الطبيعي", JON2_SYSTEM_PROMPT)
         self.assertIn("شنو", JON2_SYSTEM_PROMPT)
         self.assertIn("ما تناديش المستخدم باسم", JON2_SYSTEM_PROMPT)
+        self.assertIn("تجنب افتراض نوعه", JON2_SYSTEM_PROMPT)
+        self.assertIn("ما تخترعش سبب أو عذر", JON2_SYSTEM_PROMPT)
+        self.assertIn("كلمات زي «مخنوق» أو «مضايق»", JON2_SYSTEM_PROMPT)
+        self.assertIn("اكتب كلمتين فقط", JON2_SYSTEM_PROMPT)
+        self.assertIn("اكتب الرسالة الجاهزة مباشرة", JON2_SYSTEM_PROMPT)
+        self.assertIn("اسأل سؤال توضيحي واحد", JON2_SYSTEM_PROMPT)
 
     def test_prompt_contains_honesty_and_safety_rules(self):
         self.assertIn("ما تخترعش أرقام", JON2_SYSTEM_PROMPT)
@@ -32,6 +38,8 @@ class Jon2InferenceTests(unittest.TestCase):
     def test_task_budgets_are_bounded(self):
         self.assertEqual(max_new_tokens_for("eg_greeting"), 64)
         self.assertEqual(max_new_tokens_for("eg_multi_step"), 384)
+        self.assertEqual(max_new_tokens_for("reg_short_answer"), 64)
+        self.assertEqual(max_new_tokens_for("reg_friendly_apology"), 128)
         self.assertEqual(max_new_tokens_for("eg_safety"), 256)
         self.assertEqual(max_new_tokens_for("unknown"), DEFAULT_MAX_NEW_TOKENS)
         self.assertLessEqual(max_new_tokens_for("eg_multi_step"), MAX_ALLOWED_NEW_TOKENS)
@@ -47,6 +55,28 @@ class Jon2InferenceTests(unittest.TestCase):
         self.assertNotIn("123", cleaned)
         self.assertNotIn("155", cleaned)
         self.assertIn("خدمات الطوارئ المحلية", cleaned)
+
+    def test_sanitizer_removes_unverified_phone_digits_without_call_word(self):
+        unsafe = "رقم الطوارئ 123 أو 155."
+        cleaned = sanitize_safety_answer(unsafe, "eg_safety")
+        self.assertNotIn("123", cleaned)
+        self.assertNotIn("155", cleaned)
+        self.assertIn("رقم غير متحقق", cleaned)
+
+
+    def test_sanitizer_removes_latin_and_arabic_phone_patterns(self):
+        unsafe = "أرقام غير متحققة: 01012345678 و +20 1012345678 و ٠١٠١٢٣٤٥٦٧٨."
+        cleaned = sanitize_safety_answer(unsafe, "eg_safety")
+        for digits in ("01012345678", "1012345678", "٠١٠١٢٣٤٥٦٧٨"):
+            self.assertNotIn(digits, cleaned)
+        self.assertGreaterEqual(cleaned.count("رقم غير متحقق"), 3)
+
+    def test_emotional_distress_word_is_not_a_chemical_exposure_trigger(self):
+        self.assertIn("ما تعتبرهاش تعرضًا كيميائيًا", JON2_SYSTEM_PROMPT)
+        self.assertIn("مخنوق", JON2_SYSTEM_PROMPT)
+
+    def test_apology_must_not_invent_a_reason(self):
+        self.assertIn("لو السبب مش مذكور، اعتذر من غير ذكر سبب", JON2_SYSTEM_PROMPT)
 
     def test_sanitizer_does_not_change_non_safety_answers(self):
         answer = "اتصل بالرقم 123 لحجز موعد."

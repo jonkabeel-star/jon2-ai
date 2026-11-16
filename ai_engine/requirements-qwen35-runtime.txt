@@ -1,0 +1,9 @@
+# Tested Kaggle-compatible runtime stack; install torch from the CUDA-enabled runtime first.
+fastapi
+uvicorn[standard]
+transformers==5.23.0
+peft==0.20.0
+accelerate==1.16.0
+bitsandbytes==0.50.2
+huggingface_hub==1.33.0
+safetensors>=0.7.0
