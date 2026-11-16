@@ -11,7 +11,10 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ai_engine.jon2_inference import (\n    max_new_tokens_for, with_jon2_system_prompt, classify_finish_reason,\n    sanitize_safety_answer,\n)
+from ai_engine.jon2_inference import (
+    max_new_tokens_for, with_jon2_system_prompt, classify_finish_reason,
+    sanitize_safety_answer,
+)
 
 MODEL_ID = "Qwen/Qwen3.5-9B"
 DEFAULT_BENCHMARK = Path(__file__).parent / "evaluation" / "egyptian_arabic_prompts.jsonl"
