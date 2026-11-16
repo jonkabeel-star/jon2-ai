@@ -25,6 +25,20 @@ from model_profiles import PROFILES, describe_profile
 MINIMUM_CORPUS_CHARACTERS = 1_000_000
 MINIMUM_TOKENS_PER_PARAMETER = 20.0
 
+def resolve_training_device(require_cuda: bool, cuda_available: bool | None = None):
+    """Select the training device and optionally fail closed without CUDA.
+
+    ``cuda_available`` is injectable for unit tests. Production callers should
+    omit it so the real PyTorch runtime is queried.
+    """
+    available = torch.cuda.is_available() if cuda_available is None else bool(cuda_available)
+    if require_cuda and not available:
+        raise RuntimeError(
+            "CUDA is required for this training run, but no GPU is available. "
+            "No CPU fallback was started; enable a Kaggle GPU or connect a verified GPU runner."
+        )
+    return torch.device("cuda" if available else "cpu")
+
 
 def split_corpus_blocks(corpus: str, validation_fraction: float, seed: int):
     """Split blank-line-delimited text blocks before fitting the tokenizer."""
@@ -141,7 +155,7 @@ def train(args):
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(args.seed)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = resolve_training_device(getattr(args, "require_cuda", False))
     amp_enabled = device.type == "cuda" and not args.no_amp
 
     data_dir = Path(args.data)
@@ -380,6 +394,7 @@ def main():
     parser.add_argument("--minimum-tokens-per-parameter", type=float, default=MINIMUM_TOKENS_PER_PARAMETER)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--no-amp", action="store_true")
+    parser.add_argument("--require-cuda", action="store_true", help="Refuse to train unless a real CUDA GPU is available; never fall back to CPU.")
     parser.add_argument("--keep-last", action="store_true")
     args = parser.parse_args()
 
