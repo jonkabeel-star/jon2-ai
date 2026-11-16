@@ -83,6 +83,15 @@ class Qwen35EvaluationContractTests(unittest.TestCase):
         self.assertIn("training_use':False", source)
         self.assertIn("jon2_qwen35_egyptian_evaluation.jsonl", source)
 
+    def test_evaluator_uses_documented_text_model_and_cuda_gate(self):
+        script_path = Path(__file__).resolve().parents[1] / "evaluate_qwen35.py"
+        source = script_path.read_text(encoding="utf-8")
+        self.assertIn("Qwen3_5ForCausalLM", source)
+        self.assertIn("AutoTokenizer", source)
+        self.assertIn("torch.cuda.is_available()", source)
+        self.assertIn("CPU fallback is disabled", source)
+        self.assertNotIn("AutoModelForMultimodalLM", source)
+
 
 if __name__ == "__main__":
     unittest.main()
