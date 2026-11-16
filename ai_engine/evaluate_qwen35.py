@@ -66,7 +66,7 @@ def main() -> int:
     parser.add_argument("--max-new-tokens", type=int, default=None, help="Optional override; task-specific budgets are used by default")
     parser.add_argument("--max-input-tokens", type=int, default=4096)
     args = parser.parse_args()
-    if args.max_new_tokens < 1 or args.max_input_tokens < 128:
+    if (args.max_new_tokens is not None and args.max_new_tokens < 1) or args.max_input_tokens < 128:
         parser.error("token limits are too small or invalid")
 
     import torch
