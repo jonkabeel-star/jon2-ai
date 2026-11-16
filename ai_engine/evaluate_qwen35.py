@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ai_engine.jon2_inference import max_new_tokens_for, with_jon2_system_prompt, classify_finish_reason
+from ai_engine.jon2_inference import (\n    max_new_tokens_for, with_jon2_system_prompt, classify_finish_reason,\n    sanitize_safety_answer,\n)
 
 MODEL_ID = "Qwen/Qwen3.5-9B"
 DEFAULT_BENCHMARK = Path(__file__).parent / "evaluation" / "egyptian_arabic_prompts.jsonl"
@@ -162,6 +162,7 @@ def main() -> int:
                 answer = tokenizer.batch_decode(
                     new_tokens, skip_special_tokens=True, clean_up_tokenization_spaces=False
                 )[0].strip()
+                answer = sanitize_safety_answer(answer, item["id"])
                 result["answer"] = answer
                 result["status"] = (
                     "empty_output" if not answer else
