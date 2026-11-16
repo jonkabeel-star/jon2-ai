@@ -28,7 +28,7 @@ jobs:
   validate-and-push:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.confirm_research_training == true }}
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 180
     steps:
       - name: Check out selected branch
         uses: actions/checkout@v4
@@ -90,7 +90,7 @@ jobs:
           fi
           DATASET_DIR=/tmp/jon2-approved-dataset
           mkdir -p "$DATASET_DIR/ai_engine/training_data"
-          cp ai_engine/jon2_core.py ai_engine/train_jon2.py ai_engine/tokenizer.py ai_engine/source_approval.py "$DATASET_DIR/ai_engine/"
+          cp ai_engine/jon2_core.py ai_engine/train_jon2.py ai_engine/tokenizer.py ai_engine/source_approval.py ai_engine/corpus_reader.py ai_engine/source_split.py ai_engine/model_profiles.py ai_engine/preflight_training.py "$DATASET_DIR/ai_engine/"
           cp ai_engine/training_data/original_dialogue_ar_batch_01.txt "$DATASET_DIR/ai_engine/training_data/"
           cp ai_engine/training_data/original_dialogue_ar_batch_02.txt "$DATASET_DIR/ai_engine/training_data/"
           cp ai_engine/training_data/original_dialogue_ar_batch_03.txt "$DATASET_DIR/ai_engine/training_data/"
@@ -127,6 +127,26 @@ jobs:
           )
           print("Verified three explicit owner approvals against exact source hashes.")
           PY
+
+          # Run the current CPU-only preflight before consuming any Kaggle GPU quota.
+          set +e
+          PYTHONPATH="$DATASET_DIR/ai_engine" python "$DATASET_DIR/ai_engine/preflight_training.py" \
+            --data "$DATASET_DIR/ai_engine/training_data" \
+            --approval-manifest "$DATASET_DIR/ai_engine/training_data/source_approvals.json" \
+            --profile arabic_30m \
+            --minimum-characters 1000000 \
+            --minimum-tokens-per-parameter 20 \
+            --output "$DATASET_DIR/jon2-preflight.json"
+          preflight_status=$?
+          set -e
+          if [ -s "$DATASET_DIR/jon2-preflight.json" ]; then
+            cat "$DATASET_DIR/jon2-preflight.json"
+          fi
+          if [ "$preflight_status" -ne 0 ]; then
+            echo "::error::Jon2 GPU training is blocked by the current approved-data preflight. No Kaggle GPU job was started."
+            exit "$preflight_status"
+          fi
+
           cat > "$DATASET_DIR/dataset-metadata.json" <<'JSON'
           {
             "title": "Jon2 AI Approved Arabic Training Sources",
@@ -169,10 +189,10 @@ jobs:
           KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
         run: |
           set +e
-          for attempt in $(seq 1 150); do
+          for attempt in $(seq 1 300); do
             STATUS="$(kaggle kernels status jon2kabeel/hello-jon2 2>&1)"
             STATUS_CODE=$?
-            echo "Kaggle status check $attempt/150:"
+            echo "Kaggle status check $attempt/300:"
             echo "$STATUS"
             if [ $STATUS_CODE -eq 0 ] && echo "$STATUS" | grep -Eqi 'COMPLETE|COMPLETED'; then
               echo "::notice::Kaggle notebook execution completed."
@@ -186,7 +206,7 @@ jobs:
             fi
             sleep 20
           done
-          echo "::error::Kaggle execution did not reach COMPLETE within fifty minutes."
+          echo "::error::Kaggle execution did not reach COMPLETE within one hundred minutes."
           exit 1
 
       - name: Download and verify the trained checkpoint
@@ -196,16 +216,23 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/jon2-kernel-output
           kaggle kernels output jon2kabeel/hello-jon2 -p /tmp/jon2-kernel-output
-          CHECKPOINT="$(find /tmp/jon2-kernel-output -type f -name 'jon2-small.pt' -print -quit)"
-          if [ -z "$CHECKPOINT" ]; then
-            echo "::error::Kaggle output did not contain jon2-small.pt"
-            find /tmp/jon2-kernel-output -maxdepth 4 -type f -print
+          BEST="$(find /tmp/jon2-kernel-output -type f -name 'jon2-arabic-30m.pt' -print -quit)"
+          RESUME="$(find /tmp/jon2-kernel-output -type f -name 'jon2-arabic-30m-last.pt' -print -quit)"
+          MANIFEST="$(find /tmp/jon2-kernel-output -type f -name 'checkpoint-manifest.json' -print -quit)"
+          PREFLIGHT="$(find /tmp/jon2-kernel-output -type f -name 'jon2-preflight.json' -print -quit)"
+          if [ -z "$BEST" ] || [ -z "$RESUME" ] || [ -z "$MANIFEST" ]; then
+            echo "::error::Kaggle output is missing the best checkpoint, resume checkpoint, or provenance manifest."
+            find /tmp/jon2-kernel-output -maxdepth 5 -type f -print
             exit 1
           fi
-          test "$(stat -c%s "$CHECKPOINT")" -gt 100000
+          test "$(stat -c%s "$BEST")" -gt 100000
+          test "$(stat -c%s "$RESUME")" -gt 100000
           mkdir -p /tmp/jon2-private-weights
-          cp "$CHECKPOINT" /tmp/jon2-private-weights/jon2-small.pt
-          sha256sum /tmp/jon2-private-weights/jon2-small.pt
+          cp "$BEST" /tmp/jon2-private-weights/
+          cp "$RESUME" /tmp/jon2-private-weights/
+          cp "$MANIFEST" /tmp/jon2-private-weights/
+          if [ -n "$PREFLIGHT" ]; then cp "$PREFLIGHT" /tmp/jon2-private-weights/; fi
+          sha256sum /tmp/jon2-private-weights/jon2-arabic-30m.pt /tmp/jon2-private-weights/jon2-arabic-30m-last.pt
           cat > /tmp/jon2-private-weights/dataset-metadata.json <<'JSON'
           {
             "title": "Jon2 AI Private Model Checkpoint",
