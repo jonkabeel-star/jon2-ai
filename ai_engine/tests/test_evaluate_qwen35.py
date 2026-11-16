@@ -77,6 +77,7 @@ class Qwen35EvaluationContractTests(unittest.TestCase):
         self.assertIn("torch.cuda.is_available()", source)
         self.assertIn("CPU fallback is disabled", source)
         self.assertIn("Qwen/Qwen3.5-9B", source)
+        self.assertIn("AutoModelForMultimodalLM", source)
         self.assertIn("eg_followup", source)
         self.assertIn("training_use':False", source)
         self.assertIn("jon2_qwen35_egyptian_evaluation.jsonl", source)
