@@ -111,7 +111,7 @@ def main() -> None:
 
     from datasets import Dataset
     from transformers import (
-        AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig,
+        AutoTokenizer, Qwen3_5ForCausalLM, BitsAndBytesConfig,
         Trainer, TrainingArguments, DataCollatorForLanguageModeling,
     )
     from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
@@ -128,7 +128,7 @@ def main() -> None:
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=False)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
-    model = AutoModelForCausalLM.from_pretrained(
+    model = Qwen3_5ForCausalLM.from_pretrained(
         MODEL_ID, quantization_config=quant, device_map="auto",
         torch_dtype=compute_dtype, low_cpu_mem_usage=True,
         trust_remote_code=False, attn_implementation="sdpa",
