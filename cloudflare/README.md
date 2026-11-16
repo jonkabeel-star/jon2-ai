@@ -1,33 +1,51 @@
-# Jon2 Cloudflare Edge Gateway
+# Jon2 AI Qwen3.5 runtime
 
-The currently configured production entry point is `cloudflare/worker.js`. It is a **health-only edge gateway**, not a language model runtime.
+## What this adds
 
-## Current behavior
+- A private FastAPI runtime for the official instruction-tuned `Qwen/Qwen3.5-4B` model.
+- Optional Jon2 LoRA loading when a trained adapter is supplied.
+- A bearer-token-protected `GET /v1/health` and `POST /v1/chat` contract.
+- A Cloudflare edge gateway that proxies to the private runtime without exposing its token to the browser.
+- Independent fail-closed public-release gates. The gateway will not serve public chat until the runtime reports model loaded, inference tested, human quality review passed, and public chat enabled; Cloudflare must also have `JON2_PUBLIC_CHAT_ENABLED=true`.
 
-- `GET /` and `GET /api/health/live`: report that the edge gateway process is alive.
-- `GET /api/health`: reports edge API liveness separately from original-model readiness.
-- `POST /api/chat`: deliberately returns HTTP 503 with `model_runtime_not_connected`.
-- `OPTIONS`: handles CORS preflight for the published GitHub Pages origin and local development.
+## Important model distinction
 
-The worker does not load a checkpoint, run inference, call Workers AI, or forward requests to another model provider. A successful health response proves only that the edge gateway responds. It does not prove that Jon2 can generate an answer.
+Until a Jon2 adapter has been trained and evaluated, replies come from the third-party Qwen3.5-4B instruction model. They must be described as a Qwen-powered Jon2 preview, not as a fully Jon2-trained model. The Qwen model card declares Apache-2.0; retain its license and notices. The Jon2 adapter does not exist yet.
 
-## Original Jon2 runtime requirements
+## Runtime environment
 
-The independent Python/FastAPI service must be deployed separately with the exact private Jon2 checkpoint. Before any chat route can be enabled, that checkpoint must pass inference tests, held-out Arabic evaluation, and human quality review. The API release flags must remain disabled until those checks and the explicit release decision are complete.
+Install the CUDA-enabled PyTorch build appropriate to the GPU first, then install `ai_engine/requirements-qwen35-runtime.txt`.
 
-The repository contains a separate TypeScript bridge preview under `cloudflare-ts/`. It is not the configured production entry point and is not deployed by the root Wrangler configuration. Its optional authenticated Python-runtime forwarding requires a real HTTPS Python host plus the `JON2_RUNTIME_URL` and `JON2_RUNTIME_TOKEN` Cloudflare bindings. Do not configure those values until a private runtime actually exists and has passed the required review.
+Set these environment variables on the private GPU host (never commit values):
 
-## Deployment
+- `JON2_BASE_MODEL=Qwen/Qwen3.5-4B`
+- `JON2_RUNTIME_TOKEN`: random secret with at least 32 characters
+- `JON2_ADAPTER_PATH`: optional directory containing a compatible `adapter_config.json`
+- `JON2_INFERENCE_TESTED=false`
+- `JON2_QUALITY_REVIEW_PASSED=false`
+- `JON2_PUBLIC_CHAT_ENABLED=false`
 
-Deploy from the repository root using `wrangler.toml`, whose entry point is `cloudflare/worker.js`. The production worker does not need a Workers AI binding. The local `cloudflare/wrangler.toml` points to the same health-only worker when deploying from that directory.
+Start the API with:
 
-Do not put API tokens, account secrets, training data, or model weights in this repository. Store runtime credentials only as provider-managed secrets.
+```bash
+uvicorn ai_engine.jon2_qwen35_server:app --host 0.0.0.0 --port 8000
+```
 
-## CORS and fail-closed behavior
+The runtime requires CUDA and loads the 4-bit model on GPU 0. A T4 may still fail from VRAM or kernel incompatibility; the health route reports the failure and the service must not be treated as ready until a real inference test succeeds.
 
-- Browser requests are accepted only from the origins explicitly listed in `cloudflare/worker.js`.
-- Unapproved browser origins receive HTTP 403.
-- Chat remains HTTP 503 until a separately deployed and approved original Jon2 runtime is connected.
-- The worker intentionally does not use a hosted model as a fallback.
+## Cloudflare Worker bindings
 
-`cloudflare/worker.py` is a legacy reference and is not the configured production entry point.
+Deploy the root `wrangler.toml` entry point (`cloudflare/worker.js`) only after a reachable private HTTPS runtime exists. Configure:
+
+- Secret `JON2_RUNTIME_TOKEN`: same secret as the Python runtime.
+- Variable `JON2_RUNTIME_URL`: HTTPS origin only, no path (for example `https://runtime.example.com`).
+- Variable `JON2_PUBLIC_CHAT_ENABLED=false` until human review and explicit owner release approval.
+
+Then set `window.JON2_API_BASE_URL` in `jon2-config.js` to the deployed Worker origin. The static GitHub Pages site cannot itself host Python or GPU inference; the Worker is a secure proxy only.
+
+## Current project blockers
+
+- The current private dataset contains 32 train and 12 evaluation records; all are pending human and rights review. This does not meet the trainer's 100/30 minimums.
+- No Jon2 LoRA adapter has been produced.
+- Kaggle free GPU sessions are temporary and are not a persistent production host.
+- No Worker, GPU host, secrets, or website deployment is configured by this source change.
