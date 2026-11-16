@@ -11,6 +11,11 @@ import json
 from pathlib import Path
 from typing import Any
 
+from ai_engine.jon2_inference import (
+    max_new_tokens_for, with_jon2_system_prompt, classify_finish_reason,
+    sanitize_safety_answer,
+)
+
 MODEL_ID = "Qwen/Qwen3.5-9B"
 DEFAULT_BENCHMARK = Path(__file__).parent / "evaluation" / "egyptian_arabic_prompts.jsonl"
 
@@ -61,10 +66,10 @@ def main() -> int:
     parser.add_argument("--benchmark", type=Path, default=DEFAULT_BENCHMARK)
     parser.add_argument("--output", type=Path, default=Path("qwen35_9b_egyptian_trial.jsonl"))
     parser.add_argument("--limit", type=int, default=0, help="0 runs all held-out cases")
-    parser.add_argument("--max-new-tokens", type=int, default=192)
+    parser.add_argument("--max-new-tokens", type=int, default=None, help="Optional override; task-specific budgets are used by default")
     parser.add_argument("--max-input-tokens", type=int, default=4096)
     args = parser.parse_args()
-    if args.max_new_tokens < 1 or args.max_input_tokens < 128:
+    if (args.max_new_tokens is not None and args.max_new_tokens < 1) or args.max_input_tokens < 128:
         parser.error("token limits are too small or invalid")
 
     import torch
@@ -115,9 +120,16 @@ def main() -> int:
                 "training_use": False,
                 "status": "error",
                 "answer": "",
+                "messages": [],
+                "finish_reason": "error",
+                "generated_tokens": 0,
+                "input_tokens": 0,
+                "max_new_tokens": 0,
             }
             try:
-                messages = to_messages(item)
+                messages = with_jon2_system_prompt(to_messages(item))
+                result["messages"] = messages
+                result["question"] = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
                 prompt = tokenizer.apply_chat_template(
                     messages,
                     tokenize=False,
@@ -129,25 +141,46 @@ def main() -> int:
                     raise ValueError("Input exceeds configured token limit; prompt was not truncated.")
                 input_device = model.get_input_embeddings().weight.device
                 inputs = {key: value.to(input_device) for key, value in inputs.items()}
+                token_budget = max_new_tokens_for(item["id"], args.max_new_tokens)
+                result["input_tokens"] = int(inputs["input_ids"].shape[-1])
+                result["max_new_tokens"] = token_budget
                 with torch.inference_mode():
                     generated = model.generate(
                         **inputs,
-                        max_new_tokens=args.max_new_tokens,
+                        max_new_tokens=token_budget,
                         do_sample=False,
-                        repetition_penalty=1.08,
+                        repetition_penalty=1.05,
                     )
                 new_tokens = generated[:, inputs["input_ids"].shape[-1]:]
+                generated_count = int(new_tokens.shape[-1])
+                last_token_id = int(new_tokens[0, -1].item()) if generated_count else None
+                eos_ids = model.generation_config.eos_token_id
+                if eos_ids is None:
+                    eos_ids = tokenizer.eos_token_id
+                finish_reason = classify_finish_reason(
+                    generated_count, token_budget, last_token_id, eos_ids
+                )
+                result["generated_tokens"] = generated_count
+                result["finish_reason"] = finish_reason
                 answer = tokenizer.batch_decode(
                     new_tokens, skip_special_tokens=True, clean_up_tokenization_spaces=False
                 )[0].strip()
+                answer = sanitize_safety_answer(answer, item["id"])
                 result["answer"] = answer
-                result["status"] = "ok" if answer else "empty_output"
+                result["status"] = (
+                    "empty_output" if not answer else
+                    "truncated" if finish_reason == "length" else "ok"
+                )
                 result["review_criteria"] = item.get("review_criteria", "")
             except Exception as exc:
                 result["error"] = f"{type(exc).__name__}: {exc}"
             output.write(json.dumps(result, ensure_ascii=False) + "\n")
             output.flush()
-            print(f"[{index}/{len(records)}] {item['id']}: {result['status']}")
+            print(
+                f"[{index}/{len(records)}] {item['id']}: {result['status']} "
+                f"(finish={result['finish_reason']}, tokens={result['generated_tokens']}/"
+                f"{result['max_new_tokens']})"
+            )
 
     print(f"Raw evaluation saved to {args.output}")
     print("Evaluation only. No fine-tuning, training, checkpoint changes, or release approval.")
