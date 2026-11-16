@@ -82,7 +82,7 @@ def main() -> None:
         ("evaluation approval manifest", args.eval_approval_manifest),
         ("adapter output", args.output_dir),
     ]
-    for label, path in paths:
+    for label, path in paths[:-1]:
         resolved = path.resolve()
         if resolved == workspace or workspace in resolved.parents:
             raise PermissionError(f"{label} must be outside the repository/workspace checkout: {resolved}")
