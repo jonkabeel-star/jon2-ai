@@ -138,40 +138,99 @@ def train(args: argparse.Namespace) -> None:
             f"at least {args.minimum_chars:,}. Add reviewed, project-owned or "
             "properly licensed data. Do not duplicate text to pass this check."
         )
-    tokenizer = ByteBPETokenizer.train(
-        corpus,
-        vocab_size=args.tokenizer_vocab_size,
-        min_frequency=args.tokenizer_min_frequency,
-    )
+    resume_checkpoint = None
+    resume_sha256 = None
+    previous_training_steps = 0
+    if args.resume_from:
+        resume_path = Path(args.resume_from)
+        if not resume_path.is_file():
+            raise FileNotFoundError(f"Resume checkpoint not found: {resume_path}")
+        if Path(args.output).resolve() == resume_path.resolve():
+            raise ValueError(
+                "Output checkpoint must be a new path; the original resume checkpoint is protected."
+            )
+        import hashlib
+        resume_sha256 = hashlib.sha256(resume_path.read_bytes()).hexdigest()
+        resume_checkpoint = torch.load(
+            resume_path, map_location=device, weights_only=True
+        )
+        if not isinstance(resume_checkpoint, dict):
+            raise ValueError("Resume checkpoint must be a Jon2 checkpoint dictionary.")
+        if not isinstance(resume_checkpoint.get("tokenizer"), dict):
+            raise ValueError(
+                "This checkpoint does not contain the supported Byte-BPE tokenizer; "
+                "refusing to change token IDs during resume."
+            )
+        if not isinstance(resume_checkpoint.get("config"), dict):
+            raise ValueError("Resume checkpoint is missing its model configuration.")
+        tokenizer = ByteBPETokenizer.from_dict(resume_checkpoint["tokenizer"])
+        model_config = dict(resume_checkpoint["config"])
+        required_config = {"width", "heads", "layers", "context", "dropout"}
+        if not required_config.issubset(model_config):
+            raise ValueError("Resume checkpoint has an incomplete model configuration.")
+        previous_training_steps = int(resume_checkpoint.get("training_steps", 0))
+    else:
+        tokenizer = ByteBPETokenizer.train(
+            corpus,
+            vocab_size=args.tokenizer_vocab_size,
+            min_frequency=args.tokenizer_min_frequency,
+        )
+        model_config = {
+            "width": args.width,
+            "heads": args.heads,
+            "layers": args.layers,
+            "context": args.context,
+            "dropout": args.dropout,
+        }
+
     encoded = torch.tensor(tokenizer.encode(corpus), dtype=torch.long)
-    if len(encoded) <= args.context * 2 + 2:
-        raise ValueError("Training text must be longer than twice the context window.")
+    context = int(model_config["context"])
+    if len(encoded) <= context * 2 + 2:
+        raise ValueError("Training text must be longer than twice the model context window.")
     split_at = int(len(encoded) * (1.0 - args.validation_fraction))
     train_data = encoded[:split_at]
     val_data = encoded[split_at:]
-    if len(val_data) <= args.context + 1:
+    if len(val_data) <= context + 1:
         raise ValueError("Validation text is too short; add more training text.")
 
     model = Jon2Transformer(
-        vocab_size=len(tokenizer.vocabulary),
-        width=args.width,
-        heads=args.heads,
-        layers=args.layers,
-        context=args.context,
-        dropout=args.dropout,
+        vocab_size=tokenizer.vocab_size,
+        **model_config,
     ).to(device)
+    if resume_checkpoint is not None:
+        model.load_state_dict(resume_checkpoint["model_state"], strict=True)
+
+    parameter_count = sum(p.numel() for p in model.parameters())
+    training_tokens_per_parameter = len(train_data) / max(parameter_count, 1)
+    required_training_tokens = int(parameter_count * args.minimum_tokens_per_parameter)
+    required_corpus_tokens = int(
+        required_training_tokens / (1.0 - args.validation_fraction)
+    )
+    print(f"Jon2 original model | device={device} | corpus_tokens={len(encoded):,}")
+    print(f"train_tokens={len(train_data):,} | validation_tokens={len(val_data):,}")
+    print(
+        f"vocabulary={tokenizer.vocab_size:,} | parameters={parameter_count:,} | "
+        f"training_tokens_per_parameter={training_tokens_per_parameter:.4f}"
+    )
+    print(
+        f"Data readiness: {len(train_data):,}/{required_training_tokens:,} training tokens "
+        f"({args.minimum_tokens_per_parameter:g} tokens per parameter required)."
+    )
+    if training_tokens_per_parameter < args.minimum_tokens_per_parameter:
+        missing_tokens = max(0, required_corpus_tokens - len(encoded))
+        raise ValueError(
+            "Training blocked: the approved corpus is too small for this model. "
+            f"Current ratio={training_tokens_per_parameter:.4f} training tokens/parameter; "
+            f"required={args.minimum_tokens_per_parameter:g}; "
+            f"add at least {missing_tokens:,} distinct, rights-cleared corpus tokens. "
+            "Do not duplicate text or lower the quality gate."
+        )
+
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
     model.train()
 
-    parameter_count = sum(p.numel() for p in model.parameters())
-    print(f"Jon2 original model | device={device} | corpus_chars={len(encoded)}")
-    print(f"train_chars={len(train_data)} | validation_chars={len(val_data)}")
-    print(f"vocabulary={len(tokenizer.vocabulary)} | parameters={parameter_count:,}")
-    if len(encoded) < 100_000:
-        print("WARNING: corpus is still small; expect weak text generation, not general intelligence.")
-
     for step in range(1, args.steps + 1):
-        x, y = _batch(train_data, args.context, args.batch_size, device)
+        x, y = _batch(train_data, context, args.batch_size, device)
         logits = model(x)
         loss = nn.functional.cross_entropy(
             logits.reshape(-1, logits.size(-1)), y.reshape(-1)
@@ -183,7 +242,7 @@ def train(args: argparse.Namespace) -> None:
 
         if step == 1 or step % args.log_every == 0 or step == args.steps:
             scores = _estimate_loss(
-                model, train_data, val_data, args.context, args.batch_size,
+                model, train_data, val_data, context, args.batch_size,
                 device, args.eval_steps,
             )
             print(
@@ -194,20 +253,19 @@ def train(args: argparse.Namespace) -> None:
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    config = {
-        "width": args.width,
-        "heads": args.heads,
-        "layers": args.layers,
-        "context": args.context,
-        "dropout": args.dropout,
-    }
+    config = dict(model_config)
     torch.save(
         {
             "model_state": model.cpu().state_dict(),
             "tokenizer": tokenizer.to_dict(),
             "config": config,
-            "training_steps": args.steps,
-            "corpus_characters": len(encoded),
+            "training_steps": previous_training_steps + args.steps,
+            "additional_training_steps": args.steps,
+            "corpus_tokens": len(encoded),
+            "corpus_characters": len(corpus),
+            "training_tokens_per_parameter": training_tokens_per_parameter,
+            "minimum_tokens_per_parameter": args.minimum_tokens_per_parameter,
+            "resumed_from_sha256": resume_sha256,
             "validation_fraction": args.validation_fraction,
             "model_name": "Jon2 Original Transformer",
         },
@@ -394,6 +452,16 @@ def main():
     parser.add_argument("--data", default="ai_engine/training_data")
     parser.add_argument("--approval-manifest", default="ai_engine/training_data/source_approvals.json")
     parser.add_argument("--minimum-chars", type=int, default=100_000)
+    parser.add_argument("--tokenizer-vocab-size", type=int, default=1000)
+    parser.add_argument("--tokenizer-min-frequency", type=int, default=2)
+    parser.add_argument(
+        "--minimum-tokens-per-parameter", type=float, default=10.0,
+        help="Block training unless the approved corpus reaches this token/parameter ratio.",
+    )
+    parser.add_argument(
+        "--resume-from", default=None,
+        help="Continue from a private Jon2 checkpoint without retraining or changing its tokenizer.",
+    )
     parser.add_argument("--output", default="ai_engine/checkpoints/jon2-small.pt")
     parser.add_argument("--steps", type=int, default=5000)
     parser.add_argument("--batch-size", type=int, default=16)
@@ -411,8 +479,9 @@ def main():
     if min(
         args.steps, args.batch_size, args.context, args.width,
         args.heads, args.layers, args.eval_steps, args.log_every,
-        args.minimum_chars,
-    ) <= 0:
+        args.minimum_chars, args.tokenizer_vocab_size,
+        args.tokenizer_min_frequency,
+    ) <= 0 or args.minimum_tokens_per_parameter <= 0:
         parser.error("training dimensions and steps must be positive")
     if not 0.05 <= args.validation_fraction <= 0.4:
         parser.error("validation-fraction must be between 0.05 and 0.4")
