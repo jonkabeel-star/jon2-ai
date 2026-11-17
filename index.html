@@ -512,7 +512,9 @@ document.getElementById("form").addEventListener("submit", async event => {
         ? payload.message
         : typeof payload.detail === "string"
           ? payload.detail
-          : translations[lang].requestFailed;
+          : typeof payload.error === "string"
+            ? payload.error
+            : translations[lang].requestFailed;
       addMessage(detail, "bot");
       return;
     }
