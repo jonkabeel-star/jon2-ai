@@ -43,7 +43,7 @@ if (typeof self !== "undefined") self.addEventListener("message", async event =>
         error.code = "JON2_MODEL_NOT_READY";
         throw error;
       }
-      if (typeof message.prompt !== "string" || !message.prompt.trim()) {
+      if (typeof message.message !== "string" || !message.message.trim()) {
         const error = new TypeError("عقل Jon2 غير جاهز للرد");
         error.code = "JON2_INVALID_PROMPT";
         throw error;
