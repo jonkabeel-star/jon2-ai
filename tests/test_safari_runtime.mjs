@@ -12,6 +12,7 @@ const tokenizerFixtures = JSON.parse(await readFile(new URL("../pocket/tokenizer
 const transformerFixture = JSON.parse(await readFile(new URL("../pocket/transformer-parity-fixture.json", import.meta.url), "utf8"));
 
 
+
 test("Safari prompt builder matches the original Python conversation format", () => {
   const tokenizer = { encode: text => Array.from(text) };
   const history = [
@@ -25,10 +26,10 @@ test("Safari prompt builder matches the original Python conversation format", ()
   assert.equal(
     prompt,
     "المستخدم: " + clipped +
-      "\\nJon2: رد سابق" +
-      "\\nالمستخدم: سؤال سابق" +
-      "\\nJon2: إجابة سابقة" +
-      "\\nالمستخدم: السؤال الحالي\\nJon2:"
+      "\nJon2: رد سابق" +
+      "\nالمستخدم: سؤال سابق" +
+      "\nJon2: إجابة سابقة" +
+      "\nالمستخدم: السؤال الحالي\nJon2:"
   );
 });
 
@@ -42,7 +43,7 @@ test("Safari prompt builder drops old turns and never truncates the current ques
   ];
   const prompt = buildJon2ConversationPrompt("سؤال", history, tokenizer, 44);
   assert.ok(tokenizer.encode(prompt).length <= 43);
-  assert.match(prompt, /المستخدم: سؤال\\nJon2:$/);
+  assert.match(prompt, /المستخدم: سؤال\nJon2:$/);
   assert.throws(
     () => buildJon2ConversationPrompt("س".repeat(100), [], tokenizer, 20),
     /لن يتم اختصاره/
@@ -204,7 +205,16 @@ test("Safari worker client resolves successful inference responses", async () =>
     const { Jon2SafariClient } = await import("../pocket/jon2-safari-client.js?success-test");
     const client = new Jon2SafariClient();
     const history = [{role:"user",content:"سؤال سابق"}];
+    const originalPostMessage = client.worker.postMessage.bind(client.worker);
+    let sent;
+    client.worker.postMessage = (message, transfer) => {
+      sent = message;
+      originalPostMessage(message, transfer);
+    };
     const result = await client.generate("مرحبا", history, 8);
+    assert.equal(sent.message, "مرحبا");
+    assert.deepEqual(sent.history, history);
+    assert.equal(sent.maxTokens, 8);
     assert.equal(result.answer, "أهلًا");
     client.close();
   } finally {
