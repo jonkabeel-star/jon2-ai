@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#090d18">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Jon2 AI">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="./assets/jon2-icon.svg">
+<link rel="apple-touch-icon" href="./assets/jon2-icon.svg">
 <meta name="description" content="Jon2 AI — مساحة إبداعية لأدوات الذكاء الاصطناعي.">
 <title>Jon2 AI — ابتكر بلا حدود</title>
 <style>
@@ -748,6 +754,15 @@ document.addEventListener("visibilitychange", () => {
 window.addEventListener("pageshow", () => {
   if (!window.JON2_LOCAL_RUNTIME_READY) restoreJon2Model();
 });
+</script>
+
+<script>
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js", { scope: "./" })
+      .catch(error => console.warn("Jon2 offline shell registration failed:", error));
+  });
+}
 </script>
 </body>
 </html>
