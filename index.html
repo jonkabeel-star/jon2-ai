@@ -473,11 +473,26 @@ document.getElementById("form").addEventListener("submit", async event => {
   syncChatControls();
   send.setAttribute("aria-busy", "true");
   try {
+    // The gateway requires a verified login session and a fresh CSRF token.
+    const sessionResponse = await fetch(API_BASE_URL + "/api/auth/me", {
+      method: "GET",
+      credentials: "include",
+      headers: { "Accept": "application/json" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(12000)
+    });
+    const sessionData = await sessionResponse.json().catch(() => ({}));
+    if (!sessionResponse.ok || typeof sessionData.csrfToken !== "string") {
+      throw new Error(sessionData.error || "سجّل الدخول أولًا لاستخدام المحادثة.");
+    }
+
     const response = await fetch(API_BASE_URL + "/api/chat", {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        "Accept": "application/json",
+        "X-CSRF-Token": sessionData.csrfToken
       },
       body: JSON.stringify({
         api_version: "1",
@@ -489,7 +504,7 @@ document.getElementById("form").addEventListener("submit", async event => {
           content: item.text.slice(0, 2000)
         }))
       }),
-      signal: AbortSignal.timeout(60000)
+      signal: AbortSignal.timeout(90000)
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -497,7 +512,9 @@ document.getElementById("form").addEventListener("submit", async event => {
         ? payload.message
         : typeof payload.detail === "string"
           ? payload.detail
-          : translations[lang].requestFailed;
+          : typeof payload.error === "string"
+            ? payload.error
+            : translations[lang].requestFailed;
       addMessage(detail, "bot");
       return;
     }
