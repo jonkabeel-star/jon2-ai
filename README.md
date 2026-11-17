@@ -4,12 +4,11 @@ Jon2 AI is an independent Arabic-first AI platform project.
 
 ## Project status
 
-This repository contains the website interface, an early original-model prototype, and the first API gateway. A first genuine CPU-trained Jon2 checkpoint is now stored privately, but its Arabic replies are not coherent enough for user-facing chat. It is **not yet a public production AI service**. A deployed Python model runtime, approved training corpus, quality-approved checkpoint, persistent database, secure public accounts, video rendering, YouTube OAuth/upload, and AdSense are not live.
-
+This repository contains the website interface, an early original-model prototype, and the first API gateway. A first genuine CPU-trained Jon2 checkpoint is stored privately, but its Arabic replies are not coherent enough for user-facing chat. It is **not yet a public production AI service**. A deployed Python model runtime, approved training corpus, quality-approved checkpoint, persistent database, secure public accounts, video rendering, YouTube OAuth/upload, and AdSense are not live.
 
 ## Original Jon2 model in iPhone Safari
 
-The public website now includes an experimental local Safari runtime. It can load a privately exported bundle of the original Jon2 checkpoint directly in the browser; model files are not uploaded to the website. See [the Arabic setup guide](docs/SAFARI_LOCAL_MODEL_AR.md) and [the Kaggle export notebook](notebooks/Jon2_Safari_Private_Export.ipynb). This path still requires the owner to run the export, and on-device speed and Arabic output quality have not yet passed production review. The public server chat release gate remains closed.
+The public website includes an experimental local Safari runtime. It can load a privately exported bundle of the original Jon2 checkpoint directly in the browser; model files are not uploaded to the website. See [the Arabic setup guide](docs/SAFARI_LOCAL_MODEL_AR.md) and [the Kaggle export notebook](notebooks/Jon2_Safari_Private_Export.ipynb). This path still requires the owner to run the export, and on-device speed and Arabic output quality have not yet passed production review. The public server chat release gate remains closed.
 
 ## Start here
 
@@ -20,7 +19,7 @@ The public website now includes an experimental local Safari runtime. It can loa
 - [Original data policy](ai_engine/ORIGINAL_DATA_POLICY.md) — requirements for training text and asset permissions.
 - [Dataset register](ai_engine/DATASET_REGISTER.md) — current dataset approval decisions.
 - [Original model API guide](ai_engine/README.md) — local API, training safeguards, and evaluation instructions.
-- [Backend deployment notes](ai_engine/DEPLOYMENT.md) — CPU-only container build, health checks, and safe release configuration.
+- [Hostless free deployment guide](ai_engine/DEPLOYMENT.md) — deploy the existing Dockerized Python API from iPhone Safari with the free CPU/RAM allowance and closed chat gates.
 
 ## Website chat connection
 
@@ -28,15 +27,13 @@ The static chat interface can call the original FastAPI model API when a backend
 
 The chat must remain unavailable until a real Jon2 checkpoint passes the project's Arabic-output checks and human review. A running API alone does not mean the model is ready. The browser client checks `/api/health`, displays the difference between API liveness and model readiness, and posts each message with a browser-generated UUID `session_id` to `/api/chat`; the FastAPI service stores the exchange in its private SQLite memory. The client accepts only an HTTPS API origin (HTTP is allowed for localhost development), and the backend CORS allowlist includes the GitHub Pages origin.
 
-For GitHub Pages, edit the single setting in the root `jon2-config.js` file to `window.JON2_API_BASE_URL = "https://YOUR-DEPLOYED-API-HOST";` after the API is deployed. The file is loaded before the chat client, accepts only an HTTPS origin (or localhost HTTP for development), and must contain no credentials or private tokens. Until an owner deploys the API and configures that origin, the GitHub Pages site correctly reports that no backend is connected.
+For GitHub Pages, edit the single setting in the root `jon2-config.js` file to `window.JON2_API_BASE_URL = "https://YOUR-DEPLOYED-API-HOST";` only after the API is deployed and its HTTPS health endpoint, CORS behavior, and security boundary have been checked. The file is loaded before the chat client, accepts only an HTTPS origin (or localhost HTTP for development), and must contain no credentials or private tokens. Until an owner deploys the API and configures that origin, the GitHub Pages site correctly reports that no backend is connected.
 
 ## Source-backed knowledge retrieval
 
 The chat API has a lightweight Arabic greeting path and a source-attributed factual lookup path. Factual lookups use the public Arabic Wikipedia API (with an English-language fallback), save the short extract, title, source URL, retrieval time, and expiry in a local SQLite cache, and reuse fresh entries for seven days. This is retrieval/cache behavior; it does not update the model weights or add retrieved pages to the approved training corpus.
 
-The cache database defaults to `~/.jon2-ai/knowledge.sqlite3`. Set `JON2_KNOWLEDGE_DB_PATH` to choose another writable path. On hosts with an ephemeral filesystem (including typical free web-service instances), cached knowledge may be lost when the service is restarted or redeployed. Durable cross-restart storage requires a persistent volume or managed database.
-
-The API health response reports the retrieval/cache configuration. Offline unit tests run in the `Jon2 Knowledge Retrieval Tests` GitHub Actions workflow. General model chat remains gated by the existing human release approval.
+The cache database defaults to `~/.jon2-ai/knowledge.sqlite3`. Set `JON2_KNOWLEDGE_DB_PATH` to choose another writable path. On hosts with an ephemeral filesystem, cached knowledge may be lost when the service is replaced. Durable cross-restart storage requires a persistent volume or managed database.
 
 ## Hosting boundaries
 
