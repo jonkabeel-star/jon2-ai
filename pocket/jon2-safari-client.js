@@ -80,8 +80,8 @@ export class Jon2SafariClient {
     }, [weightsBuffer], 300000);
   }
 
-  generate(prompt, maxTokens = 256) {
-    return this._request("generate", { prompt, maxTokens }, [], 180000);
+  generate(message, history = [], maxTokens = 256) {
+    return this._request("generate", { message, history, maxTokens }, [], 180000);
   }
 
   close() {
