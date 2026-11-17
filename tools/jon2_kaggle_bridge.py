@@ -16,6 +16,8 @@ from pathlib import Path
 from typing import Any
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 API = "https://api.github.com"
 POLL_SECONDS = 30
@@ -35,7 +37,7 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def get_secrets() -> tuple[str, str]:
+def get_secrets() -> tuple[str, str, str]:
     try:
         from kaggle_secrets import UserSecretsClient
     except Exception as exc:
@@ -43,18 +45,36 @@ def get_secrets() -> tuple[str, str]:
     client = UserSecretsClient()
     token = client.get_secret("JON2_BRIDGE_TOKEN")
     repo = client.get_secret("JON2_BRIDGE_REPO")
-    if not token or not repo or "/" not in repo:
+    control_branch = client.get_secret("JON2_BRIDGE_BRANCH")
+    if not token or not repo or "/" not in repo or not control_branch:
         raise RuntimeError(
-            "Add Kaggle Secrets JON2_BRIDGE_TOKEN and JON2_BRIDGE_REPO "
-            "(owner/private-repo). Values are never printed."
+            "Add Kaggle Secrets JON2_BRIDGE_TOKEN, JON2_BRIDGE_REPO "
+            "(owner/private-repo), and JON2_BRIDGE_BRANCH. Values are never printed."
         )
-    return token.strip(), repo.strip()
+    return token.strip(), repo.strip(), control_branch.strip()
 
 
 class GitHubBridge:
-    def __init__(self, token: str, repo: str):
+    def __init__(self, token: str, repo: str, branch: str):
         self.repo = repo
+        if not re.fullmatch(r"[A-Za-z0-9._/-]{1,200}", branch) or ".." in branch.split("/"):
+            raise ValueError("Invalid bridge branch name")
+        self.branch = branch
         self.session = requests.Session()
+        # Retry transient network disconnects on safe read requests.
+        retry = Retry(
+            total=6,
+            connect=6,
+            read=6,
+            status=4,
+            backoff_factor=1.5,
+            status_forcelist=(429, 500, 502, 503, 504),
+            allowed_methods=frozenset({"GET", "HEAD", "OPTIONS"}),
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
         self.session.headers.update({
             "Authorization": f"Bearer {token}",
             "Accept": "application/vnd.github+json",
@@ -69,7 +89,7 @@ class GitHubBridge:
 
     def list_inbox(self) -> list[dict[str, Any]]:
         url = f"{API}/repos/{self.repo}/contents/bridge/inbox"
-        response = self.session.get(url, params={"ref": self.default_branch}, timeout=20)
+        response = self.session.get(url, params={"ref": self.branch}, timeout=20)
         if response.status_code == 404:
             return []
         response.raise_for_status()
@@ -79,7 +99,7 @@ class GitHubBridge:
     def read_json(self, path: str) -> dict[str, Any]:
         response = self.session.get(
             f"{API}/repos/{self.repo}/contents/{path}",
-            params={"ref": self.default_branch},
+            params={"ref": self.branch},
             timeout=20,
         )
         response.raise_for_status()
@@ -92,7 +112,7 @@ class GitHubBridge:
     def exists(self, path: str) -> bool:
         response = self.session.get(
             f"{API}/repos/{self.repo}/contents/{path}",
-            params={"ref": self.default_branch},
+            params={"ref": self.branch},
             timeout=20,
         )
         if response.status_code == 404:
@@ -102,14 +122,17 @@ class GitHubBridge:
 
     def write_json_once(self, path: str, value: dict[str, Any]) -> None:
         if self.exists(path):
-            raise RuntimeError(f"Refusing to overwrite existing bridge record: {path}")
+            existing = self.read_json(path)
+            if existing == value:
+                return
+            raise RuntimeError(f"Refusing to overwrite a different bridge record: {path}")
         body = json.dumps(value, ensure_ascii=False, indent=2).encode("utf-8")
         response = self.session.put(
             f"{API}/repos/{self.repo}/contents/{path}",
             json={
                 "message": f"Jon2 bridge result: {Path(path).stem}",
                 "content": base64.b64encode(body).decode("ascii"),
-                "branch": self.default_branch,
+                "branch": self.branch,
             },
             timeout=20,
         )
@@ -231,8 +254,23 @@ def process_task(bridge: GitHubBridge, item: dict[str, Any]) -> bool:
         print(f"Skipping invalid task filename: {filename}")
         return False
     receipt_path = f"bridge/receipts/{task_id}.json"
+    result_path = f"bridge/outbox/{task_id}.json"
     if bridge.exists(receipt_path):
         return False
+
+    # Recover cleanly if the result was written but the receipt write failed.
+    if bridge.exists(result_path):
+        existing_result = bridge.read_json(result_path)
+        if existing_result.get("task_id") != task_id:
+            raise RuntimeError(f"Existing result belongs to another task: {result_path}")
+        bridge.write_json_once(receipt_path, {
+            "task_id": task_id,
+            "status": existing_result.get("status", "unknown"),
+            "completed_at": existing_result.get("completed_at", utc_now()),
+            "result_path": result_path,
+        })
+        print(f"Task {task_id}: receipt recovered")
+        return True
 
     started = utc_now()
     result: dict[str, Any] = {
@@ -265,7 +303,7 @@ def process_task(bridge: GitHubBridge, item: dict[str, Any]) -> bool:
             "error": f"{type(exc).__name__}: {exc}",
         })
 
-    bridge.write_json_once(f"bridge/outbox/{task_id}.json", result)
+    bridge.write_json_once(result_path, result)
     bridge.write_json_once(receipt_path, {
         "task_id": task_id,
         "status": result["status"],
@@ -277,19 +315,26 @@ def process_task(bridge: GitHubBridge, item: dict[str, Any]) -> bool:
 
 
 def main() -> None:
-    token, repo = get_secrets()
-    bridge = GitHubBridge(token, repo)
+    token, repo, branch = get_secrets()
+    bridge = GitHubBridge(token, repo, branch)
     print("Jon2 Kaggle Bridge connected to a verified private repository.")
+    print(f"Control branch: {branch}")
     print("Allow-listed read-only commands:", ", ".join(sorted(ALLOWED_COMMANDS)))
     print("No shell execution, training, checkpoint writes, deletes, or deployment.")
     started = time.monotonic()
     processed = 0
     while time.monotonic() - started < MAX_RUNTIME_SECONDS and processed < MAX_TASKS_PER_SESSION:
-        for item in bridge.list_inbox():
-            if processed >= MAX_TASKS_PER_SESSION:
-                break
-            if process_task(bridge, item):
-                processed += 1
+        try:
+            for item in bridge.list_inbox():
+                if processed >= MAX_TASKS_PER_SESSION:
+                    break
+                if process_task(bridge, item):
+                    processed += 1
+        except requests.RequestException as exc:
+            # A temporary Kaggle/GitHub network drop must not kill the bridge.
+            print(f"Temporary GitHub connection error: {type(exc).__name__}. Retrying after delay.")
+            time.sleep(min(POLL_SECONDS * 2, 60))
+            continue
         time.sleep(POLL_SECONDS)
     print(f"Bridge stopped. Processed tasks this session: {processed}")
 
