@@ -10,8 +10,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import math
-import struct
 from pathlib import Path
 import sys
 
@@ -110,7 +108,7 @@ def export_bundle(checkpoint_path: Path, output_dir: Path) -> dict:
         "tensors": tensors,
     }
     manifest_path.write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2) + "\\n",
+        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     return {
