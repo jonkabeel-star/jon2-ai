@@ -103,34 +103,39 @@ function allowRequest(req) {
   return true;
 }
 
-async function askModel(message, history = []) {
-  if (!AI_MODEL_URL) {
+async function askModel(message, history = [], sessionId = null) {
+  const runtimeToken = (process.env.JON2_RUNTIME_TOKEN || "").trim();
+  if (!AI_MODEL_URL || runtimeToken.length < 32) {
     throw Object.assign(
-      new Error("نموذج الذكاء الاصطناعي غير متصل. لم يتم إعداد AI_MODEL_URL."),
+      new Error("اتصال عقل Jon2 الأصلي غير مكتمل. يلزم إعداد عنوان /v1/chat ورمز التشغيل الخاص."),
       { status: 503 }
     );
   }
 
   const response = await fetch(AI_MODEL_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, history }),
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${runtimeToken}`
+    },
+    body: JSON.stringify({
+      contract_version: "1",
+      message,
+      history,
+      session_id: sessionId
+    }),
     signal: AbortSignal.timeout(90000)
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw Object.assign(new Error("تعذر على خادم النموذج معالجة الطلب."), { status: 502 });
+  if (!response.ok || data.contract_version !== "1") {
+    throw Object.assign(new Error("تعذر على خادم Jon2 الأصلي معالجة الطلب."), {
+      status: response.status === 401 ? 503 : 502
+    });
   }
-  const reply =
-    data.reply ??
-    data.response ??
-    data.generated_text ??
-    data.text ??
-    data.choices?.[0]?.message?.content;
-  if (typeof reply !== "string" || !reply.trim()) {
-    throw Object.assign(new Error("لم يُرجع نموذج الذكاء الاصطناعي إجابة صالحة."), { status: 502 });
+  if (typeof data.reply !== "string" || !data.reply.trim()) {
+    throw Object.assign(new Error("لم يُرجع عقل Jon2 إجابة صالحة."), { status: 502 });
   }
-  return reply.trim();
+  return data.reply.trim();
 }
 
 const server = http.createServer(async (req, res) => {
@@ -305,8 +310,8 @@ const server = http.createServer(async (req, res) => {
     }));
 
     try {
-      const reply = await askModel(body.message.trim(), safeHistory);
-      return send(res, 200, { project: "Jon2 AI", reply });
+      const reply = await askModel(body.message.trim(), safeHistory, body.session_id || null);
+      return send(res, 200, { project: "Jon2 AI", reply, response_mode: "jon2_original_model_only" });
     } catch (error) {
       const status = error.status || 502;
       const reference = crypto.randomUUID();
