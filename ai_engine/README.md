@@ -130,7 +130,7 @@ Before allocating a GPU or starting training, inspect the exact approved corpus,
 python ai_engine/preflight_training.py --profile arabic_30m --data ai_engine/training_data --approval-manifest ai_engine/training_data/source_approvals.json --output ai_engine/evaluation/arabic-30m-preflight.json
 ```
 
-This command is read-only: it validates the exact-file approval manifest and uses the same deterministic paragraph split as the trainer. It first measures a 512-vocabulary BPE probe. If even that optimistic token-count upper bound cannot meet the profile's data-to-parameter guard, it skips the much slower full-vocabulary tokenizer and reports that the 30M profile is blocked. If the upper bound could pass, it trains the exact target tokenizer in memory and reports its measured counts. It never creates weights, alters checkpoints, approves sources, or starts training. Exit code 2 means one or more readiness blockers remain. Script counts cannot distinguish Modern Standard Arabic from Egyptian dialect; dialect coverage still needs human annotation. The default 10 tokens-per-parameter gate mirrors the current `arabic_30m` trainer safeguard and must not be lowered to force a run.
+This command is read-only: it validates the exact-file approval manifest and uses the same deterministic paragraph split as the trainer. It first measures a 512-vocabulary BPE probe. If even that optimistic token-count upper bound cannot meet the profile's data-to-parameter guard, it skips the much slower full-vocabulary tokenizer and reports that the 30M profile is blocked. If the upper bound could pass, it trains the exact target tokenizer in memory and reports its measured counts. It never creates weights, alters checkpoints, approves sources, or starts training. Exit code 2 means one or more readiness blockers remain. Script counts cannot distinguish Modern Standard Arabic from Egyptian dialect; dialect coverage still needs human annotation. The current trainer enforces at least 20 tokens per parameter and at least 1,000,000 corpus characters. For the approximately 29,938,688-parameter `arabic_30m` profile, that project guard corresponds to about 598,773,760 measured tokens. These are conservative project readiness checks, not a guarantee of language quality; do not lower them to force a run.
 
 The Python Checks workflow now runs this preflight automatically and stores the JSON report as the `jon2-arabic-30m-preflight` artifact. A blocked result is expected when the corpus is too small; an unexpected execution error still fails CI. Resolve every blocker before launching a costly training workflow. Keep the historical small checkpoint untouched and use the profile-specific checkpoint paths for a new architecture.
 
@@ -145,6 +145,17 @@ python ai_engine/evaluate_model.py --checkpoint ai_engine/checkpoints/jon2-small
 ```
 
 The evaluator generates answers and creates a review template with six blank human-scoring dimensions for every prompt. It never assigns an automatic quality verdict or marks the model approved. Review every answer using `EVALUATION_RUBRIC.md`. A trained checkpoint exists in the private Kaggle dataset. Download it to the configured checkpoint path before running this evaluation; the workflow's successful smoke test is not a substitute for human review.
+
+## Evaluate Egyptian Arabic and Modern Standard Arabic
+
+The original-checkpoint human-review evaluator has separate held-out sets for Egyptian Arabic and Modern Standard Arabic. It never assigns an automatic semantic-quality pass; every answer must be reviewed by a human.
+
+```bash
+python ai_engine/evaluate_egyptian.py --checkpoint ai_engine/checkpoints/jon2-small.pt --language "Egyptian Arabic"
+python ai_engine/evaluate_egyptian.py --checkpoint ai_engine/checkpoints/jon2-small.pt --language "Modern Standard Arabic"
+```
+
+The language option selects the matching benchmark and report filename by default. You can override either with `--prompts` or `--output`. Keep both benchmark files held out; do not copy them into the training corpus. Surface diagnostics only flag obvious text-integrity issues and do not prove that an answer is correct, relevant, or fluent.
 
 ## Human release gate for public chat
 
