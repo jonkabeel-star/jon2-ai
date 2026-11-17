@@ -9,9 +9,24 @@ export function requireUsableJon2Answer(answer) {
   if (typeof answer !== "string" || !answer.trim() || !validateJon2ArabicAnswer(answer)) {
     const error = new Error("عقل Jon2 غير جاهز للرد");
     error.code = "JON2_OUTPUT_REJECTED";
+    error.diagnostic = "Generated output failed the Arabic surface-integrity gate.";
     throw error;
   }
   return answer.trim();
+}
+
+function diagnosticFor(error) {
+  const code = typeof error?.code === "string" ? error.code : "JON2_INFERENCE_FAILED";
+  if (typeof error?.diagnostic === "string" && error.diagnostic.trim()) {
+    return error.diagnostic.trim().slice(0, 240);
+  }
+  if (code === "JON2_GENERATION_FAILED" && typeof error?.cause === "string") {
+    return error.cause.slice(0, 240);
+  }
+  if (code === "JON2_MODEL_NOT_READY") return "The local model runtime was not loaded.";
+  if (code === "JON2_INVALID_PROMPT") return "The submitted prompt was empty or invalid.";
+  if (code === "JON2_OUTPUT_REJECTED") return "Generated output failed the Arabic surface-integrity gate.";
+  return "No additional local diagnostic is available.";
 }
 
 if (typeof self !== "undefined") self.addEventListener("message", async event => {
@@ -48,8 +63,6 @@ if (typeof self !== "undefined") self.addEventListener("message", async event =>
         error.code = "JON2_INVALID_PROMPT";
         throw error;
       }
-      // Only the loaded original model generates an answer. Reject malformed,
-      // empty, or repetitive output instead of exposing a fake/placeholder reply.
       const prompt = buildJon2ConversationPrompt(
         message.message,
         message.history,
@@ -76,11 +89,13 @@ if (typeof self !== "undefined") self.addEventListener("message", async event =>
     }
     throw new TypeError("Unsupported Jon2 worker message.");
   } catch (error) {
+    const code = error?.code || (message.type === "load" ? "JON2_MODEL_LOAD_FAILED" : "JON2_INFERENCE_FAILED");
     self.postMessage({
       type: "error",
       requestId,
-      code: error?.code || (message.type === "load" ? "JON2_MODEL_LOAD_FAILED" : "JON2_INFERENCE_FAILED"),
-      message: "عقل Jon2 غير جاهز للرد"
+      code,
+      message: "عقل Jon2 غير جاهز للرد",
+      diagnostic: diagnosticFor(error)
     });
   }
 });
