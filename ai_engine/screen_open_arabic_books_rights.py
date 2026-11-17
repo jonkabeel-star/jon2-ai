@@ -83,7 +83,13 @@ def read_metadata(path: Path) -> list[dict]:
         delimiter = "\t" if suffix == ".tsv" else ","
         with path.open("r", encoding="utf-8-sig", newline="") as handle:
             return list(csv.DictReader(handle, delimiter=delimiter))
-    raise ValueError("Use a metadata-only .csv, .tsv, or .jsonl export. Parquet/text ingestion is not enabled.")
+    if suffix == ".parquet":
+        try:
+            import pyarrow.parquet as pq
+        except ImportError as exc:
+            raise RuntimeError("Parquet screening requires pyarrow; install pyarrow and retry.") from exc
+        return pq.read_table(path).to_pylist()
+    raise ValueError("Use a metadata-only .parquet, .csv, .tsv, or .jsonl export. Book-text ingestion is not enabled.")
 
 
 def screen_record(row: dict, *, jurisdiction: str = "EG") -> dict:
