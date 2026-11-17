@@ -13,6 +13,7 @@ export class Jon2SafariClient {
       if (message.type === "error") {
         const error = new Error(message.message || "عقل Jon2 غير جاهز للرد");
         error.code = message.code || "JON2_INFERENCE_FAILED";
+        if (typeof message.diagnostic === "string") error.diagnostic = message.diagnostic.slice(0, 240);
         pending.reject(error);
       }
       else pending.resolve(message);
