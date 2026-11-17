@@ -103,6 +103,35 @@ function allowRequest(req) {
   return true;
 }
 
+async function inspectOriginalRuntime() {
+  const runtimeToken = (process.env.JON2_RUNTIME_TOKEN || "").trim();
+  if (!AI_MODEL_URL || runtimeToken.length < 32) {
+    return { api_ready: false, model_ready: false, model_status: "runtime_configuration_missing" };
+  }
+  try {
+    const endpoint = new URL(AI_MODEL_URL);
+    if (!endpoint.pathname.replace(/\\/$/, "").endsWith("/v1/chat")) {
+      return { api_ready: false, model_ready: false, model_status: "runtime_endpoint_must_be_v1_chat" };
+    }
+    endpoint.pathname = endpoint.pathname.replace(/\\/$/, "").replace(/\\/v1\\/chat$/, "/v1/health");
+    const response = await fetch(endpoint, {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${runtimeToken}`, "Accept": "application/json" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) return { api_ready: false, model_ready: false, model_status: "runtime_health_unavailable" };
+    return {
+      api_ready: data.api_ready === true,
+      model_ready: data.model_ready === true,
+      model_status: typeof data.model_status === "string" ? data.model_status : "unknown"
+    };
+  } catch {
+    return { api_ready: false, model_ready: false, model_status: "runtime_unreachable" };
+  }
+}
+
 async function askModel(message, history = [], sessionId = null) {
   const runtimeToken = (process.env.JON2_RUNTIME_TOKEN || "").trim();
   if (!AI_MODEL_URL || runtimeToken.length < 32) {
@@ -149,13 +178,19 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
 
   if (url.pathname === "/api/health" && req.method === "GET") {
+    const runtime = await inspectOriginalRuntime();
+    const releaseApproved = releaseGate.isChatReleaseApproved();
+    const chatReady = releaseApproved && runtime.api_ready && runtime.model_ready;
     return send(res, 200, {
       project: "Jon2 AI",
       status: "online",
-      aiEngine: AI_MODEL_URL ? "configured" : "not_connected",
+      aiEngine: runtime.api_ready ? "connected" : "not_connected",
+      model_ready: runtime.model_ready,
+      chat_ready: chatReady,
+      model_status: runtime.model_status,
       authentication: auth.configured() ? "configured_not_yet_security_reviewed" : "not_configured",
-      chatReleaseApproved: releaseGate.isChatReleaseApproved(),
-      chatEnabled: releaseGate.isChatReleaseApproved() && Boolean(AI_MODEL_URL),
+      chatReleaseApproved: releaseApproved,
+      chatEnabled: chatReady,
       publicLaunchReady: false
     });
   }
