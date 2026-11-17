@@ -31,6 +31,8 @@ def load_benchmark_cases(path: Path) -> list[dict]:
             raise ValueError(f"Benchmark record {item.get('id')} has invalid split/language metadata")
         if not isinstance(item["id"], str) or not item["id"].strip() or item["id"] in seen:
             raise ValueError(f"Missing or duplicate benchmark id at line {line_number}")
+        prompt_present = "prompt" in item
+        turns_present = "turns" in item
         has_prompt = isinstance(item.get("prompt"), str) and bool(item["prompt"].strip())
         turns = item.get("turns")
         has_turns = (
@@ -45,9 +47,9 @@ def load_benchmark_cases(path: Path) -> list[dict]:
             and any(turn["role"] == "user" for turn in turns)
             and turns[-1]["role"] == "user"
         )
-        if has_prompt == has_turns:
+        if prompt_present == turns_present or (prompt_present and not has_prompt) or (turns_present and not has_turns):
             raise ValueError(
-                f"Record {item['id']} must contain exactly one of prompt or valid turns"
+                f"Record {item['id']} must contain exactly one valid prompt or valid turns"
             )
         seen.add(item["id"])
         cases.append(item)
