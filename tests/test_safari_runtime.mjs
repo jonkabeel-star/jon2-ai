@@ -363,7 +363,10 @@ test("Safari chat sends identity questions to the model and rejects failed quali
 test("Safari presents the canonical not-ready message for every local inference failure", async () => {
   const page = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(page, /addMessage\("عقل Jon2 غير جاهز للرد", "bot"\)/);
-  assert.match(page, /code: error\?\.code \|\| "JON2_INFERENCE_FAILED"/);
+  assert.match(page, /const code = error\?\.code \|\| "JON2_INFERENCE_FAILED"/);
+  assert.match(page, /const diagnostic = error\?\.diagnostic \|\| error\?\.cause \|\| error\?\.message/);
+  assert.match(page, /id="localInferenceDiagnostic"/);
+  assert.match(page, /diagnosticNode\.textContent = .*code/);
   assert.doesNotMatch(page, /addMessage\(translations\[lang\]\.localQualityRejected, "bot"\)/);
 });
 
