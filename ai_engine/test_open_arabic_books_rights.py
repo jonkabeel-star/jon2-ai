@@ -138,10 +138,21 @@ class OpenArabicBooksRightsTests(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["book_id"], "hindawi-12345678")
 
-    def test_parquet_or_text_inputs_are_not_silently_accepted(self):
+    def test_reads_metadata_only_parquet(self):
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "metadata.parquet"
-            path.write_bytes(b"not parsed")
+            pq.write_table(pa.Table.from_pylist([sample_record()]), path)
+            rows = read_metadata(path)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["book_id"], "hindawi-12345678")
+
+    def test_book_text_formats_are_not_accepted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "book.txt"
+            path.write_text("نص كتاب", encoding="utf-8")
             with self.assertRaises(ValueError):
                 read_metadata(path)
 
