@@ -85,10 +85,28 @@ class OpenArabicBooksRightsTests(unittest.TestCase):
         )
 
     def test_late_author_death_year_is_flagged_for_egyptian_review(self):
-        record = sample_record(credits=[{"role": "author", "name": "مؤلف حديث", "death_year": 1990}])
+        record = sample_record(credits=[{"role": "author", "name": "مؤلف حديث", "death_year": 1976}])
         result = screen_record(record)
         self.assertIn(
-            "author_death_year_after_1976_requires_egyptian_rights_review",
+            "author_death_year_1976_or_later_requires_egyptian_rights_review",
+            result["human_review_reasons"],
+        )
+
+    def test_translator_rights_are_checked_for_translated_books(self):
+        record = sample_record(
+            is_translation=True,
+            translation_covered=True,
+            original_text_status="public-domain",
+            license_decision="translation_cc_by_4_original_public_domain",
+            credits=[
+                {"role": "author", "name": "المؤلف الأصلي", "death_year": 1940},
+                {"role": "translator", "name": "المترجم", "death_year": None},
+            ],
+        )
+        result = screen_record(record)
+        self.assertEqual(result["screening_status"], "HUMAN_REVIEW_REQUIRED")
+        self.assertIn(
+            "translator_death_year_missing_requires_egyptian_rights_review",
             result["human_review_reasons"],
         )
 
