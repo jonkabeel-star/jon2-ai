@@ -1,0 +1,100 @@
+{"id":"MSA-001","language":"msa","prompt":"اشرح الفرق بين الحقيقة والرأي مع مثال واضح لكل منهما.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-002","language":"msa","prompt":"ما المقصود بالطاقة المتجددة؟ اذكر ثلاثة مصادر لها.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-003","language":"msa","prompt":"إذا قطعت سيارة 240 كيلومتراً في 4 ساعات، فاحسب متوسط سرعتها واشرح الطريقة.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-004","language":"msa","prompt":"اكتب رسالة رسمية قصيرة لطلب تأجيل موعد اجتماع.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-005","language":"msa","prompt":"لخص أهمية ترشيد استهلاك المياه في فقرة مترابطة.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-006","language":"msa","prompt":"ما الفرق بين الكتلة والوزن؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-007","language":"msa","prompt":"اشرح لماذا لا يثبت الارتباط الإحصائي وحده وجود علاقة سببية.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-008","language":"msa","prompt":"ضع خطة من خمس خطوات لتعلم مهارة جديدة خلال شهر.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-009","language":"msa","prompt":"كيف تتحقق من صحة خبر قبل مشاركته؟ اذكر خطوات عملية.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-010","language":"msa","prompt":"إذا كان سعر كتاب 180 جنيهاً وخُفّض 15 بالمئة، فما السعر بعد الخصم؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-011","language":"msa","prompt":"اشرح دورة الماء في الطبيعة بلغة مناسبة لطالب صغير.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-012","language":"msa","prompt":"ما الفرق بين المصدر الأولي والمصدر الثانوي للمعلومات؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-013","language":"msa","prompt":"اكتب نهاية بديلة لقصة قصيرة عن طالب أعاد محفظة وجدها.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-014","language":"msa","prompt":"اذكر مزايا وعيوب التعلم عن بعد دون تحيز.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-015","language":"msa","prompt":"كيف يمكن تقسيم مهمة كبيرة إلى مهام صغيرة قابلة للإنجاز؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-016","language":"msa","prompt":"ما البيانات اللازمة لمقارنة هاتفين مقارنة عادلة؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-017","language":"msa","prompt":"اشرح مفهوم الخصوصية الرقمية وثلاث وسائل لحمايتها.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-018","language":"msa","prompt":"إذا قرأ طالب 18 صفحة يومياً لمدة 7 أيام، فكم صفحة قرأ؟ وضح الحساب.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-019","language":"msa","prompt":"ما الفرق بين التلخيص وإعادة الصياغة؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-020","language":"msa","prompt":"اقترح تجربة بسيطة لاختبار أثر الضوء في نمو نبات.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-021","language":"msa","prompt":"لماذا يجب ذكر مصدر المعلومة عند كتابة بحث؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-022","language":"msa","prompt":"رتب المهام التالية حسب الأولوية وعلل: موعد طبي، واجب غداً، تنظيف اختياري.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-023","language":"msa","prompt":"اشرح معنى التفكير النقدي مع مثال من الحياة اليومية.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-024","language":"msa","prompt":"اكتب فقرة من أربعة أسطر عن أهمية العمل الجماعي.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-025","language":"msa","prompt":"ما الفرق بين الطقس والمناخ؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-026","language":"msa","prompt":"كيف تتعامل مع معلومة لا تعرف مدى صحتها؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-027","language":"msa","prompt":"اشرح مبدأ العرض والطلب بمثال غير معقد.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-028","language":"msa","prompt":"إذا كان محيط مربع 36 سم، فما طول ضلعه ومساحته؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-029","language":"msa","prompt":"اذكر ثلاثة أسباب محتملة لفشل مشروع صغير وكيفية تقليل المخاطر.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-030","language":"msa","prompt":"ما المقصود بالتعلم من الخطأ؟ قدم مثالاً عملياً.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-031","language":"msa","prompt":"اكتب تعليمات واضحة من ست خطوات لتنظيم مكتب دراسة.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-032","language":"msa","prompt":"ما الفرق بين الذاكرة قصيرة المدى وطويلة المدى بصورة مبسطة؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-033","language":"msa","prompt":"اشرح مفهوم الاحتمال بمثال رمي قطعة نقد.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-034","language":"msa","prompt":"كيف تتأكد من أن حل المسألة يجيب عن السؤال المطلوب؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-035","language":"msa","prompt":"اكتب اعتذاراً مهنياً عن التأخر في تسليم مهمة مع اقتراح موعد جديد.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-036","language":"msa","prompt":"ما أوجه الاختلاف بين الطاقة الشمسية وطاقة الرياح؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-037","language":"msa","prompt":"لماذا لا تكفي عينة صغيرة جداً للحكم على رأي مجتمع كامل؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-038","language":"msa","prompt":"اقترح طريقة لتعليم طفل مفهوم الادخار باستخدام مثال يومي.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-039","language":"msa","prompt":"ما المعلومات التي يجب توضيحها عند تقديم توصية بشراء منتج؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-040","language":"msa","prompt":"حلل موقفاً يضطر فيه فريق إلى الاختيار بين السرعة والجودة، واذكر المفاضلات.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-041","language":"msa","prompt":"اشرح مفهوم الطاقة الحرارية ومثالاً على انتقالها.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-042","language":"msa","prompt":"ما العوامل التي تجعل الاستبيان منحازاً؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-043","language":"msa","prompt":"كيف تصمم جدولاً أسبوعياً يوازن بين العمل والراحة؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-044","language":"msa","prompt":"ما الفرق بين البيانات والمعلومات والمعرفة؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-045","language":"msa","prompt":"اذكر علامات تدل على أن كلمة المرور ضعيفة، واقترح بديلاً آمناً.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-046","language":"msa","prompt":"اشرح لماذا ينبغي اختبار البرنامج قبل نشره.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-047","language":"msa","prompt":"كيف تميز بين النقد البنّاء والإهانة؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-048","language":"msa","prompt":"اقترح أسئلة مناسبة لمقابلة شخص يعمل في مجال التصوير.","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-049","language":"msa","prompt":"إذا اشترى شخص 3 منتجات بأسعار 45 و70 و85 جنيهاً ودفع 250، فكم يتبقى؟","split":"evaluation_only","training_eligible":false}
+{"id":"MSA-050","language":"msa","prompt":"اكتب ملخصاً محايداً لخلاف بين شخصين دون اختلاق تفاصيل.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-001","language":"egyptian","prompt":"بص، اشرحلي يعني إيه ذكاء اصطناعي بمثال من حياتنا اليومية.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-002","language":"egyptian","prompt":"معايا ٣٥٠ جنيه واشتريت حاجة بـ٢٢٥، فاضل كام؟ وريني الحساب.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-003","language":"egyptian","prompt":"اكتبلي رسالة محترمة أعتذر فيها عن إني اتأخرت في الرد.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-004","language":"egyptian","prompt":"إيه الفرق بين موبايل بطاريته كبيرة وموبايل شحنه سريع؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-005","language":"egyptian","prompt":"لو مش فاهم درس، أبدأ أذاكره إزاي من غير ما أتشتت؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-006","language":"egyptian","prompt":"احكيلي موقف قصير عن اتنين صحاب حلوا مشكلة بالتعاون.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-007","language":"egyptian","prompt":"يعني إيه خبر مضلل؟ وإزاي أتأكد إن بوست على فيسبوك صح؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-008","language":"egyptian","prompt":"اقترحلي جدول بسيط ليوم فيه شغل ومذاكرة وراحة.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-009","language":"egyptian","prompt":"الأتوبيس بيتأخر كل يوم، أسجل إيه عشان أحسب متوسط التأخير؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-010","language":"egyptian","prompt":"إيه الأسئلة اللي أسألها للبائع قبل ما أشتري لابتوب مستعمل؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-011","language":"egyptian","prompt":"اشرحلي ببساطة ليه مينفعش أحكم على منتج من رأي شخص واحد.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-012","language":"egyptian","prompt":"اكتب رد قصير ولطيف على حد بيقول لي شكراً على مساعدتك.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-013","language":"egyptian","prompt":"لو المنتج سعره ٤٠٠ جنيه وعليه خصم ٢٠٪، هدفع كام؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-014","language":"egyptian","prompt":"أنا عندي فكرة مشروع صغير ومش عارف أبدأ، أعمل إيه الأول؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-015","language":"egyptian","prompt":"إزاي أفرق بين النصيحة المفيدة والكلام اللي مجرد رأي؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-016","language":"egyptian","prompt":"لو النت فصل وأنا بعمل شغل مهم، أتصرف إزاي وأحافظ على شغلي؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-017","language":"egyptian","prompt":"يعني إيه بصمة رقمية؟ اشرحها بمثال بسيط.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-018","language":"egyptian","prompt":"عايز أتعلم التصوير بالموبايل، أتمرن على إيه أول أسبوع؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-019","language":"egyptian","prompt":"لو اشتريت ٤ حاجات كل واحدة بـ٣٥ جنيه ودفعت ٢٠٠، الباقي كام؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-020","language":"egyptian","prompt":"إزاي أشرح لطفل صغير ليه لازم نوفر الميه؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-021","language":"egyptian","prompt":"اكتبلي رسالة أطلب فيها من المدير يوم إجازة بأسلوب محترم.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-022","language":"egyptian","prompt":"لو صاحبي فهم كلامي غلط، أبدأ أصلح الموقف إزاي؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-023","language":"egyptian","prompt":"إيه الفرق بين إن الحاجة تكون رخيصة وإنها تكون قيمتها كويسة؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-024","language":"egyptian","prompt":"أنا بتشتت بسرعة، اديني طريقة عملية أخلص بيها مهمة واحدة.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-025","language":"egyptian","prompt":"لو شفت فيديو غريب على السوشيال ميديا، أتحقق منه إزاي؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-026","language":"egyptian","prompt":"احكيلي قصة قصيرة بالمصري عن حد اتعلم من غلطة عملها.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-027","language":"egyptian","prompt":"يعني إيه متوسط حسابي؟ اديني مثال من أسعار ٣ منتجات.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-028","language":"egyptian","prompt":"إيه المعلومات اللي أحتاجها قبل ما أقرر أشتري موبايل جديد؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-029","language":"egyptian","prompt":"لو عندي ٥٠٠ جنيه وعايز أقسمهم بين مصاريف وادخار، أفكر إزاي؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-030","language":"egyptian","prompt":"اشرحلي ليه لازم أجرب التطبيق قبل ما أنشره للناس.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-031","language":"egyptian","prompt":"إزاي أعمل خطة أسبوعية من غير ما أحط مهام أكتر من وقتي؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-032","language":"egyptian","prompt":"لو حد اداني معلومة وأنا مش متأكد منها، أرد عليه إزاي؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-033","language":"egyptian","prompt":"إيه الفرق بين إنك تلخص كلام حد وإنك تغير معناه؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-034","language":"egyptian","prompt":"اقترح تجربة بسيطة أعملها في البيت عشان أفهم تبخر الميه.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-035","language":"egyptian","prompt":"لو عندي ٣ ساعات فاضية و٤ مهام، أرتبهم إزاي؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-036","language":"egyptian","prompt":"اكتب رد هادي على عميل متضايق من تأخير طلبه.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-037","language":"egyptian","prompt":"يعني إيه كلمة مرور قوية؟ اديني طريقة تكوينها من غير بيانات شخصية.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-038","language":"egyptian","prompt":"إزاي أعرف إن الإعلان بيبالغ في وصف المنتج؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-039","language":"egyptian","prompt":"لو فريق شغل مختلف على قرار، إيه طريقة عادلة تساعدهم يختاروا؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-040","language":"egyptian","prompt":"اشرحلي الفرق بين الطقس والمناخ كأني في إعدادي.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-041","language":"egyptian","prompt":"عايز أتعلم مهارة جديدة في شهر، أقسم التدريب إزاي؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-042","language":"egyptian","prompt":"لو دفعت ١٢٠ جنيه في مشتريات ودفعت ٢٠٠، كام المفروض يرجعلي؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-043","language":"egyptian","prompt":"إيه اللي يخلي تقييمات منتج على الإنترنت مش موثوقة؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-044","language":"egyptian","prompt":"اكتبلي اعتذار بسيط عن إني مش هقدر أحضر ميعاد اتفقت عليه.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-045","language":"egyptian","prompt":"إزاي أشرح لحد الفرق بين الحقيقة والتوقع؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-046","language":"egyptian","prompt":"لو عندي مشروع صغير، أسجل إيه كل يوم عشان أعرف مكسبه؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-047","language":"egyptian","prompt":"يعني إيه خصوصية على الإنترنت؟ وإيه حاجتين أعملهم عشان أحمي نفسي؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-048","language":"egyptian","prompt":"احكيلي موقف بالمصري يوضح إن التعاون بيوفر وقت ومجهود.","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-049","language":"egyptian","prompt":"لو المعلومة ناقصة، إيه الأسئلة اللي أسألها قبل ما أدي نصيحة؟","split":"evaluation_only","training_eligible":false}
+{"id":"EGY-050","language":"egyptian","prompt":"إزاي أراجع حل مسألة حسابية وأتأكد إني مجاوب على المطلوب؟","split":"evaluation_only","training_eligible":false}
