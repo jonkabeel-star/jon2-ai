@@ -665,7 +665,7 @@ function restoreJon2Model() {
       status.textContent = localText("جارٍ استعادة Jon2 وتشغيل المحادثة…","Restoring Jon2 and starting chat…");
       const client = await startJon2Client(new Blob([saved.manifestText]),new Blob([saved.weightsBuffer]));
       activateJon2Client(client);
-      $("localModelStatus").closest(".local-model-panel").classList.add("is-hidden");
+      status.textContent = localText("تمت استعادة نموذج Jon2 المحفوظ على هذا الجهاز. يمكنك اختيار ملف ZIP آخر إذا أردت إعادة تحميله.","The saved Jon2 model was restored on this device. You can select another ZIP if you want to reload it.");
       return true;
     } catch (error) {
       status.textContent = localText("تعذّر تشغيل الحزمة المحفوظة: ","Could not start the saved bundle: ") +
@@ -734,7 +734,6 @@ $("loadLocalJon2").addEventListener("click", async () => {
     await saveJon2Bundle(manifestText,weightsBuffer);
     activateJon2Client(client);
     client = null;
-    $("localModelStatus").closest(".local-model-panel").classList.add("is-hidden");
     status.textContent = localText("تم تفعيل المحادثة وحفظ الحزمة. سيُعاد الاتصال تلقائيًا عند فتح الموقع لاحقًا.","Chat activated and bundle saved. It will reconnect automatically on later visits.");
     $("jon2Bundle").value = "";
     $("assistant").scrollIntoView({behavior:"smooth",block:"start"});
