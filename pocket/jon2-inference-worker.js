@@ -1,5 +1,7 @@
 import { loadJon2SafariBundle } from "./jon2-safari-bundle.js";
 import { validateJon2ArabicAnswer } from "./jon2-answer-quality.js";
+import { buildJon2ConversationPrompt } from "./jon2-prompt.js";
+import { JON2_SAFARI_GENERATION_OPTIONS, JON2_SAFARI_MAX_NEW_TOKENS } from "./jon2-inference-config.js";
 
 let runtime = null;
 
@@ -41,19 +43,26 @@ if (typeof self !== "undefined") self.addEventListener("message", async event =>
         error.code = "JON2_MODEL_NOT_READY";
         throw error;
       }
-      if (typeof message.prompt !== "string" || !message.prompt.trim()) {
+      if (typeof message.message !== "string" || !message.message.trim()) {
         const error = new TypeError("عقل Jon2 غير جاهز للرد");
         error.code = "JON2_INVALID_PROMPT";
         throw error;
       }
       // Only the loaded original model generates an answer. Reject malformed,
       // empty, or repetitive output instead of exposing a fake/placeholder reply.
+      const prompt = buildJon2ConversationPrompt(
+        message.message,
+        message.history,
+        runtime.tokenizer,
+        runtime.model.config.context
+      );
       let rawGenerated;
       try {
         rawGenerated = runtime.model.generate(
           runtime.tokenizer,
-          message.prompt,
-          message.maxTokens ?? 256
+          prompt,
+          message.maxTokens ?? JON2_SAFARI_MAX_NEW_TOKENS,
+          JON2_SAFARI_GENERATION_OPTIONS
         );
       } catch (cause) {
         const error = new Error("عقل Jon2 غير جاهز للرد");

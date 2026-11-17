@@ -1,4 +1,5 @@
 // Safari module-worker client. Model files are read locally and transferred to the worker.
+import { JON2_SAFARI_MAX_NEW_TOKENS } from "./jon2-inference-config.js";
 export class Jon2SafariClient {
   constructor(workerUrl = new URL("./jon2-inference-worker.js", import.meta.url)) {
     this.worker = new Worker(workerUrl, { type: "module" });
@@ -80,8 +81,8 @@ export class Jon2SafariClient {
     }, [weightsBuffer], 300000);
   }
 
-  generate(prompt, maxTokens = 256) {
-    return this._request("generate", { prompt, maxTokens }, [], 180000);
+  generate(message, history = [], maxTokens = JON2_SAFARI_MAX_NEW_TOKENS) {
+    return this._request("generate", { message, history, maxTokens }, [], 180000);
   }
 
   close() {

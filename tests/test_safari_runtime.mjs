@@ -5,9 +5,61 @@ import { Jon2ByteBPETokenizer } from "../pocket/jon2-tokenizer.js";
 import { Jon2TransformerCPU, makeJon2ParityWeights } from "../pocket/jon2-transformer.js";
 import { validateJon2ArabicAnswer } from "../pocket/jon2-answer-quality.js";
 import { requireUsableJon2Answer } from "../pocket/jon2-inference-worker.js";
+import { buildJon2ConversationPrompt } from "../pocket/jon2-prompt.js";
+import { JON2_SAFARI_GENERATION_OPTIONS, JON2_SAFARI_MAX_NEW_TOKENS } from "../pocket/jon2-inference-config.js";
 
 const tokenizerFixtures = JSON.parse(await readFile(new URL("../pocket/tokenizer-parity-fixtures.json", import.meta.url), "utf8"));
 const transformerFixture = JSON.parse(await readFile(new URL("../pocket/transformer-parity-fixture.json", import.meta.url), "utf8"));
+
+
+
+test("Safari prompt builder matches the original Python conversation format", () => {
+  const tokenizer = { encode: text => Array.from(text) };
+  const history = [
+    { role: "user", content: "قديم".repeat(40) },
+    { role: "assistant", content: "رد سابق" },
+    { role: "user", content: "سؤال سابق" },
+    { role: "assistant", content: "إجابة سابقة" }
+  ];
+  const prompt = buildJon2ConversationPrompt("السؤال الحالي", history, tokenizer, 2000);
+  const clipped = Array.from(history[0].content).slice(-90).join("");
+  assert.equal(
+    prompt,
+    "المستخدم: " + clipped +
+      "\nJon2: رد سابق" +
+      "\nالمستخدم: سؤال سابق" +
+      "\nJon2: إجابة سابقة" +
+      "\nالمستخدم: السؤال الحالي\nJon2:"
+  );
+});
+
+test("Safari prompt builder drops old turns and never truncates the current question", () => {
+  const tokenizer = { encode: text => Array.from(text) };
+  const history = [
+    { role: "user", content: "أ".repeat(20) },
+    { role: "assistant", content: "ب".repeat(20) },
+    { role: "user", content: "ج".repeat(20) },
+    { role: "assistant", content: "د".repeat(20) }
+  ];
+  const prompt = buildJon2ConversationPrompt("سؤال", history, tokenizer, 44);
+  assert.ok(tokenizer.encode(prompt).length <= 43);
+  assert.match(prompt, /المستخدم: سؤال\nJon2:$/);
+  assert.throws(
+    () => buildJon2ConversationPrompt("س".repeat(100), [], tokenizer, 20),
+    /لن يتم اختصاره/
+  );
+});
+
+test("Safari generation configuration matches the original Jon2 runtime", () => {
+  assert.deepEqual(JON2_SAFARI_GENERATION_OPTIONS, {
+    temperature: 1.0,
+    repetitionPenalty: 1.10,
+    noRepeatNgramSize: 3,
+    topK: 0,
+    doSample: false
+  });
+  assert.equal(JON2_SAFARI_MAX_NEW_TOKENS, 256);
+});
 
 test("Safari Arabic answer guard rejects the observed fragmented output", () => {
   const corrupted = "لا وأ ال ال الر ال ال الد الذي ال الذي ال الاست الطريقة ال ال الاسب الاسة ال الذي الذف ال ال ال الأو الذي الأو الاسة الاسب ال ال الذي الذي الأو الذي الاسم الأو الاسب ال ال ال ال ال ال ال ال ال ال ال ال ال الد الد الد ال الذي ال الد ال ال ال الد الاسة الذي الذي ال ال ال ال ال ال الد ال الذي الأو ال الد الد الأو الذي ال الد الذي الذي الد الد الد الد الد";
@@ -152,7 +204,17 @@ test("Safari worker client resolves successful inference responses", async () =>
   try {
     const { Jon2SafariClient } = await import("../pocket/jon2-safari-client.js?success-test");
     const client = new Jon2SafariClient();
-    const result = await client.generate("مرحبا", 8);
+    const history = [{role:"user",content:"سؤال سابق"}];
+    const originalPostMessage = client.worker.postMessage.bind(client.worker);
+    let sent;
+    client.worker.postMessage = (message, transfer) => {
+      sent = message;
+      originalPostMessage(message, transfer);
+    };
+    const result = await client.generate("مرحبا", history, 8);
+    assert.equal(sent.message, "مرحبا");
+    assert.deepEqual(sent.history, history);
+    assert.equal(sent.maxTokens, 8);
     assert.equal(result.answer, "أهلًا");
     client.close();
   } finally {
@@ -177,7 +239,7 @@ test("Safari worker client preserves stable internal failure codes", async () =>
   try {
     const { Jon2SafariClient } = await import("../pocket/jon2-safari-client.js?diagnostic-code-test");
     const client = new Jon2SafariClient();
-    await assert.rejects(client.generate("مرحبا", 8), error => {
+    await assert.rejects(client.generate("مرحبا", [], 8), error => {
       assert.equal(error.code, "JON2_OUTPUT_REJECTED");
       assert.match(error.message, /عقل Jon2 غير جاهز للرد/);
       return true;
@@ -200,7 +262,7 @@ test("Safari worker client rejects timed-out generation instead of hanging chat"
     const { Jon2SafariClient } = await import("../pocket/jon2-safari-client.js?timeout-test");
     const client = new Jon2SafariClient();
     await assert.rejects(
-      client._request("generate", {prompt:"مرحبا",maxTokens:8}, [], 5),
+      client._request("generate", {message:"مرحبا",history:[],maxTokens:8}, [], 5),
       /عقل Jon2 غير جاهز للرد/
     );
     assert.equal(client.pending.size, 0);
@@ -221,7 +283,7 @@ test("Safari worker client clears pending requests when closed", async () => {
   try {
     const { Jon2SafariClient } = await import("../pocket/jon2-safari-client.js?close-test");
     const client = new Jon2SafariClient();
-    const pending = client._request("generate", {prompt:"مرحبا"}, [], 10000);
+    const pending = client._request("generate", {message:"مرحبا",history:[]}, [], 10000);
     client.close();
     await assert.rejects(pending, /worker was closed/);
     assert.equal(client.pending.size, 0);
@@ -245,7 +307,7 @@ test("Safari generation applies repetition penalty and blocks repeated trigrams"
     decode: ids => String.fromCharCode(...ids),
     tokenBytes: id => new Uint8Array([65 + (id % 26)])
   };
-  assert.equal(model.generate(tokenizer, "prompt", 4, {doSample:false}), "KLKK");
+  assert.equal(model.generate(tokenizer, "prompt", 4, {doSample:false}), "KKKL");
 });
 
 test("Safari generation skips tokens that would corrupt UTF-8", () => {
@@ -271,6 +333,9 @@ test("Safari worker never bypasses the original model with canned small-talk rep
     "utf8"
   );
   assert.doesNotMatch(workerSource, /function\s+getLocalArabicReply/);
+  assert.match(workerSource, /buildJon2ConversationPrompt/);
+  assert.match(workerSource, /JON2_SAFARI_GENERATION_OPTIONS/);
+  assert.match(workerSource, /message\.maxTokens \?\? JON2_SAFARI_MAX_NEW_TOKENS/);
   assert.match(
     workerSource,
     /let rawGenerated;[\s\S]*?rawGenerated = runtime\.model\.generate\(/
@@ -289,6 +354,8 @@ test("Safari chat sends identity questions to the model and rejects failed quali
   assert.match(page, /alternate open-weight runtime is not the original Jon2 checkpoint/);
   assert.match(page, /result\.qualityPassed\s*!==\s*true/);
   assert.match(page, /result\.qualityPassed !== true/);
+  assert.match(page, /window\.JON2_LOCAL_CLIENT\.generate\(value, history\)/);
+  assert.doesNotMatch(page, /promptParts = chatMessages\.slice\(-10\)/);
   assert.match(page, /throw new Error\("JON2_QUALITY_REJECTED"\)/);
   assert.doesNotMatch(page, /Keep the quality signal visible, but do not hide/);
 });

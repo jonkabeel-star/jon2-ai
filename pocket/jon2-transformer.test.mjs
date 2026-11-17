@@ -28,3 +28,22 @@ test("unigram no-repeat blocks prompt and previously generated tokens", () => {
 
   assert.equal(answer, "BCD");
 });
+
+
+test("default Safari decoding is deterministic like the native Jon2 runtime", () => {
+  const model = Object.create(Jon2TransformerCPU.prototype);
+  model.config = { context: 8 };
+  model.nextToken = () => ({ logits: [0, 1, 9, 8] });
+  const tokenizer = {
+    encode: () => [1],
+    decode: ids => String.fromCharCode(...ids),
+    tokenBytes: id => new Uint8Array([65 + id])
+  };
+  const originalRandom = Math.random;
+  Math.random = () => { throw new Error("sampling must be disabled by default"); };
+  try {
+    assert.equal(model.generate(tokenizer, "prompt", 1), "C");
+  } finally {
+    Math.random = originalRandom;
+  }
+});

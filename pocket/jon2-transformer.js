@@ -174,15 +174,15 @@ export class Jon2TransformerCPU {
     if (!promptIds.length) throw new TypeError("Jon2 prompt produced no tokens.");
 
     // Match the safeguards used by the native PyTorch runtime.
-    const repetitionPenalty = options.repetitionPenalty ?? 1.12;
+    const repetitionPenalty = options.repetitionPenalty ?? 1.10;
     const noRepeatNgramSize = options.noRepeatNgramSize ?? 3;
-    const temperature = options.temperature ?? 0.8;
-    const doSample = options.doSample ?? true;
-    const topK = options.topK ?? 40;
+    const temperature = options.temperature ?? 1.0;
+    const doSample = options.doSample ?? false;
+    const topK = options.topK ?? 0;
     if (!(temperature > 0) || repetitionPenalty < 1 || !Number.isInteger(noRepeatNgramSize) || noRepeatNgramSize < 0 || !Number.isInteger(topK) || topK < 0) {
       throw new TypeError("Invalid Jon2 generation options.");
     }
-    const stopMarkers = ["\nالمستخدم:", "\nUser:"].map(value => new TextEncoder().encode(value));
+    const stopMarkers = ["المستخدم:"].map(value => new TextEncoder().encode(value));
     const allIds = promptIds.slice();
     const generatedIds = [];
     const promptBytes = joinBytes(promptIds.map(id => tokenizer.tokenBytes(id)));
