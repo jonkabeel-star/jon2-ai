@@ -130,7 +130,7 @@ def generate_reply(message: str, history=None, memories=None, knowledge_context=
         _tokenizer,
         prompt,
         _device,
-        max_new_chars=int(os.getenv("JON2_MAX_NEW_CHARS", "400")),
+        max_new_chars=int(os.getenv("JON2_MAX_NEW_CHARS", "256")),
         # Greedy decoding is more stable for this small from-scratch model.
         # Sampling can turn an already weak language model into visibly broken Arabic.
         temperature=float(os.getenv("JON2_TEMPERATURE", "1.0")),
