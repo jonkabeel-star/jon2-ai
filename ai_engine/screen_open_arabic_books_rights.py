@@ -158,18 +158,28 @@ def screen_record(row: dict, *, jurisdiction: str = "EG") -> dict:
         blockers.append("credits_not_a_valid_list")
         credit_rows = []
     author_rows = [item for item in credit_rows if item.get("role") == "author"]
+    translator_rows = [item for item in credit_rows if item.get("role") == "translator"]
     if not author_rows:
         reasons.append("author_identity_not_resolved_in_credits")
-    for author in author_rows:
-        death_year = author.get("death_year")
+    if is_translation is True and not translator_rows:
+        reasons.append("translator_identity_not_resolved_in_credits")
+    rights_bearing_roles = {"author", "translator", "editor", "compiler", "foreword"}
+    for contributor in credit_rows:
+        role = contributor.get("role")
+        if role not in rights_bearing_roles:
+            continue
+        death_year = contributor.get("death_year")
+        role_prefix = str(role)
         if death_year in (None, ""):
-            reasons.append("author_death_year_missing_requires_egyptian_rights_review")
+            reasons.append(f"{role_prefix}_death_year_missing_requires_egyptian_rights_review")
         else:
             try:
-                if int(death_year) > 1976:
-                    reasons.append("author_death_year_after_1976_requires_egyptian_rights_review")
+                # A 50-year term can still be running for a contributor who died in 1976.
+                # This is only a review flag, not a legal determination.
+                if int(death_year) >= 1976:
+                    reasons.append(f"{role_prefix}_death_year_1976_or_later_requires_egyptian_rights_review")
             except (TypeError, ValueError):
-                reasons.append("author_death_year_invalid_requires_human_review")
+                reasons.append(f"{role_prefix}_death_year_invalid_requires_human_review")
 
     if original_status == "public-domain":
         reasons.append("publisher_public_domain_statement_is_not_an_egyptian_legal_determination")
