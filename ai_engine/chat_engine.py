@@ -104,10 +104,16 @@ def build_conversation_prompt(message: str, history=None, memories=None, tokeniz
             memory_items.pop(0)
             continue
         if reference_context:
-            raise ValueError(
-                "المعلومات المرجعية والسؤال لا يتسعان داخل نافذة سياق نموذج Jon2؛ "
-                "لن يتم حذف السؤال أو اختصاره."
-            )
+            # Retrieved material is optional context; the user's current question
+            # is not. Reduce the reference extract at word boundaries until it fits.
+            # The source title is kept at the beginning whenever possible.
+            reference_words = reference_context.split()
+            if len(reference_words) > 1:
+                keep_words = max(1, len(reference_words) // 2)
+                reference_context = " ".join(reference_words[:keep_words])
+            else:
+                reference_context = ""
+            continue
         raise ValueError(
             "سؤال المستخدم أطول من نافذة سياق نموذج Jon2؛ "
             "لن يتم اختصاره حتى لا يتغير معناه."
