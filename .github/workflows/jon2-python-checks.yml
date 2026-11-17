@@ -36,7 +36,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install numpy
           python -m pip install --index-url https://download.pytorch.org/whl/cpu torch
-          python -m pip install fastapi httpx
+          python -m pip install fastapi httpx pyarrow
 
       - name: Compile Python modules
         run: python -m compileall -q ai_engine tests

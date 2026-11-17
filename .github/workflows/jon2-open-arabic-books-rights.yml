@@ -1,0 +1,48 @@
+name: Jon2 Open Arabic Books Rights Screen
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  metadata-rights-screen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Parquet reader
+        run: python -m pip install --upgrade pip pyarrow
+
+      - name: Download only the pinned metadata table
+        run: |
+          mkdir -p training-output
+          curl --fail --location --retry 3 --retry-all-errors \
+            "https://huggingface.co/datasets/Bayanat-Labs/open-arabic-books/resolve/39876c0e7f28c2d16887c7c139800e0df9f87263/data/metadata/part-00000.parquet" \
+            --output training-output/open-arabic-books-metadata.parquet
+          echo "c04e86375cef8cc36e1ad4df28d429455774259750a70cbcdb3442b523b95220  training-output/open-arabic-books-metadata.parquet" | sha256sum --check -
+
+      - name: Screen book-level rights metadata
+        run: |
+          python ai_engine/screen_open_arabic_books_rights.py \
+            --metadata training-output/open-arabic-books-metadata.parquet \
+            --output training-output/open-arabic-books-rights-review.jsonl \
+            --jurisdiction EG
+
+      - name: Upload human-review queue
+        uses: actions/upload-artifact@v4
+        with:
+          name: jon2-open-arabic-books-rights-review
+          path: |
+            training-output/open-arabic-books-rights-review.jsonl
+            training-output/open-arabic-books-rights-review.summary.json
+          if-no-files-found: error
+          retention-days: 14
