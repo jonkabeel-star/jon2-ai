@@ -138,7 +138,7 @@ The Python Checks workflow now runs this preflight automatically and stores the 
 
 Open Arabic Books v0.1.0 publishes a metadata-only config with one row per book and per-book fields such as `design_license`, `translation_covered`, `original_text_status`, `license_decision`, `license_quote`, `rights_statement`, `attribution`, `book_url`, `credits`, and `source_file_sha256`. Its dataset card says the text's public-domain status is the publisher's statement, not a legal determination for every country; it also notes that many authors' death dates require care. The dataset's CC BY 4.0 label does not replace the rights evidence for each underlying book.
 
-First export only the `metadata` config (not `books` or `chapters`) as CSV, TSV, or JSONL. Then run this metadata-only screen:
+The manual GitHub Actions workflow `Jon2 Open Arabic Books Rights Screen` can fetch the pinned metadata-only Parquet file, verify its SHA-256, run the screen, and publish a review artifact. After this PR is merged, open the repository's Actions tab, select that workflow, and tap **Run workflow**. It downloads only the 288 kB metadata table, not the books or chapters.
 
 ```bash
 python ai_engine/screen_open_arabic_books_rights.py --metadata /path/to/open-arabic-books-metadata.csv --output training-output/open-arabic-books-rights-review.jsonl --jurisdiction EG
@@ -146,7 +146,7 @@ python ai_engine/screen_open_arabic_books_rights.py --metadata /path/to/open-ara
 
 The tool reads metadata only. It does not download or read book text, change `source_approvals.json`, create approved source records, or start training. Rows with missing or contradictory rights evidence are marked `HOLD`; the rest are only `HUMAN_REVIEW_REQUIRED`, never `APPROVED`. It flags missing or recent author/translator/editor/contributor death years, unresolved author or translator identities, CC BY 3.0 original-text terms, attribution requirements, and the need to verify the underlying text's status under Egyptian law. A human reviewer must check each book and its complete credit chain before a separate exact-file approval can be considered.
 
-Parquet input is intentionally not parsed by this dependency-free utility; export the metadata-only config to CSV/TSV/JSONL first. Do not export or upload the books/chapters text for this screening step. The dataset is not proofread by a native Arabic writer, so linguistic quality review is a separate gate. This screen is a conservative triage aid, not legal advice or training approval.
+The script also accepts metadata-only CSV, TSV, and JSONL files; Parquet input requires `pyarrow`. Do not export or upload the books/chapters text for this screening step. The dataset is not proofread by a native Arabic writer, so linguistic quality review is a separate gate. This screen is a conservative triage aid, not legal advice or training approval.
 
 ## Evaluate a trained checkpoint
 
