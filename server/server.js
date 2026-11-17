@@ -110,10 +110,12 @@ async function inspectOriginalRuntime() {
   }
   try {
     const endpoint = new URL(AI_MODEL_URL);
-    if (!endpoint.pathname.replace(/\\/$/, "").endsWith("/v1/chat")) {
+    let runtimePath = endpoint.pathname;
+    if (runtimePath.endsWith("/")) runtimePath = runtimePath.slice(0, -1);
+    if (!runtimePath.endsWith("/v1/chat")) {
       return { api_ready: false, model_ready: false, model_status: "runtime_endpoint_must_be_v1_chat" };
     }
-    endpoint.pathname = endpoint.pathname.replace(/\\/$/, "").replace(/\\/v1\\/chat$/, "/v1/health");
+    endpoint.pathname = runtimePath.slice(0, -8) + "/v1/health";
     const response = await fetch(endpoint, {
       method: "GET",
       headers: { "Authorization": `Bearer ${runtimeToken}`, "Accept": "application/json" },
