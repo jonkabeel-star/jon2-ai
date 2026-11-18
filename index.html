@@ -384,7 +384,7 @@ async function checkApiHealth() {
       signal: AbortSignal.timeout(12000)
     });
     const health = await response.json().catch(() => ({}));
-    chatReady = response.ok && health.chat_ready === true && health.model_loaded === true && health.checkpoint_integrity === true;
+    chatReady = response.ok && health.chat_ready === true && health.model_ready === true && health.checkpoint_integrity === true;
     apiStatusKey = chatReady ? "modelReady" : "apiOnline";
   } catch (error) {
     chatReady = false;
