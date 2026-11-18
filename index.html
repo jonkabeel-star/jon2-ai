@@ -117,21 +117,13 @@ button:disabled{opacity:.6;cursor:not-allowed}
 <section class="chat-section" id="assistant">
   <div class="section-head"><div><h2 data-t="assistantHeading">المحادثة العامة — Jon2 AI</h2><p data-t="assistantDesc">متاحة للزوار بدون تسجيل دخول؛ محرك Jon2 الأصلي قيد التجهيز</p></div></div>
   <div class="chat-shell">
-    <details class="local-model-panel" open>
-      <div class="local-setup-heading" data-t="localPanelTitle">تفعيل المحادثة على هذا الجهاز</div>
-      <p data-t="localPanelHelp">اختر حزمة Jon2 الخاصة من تطبيق «الملفات». التحقق وتشغيل النموذج يتمان محليًا داخل Safari، ولا تُرسل الأوزان أو الرسائل إلى خادم ذكاء اصطناعي خارجي.</p>
+    <div class="local-model-panel" aria-label="حالة محرك Jon2 الأصلي">
+      <div class="local-setup-heading">تشغيل عقل Jon2 تلقائيًا</div>
+      <p>يحاول Safari استعادة نسخة Jon2 المحفوظة على هذا الجهاز تلقائيًا. لا يوجد اختيار ملفات أو نموذج خارجي.</p>
       <div class="local-model-fields">
-        <label><span data-t="bundleLabel">ملف Jon2 الخاص ZIP</span><input id="jon2Bundle" type="file" accept=".zip,application/zip"></label>
-        <button class="local-load" id="loadLocalJon2" type="button" data-t="loadLocal">تحميل النموذج على هذا الجهاز</button>
-        <div class="local-model-status" id="localModelStatus" role="status" aria-live="polite" data-t="localNotLoaded">لم يتم تحميل النموذج المحلي بعد.</div>
-        <div id="thirdPartyModelOption" hidden>
-        <div class="local-setup-heading" style="margin-top:18px" data-t="openModelTitle">محادثة محلية فورية — Qwen2.5</div>
-        <p data-t="openModelHelp">نموذج مفتوح الأوزان يعمل داخل Safari على الآيفون. أول مرة سيُنزل Safari محرك التشغيل وملفات النموذج (حوالي 483 ميجابايت) من Hugging Face. بعد التحميل، توليد الردود محلي ولا تُرسل رسائلك لأي API أو سيرفر محادثة.</p>
-        <button class="local-load" id="loadOpenModel" type="button" data-t="loadOpenModel">تحميل وتشغيل Qwen محليًا</button>
-        <div class="local-model-status" id="openModelStatus" role="status" aria-live="polite" data-t="openModelNotLoaded">لم يتم تحميل Qwen بعد. اختر التحميل لتفعيل وضع المحادثة المحلية.</div>
-        </div>
+        <div class="local-model-status" id="localModelStatus" role="status" aria-live="polite">جارٍ التحقق من النسخة المحفوظة…</div>
       </div>
-    </details>
+    </div>
     <div class="chat-top"><div class="chat-title"><div class="chat-avatar">J2</div><div><strong data-t="assistantName">المساعد الذكي</strong><small id="status" data-t="offline">الخادم غير متصل حاليًا</small></div></div><button class="clear" id="clear" data-t="clear">مسح المحادثة</button></div>
     <div class="messages" id="messages" aria-live="polite"><div class="msg bot" data-t="welcome">أهلًا بك! واجهة المحادثة جاهزة، وسيتم تفعيل الردود الذكية بعد ربط نموذج Jon2 AI الحقيقي.</div></div>
     <form class="composer" id="form"><textarea id="input" placeholder="الردود متوقفة حتى جاهزية محرك Jon2 الأصلي" data-ph="placeholder" maxlength="2000" required disabled></textarea><button class="send" id="send" type="submit" data-t="send" disabled>إرسال ↑</button></form>
@@ -603,20 +595,6 @@ function openJon2ModelDB() {
   });
 }
 
-async function saveJon2Bundle(manifestText, weightsBuffer) {
-  await requestJon2PersistentStorage();
-  const db = await openJon2ModelDB();
-  try {
-    await new Promise((resolve,reject) => {
-      const tx = db.transaction(MODEL_STORE,"readwrite");
-      tx.objectStore(MODEL_STORE).put({manifestText,weightsBuffer,checkpointSha256:CHECKPOINT_SHA256,weightsSha256:WEIGHTS_SHA256},MODEL_KEY);
-      tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error || new Error("Could not save the local model."));
-      tx.onabort = () => reject(tx.error || new Error("Local model save was interrupted."));
-    });
-  } finally { db.close(); }
-}
-
 async function readSavedJon2Bundle() {
   const db = await openJon2ModelDB();
   try {
@@ -657,8 +635,8 @@ function restoreJon2Model() {
       const saved = await readSavedJon2Bundle();
       if (!saved) {
         status.textContent = localText(
-          "الحزمة غير محفوظة لهذا العنوان من الموقع على هذا المتصفح. اختر ZIP مرة واحدة، واستخدم نفس عنوان الموقع لاحقًا لاستعادتها تلقائيًا.",
-          "The bundle is not saved for this exact website address in this browser yet. Select the ZIP once; keep using the same website address to reuse it."
+          "لا توجد نسخة Jon2 محفوظة لهذا العنوان على هذا الجهاز. لم تتوفر التهيئة التلقائية بعد.",
+          "No saved Jon2 model was found for this website on this device. Automatic setup is not available yet."
         );
         return false;
       }
@@ -669,86 +647,17 @@ function restoreJon2Model() {
       status.textContent = localText("جارٍ استعادة Jon2 وتشغيل المحادثة…","Restoring Jon2 and starting chat…");
       const client = await startJon2Client(new Blob([saved.manifestText]),new Blob([saved.weightsBuffer]));
       activateJon2Client(client);
-      status.textContent = localText("تمت استعادة نموذج Jon2 المحفوظ على هذا الجهاز. يمكنك اختيار ملف ZIP آخر إذا أردت إعادة تحميله.","The saved Jon2 model was restored on this device. You can select another ZIP if you want to reload it.");
+      status.textContent = localText("تمت استعادة عقل Jon2 المحفوظ على هذا الجهاز تلقائيًا.","The saved Jon2 model was restored automatically on this device.");
       return true;
     } catch (error) {
       status.textContent = localText("تعذّر تشغيل الحزمة المحفوظة: ","Could not start the saved bundle: ") +
-        (error?.message || String(error)) + localText(" — اختر ملف ZIP لإعادة التحميل."," — select the ZIP to reload.");
+        (error?.message || String(error)) + localText(" — لن يُطلب منك اختيار ملف."," — no file selection will be requested.");
       console.warn("Jon2 saved model restore failed.",error);
       return false;
     }
   })().finally(() => { restorePromise = null; });
   return restorePromise;
 }
-
-async function readJon2Zip(file) {
-  const buffer = await file.arrayBuffer();
-  const view = new DataView(buffer);
-  const min = Math.max(0, buffer.byteLength - 65557);
-  let eocd = -1;
-  for (let p = buffer.byteLength - 22; p >= min; p--) {
-    if (view.getUint32(p, true) === 0x06054b50) { eocd = p; break; }
-  }
-  if (eocd < 0) throw new Error("ZIP directory not found.");
-  const count = view.getUint16(eocd + 10, true);
-  let cursor = view.getUint32(eocd + 16, true);
-  const decoder = new TextDecoder();
-  const wanted = new Map();
-  for (let i = 0; i < count; i++) {
-    if (view.getUint32(cursor, true) !== 0x02014b50) throw new Error("Invalid ZIP directory entry.");
-    const method = view.getUint16(cursor + 10, true);
-    const compressedSize = view.getUint32(cursor + 20, true);
-    const nameLength = view.getUint16(cursor + 28, true);
-    const extraLength = view.getUint16(cursor + 30, true);
-    const commentLength = view.getUint16(cursor + 32, true);
-    const localOffset = view.getUint32(cursor + 42, true);
-    const name = decoder.decode(new Uint8Array(buffer, cursor + 46, nameLength));
-    const base = name.split("/").pop();
-    if (base === "manifest.json" || base === "weights.bin") {
-      if (method !== 0) throw new Error("This Jon2 ZIP must use stored (uncompressed) files.");
-      if (view.getUint32(localOffset, true) !== 0x04034b50) throw new Error("Invalid ZIP local header.");
-      const localNameLength = view.getUint16(localOffset + 26, true);
-      const localExtraLength = view.getUint16(localOffset + 28, true);
-      const dataStart = localOffset + 30 + localNameLength + localExtraLength;
-      if (dataStart + compressedSize > buffer.byteLength) throw new Error("ZIP entry is truncated.");
-      if (wanted.has(base)) throw new Error("Duplicate Jon2 ZIP entry: " + base);
-      wanted.set(base, new Blob([buffer.slice(dataStart, dataStart + compressedSize)]));
-    }
-    cursor += 46 + nameLength + extraLength + commentLength;
-  }
-  if (!wanted.has("manifest.json") || !wanted.has("weights.bin")) {
-    throw new Error("ZIP must contain manifest.json and weights.bin.");
-  }
-  return wanted;
-}
-
-$("loadLocalJon2").addEventListener("click", async () => {
-  const button = $("loadLocalJon2");
-  const status = $("localModelStatus");
-  const file = $("jon2Bundle").files?.[0];
-  if (!file) { status.textContent = localText("اختر ملف ZIP أولًا في أول مرة فقط.","Choose the ZIP file once for the first setup."); return; }
-  button.disabled = true;
-  status.textContent = localText("جارٍ التحقق من الملف وتحميله وحفظه على الآيفون…","Verifying, loading, and saving the model on this iPhone…");
-  let client;
-  try {
-    const entries = await readJon2Zip(file);
-    const manifestText = await entries.get("manifest.json").text();
-    const weightsBuffer = await entries.get("weights.bin").arrayBuffer();
-    client = await startJon2Client(new Blob([manifestText]),new Blob([weightsBuffer]));
-    await saveJon2Bundle(manifestText,weightsBuffer);
-    activateJon2Client(client);
-    client = null;
-    status.textContent = localText("تم تفعيل المحادثة وحفظ الحزمة. سيُعاد الاتصال تلقائيًا عند فتح الموقع لاحقًا.","Chat activated and bundle saved. It will reconnect automatically on later visits.");
-    $("jon2Bundle").value = "";
-    $("assistant").scrollIntoView({behavior:"smooth",block:"start"});
-  } catch (error) {
-    client?.close?.();
-    status.textContent = localText("فشل التحميل أو الحفظ: ","Load or save failed: ") + (error?.message || String(error));
-    console.error("Jon2 local bundle load failed.", error);
-  } finally {
-    button.disabled = false;
-  }
-});
 
 restoreJon2Model();
 document.addEventListener("visibilitychange", () => {
