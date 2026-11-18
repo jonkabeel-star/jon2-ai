@@ -39,6 +39,19 @@ class ChatEngineRuntimeTests(unittest.TestCase):
                 chat_engine.load_runtime()
         self.assertFalse(chat_engine.model_is_ready())
 
+    def test_checkpoint_sha256_accepts_exact_private_file_and_rejects_tampering(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as directory:
+            checkpoint = Path(directory) / "model.pt"
+            payload = b"private jon2 checkpoint test"
+            checkpoint.write_bytes(payload)
+            chat_engine.CHECKPOINT_PATH = checkpoint
+            expected = hashlib.sha256(payload).hexdigest()
+            with mock.patch.dict("os.environ", {"JON2_CHECKPOINT_SHA256": expected}):
+                self.assertTrue(chat_engine.checkpoint_is_valid())
+                checkpoint.write_bytes(payload + b"tampered")
+                self.assertFalse(chat_engine.checkpoint_is_valid())
+
     def test_runtime_loads_checkpoint_only_once(self):
         with tempfile.TemporaryDirectory() as directory:
             checkpoint = Path(directory) / "model.pt"
