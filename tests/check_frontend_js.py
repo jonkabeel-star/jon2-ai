@@ -59,8 +59,10 @@ def check_inline_scripts(html_path: Path) -> int:
         "AbortSignal.timeout",
         "window.JON2_LOCAL_CLIENT.generate",
         "CHECKPOINT_SHA256",
-        "weights.bin",
-        "manifest.json",
+        "readSavedJon2Bundle",
+        "MODEL_DB_NAME",
+        "saved.weightsSha256",
+        "saved.manifestText",
     )
     missing = [marker for marker in required_contract if marker not in combined]
     if missing:
