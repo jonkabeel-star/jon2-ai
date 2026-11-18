@@ -324,13 +324,6 @@ function addMessage(value, kind) {
   saveState();
 }
 
-document.getElementById("loadOpenModel").addEventListener("click", () => {
-  // Lock the chat to local-only mode even if the separate model module fails to load.
-  window.JON2_OPEN_MODEL_REQUESTED = true;
-  updateChatNote();
-  syncChatControls();
-});
-
 document.getElementById("language").addEventListener("click", () => {
   setLang(lang === "ar" ? "en" : "ar");
   saveState();
