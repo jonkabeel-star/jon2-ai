@@ -122,6 +122,9 @@ button:disabled{opacity:.6;cursor:not-allowed}
       <p>يحاول Safari استعادة نسخة Jon2 المحفوظة على هذا الجهاز تلقائيًا. لا يوجد اختيار ملفات أو نموذج خارجي.</p>
       <div class="local-model-fields">
         <div class="local-model-status" id="localModelStatus" role="status" aria-live="polite">جارٍ التحقق من النسخة المحفوظة…</div>
+        <label for="jon2BundleFile" style="font-size:12px;color:var(--muted)">حزمة Jon2 الخاصة ZIP (استيراد أول مرة فقط)</label>
+        <input id="jon2BundleFile" type="file" accept=".zip,application/zip">
+        <button class="local-load" id="jon2ImportBundle" type="button">تحقق من الحزمة واحفظها على هذا الآيفون</button>
       </div>
     </div>
     <div class="chat-top"><div class="chat-title"><div class="chat-avatar">J2</div><div><strong data-t="assistantName">المساعد الذكي</strong><small id="status" data-t="offline">الخادم غير متصل حاليًا</small></div></div><button class="clear" id="clear" data-t="clear">مسح المحادثة</button></div>
@@ -600,6 +603,52 @@ async function readSavedJon2Bundle() {
   } finally { db.close(); }
 }
 
+async function saveJon2Bundle(bundle) {
+  const db = await openJon2ModelDB();
+  try {
+    await new Promise((resolve,reject) => {
+      const tx = db.transaction(MODEL_STORE,"readwrite");
+      tx.objectStore(MODEL_STORE).put(bundle,MODEL_KEY);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error || new Error("Could not save the private Jon2 bundle."));
+      tx.onabort = () => reject(tx.error || new Error("Saving the private Jon2 bundle was aborted."));
+    });
+  } finally { db.close(); }
+}
+
+// The private export ZIP uses uncompressed (STORE) entries. Read only the two
+// expected files; reject compressed, malformed, oversized, or duplicate entries.
+async function readJon2Zip(file) {
+  if (!(file instanceof File) || file.size > 20 * 1024 * 1024) throw new Error("ملف ZIP غير صالح أو أكبر من الحد المسموح.");
+  const buffer = await file.arrayBuffer();
+  const view = new DataView(buffer);
+  const decoder = new TextDecoder();
+  const found = {};
+  let offset = 0;
+  while (offset + 30 <= buffer.byteLength) {
+    const signature = view.getUint32(offset,true);
+    if (signature === 0x02014b50 || signature === 0x06054b50) break;
+    if (signature !== 0x04034b50) throw new Error("بنية ZIP غير معروفة.");
+    const method = view.getUint16(offset + 8,true);
+    const compressedSize = view.getUint32(offset + 18,true);
+    const nameLength = view.getUint16(offset + 26,true);
+    const extraLength = view.getUint16(offset + 28,true);
+    const nameStart = offset + 30;
+    const dataStart = nameStart + nameLength + extraLength;
+    const dataEnd = dataStart + compressedSize;
+    if (dataEnd > buffer.byteLength || nameLength < 1) throw new Error("ملف ZIP تالف أو غير مكتمل.");
+    const name = decoder.decode(new Uint8Array(buffer,nameStart,nameLength)).replace(/^.*[\\/]/,"");
+    if (name === "manifest.json" || name === "weights.bin") {
+      if (found[name]) throw new Error("الحزمة تحتوي على ملف مكرر: " + name);
+      if (method !== 0) throw new Error("صيغة ZIP مضغوطة؛ أعد تصدير حزمة Jon2 بصيغة STORE.");
+      found[name] = buffer.slice(dataStart,dataEnd);
+    }
+    offset = dataEnd;
+  }
+  if (!found["manifest.json"] || !found["weights.bin"]) throw new Error("الحزمة يجب أن تحتوي manifest.json وweights.bin.");
+  return { manifestText: decoder.decode(found["manifest.json"]), weightsBuffer: found["weights.bin"] };
+}
+
 async function startJon2Client(manifestBlob,weightsBlob) {
   const client = new Jon2SafariClient();
   try {
@@ -650,6 +699,40 @@ function restoreJon2Model() {
     }
   })().finally(() => { restorePromise = null; });
   return restorePromise;
+}
+
+const importButton = $("jon2ImportBundle");
+if (importButton) {
+  importButton.addEventListener("click", async () => {
+    const file = $("jon2BundleFile")?.files?.[0];
+    const status = $("localModelStatus");
+    if (!file) {
+      status.textContent = localText("اختر حزمة ZIP الخاصة أولًا.","Select the private ZIP bundle first.");
+      return;
+    }
+    importButton.disabled = true;
+    status.textContent = localText("جارٍ فحص الحزمة وتشغيل النموذج…","Verifying the bundle and loading the model…");
+    let candidate = null;
+    try {
+      await requestJon2PersistentStorage();
+      candidate = await readJon2Zip(file);
+      const client = await startJon2Client(new Blob([candidate.manifestText]),new Blob([candidate.weightsBuffer]));
+      await saveJon2Bundle({
+        checkpointSha256: CHECKPOINT_SHA256,
+        weightsSha256: WEIGHTS_SHA256,
+        manifestText: candidate.manifestText,
+        weightsBuffer: candidate.weightsBuffer
+      });
+      activateJon2Client(client);
+      status.textContent = localText("تم التحقق والحفظ على هذا الآيفون. سيُستعاد العقل تلقائيًا لاحقًا. جودة الإجابات ما زالت قيد الاختبار.","Verified and saved on this iPhone. It will restore automatically next time. Answer quality is still under review.");
+      $("jon2BundleFile").value = "";
+    } catch (error) {
+      status.textContent = localText("فشل استيراد الحزمة: ","Bundle import failed: ") + (error?.message || String(error));
+      console.warn("Jon2 private bundle import failed.",error);
+    } finally {
+      importButton.disabled = false;
+    }
+  });
 }
 
 restoreJon2Model();
