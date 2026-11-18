@@ -45,7 +45,8 @@ class ChatEngineRuntimeTests(unittest.TestCase):
             checkpoint.write_bytes(b"test checkpoint placeholder")
             chat_engine.CHECKPOINT_PATH = checkpoint
             fake_runtime = (object(), object(), "cpu")
-            with mock.patch.object(chat_engine, "load_model", return_value=fake_runtime) as loader:
+            with mock.patch.object(chat_engine, "checkpoint_is_valid", return_value=True), \
+                 mock.patch.object(chat_engine, "load_model", return_value=fake_runtime) as loader:
                 chat_engine.load_runtime()
                 chat_engine.load_runtime()
             loader.assert_called_once_with(str(checkpoint))
