@@ -35,10 +35,12 @@ def checkpoint_sha256() -> str | None:
             digest.update(chunk)
     return digest.hexdigest()
 
+
 def checkpoint_is_valid() -> bool:
     expected = os.getenv("JON2_CHECKPOINT_SHA256", "edf96971187f93642f36282e270c2d2f3a6db39565b30d7898e856a49e0eaec2").strip().lower()
     actual = checkpoint_sha256()
     return bool(actual and expected and actual == expected)
+
 
 def checkpoint_is_available() -> bool:
     return CHECKPOINT_PATH.is_file() and checkpoint_is_valid()
