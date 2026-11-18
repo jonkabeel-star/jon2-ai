@@ -64,7 +64,7 @@ jobs:
       - name: Install CPU test dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install numpy fastapi httpx
+          python -m pip install numpy fastapi httpx pyarrow
           python -m pip install --index-url https://download.pytorch.org/whl/cpu torch
 
       - name: Download logs from the failed trusted main-branch workflow
