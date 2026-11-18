@@ -159,7 +159,7 @@ def health():
     )
     checkpoint_path = os.getenv(
         "JON2_CHECKPOINT",
-        os.path.join(os.path.dirname(__file__), "checkpoints", "jon2-small.pt"),
+        "/app/model-weights/jon2-last.pt",
     )
     checkpoint_size = os.path.getsize(checkpoint_path) if os.path.isfile(checkpoint_path) else 0
     checkpoint_readable = os.path.isfile(checkpoint_path) and os.access(checkpoint_path, os.R_OK)
