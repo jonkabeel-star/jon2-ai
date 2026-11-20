@@ -367,17 +367,17 @@ test("Safari presents the canonical not-ready message for every local inference 
   assert.doesNotMatch(page, /addMessage\(translations\[lang\]\.localQualityRejected, "bot"\)/);
 });
 
-test("Safari only exposes non-empty model output that passes Arabic integrity checks", () => {
+test("Safari experimental mode returns any non-empty original-model output", () => {
   assert.equal(
     requireUsableJon2Answer("مرحباً! أنا مساعد تجريبي من مشروع جون2، كيف يمكنني مساعدتك؟"),
     "مرحباً! أنا مساعد تجريبي من مشروع جون2، كيف يمكنني مساعدتك؟"
   );
-  assert.throws(
-    () => requireUsableJon2Answer(""),
-    /عقل Jon2 غير جاهز للرد/
+  assert.equal(
+    requireUsableJon2Answer("لا وأ ال ال الر ال ال الد الذي ال الذي ال الاست"),
+    "لا وأ ال ال الر ال ال الد الذي ال الذي ال الاست"
   );
   assert.throws(
-    () => requireUsableJon2Answer("لا وأ ال ال الر ال ال الد الذي ال الذي ال الاست الطريقة ال ال الاسب الاسة ال الذي الذف ال ال ال الأو الذي الأو الاسة الاسب ال ال الذي الذي الأو الذي الاسم الأو الاسب ال ال ال ال ال ال ال ال ال ال ال ال ال الد الد الد ال الذي ال الد ال ال ال الد الاسة الذي الذي ال ال ال ال ال ال الد ال الذي الأو ال الد الد الأو الذي ال الد الذي الذي الد الد الد الد الد"),
-    /عقل Jon2 غير جاهز للرد/
+    () => requireUsableJon2Answer(""),
+    /لم ينتج عقل Jon2 أي نص/
   );
 });
