@@ -130,7 +130,7 @@ def _authorized(authorization: str | None) -> bool:
 
 def _template_token_count(tokenizer, messages: list[dict[str, str]]) -> int:
     encoded = tokenizer.apply_chat_template(
-        messages, tokenize=True, add_generation_prompt=True
+        messages, tokenize=True, add_generation_prompt=True, enable_thinking=False
     )
     if isinstance(encoded, dict):
         token_ids = encoded["input_ids"]
@@ -198,6 +198,7 @@ def chat(
         add_generation_prompt=True,
         return_dict=True,
         return_tensors="pt",
+        enable_thinking=False,
     )
     inputs = inputs.to(model.device)
     generated = model.generate(
