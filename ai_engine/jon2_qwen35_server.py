@@ -1,4 +1,4 @@
-"""Private Qwen3.5-4B inference runtime for Jon2.
+""""Private Qwen3.5-4B inference runtime for Jon2.
 
 The runtime uses the official instruction-tuned Qwen3.5-4B checkpoint as a
 third-party base model. A Jon2 LoRA adapter is optional until it is trained
@@ -17,12 +17,20 @@ import torch
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
+from ai_engine.conversation_context import (
+    ConversationContextError,
+    build_context_messages,
+)
+
 BASE_MODEL = os.getenv("JON2_BASE_MODEL", "Qwen/Qwen3.5-4B")
 ADAPTER_DIR = Path(os.getenv("JON2_ADAPTER_PATH", "")).expanduser()
 RUNTIME_TOKEN = os.getenv("JON2_RUNTIME_TOKEN", "")
 PUBLIC_CHAT_ENABLED = os.getenv("JON2_PUBLIC_CHAT_ENABLED", "false").lower() == "true"
 INFERENCE_TESTED = os.getenv("JON2_INFERENCE_TESTED", "false").lower() == "true"
 QUALITY_REVIEW_PASSED = os.getenv("JON2_QUALITY_REVIEW_PASSED", "false").lower() == "true"
+MAX_INPUT_TOKENS = int(os.getenv("JON2_MAX_INPUT_TOKENS", "6144"))
+MAX_HISTORY_MESSAGES = 40
+MAX_NEW_TOKENS = 256
 
 SYSTEM_PROMPT = (
     "أنت مساعد Jon2 AI. أجب بالعربية الواضحة، واستخدم اللهجة المصرية الطبيعية "
@@ -46,7 +54,7 @@ class RuntimeChatRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     contract_version: Literal["1"]
     message: str = Field(min_length=1, max_length=2000)
-    history: list[HistoryMessage] = Field(default_factory=list, max_length=8)
+    history: list[HistoryMessage] = Field(default_factory=list, max_length=MAX_HISTORY_MESSAGES)
     session_id: str | None = Field(default=None, max_length=64)
 
 
@@ -107,7 +115,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Jon2 Qwen3.5-4B Private Runtime",
-    version="1.0.0",
+    version="1.1.0",
     lifespan=lifespan,
 )
 
@@ -117,6 +125,21 @@ def _authorized(authorization: str | None) -> bool:
     return len(RUNTIME_TOKEN) >= 32 and bool(supplied) and hmac.compare_digest(
         RUNTIME_TOKEN, supplied
     )
+
+
+def _template_token_count(processor, messages: list[dict[str, str]]) -> int:
+    encoded = processor.apply_chat_template(
+        messages, tokenize=True, add_generation_prompt=True
+    )
+    if isinstance(encoded, dict):
+        token_ids = encoded["input_ids"]
+    else:
+        token_ids = encoded
+    if hasattr(token_ids, "shape"):
+        return int(token_ids.shape[-1])
+    if token_ids and isinstance(token_ids[0], (list, tuple)):
+        return len(token_ids[0])
+    return len(token_ids)
 
 
 @app.get("/v1/health")
@@ -134,6 +157,9 @@ def health():
         "inference_tested": INFERENCE_TESTED,
         "quality_review_passed": QUALITY_REVIEW_PASSED,
         "public_chat_enabled": PUBLIC_CHAT_ENABLED,
+        "context_manager": "turn_aware_token_budget_v1",
+        "max_history_messages": MAX_HISTORY_MESSAGES,
+        "max_input_tokens": MAX_INPUT_TOKENS,
         "error": _state["error"],
     }
 
@@ -149,15 +175,22 @@ def chat(
     if not _state["ready"]:
         raise HTTPException(status_code=503, detail="Qwen3.5 runtime is not ready.")
 
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-    messages.extend(
-        {"role": item.role, "content": item.content}
-        for item in payload.history[-8:]
-    )
-    messages.append({"role": "user", "content": payload.message.strip()})
-
     processor = _state["processor"]
     model = _state["model"]
+    try:
+        messages, context_meta = build_context_messages(
+            system_prompt=SYSTEM_PROMPT,
+            history=[item.model_dump() for item in payload.history],
+            current_message=payload.message,
+            count_tokens=lambda candidate: _template_token_count(processor, candidate),
+            max_input_tokens=MAX_INPUT_TOKENS,
+            max_history_messages=MAX_HISTORY_MESSAGES,
+        )
+    except ConversationContextError as exc:
+        raise HTTPException(status_code=413, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     inputs = processor.apply_chat_template(
         messages,
         tokenize=True,
@@ -168,7 +201,7 @@ def chat(
     inputs = inputs.to(model.device)
     generated = model.generate(
         **inputs,
-        max_new_tokens=256,
+        max_new_tokens=MAX_NEW_TOKENS,
         do_sample=True,
         temperature=0.7,
         top_p=0.8,
@@ -189,4 +222,5 @@ def chat(
         "model": BASE_MODEL,
         "adapter_loaded": bool(_state["adapter_loaded"]),
         "response_mode": "jon2_lora" if _state["adapter_loaded"] else "qwen35_base_preview",
+        "context": context_meta,
     }
