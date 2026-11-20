@@ -102,9 +102,8 @@ def load_dialogue_training_partitions(
         raw = path.read_bytes()
         if _sha256(raw) != entry.get("sha256"):
             raise PermissionError(f"Dialogue source changed after splitting: {relative}")
-        records = load_jsonl(path)
-        if len(records) != entry.get("conversation_count"):
-            raise PermissionError(f"Dialogue source count changed after splitting: {relative}")
+        # Hash the complete approved source bytes without parsing source conversations.
+        # This preserves the held-out partition as evaluation-only data.
         verified_sources.append({
             "file": relative.as_posix(),
             "sha256": entry["sha256"],
