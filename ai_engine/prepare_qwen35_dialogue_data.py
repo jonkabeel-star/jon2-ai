@@ -161,7 +161,7 @@ def main():
     for folder, record, count in ((train_dir, train_record, len(train_rows)), (eval_dir, eval_record, len(eval_rows))):
         pending = {**common, "conversation_count": count, "approved_sources": [record]}
         (folder / "source_approvals.pending.json").write_text(
-            json.dumps(pending, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8"
+            json.dumps(pending, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
     with (args.output_dir / "owner_review.csv").open("w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=["split", "source_file", "messages_json", "review_decision", "review_notes"])
