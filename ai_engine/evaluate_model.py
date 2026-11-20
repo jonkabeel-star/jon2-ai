@@ -107,7 +107,9 @@ def main() -> int:
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(args.seed)
 
-    model, tokenizer, device = load_model(str(checkpoint), device=args.device)
+    model, tokenizer, device = load_model(
+        str(checkpoint), device=args.device, allow_candidate=True
+    )
     results = []
     for item in prompts:
         prompt_text = f"المستخدم: {item['prompt']}\nJon2:"

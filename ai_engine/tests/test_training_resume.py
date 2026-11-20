@@ -67,6 +67,45 @@ class TrainingResumeTests(unittest.TestCase):
 
 
 
+    def test_dialogue_training_checkpoint_is_candidate_only_pending_review(self):
+        torch.manual_seed(13)
+        model = torch.nn.Linear(2, 2)
+        tokenizer = ByteBPETokenizer.train("نص تدريب عربي", vocab_size=300, min_frequency=1)
+        args = self.make_args()
+        args.dialogue_splits_dir = "/private/prepared-splits"
+        args.dialogue_split_manifest_sha256 = "a" * 64
+        args.dialogue_split_metadata = {
+            "split_manifest_sha256": "a" * 64,
+            "partitions": {
+                "train": {"sha256": "b" * 64},
+                "validation": {"sha256": "c" * 64},
+                "test": {"sha256": "d" * 64},
+            },
+            "test_partition_used_for_training": False,
+            "test_partition_used_for_checkpoint_selection": False,
+        }
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "candidate.pt"
+            save_checkpoint(
+                path, model, tokenizer, args, 3, 2.5,
+                {"width": 16, "heads": 2, "layers": 1, "context": 8, "dropout": 0.0},
+            )
+            state = torch.load(path, map_location="cpu", weights_only=True)
+
+        self.assertEqual(
+            state["checkpoint_status"],
+            "candidate_pending_arabic_quality_review",
+        )
+        self.assertFalse(state["arabic_quality_review_passed"])
+        self.assertFalse(state["public_release_approved"])
+        self.assertFalse(state["test_partition_used_for_training"])
+        self.assertFalse(state["test_partition_used_for_checkpoint_selection"])
+        self.assertEqual(
+            state["training_plan"]["validation_split_algorithm"],
+            "approved_jsonl_conversation_three_way_v1",
+        )
+
     def test_validation_split_keeps_paragraphs_disjoint_and_reproducible(self):
         corpus = "\n\n".join(
             f"مقطع مستقل رقم {index}\nنص إضافي للمقطع {index}"

@@ -59,7 +59,9 @@ def repetition_ratio(text: str, n: int = 3) -> float:
 
 
 def evaluate(checkpoint_path: str, max_new_chars: int = 180) -> dict:
-    model, tokenizer, device = load_model(checkpoint_path, device="cpu")
+    model, tokenizer, device = load_model(
+        checkpoint_path, device="cpu", allow_candidate=True
+    )
     parameter_count = sum(parameter.numel() for parameter in model.parameters())
     all_finite = all(torch.isfinite(parameter).all().item() for parameter in model.parameters())
     if not all_finite:
