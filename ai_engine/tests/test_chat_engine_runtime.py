@@ -111,6 +111,19 @@ class ChatEngineRuntimeTests(unittest.TestCase):
         self.assertIs(loaded_tokenizer, tokenizer)
         self.assertEqual(device.type, "cpu")
 
+    def test_candidate_checkpoint_is_rejected_by_normal_runtime_loader(self):
+        import jon2_core
+
+        candidate = {
+            "checkpoint_status": "candidate_pending_arabic_quality_review",
+            "tokenizer": {},
+            "config": {},
+            "model_state": {},
+        }
+        with mock.patch.object(jon2_core.torch, "load", return_value=candidate):
+            with self.assertRaisesRegex(PermissionError, "private candidate"):
+                jon2_core.load_model("candidate.pt", device="cpu")
+
     def test_reply_uses_deterministic_low_noise_generation_settings(self):
         prompt = "المستخدم: مرحبًا\nJon2:"
         chat_engine._model = object()
