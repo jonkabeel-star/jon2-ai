@@ -56,7 +56,7 @@ class Qwen35BenchmarkContractTests(unittest.TestCase):
     def test_kaggle_notebook_embedded_sources_match_repository(self):
         notebook = json.loads(NOTEBOOK.read_text(encoding="utf-8"))
         cell = "".join(notebook["cells"][5]["source"])
-        match = re.search(r"BUNDLED = json\\.loads\\(r'''([\\s\\S]*?)'''\\)", cell)
+        match = re.search(r"BUNDLED = json\.loads\(r'''([\s\S]*?)'''\)", cell)
         self.assertIsNotNone(match)
         bundled = json.loads(match.group(1))
         self.assertIn("ai_engine/train_qwen35_lora.py", bundled)
