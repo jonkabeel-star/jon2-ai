@@ -216,11 +216,25 @@ def train(args: argparse.Namespace) -> None:
     print(f"Saved Jon2 checkpoint: {output.resolve()}")
 
 
-def load_model(checkpoint_path: str, device: str | None = None):
+def load_model(
+    checkpoint_path: str,
+    device: str | None = None,
+    *,
+    allow_candidate: bool = False,
+):
+    """Load a release-eligible checkpoint; candidate loading is evaluation-only opt-in."""
     target = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
     checkpoint = torch.load(
         checkpoint_path, map_location=target, weights_only=True
     )
+    if (
+        checkpoint.get("checkpoint_status") == "candidate_pending_arabic_quality_review"
+        and not allow_candidate
+    ):
+        raise PermissionError(
+            "This Jon2 checkpoint is a private candidate. Independent Arabic quality "
+            "review and explicit release approval are required before chat/runtime loading."
+        )
     if "tokenizer" in checkpoint:
         tokenizer = ByteBPETokenizer.from_dict(checkpoint["tokenizer"])
         vocab_size = tokenizer.vocab_size
