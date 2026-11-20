@@ -143,6 +143,18 @@ def save_checkpoint(
 
 
 def train(args):
+    dialogue_mode = bool(getattr(args, "dialogue_splits_dir", None))
+    candidate_only = bool(getattr(args, "candidate_only", False))
+    if dialogue_mode != candidate_only:
+        raise ValueError("--dialogue-splits-dir and --candidate-only must be supplied together.")
+    if dialogue_mode:
+        repository_root = Path(__file__).resolve().parents[1]
+        for label, value in (("output", args.output), ("last-checkpoint", args.last_checkpoint)):
+            destination = Path(value).resolve()
+            if destination.parent.name != "candidates":
+                raise ValueError(f"Candidate-only {label} must be stored in a directory named candidates/.")
+            if destination == repository_root or repository_root in destination.parents:
+                raise ValueError(f"Candidate-only {label} must be outside the Git repository.")
     if args.minimum_chars < MINIMUM_CORPUS_CHARACTERS:
         raise ValueError(f"minimum_chars cannot be lower than {MINIMUM_CORPUS_CHARACTERS:,}.")
     if args.minimum_tokens_per_parameter < MINIMUM_TOKENS_PER_PARAMETER:
