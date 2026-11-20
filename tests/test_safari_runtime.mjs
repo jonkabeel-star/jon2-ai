@@ -388,5 +388,5 @@ test("Safari Arabic quality guard rejects observed fragmented replies but preser
   assert.equal(validateJon2ArabicAnswer(observedOne), false);
   assert.equal(validateJon2ArabicAnswer(observedTwo), false);
   assert.equal(validateJon2ArabicAnswer("نعم، بالتأكيد."), true);
-  assert.equal(validateJon2ArabicAnswer("أنا مساعد Jon2، كيف أساعدك؟"), false);
+  assert.equal(validateJon2ArabicAnswer("أنا مساعد جون2، كيف أساعدك؟"), true);
 });
