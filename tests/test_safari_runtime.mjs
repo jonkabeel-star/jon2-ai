@@ -372,7 +372,7 @@ test("Safari never substitutes a canned reply for missing, rejected, or corrupte
 test("Original Jon2 generation rejects empty output and quality-checks its own generated text", () => {
   assert.equal(
     requireUsableJon2Answer("مرحباً، هذا ناتج من نموذج Jon2 الأصلي."),
-    "مرحباً! أنا مساعد تجريبي من مشروع جون2، كيف يمكنني مساعدتك؟"
+    "مرحباً، هذا ناتج من نموذج Jon2 الأصلي."
   );
   const fragmented = "لا وأ ال ال الر ال ال الد الذي ال الذي ال الاست";
   assert.equal(requireUsableJon2Answer(fragmented), fragmented);
