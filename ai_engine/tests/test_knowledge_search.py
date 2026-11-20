@@ -35,7 +35,7 @@ class SearchTests(unittest.TestCase):
         news.assert_called_once_with("Egypt","week")
 
     def test_cache_is_scoped_by_category_and_time(self):
-        with patch.object(search,"_wikipedia",return_value=[]):
+        with patch.object(search,"_wikipedia",return_value=[]), patch.object(search,"_gdelt_news",return_value=[]):
             first=search.search_knowledge("test query",category="web"); second=search.search_knowledge("test query",category="web"); third=search.search_knowledge("test query",category="news")
         self.assertFalse(first["cached"]); self.assertTrue(second["cached"]); self.assertFalse(third["cached"])
 
