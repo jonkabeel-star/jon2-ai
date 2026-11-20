@@ -166,3 +166,93 @@ def write_jsonl_partitions(partitions, output_dir):
         with path.open("w", encoding="utf-8", newline="\n") as output:
             for record in records:
                 output.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+def prepare_approved_dialogue_splits(
+    data_dir,
+    approval_manifest,
+    output_dir,
+    validation_fraction: float = 0.1,
+    test_fraction: float = 0.1,
+    seed: int = 42,
+) -> dict:
+    """Validate exact source approvals, split all approved JSONL conversations,
+    and write isolated train/validation/test files plus a content-hash manifest.
+
+    The output directory must be outside the source tree. This routine never
+    approves data, edits source files, trains a model, or loads checkpoints.
+    """
+    import hashlib
+    from pathlib import Path
+
+    from source_approval import validate_source_approvals
+
+    source_root = Path(data_dir).resolve()
+    destination = Path(output_dir).resolve()
+    manifest_path = Path(approval_manifest).resolve()
+    if not source_root.is_dir():
+        raise FileNotFoundError(f"Dialogue source directory not found: {source_root}")
+    if destination == source_root or source_root in destination.parents:
+        raise ValueError("Dialogue split output must be outside the source data directory.")
+
+    # This gate intentionally checks every selected TXT/JSONL source in the
+    # folder. An unapproved file blocks the operation instead of being skipped.
+    validate_source_approvals(
+        source_root, manifest_path, include_jsonl=True
+    )
+    source_files = sorted(source_root.rglob("*.jsonl"))
+    if not source_files:
+        raise FileNotFoundError("No approved JSONL dialogue files were found.")
+
+    records = []
+    source_inventory = []
+    for path in source_files:
+        raw = path.read_bytes()
+        decoded = raw.decode("utf-8", errors="strict")
+        source_records = load_jsonl(path)
+        if not source_records:
+            raise ValueError(f"Approved dialogue source is empty: {path.relative_to(source_root)}")
+        records.extend(source_records)
+        source_inventory.append({
+            "file": path.relative_to(source_root).as_posix(),
+            "sha256": hashlib.sha256(raw).hexdigest(),
+            "conversation_count": len(source_records),
+        })
+
+    partitions = split_dialogue_records(
+        records,
+        validation_fraction=validation_fraction,
+        test_fraction=test_fraction,
+        seed=seed,
+    )
+    write_jsonl_partitions(partitions, destination)
+
+    output_inventory = {}
+    for name in ("train", "validation", "test"):
+        output_path = destination / f"{name}.jsonl"
+        raw = output_path.read_bytes()
+        output_inventory[name] = {
+            "conversation_count": len(partitions[name]),
+            "sha256": hashlib.sha256(raw).hexdigest(),
+            "file": output_path.name,
+        }
+
+    report = {
+        "schema_version": 1,
+        "algorithm": "conversation_message_overlap_union_find_v1",
+        "seed": seed,
+        "validation_fraction": validation_fraction,
+        "test_fraction": test_fraction,
+        "source_files": source_inventory,
+        "total_conversations": len(records),
+        "partitions": output_inventory,
+        "test_partition_policy": "held_out_only_never_train_or_select_checkpoint",
+        "approval_manifest_path": str(manifest_path),
+        "model_training_started": False,
+        "source_files_modified": False,
+    }
+    report_path = destination / "split_manifest.json"
+    report_path.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2) + "\\n",
+        encoding="utf-8",
+    )
+    return report
