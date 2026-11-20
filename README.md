@@ -11,6 +11,18 @@ This repository contains the website interface, an early original-model prototyp
 
 The public website now includes an experimental local Safari runtime. It can load a privately exported bundle of the original Jon2 checkpoint directly in the browser; model files are not uploaded to the website. See [the Arabic setup guide](docs/SAFARI_LOCAL_MODEL_AR.md) and [the Kaggle export notebook](notebooks/Jon2_Safari_Private_Export.ipynb). This path still requires the owner to run the export, and on-device speed and Arabic output quality have not yet passed production review. The public server chat release gate remains closed.
 
+## Qwen3.5 Arabic GPU training and evaluation
+
+A separate private research path now provides a self-contained Kaggle notebook for real GPU inference, exact-source-checked Arabic data preparation, owner-reviewed QLoRA training, and a six-capability human benchmark. It does not replace the original Jon2 Transformer and does not authorize public release.
+
+- [Open the Kaggle GPU notebook](notebooks/Jon2_Qwen35_GPU_Inference_Training_Evaluation.ipynb)
+- [Arabic pipeline guide](docs/JON2_QWEN35_GPU_TRAINING_EVALUATION_AR.md)
+- [Six-capability pilot benchmark](ai_engine/evaluation/jon2_six_capability_pilot_v1.json)
+- [GPU evaluation runner](ai_engine/evaluate_qwen35_arabic.py)
+- [Private-data preparation gate](ai_engine/prepare_qwen35_dialogue_data.py)
+
+The current 60-case benchmark is a pilot only (10 cases per capability). A release decision requires at least 100 independently reviewed cases per capability and a separate Safari/server integration test.
+
 ## Start here
 
 - [Jon2 Auto Repair](AUTO_REPAIR.md) — safe automated maintenance, diagnostics, test-gated repair pull requests, and manual run instructions.
