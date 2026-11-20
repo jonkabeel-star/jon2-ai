@@ -1,4 +1,4 @@
-""""Multi-source web retrieval for Jon2; retrieval never trains or replaces Jon2."""
+"""Multi-source web retrieval for Jon2; retrieval never trains or replaces Jon2."""
 from __future__ import annotations
 
 import json
@@ -156,7 +156,7 @@ def _gdelt_news(query: str, time_range: str) -> list[dict]:
     days = {"day": 1, "week": 7, "month": 30, "year": 365}.get(time_range, 7)
     start = time.strftime("%Y%m%d%H%M%S", time.gmtime(time.time() - days * 86400))
     params = urlencode({"query": query, "mode": "ArtList", "format": "json", "maxrecords": 15,
-                        "sort": "HybridRel", "startdatetime": start, "sourcelang": "english"})
+                        "sort": "HybridRel", "startdatetime": start})
     payload = _json("https://api.gdeltproject.org/api/v2/doc/doc?" + params)
     output = []
     for row in payload.get("articles", []):
