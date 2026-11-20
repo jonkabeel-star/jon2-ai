@@ -1,12 +1,12 @@
 // Browser-side surface-integrity checks for Jon2 Arabic output.
 // These checks detect common corruption patterns; they cannot prove meaning or factuality.
-const ALLOWED_ANSWER = /^[\\u0600-\\u06FF\\s،؛؟.!…ـ0-9٠-٩()«»"'\\-]+$/u;
-const ARABIC_LETTERS = /[\\u0621-\\u064A\\u066E-\\u06D3]/gu;
-const ARABIC_WORDS = /[\\u0621-\\u064A\\u066E-\\u06D3]+/gu;
+const ALLOWED_ANSWER = /^[\u0600-\u06FF\s،؛؟.!…ـ0-9٠-٩()«»"'\-]+$/u;
+const ARABIC_LETTERS = /[\u0621-\u064A\u066E-\u06D3]/gu;
+const ARABIC_WORDS = /[\u0621-\u064A\u066E-\u06D3]+/gu;
 
 export function diagnoseJon2ArabicAnswer(answer) {
   const text = typeof answer === "string" ? answer.trim() : "";
-  const visible = Array.from(text).filter(char => !/\\s/u.test(char));
+  const visible = Array.from(text).filter(char => !/\s/u.test(char));
   const words = text.match(ARABIC_WORDS) || [];
   const arabicCount = (text.match(ARABIC_LETTERS) || []).length;
   const shortWords = words.filter(word => Array.from(word).length <= 2).length;
@@ -18,7 +18,7 @@ export function diagnoseJon2ArabicAnswer(answer) {
   if (Array.from(text).length > 4000) warnings.push("too_long");
   if (text && !ALLOWED_ANSWER.test(text)) warnings.push("unsupported_characters");
   if (arabicCount / Math.max(1, visible.length) < 0.70) warnings.push("low_arabic_character_ratio");
-  if (/(.)\\1{3,}/u.test(text) || /(.{2,8})\\1{2,}/u.test(text)) warnings.push("character_or_phrase_loop");
+  if (/(.)\1{3,}/u.test(text) || /(.{2,8})\1{2,}/u.test(text)) warnings.push("character_or_phrase_loop");
 
   // Fragmented output often consists of many isolated one- or two-letter
   // Arabic pieces. Preserve concise answers; apply this check only to longer
@@ -38,9 +38,9 @@ export function diagnoseJon2ArabicAnswer(answer) {
   if (words.length >= 8) {
     for (const size of [1, 2, 3]) {
       for (let i = 0; i <= words.length - 3 * size; i++) {
-        const a = words.slice(i, i + size).join("\\u0000");
-        const b = words.slice(i + size, i + 2 * size).join("\\u0000");
-        const c = words.slice(i + 2 * size, i + 3 * size).join("\\u0000");
+        const a = words.slice(i, i + size).join("\u0000");
+        const b = words.slice(i + size, i + 2 * size).join("\u0000");
+        const c = words.slice(i + 2 * size, i + 3 * size).join("\u0000");
         if (a === b && b === c) warnings.push("repeated_ngram");
       }
     }
