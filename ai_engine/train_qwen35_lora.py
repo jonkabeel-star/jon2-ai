@@ -170,7 +170,7 @@ def main() -> None:
         raise ValueError("Duplicate conversations detected; deduplicate before training.")
 
     from datasets import Dataset
-    from transformers import AutoProcessor, Qwen3_5ForConditionalGeneration, BitsAndBytesConfig, Trainer, TrainingArguments
+    from transformers import AutoTokenizer, Qwen3_5ForCausalLM, BitsAndBytesConfig, Trainer, TrainingArguments
     from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
     if "eval_strategy" not in inspect.signature(TrainingArguments.__init__).parameters:
@@ -187,12 +187,11 @@ def main() -> None:
         load_in_4bit=True, bnb_4bit_quant_type="nf4",
         bnb_4bit_use_double_quant=True, bnb_4bit_compute_dtype=compute_dtype,
     )
-    processor = AutoProcessor.from_pretrained(args.model_id, trust_remote_code=False)
-    tokenizer = processor.tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(args.model_id, trust_remote_code=False)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
-    model = Qwen3_5ForConditionalGeneration.from_pretrained(
+    model = Qwen3_5ForCausalLM.from_pretrained(
         args.model_id, quantization_config=quant, device_map={"": 0},
         torch_dtype=compute_dtype, low_cpu_mem_usage=True,
         trust_remote_code=False, attn_implementation="sdpa",
@@ -204,12 +203,11 @@ def main() -> None:
         "q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj",
         "in_proj_qkv", "in_proj_z", "in_proj_a", "in_proj_b", "out_proj",
     }
-    # Restrict LoRA to the language backbone. Suffix-only matching could
-    # unintentionally attach adapters to same-named vision-tower projections.
+    # This is the text-only Qwen3_5ForCausalLM class, so the module tree has no
+    # vision tower. Match supported linear projection names across its language model.
     targets = sorted(
         name for name, module in model.named_modules()
-        if name.startswith("model.language_model.")
-        and name.rsplit(".", 1)[-1] in candidate_targets
+        if name.rsplit(".", 1)[-1] in candidate_targets
         and hasattr(module, "weight")
         and "linear" in module.__class__.__name__.lower()
     )

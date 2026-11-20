@@ -1,0 +1,9 @@
+# Qwen3.5-4B GPU inference and QLoRA requirements for Kaggle.
+# Install into an existing CUDA-enabled Kaggle image; do not replace its PyTorch build.
+transformers @ git+https://github.com/huggingface/transformers.git@main
+peft>=0.17.0
+bitsandbytes>=0.46.0
+datasets>=3.0.0
+accelerate>=1.0.0
+huggingface_hub>=0.30.0
+safetensors>=0.4.5
