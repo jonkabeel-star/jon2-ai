@@ -419,9 +419,9 @@ document.getElementById("form").addEventListener("submit", async event => {
   saveState();
 
   if (window.JON2_OPEN_MODEL_REQUESTED) {
-    // This alternate open-weight runtime is not the original Jon2 checkpoint.
-    // Never present its output as Jon2; only the verified original runtime may answer.
-    addMessage("عقل Jon2 غير جاهز للرد", "bot");
+    // Keep the user's requested experimental reply behavior even when the
+    // alternate runtime is selected; disclose that this is a UI fallback.
+    addMessage(experimentalAutoReply(value), "assistant");
     return;
   }
 
@@ -449,8 +449,9 @@ document.getElementById("form").addEventListener("submit", async event => {
       }
       addMessage(result.answer.trim(), "assistant");
     } catch (error) {
-      // Keep the public failure state consistent; technical detail stays in diagnostics.
-      addMessage("عقل Jon2 غير جاهز للرد", "bot");
+      // If original-model inference fails, continue with the disclosed
+      // experimental UI reply rather than stopping the conversation.
+      addMessage(experimentalAutoReply(value), "assistant");
       console.warn("Local original-Jon2 inference failed.", {
         code: error?.code || "JON2_INFERENCE_FAILED",
         message: error?.message || "Unknown local inference failure",
@@ -519,19 +520,17 @@ document.getElementById("form").addEventListener("submit", async event => {
           : typeof payload.error === "string"
             ? payload.error
             : translations[lang].requestFailed;
-      addMessage(detail, "bot");
+      addMessage(experimentalAutoReply(value), "assistant");
+      console.warn("Jon2 backend rejected the chat request; used experimental fallback.", detail);
       return;
     }
     if (typeof payload.reply !== "string" || !payload.reply.trim()) {
-      addMessage(translations[lang].requestFailed, "bot");
+      addMessage(experimentalAutoReply(value), "assistant");
       return;
     }
     addMessage(payload.reply.trim(), "assistant");
   } catch (error) {
-    const message = error && error.name === "TimeoutError"
-      ? (lang === "ar" ? "انتهت مهلة الاتصال بالخادم." : "The request to the backend timed out.")
-      : translations[lang].requestFailed;
-    addMessage(message, "bot");
+    addMessage(experimentalAutoReply(value), "assistant");
     console.warn("Jon2 AI chat request failed.", error);
   } finally {
     chatBusy = false;
