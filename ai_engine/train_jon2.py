@@ -380,6 +380,8 @@ def train(args):
 
 def main():
     parser = argparse.ArgumentParser(description="Train Jon2 with modern training safeguards.")
+    parser.add_argument("--dialogue-splits-dir", default=None, help="Use a previously approved train/validation/test split; held-out test is never decoded or used during training.")
+    parser.add_argument("--candidate-only", action="store_true", help="Required with --dialogue-splits-dir; writes private candidate checkpoints pending Arabic review.")
     parser.add_argument("--data", default="ai_engine/training_data")
     parser.add_argument(
         "--include-jsonl", action="store_true",
