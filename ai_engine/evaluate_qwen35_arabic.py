@@ -10,14 +10,14 @@ import torch
 
 
 def load_model(model_id: str, adapter_dir: str | None):
-    from transformers import AutoProcessor, BitsAndBytesConfig, Qwen3_5ForConditionalGeneration
+    from transformers import AutoTokenizer, BitsAndBytesConfig, Qwen3_5ForCausalLM
     from peft import PeftModel
-    processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=False)
+    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=False)
     quant = BitsAndBytesConfig(
         load_in_4bit=True, bnb_4bit_quant_type="nf4",
         bnb_4bit_use_double_quant=True, bnb_4bit_compute_dtype=torch.float16,
     )
-    model = Qwen3_5ForConditionalGeneration.from_pretrained(
+    model = Qwen3_5ForCausalLM.from_pretrained(
         model_id, quantization_config=quant, device_map={"": 0},
         torch_dtype=torch.float16, low_cpu_mem_usage=True,
         trust_remote_code=False, attn_implementation="sdpa",
@@ -25,7 +25,7 @@ def load_model(model_id: str, adapter_dir: str | None):
     if adapter_dir:
         model = PeftModel.from_pretrained(model, adapter_dir, is_trainable=False)
     model.eval()
-    return processor, model
+    return tokenizer, model
 
 
 def surface_diagnostics(text: str) -> dict:
@@ -63,7 +63,7 @@ def main():
     ids = [item.get("id") for item in tests]
     if len(set(ids)) != len(ids) or any(not x for x in ids):
         raise ValueError("Every benchmark case needs a unique non-empty id.")
-    processor, model = load_model(args.model_id, args.adapter_dir)
+    tokenizer, model = load_model(args.model_id, args.adapter_dir)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     review_path = args.output.with_suffix(".human_review.csv")
     with args.output.open("w", encoding="utf-8") as raw, review_path.open(
@@ -79,7 +79,7 @@ def main():
             messages = case.get("messages")
             if not isinstance(messages, list) or not messages or messages[-1].get("role") != "user":
                 raise ValueError(f"{case.get('id')}: messages must end with a user turn.")
-            encoded = processor.apply_chat_template(
+            encoded = tokenizer.apply_chat_template(
                 messages, tokenize=True, add_generation_prompt=True,
                 return_dict=True, return_tensors="pt", enable_thinking=False,
             ).to(model.device)
@@ -87,14 +87,14 @@ def main():
                 generated = model.generate(
                     **encoded, max_new_tokens=args.max_new_tokens,
                     do_sample=False, repetition_penalty=1.05,
-                    pad_token_id=processor.tokenizer.pad_token_id,
-                    eos_token_id=processor.tokenizer.eos_token_id,
+                    pad_token_id=tokenizer.pad_token_id,
+                    eos_token_id=tokenizer.eos_token_id,
                 )
             new_tokens = generated[:, encoded["input_ids"].shape[1]:]
-            answer = processor.batch_decode(
-                new_tokens, skip_special_tokens=True,
+            answer = tokenizer.decode(
+                new_tokens[0], skip_special_tokens=True,
                 clean_up_tokenization_spaces=False,
-            )[0].strip()
+            ).strip()
             result = {
                 "id": case["id"], "capability": case["capability"],
                 "language": case.get("language", "ar"),
