@@ -364,6 +364,8 @@ test("Safari chat sends identity questions to the model and falls back after fai
 test("Safari keeps experimental replies available across local and backend failures", async () => {
   const page = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(page, /function experimentalAutoReply\(message\)/);
+  assert.match(page, /function isJon2ReplyDisplayable\\(answer\\)/);
+  assert.match(page, /Jon2 backend reply was suppressed because Arabic token fragmentation was detected/);
   assert.match(page, /addMessage\\(experimentalAutoReply\\(normalizedValue\\), "assistant"\\)/);
   assert.match(page, /alternate runtime is selected; disclose that this is a UI fallback/);
   assert.match(page, /If original-model inference fails, continue with the disclosed/);
