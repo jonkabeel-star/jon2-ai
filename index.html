@@ -288,7 +288,10 @@ function renderMessages() {
     const el = document.createElement("div");
     el.className = "msg " + (item.kind === "assistant" ? "bot" : item.kind);
     const content = document.createElement("div");
-    content.textContent = item.text;
+    // Never render fragmented Arabic output as if it were a usable answer.
+    content.textContent = item.kind === "assistant" && !isJon2ReplyDisplayable(item.text)
+      ? experimentalAutoReply("تعذر فهم الرد السابق بسبب تشوّه النص.")
+      : item.text;
     el.appendChild(content);
     if (item.kind === "assistant") {
       const actions = document.createElement("div");
@@ -426,6 +429,23 @@ function normalizeArabicTypos(value) {
   return normalized.replace(/[\p{L}\p{M}]+/gu, word => corrections[word] || word);
 }
 
+// Detect severe token fragmentation in Arabic model output. This is a display
+// safety check, not a semantic-quality or factuality guarantee.
+function isJon2ReplyDisplayable(answer) {
+  if (typeof answer !== "string" || !answer.trim()) return false;
+  const text = answer.trim();
+  const arabicCount = (text.match(/[\u0621-\u064A\u066E-\u06D3]/gu) || []).length;
+  if (arabicCount < 12) return true;
+  const words = text.split(/\s+/u).filter(Boolean);
+  if (words.length < 8) return true;
+  const fragments = words.filter(word => /^(?:ال|وال|بال|لل|الم|الأ|ال[ء-ي]{1,2})$/u.test(word));
+  const tinyWords = words.filter(word => Array.from(word).length <= 2);
+  if (fragments.length >= 3 && fragments.length / words.length >= 0.22) return false;
+  if (tinyWords.length >= 5 && tinyWords.length / words.length >= 0.45) return false;
+  if ((text.match(/(?:^|\s)ال(?:\s|$)/gu) || []).length >= 3) return false;
+  return true;
+}
+
 function experimentalAutoReply(message) {
   const text = String(message || "").trim();
   const lower = text.toLowerCase();
@@ -558,6 +578,11 @@ document.getElementById("form").addEventListener("submit", async event => {
     }
     if (typeof payload.reply !== "string" || !payload.reply.trim()) {
       addMessage(experimentalAutoReply(normalizedValue), "assistant");
+      return;
+    }
+    if (!isJon2ReplyDisplayable(payload.reply)) {
+      addMessage(experimentalAutoReply("وصلني رد من المحرك لكنه ظهر مشوّهًا، لذلك لن أعرض النص المكسّر."), "assistant");
+      console.warn("Jon2 backend reply was suppressed because Arabic token fragmentation was detected.");
       return;
     }
     addMessage(payload.reply.trim(), "assistant");
