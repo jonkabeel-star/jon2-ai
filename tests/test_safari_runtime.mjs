@@ -360,10 +360,14 @@ test("Safari chat sends identity questions to the model and rejects failed quali
   assert.doesNotMatch(page, /Keep the quality signal visible, but do not hide/);
 });
 
-test("Safari presents the canonical not-ready message for every local inference failure", async () => {
+test("Safari keeps experimental replies available across local and backend failures", async () => {
   const page = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  assert.match(page, /addMessage\("عقل Jon2 غير جاهز للرد", "bot"\)/);
-  assert.match(page, /code: error\?\.code \|\| "JON2_INFERENCE_FAILED"/);
+  assert.match(page, /function experimentalAutoReply\(message\)/);
+  assert.match(page, /addMessage\(experimentalAutoReply\(value\), "assistant"\)/);
+  assert.match(page, /alternate runtime is selected; disclose that this is a UI fallback/);
+  assert.match(page, /If original-model inference fails, continue with the disclosed/);
+  assert.match(page, /backend rejected the chat request; used experimental fallback/);
+  assert.doesNotMatch(page, /addMessage\("عقل Jon2 غير جاهز للرد", "bot"\)/);
   assert.doesNotMatch(page, /addMessage\(translations\[lang\]\.localQualityRejected, "bot"\)/);
 });
 
