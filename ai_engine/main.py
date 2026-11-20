@@ -9,6 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
 
 from chat_engine import generate_reply, load_runtime, model_is_ready
+from knowledge_engine import looks_like_fact_question
+from knowledge_search import search_knowledge, answer_from_sources
 import chat_memory
 from compute.routes import router as compute_router
 from model_profiles import PROFILES, describe_profile, list_profiles
@@ -64,6 +66,12 @@ class ChatRequest(BaseModel):
         default=None,
         pattern=r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
     )
+
+
+class KnowledgeSearchRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    query: str = Field(min_length=3, max_length=500)
+    limit: int = Field(default=5, ge=1, le=5)
 
 
 class RuntimeV1ChatRequest(BaseModel):
@@ -326,6 +334,31 @@ def clear_memory(session_id: str):
         raise HTTPException(status_code=422, detail=str(error))
 
 
+@app.post("/api/knowledge/search")
+def knowledge_search_endpoint(request: KnowledgeSearchRequest):
+    """Search public sources and return attributed extracts without requiring model weights."""
+    try:
+        result = search_knowledge(request.query, limit=request.limit)
+        return {
+            "project": "Jon2 AI",
+            **result,
+            **answer_from_sources(result),
+        }
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error))
+    except Exception as error:
+        print(f"Jon2 knowledge search error: {type(error).__name__}: {error}")
+        return {
+            "project": "Jon2 AI",
+            "query": request.query,
+            "status": "search_unavailable",
+            "results": [],
+            "answer": None,
+            "answer_type": "no_verified_retrieval",
+            "sources": [],
+        }
+
+
 @app.post("/api/chat")
 def chat(request: ChatRequest):
     message = request.message.strip()
@@ -354,8 +387,24 @@ def chat(request: ChatRequest):
             history = chat_memory.recent_messages(request.session_id, limit=8)
             memories = chat_memory.relevant_memories(request.session_id, message, limit=4)
 
-        # The original Jon2 checkpoint is the only source of the answer.
-        reply = generate_reply(message, history, memories)
+        # Retrieve source material for factual questions; the original Jon2
+        # checkpoint remains the only generator of conversational answers.
+        knowledge_context = None
+        knowledge_sources = []
+        if looks_like_fact_question(message):
+            retrieved = search_knowledge(message, limit=3)
+            knowledge_sources = [
+                {"title": item["title"], "url": item["source_url"]}
+                for item in retrieved.get("results", [])[:3]
+            ]
+            if retrieved.get("results"):
+                knowledge_context = "\\n\\n".join(
+                    f"{item['title']}: {item['extract']}\\nالمصدر: {item['source_url']}"
+                    for item in retrieved["results"][:2]
+                )
+
+        # The original Jon2 checkpoint is the only source of the generated answer.
+        reply = generate_reply(message, history, memories, knowledge_context=knowledge_context)
         if not isinstance(reply, str) or not reply.strip():
             raise RuntimeError("empty original-model output")
         # Reject obviously corrupted, non-Arabic, or looping generations before
@@ -372,7 +421,7 @@ def chat(request: ChatRequest):
             "reply": reply,
             "memory_used": bool(memories),
             "session_id": request.session_id,
-            "response_mode": "jon2_original_model_only",
+            "response_mode": "jon2_original_model_with_source_retrieval",\n            "knowledge_sources": knowledge_sources,
         }
     except Exception as error:
         print(f"Jon2 AI chat error: {type(error).__name__}: {error}")
