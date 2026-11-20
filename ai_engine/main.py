@@ -8,7 +8,7 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
 
-from chat_engine import generate_reply, load_runtime, model_is_ready
+from chat_engine import checkpoint_sha256, checkpoint_is_valid, generate_reply, load_runtime, model_is_ready
 import chat_memory
 from external_models.jais2_routes import router as jais2_router
 from compute.routes import router as compute_router
@@ -108,9 +108,9 @@ def _experimental_chat_enabled() -> bool:
 def _checkpoint_configured() -> bool:
     checkpoint = os.getenv(
         "JON2_CHECKPOINT",
-        os.path.join(os.path.dirname(__file__), "checkpoints", "jon2-small.pt"),
+        "/app/model-weights/jon2-last.pt",
     )
-    return os.path.isfile(checkpoint)
+    return os.path.isfile(checkpoint) and checkpoint_is_valid()
 
 
 def _inference_tested() -> bool:
@@ -159,7 +159,7 @@ def health():
     )
     checkpoint_path = os.getenv(
         "JON2_CHECKPOINT",
-        os.path.join(os.path.dirname(__file__), "checkpoints", "jon2-small.pt"),
+        "/app/model-weights/jon2-last.pt",
     )
     checkpoint_size = os.path.getsize(checkpoint_path) if os.path.isfile(checkpoint_path) else 0
     checkpoint_readable = os.path.isfile(checkpoint_path) and os.access(checkpoint_path, os.R_OK)
@@ -169,6 +169,9 @@ def health():
         "api_version": app.version,
         "model": "Jon2 Original Transformer",
         "model_loaded": loaded,
+        "model_ready": loaded,
+        "checkpoint_sha256": checkpoint_sha256(),
+        "checkpoint_integrity": checkpoint_is_valid(),
         "model_type": "jon2_original",
         "inference_tested": inference_tested,
         "quality_review_passed": quality_review_passed,
@@ -176,7 +179,8 @@ def health():
         "checkpoint_readable": checkpoint_readable,
         "checkpoint_size_bytes": checkpoint_size,
         "checkpoint_path": checkpoint_path,
-        "kaggle_token_present": bool(os.getenv("KAGGLE_API_TOKEN")),
+        "private_checkpoint_mode": True,
+        "checkpoint_source": "mounted_private_file",
         "experimental_chat_enabled": _experimental_chat_enabled(),
         "chat_ready": chat_enabled,
         "release_approved": release_approved,

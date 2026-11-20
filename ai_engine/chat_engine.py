@@ -4,6 +4,7 @@ No pretrained third-party model or hosted AI API is loaded. The model must
 first be trained and saved as a Jon2 checkpoint. Heavy PyTorch/model imports
 are deliberately lazy so the API health service can start on small hosts.
 """
+import hashlib
 import os
 from pathlib import Path
 
@@ -12,7 +13,7 @@ from answer_quality import validate_generated_answer
 CHECKPOINT_PATH = Path(
     os.getenv(
         "JON2_CHECKPOINT",
-        str(Path(__file__).resolve().parent / "checkpoints" / "jon2-small.pt"),
+        "/app/model-weights/jon2-last.pt",
     )
 )
 
@@ -25,8 +26,24 @@ def model_is_ready() -> bool:
     return _model is not None and _tokenizer is not None
 
 
+def checkpoint_sha256() -> str | None:
+    if not CHECKPOINT_PATH.is_file():
+        return None
+    digest = hashlib.sha256()
+    with CHECKPOINT_PATH.open("rb") as checkpoint:
+        for chunk in iter(lambda: checkpoint.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def checkpoint_is_valid() -> bool:
+    expected = os.getenv("JON2_CHECKPOINT_SHA256", "edf96971187f93642f36282e270c2d2f3a6db39565b30d7898e856a49e0eaec2").strip().lower()
+    actual = checkpoint_sha256()
+    return bool(actual and expected and actual == expected)
+
+
 def checkpoint_is_available() -> bool:
-    return CHECKPOINT_PATH.is_file()
+    return CHECKPOINT_PATH.is_file() and checkpoint_is_valid()
 
 
 def load_model(checkpoint_path: str):
@@ -45,12 +62,13 @@ def load_runtime() -> None:
     global _model, _tokenizer, _device
     if model_is_ready():
         return
-    if not checkpoint_is_available():
-        raise FileNotFoundError(
-            "لم يتم تدريب نموذج Jon2 الأصلي بعد. ملف الأوزان غير موجود: "
-            f"{CHECKPOINT_PATH}"
-        )
+    if not CHECKPOINT_PATH.is_file():
+        raise FileNotFoundError(f"ملف أوزان Jon2 الأصلي غير موجود: {CHECKPOINT_PATH}")
+    if not checkpoint_is_valid():
+        raise ValueError("فشل تحقق SHA256 لملف أوزان Jon2 الخاص.")
     _model, _tokenizer, _device = load_model(str(CHECKPOINT_PATH))
+    if _model is None or _tokenizer is None:
+        raise RuntimeError("Jon2 runtime loader returned an incomplete model.")
 
 
 def build_conversation_prompt(message: str, history=None, memories=None, tokenizer=None, context=None, knowledge_context=None) -> str:

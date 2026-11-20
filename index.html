@@ -376,7 +376,7 @@ async function checkApiHealth() {
       signal: AbortSignal.timeout(12000)
     });
     const health = await response.json().catch(() => ({}));
-    chatReady = response.ok && health.chat_ready === true && health.model_ready === true;
+    chatReady = response.ok && health.chat_ready === true && health.model_ready === true && health.checkpoint_integrity === true;
     apiStatusKey = chatReady ? "modelReady" : "apiOnline";
   } catch (error) {
     chatReady = false;
@@ -479,26 +479,13 @@ document.getElementById("form").addEventListener("submit", async event => {
   syncChatControls();
   send.setAttribute("aria-busy", "true");
   try {
-    // The gateway requires a verified login session and a fresh CSRF token.
-    const sessionResponse = await fetch(API_BASE_URL + "/api/auth/me", {
-      method: "GET",
-      credentials: "include",
-      headers: { "Accept": "application/json" },
-      cache: "no-store",
-      signal: AbortSignal.timeout(12000)
-    });
-    const sessionData = await sessionResponse.json().catch(() => ({}));
-    if (!sessionResponse.ok || typeof sessionData.csrfToken !== "string") {
-      throw new Error(sessionData.error || "سجّل الدخول أولًا لاستخدام المحادثة.");
-    }
-
+    // FastAPI serves the page and API from the same origin. The backend release
+    // gate remains authoritative and rejects every chat request until approved.
     const response = await fetch(API_BASE_URL + "/api/chat", {
       method: "POST",
-      credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json",
-        "X-CSRF-Token": sessionData.csrfToken
+        "Accept": "application/json"
       },
       body: JSON.stringify({
         api_version: "1",
