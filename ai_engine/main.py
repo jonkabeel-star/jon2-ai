@@ -71,7 +71,9 @@ class ChatRequest(BaseModel):
 class KnowledgeSearchRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     query: str = Field(min_length=3, max_length=500)
-    limit: int = Field(default=5, ge=1, le=5)
+    category: Literal["web", "news", "science", "images"] = "web"
+    time_range: Literal["any", "day", "week", "month", "year"] = "any"
+    limit: int = Field(default=10, ge=1, le=20)
 
 
 class RuntimeV1ChatRequest(BaseModel):
@@ -182,7 +184,8 @@ def health():
         "model_status": model_status,
         "chat_requires_model_checkpoint": True,
         "conversation_memory": "sqlite",
-        "knowledge_retrieval": "wikipedia_multilingual_with_english_fallback",
+        "knowledge_retrieval": "multi_source_searxng_wikipedia_gdelt_crossref_openalex_europepmc",
+        "search_server_configured": bool(os.getenv("JON2_SEARXNG_URL", "").strip()),
         "knowledge_cache": "sqlite",
         "knowledge_cache_ttl_seconds": 604800,
         "memory_retrieval": "arabic_normalized_bm25_lexical",
@@ -338,7 +341,12 @@ def clear_memory(session_id: str):
 def knowledge_search_endpoint(request: KnowledgeSearchRequest):
     """Search public sources and return attributed extracts without requiring model weights."""
     try:
-        result = search_knowledge(request.query, limit=request.limit)
+        result = search_knowledge(
+            request.query,
+            limit=request.limit,
+            category=request.category,
+            time_range=request.time_range,
+        )
         return {
             "project": "Jon2 AI",
             **result,
