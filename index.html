@@ -89,7 +89,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
 <div class="wrap">
 <header>
   <a class="brand" href="#" aria-label="Jon2 AI home"><div class="logo">J2</div><div><div class="brand-name">Jon2 AI</div><div class="brand-sub" data-t="brandSub">منصتك للإبداع بالذكاء الاصطناعي</div></div></a>
-  <div class="header-actions"><a class="nav-link" href="#assistant" data-t="assistantNav">المحادثة العامة</a><a class="nav-link" href="#tools" data-t="toolsNav">الأدوات</a><a class="nav-link" href="./spellcheck.html">التدقيق الإملائي</a><button class="lang" id="language">English 🌐</button></div>
+  <div class="header-actions"><a class="nav-link" href="#assistant" data-t="assistantNav">المحادثة العامة</a><a class="nav-link" href="#tools" data-t="toolsNav">الأدوات</a><button class="lang" id="language">English 🌐</button></div>
 </header>
 <main>
 <section class="hero">
@@ -109,7 +109,6 @@ button:disabled{opacity:.6;cursor:not-allowed}
     <article class="tool"><div class="tool-icon">🎬</div><h3 data-t="videoTitle">توليد الفيديو</h3><p data-t="videoDesc">اصنع مشاهد وقصص فيديو من أفكارك.</p><span class="tag" data-t="soon">قريبًا</span></article>
     <article class="tool"><div class="tool-icon">🎙️</div><h3 data-t="audioTitle">الصوت والتعليق</h3><p data-t="audioDesc">أدوات صوتية ومساعدة في التعليق الصوتي.</p><span class="tag" data-t="soon">قريبًا</span></article>
     <article class="tool"><div class="tool-icon">📖</div><h3 data-t="storyTitle">كتابة القصص</h3><p data-t="storyDesc">طوّر أفكارك إلى قصص وسيناريوهات.</p><span class="tag" data-t="soon">قريبًا</span></article>
-    <article class="tool"><div class="tool-icon">✍️</div><h3>التدقيق الإملائي</h3><p>صحّح الأخطاء الإملائية الشائعة في العربية الفصحى والمصرية.</p><a class="tag" href="./spellcheck.html">افتح الأداة ←</a></article>
   </div>
 </section>
 
@@ -396,6 +395,37 @@ async function checkApiHealth() {
   syncChatControls();
 }
 
+// Normalize a small, conservative set of common Arabic typos before chat inference.
+ // The original text remains visible in the conversation; only the model input is normalized.
+function normalizeArabicTypos(value) {
+  const corrections = {
+    "لاكن":"لكن", "لاكنه":"لكنه", "لاكنها":"لكنها",
+    "هاذا":"هذا", "هاذه":"هذه", "هاذي":"هذه", "هذة":"هذه",
+    "اللذي":"الذي", "اللذين":"الذين", "اللتي":"التي",
+    "ذالك":"ذلك", "زالك":"ذلك", "هولاء":"هؤلاء", "هاؤلاء":"هؤلاء",
+    "انشاءالله":"إن شاء الله", "انشالله":"إن شاء الله", "ان شاءالله":"إن شاء الله",
+    "الحمدلله":"الحمد لله", "ماشاءالله":"ما شاء الله", "سبحانالله":"سبحان الله",
+    "الى":"إلى", "الي":"إلى", "الان":"الآن", "لان":"لأن",
+    "مسؤل":"مسؤول", "مسئول":"مسؤول", "مسوول":"مسؤول",
+    "شئ":"شيء", "قرائة":"قراءة", "قراءه":"قراءة",
+    "إمرأة":"امرأة", "امراه":"امرأة", "إمرأه":"امرأة",
+    "مدرسه":"مدرسة", "جامعه":"جامعة", "مشكله":"مشكلة",
+    "فكره":"فكرة", "طريقه":"طريقة", "رساله":"رسالة",
+    "سوال":"سؤال", "السوال":"السؤال", "اجابه":"إجابة",
+    "انا":"أنا", "انت":"أنت", "انتي":"أنتِ", "احنا":"إحنا",
+    "ايه":"إيه", "ازاي":"إزاي"
+  };
+  const phrases = [
+    [/انشاء\\s*الله|انشالله|إنشاء\\s*الله/gu, "إن شاء الله"],
+    [/الحمد\\s*لله|الحمدلله/gu, "الحمد لله"],
+    [/ما\\s*شاء\\s*الله|ماشاءالله/gu, "ما شاء الله"],
+    [/سبحان\\s*الله|سبحانالله/gu, "سبحان الله"]
+  ];
+  let normalized = String(value || "");
+  for (const [pattern, replacement] of phrases) normalized = normalized.replace(pattern, replacement);
+  return normalized.replace(/[\\p{L}\\p{M}]+/gu, word => corrections[word] || word);
+}
+
 function experimentalAutoReply(message) {
   const text = String(message || "").trim();
   const lower = text.toLowerCase();
@@ -414,6 +444,7 @@ document.getElementById("form").addEventListener("submit", async event => {
   const send = document.getElementById("send");
   const value = input.value.trim();
   if (!value || chatBusy) return;
+  const normalizedValue = normalizeArabicTypos(value);
 
   addMessage(value, "user");
   input.value = "";
@@ -422,7 +453,7 @@ document.getElementById("form").addEventListener("submit", async event => {
   if (window.JON2_OPEN_MODEL_REQUESTED) {
     // Keep the user's requested experimental reply behavior even when the
     // alternate runtime is selected; disclose that this is a UI fallback.
-    addMessage(experimentalAutoReply(value), "assistant");
+    addMessage(experimentalAutoReply(normalizedValue), "assistant");
     return;
   }
 
@@ -437,9 +468,9 @@ document.getElementById("form").addEventListener("submit", async event => {
         .slice(-4)
         .map(item => ({
           role: item.kind === "user" ? "user" : "assistant",
-          content: item.text
+          content: normalizeArabicTypos(item.text)
         }));
-      const result = await window.JON2_LOCAL_CLIENT.generate(value, history);
+      const result = await window.JON2_LOCAL_CLIENT.generate(normalizedValue, history);
       if (typeof result.answer !== "string" || !result.answer.trim()) {
         throw new Error(result.qualityPassed === true ? "Empty local Jon2 response." : "JON2_QUALITY_REJECTED");
       }
@@ -502,12 +533,12 @@ document.getElementById("form").addEventListener("submit", async event => {
       },
       body: JSON.stringify({
         api_version: "1",
-        message: value,
+        message: normalizedValue,
         request_id: crypto.randomUUID(),
         session_id: sessionId,
         history: chatMessages.slice(0, -1).filter(item => item && typeof item.text === "string" && item.text.trim()).slice(-8).map(item => ({
           role: item.kind === "user" ? "user" : "assistant",
-          content: item.text.slice(0, 2000)
+          content: normalizeArabicTypos(item.text).slice(0, 2000)
         }))
       }),
       signal: AbortSignal.timeout(90000)
