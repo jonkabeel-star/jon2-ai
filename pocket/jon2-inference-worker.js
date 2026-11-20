@@ -5,9 +5,8 @@ import { validateJon2ArabicAnswer } from "./jon2-answer-quality.js";
 
 let runtime = null;
 
-// Preserve non-empty experimental generation, but attach a real surface-integrity
-// signal so the UI can suppress fragmented Arabic instead of displaying corruption.
-// This is not a semantic or factuality guarantee.
+// The original Jon2 checkpoint is the only generation source.
+// Quality validation rejects corrupted output; it never substitutes another reply.
 export function requireUsableJon2Answer(answer) {
   if (typeof answer !== "string" || !answer.trim()) {
     const error = new Error("لم ينتج عقل Jon2 أي نص");
@@ -51,8 +50,7 @@ if (typeof self !== "undefined") self.addEventListener("message", async event =>
         error.code = "JON2_INVALID_PROMPT";
         throw error;
       }
-      // The original Jon2 checkpoint generates the reply. In experimental mode,
-      // any non-empty generated text is returned even if it is unclear/repetitive.
+      // Generate exclusively from the loaded original Jon2 checkpoint.
       const prompt = buildJon2ConversationPrompt(
         message.message,
         message.history,
@@ -78,8 +76,7 @@ if (typeof self !== "undefined") self.addEventListener("message", async event =>
         type: "generated",
         requestId,
         answer,
-        qualityPassed: validateJon2ArabicAnswer(answer),
-        experimental: true
+        qualityPassed: validateJon2ArabicAnswer(answer)
       });
       return;
     }
