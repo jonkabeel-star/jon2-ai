@@ -68,6 +68,8 @@ def load_dialogue_training_partitions(
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ValueError(f"Invalid split manifest: {exc}") from exc
 
+    if not isinstance(manifest, dict):
+        raise ValueError("Split manifest must be a JSON object.")
     if manifest.get("schema_version") != 1:
         raise ValueError("Unsupported dialogue split manifest schema.")
     if manifest.get("algorithm") != "conversation_message_overlap_union_find_v1":
