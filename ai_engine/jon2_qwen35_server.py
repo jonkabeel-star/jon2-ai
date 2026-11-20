@@ -23,7 +23,8 @@ from ai_engine.conversation_context import (
 )
 
 BASE_MODEL = os.getenv("JON2_BASE_MODEL", "Qwen/Qwen3.5-4B")
-ADAPTER_PATH = os.getenv("JON2_ADAPTER_PATH", "").strip()\nADAPTER_DIR = Path(ADAPTER_PATH).expanduser() if ADAPTER_PATH else None
+ADAPTER_PATH = os.getenv("JON2_ADAPTER_PATH", "").strip()
+ADAPTER_DIR = Path(ADAPTER_PATH).expanduser() if ADAPTER_PATH else None
 RUNTIME_TOKEN = os.getenv("JON2_RUNTIME_TOKEN", "")
 PUBLIC_CHAT_ENABLED = os.getenv("JON2_PUBLIC_CHAT_ENABLED", "false").lower() == "true"
 INFERENCE_TESTED = os.getenv("JON2_INFERENCE_TESTED", "false").lower() == "true"
