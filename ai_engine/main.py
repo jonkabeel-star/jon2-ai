@@ -10,7 +10,6 @@ from pydantic import BaseModel, Field, ConfigDict
 
 from chat_engine import generate_reply, load_runtime, model_is_ready
 import chat_memory
-from external_models.jais2_routes import router as jais2_router
 from compute.routes import router as compute_router
 from model_profiles import PROFILES, describe_profile, list_profiles
 from answer_quality import validate_generated_answer
@@ -21,7 +20,6 @@ app = FastAPI(
     version="1.5.0",
 )
 
-app.include_router(jais2_router)
 app.include_router(compute_router)
 
 
