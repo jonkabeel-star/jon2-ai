@@ -14,9 +14,11 @@ def _sha256(raw: bytes) -> str:
 
 
 def _safe_relative_file(name: str) -> PurePosixPath:
+    if not isinstance(name, str) or not name:
+        raise ValueError(f"Unsafe split manifest path: {name!r}")
     path = PurePosixPath(name)
     if (
-        not isinstance(name, str) or not name or path.is_absolute()
+        path.is_absolute()
         or path.as_posix() != name
         or any(part in ("", ".", "..") for part in path.parts)
         or "\\" in name
