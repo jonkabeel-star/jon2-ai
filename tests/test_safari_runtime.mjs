@@ -363,7 +363,9 @@ test("Safari never substitutes a canned reply for missing, rejected, or corrupte
   assert.doesNotMatch(page, /experimentalAutoReply/);
   assert.ok(page.includes("function isJon2ReplyDisplayable(answer)"));
   assert.ok(page.includes("Jon2 original-model reply failed the Arabic display-integrity check"));
-  assert.doesNotMatch(page, /localQualityRejected|isJon2ReplyDisplayable\(payload\.reply\)/);
+  assert.doesNotMatch(page, /localQualityRejected/);
+  assert.ok(page.includes("Show every non-empty string produced by the original Jon2 weights"));
+  assert.doesNotMatch(page, /result\.qualityPassed !== true/);
   assert.doesNotMatch(page, /JON2_OPEN_MODEL_REQUESTED|JON2_OPEN_MODEL_READY/);
 });
 
