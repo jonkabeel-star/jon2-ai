@@ -29,6 +29,13 @@ def validate_generated_answer(answer: str) -> bool:
         return False
 
     words = answer.split()
+    arabic_words = re.findall(r"[\u0621-\u064A\u066E-\u06D3]+", answer)
+    if len(arabic_words) >= 8:
+        short_ratio = sum(len(word) <= 2 for word in arabic_words) / len(arabic_words)
+        average_length = sum(len(word) for word in arabic_words) / len(arabic_words)
+        if short_ratio > 0.60 and average_length < 3.2:
+            return False
+
     if len(words) >= 8:
         for size in (1, 2, 3):
             if any(
@@ -58,6 +65,12 @@ def diagnose_answer(answer: str) -> dict:
         warnings.append("very_few_words")
     if arabic / max(1, len(visible)) < 0.70:
         warnings.append("low_arabic_character_ratio")
+    arabic_words = re.findall(r"[\u0621-\u064A\u066E-\u06D3]+", text)
+    if len(arabic_words) >= 8:
+        short_ratio = sum(len(word) <= 2 for word in arabic_words) / len(arabic_words)
+        average_length = sum(len(word) for word in arabic_words) / len(arabic_words)
+        if short_ratio > 0.60 and average_length < 3.2:
+            warnings.append("fragmented_short_word_sequence")
     if len(words) >= 8 and unique_ratio < 0.45:
         warnings.append("low_unique_word_ratio")
     if repeated_trigram:
