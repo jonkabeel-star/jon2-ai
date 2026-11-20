@@ -100,6 +100,40 @@ describe("Jon2 authenticated Qwen runtime gateway", () => {
     }
   });
 
+  it("forwards multi-turn history without truncating it at eight messages", async () => {
+    const originalFetch = globalThis.fetch;
+    const calls = [];
+    globalThis.fetch = async (url, init = {}) => {
+      calls.push({ url: String(url), init });
+      const payload = String(url).endsWith("/v1/health")
+        ? { model_ready: true, inference_tested: true, quality_review_passed: true,
+            public_chat_enabled: true, model_status: "ready" }
+        : { reply: "فاكر السياق.", adapter_loaded: false,
+            response_mode: "qwen35_base_preview" };
+      return new Response(JSON.stringify(payload), {
+        status: 200, headers: { "Content-Type": "application/json" },
+      });
+    };
+    try {
+      const history = Array.from({ length: 12 }, (_, index) => ({
+        role: index % 2 === 0 ? "user" : "assistant",
+        content: `turn-${index}`,
+      }));
+      const response = await call("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ api_version: "1", message: "كمل", history }),
+      }, ENV);
+      assert.equal(response.status, 200);
+      const forwarded = JSON.parse(calls[1].init.body);
+      assert.equal(forwarded.history.length, 12);
+      assert.equal(forwarded.history[0].content, "turn-0");
+      assert.equal(forwarded.history[11].content, "turn-11");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   it("rejects invalid chat payloads after the runtime passes release gates", async () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async () => new Response(JSON.stringify({
