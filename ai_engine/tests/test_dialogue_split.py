@@ -95,9 +95,6 @@ class DialogueSplitTests(unittest.TestCase):
             split_dialogue_records(self.records[:2] + [malformed])
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 class ApprovedDialoguePreparationTests(unittest.TestCase):
     def setUp(self):
         import hashlib
@@ -116,7 +113,7 @@ class ApprovedDialoguePreparationTests(unittest.TestCase):
             for i in range(18)
         ]
         raw = "".join(
-            json.dumps(record, ensure_ascii=False) + "\\n"
+            json.dumps(record, ensure_ascii=False) + "\n"
             for record in self.records
         )
         self.source.write_text(raw, encoding="utf-8")
@@ -142,7 +139,7 @@ class ApprovedDialoguePreparationTests(unittest.TestCase):
         self.temp.cleanup()
 
     def test_requires_exact_approval_and_writes_hash_manifest(self):
-        from dialogue_split import prepare_approved_dialogue_splits
+        from dialogue_split import prepare_approved_dialogue_splits, load_jsonl
 
         before = self.source.read_bytes()
         report = prepare_approved_dialogue_splits(
@@ -167,7 +164,7 @@ class ApprovedDialoguePreparationTests(unittest.TestCase):
         from dialogue_split import prepare_approved_dialogue_splits
 
         self.source.write_text(
-            self.source.read_text(encoding="utf-8") + "\\n",
+            self.source.read_text(encoding="utf-8") + "\n",
             encoding="utf-8",
         )
         with self.assertRaisesRegex(PermissionError, "changed after"):
