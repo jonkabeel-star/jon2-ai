@@ -1,0 +1,133 @@
+{
+  "format": "jon2-arabic-human-evaluation-v1",
+  "description": "Held-out prompts for manual MSA and Egyptian Arabic review. Not training data; no automatic semantic pass is permitted.",
+  "minimum_human_review_fields": [
+    "understandable",
+    "answers_question",
+    "arabic_fluency",
+    "factual_or_math_correctness",
+    "notes"
+  ],
+  "cases": [
+    {
+      "id": "AR-01",
+      "dialect": "msa",
+      "question": "من أنت؟",
+      "human_review_criteria": "ينبغي أن يعرّف نفسه بأنه نموذج Jon2 تجريبي، دون ادعاء قدرات غير موجودة."
+    },
+    {
+      "id": "AR-02",
+      "dialect": "msa",
+      "question": "اشرح الذكاء الاصطناعي في جملتين.",
+      "human_review_criteria": "تعريف مبسط بأنه أنظمة تنفذ مهامًا تتطلب عادةً قدرات بشرية مثل فهم اللغة أو التعرف على الأنماط."
+    },
+    {
+      "id": "AR-03",
+      "dialect": "msa",
+      "question": "ما الفرق بين الطقس والمناخ؟",
+      "human_review_criteria": "الطقس حالة الجو قصيرة المدى؛ المناخ متوسط أنماط الطقس على مدد طويلة."
+    },
+    {
+      "id": "AR-04",
+      "dialect": "msa",
+      "question": "إذا كان لدي 12 تفاحة وأعطيت 5، فكم تبقى؟",
+      "human_review_criteria": "الإجابة الحسابية 7 مع شرح مختصر."
+    },
+    {
+      "id": "AR-05",
+      "dialect": "msa",
+      "question": "اذكر ثلاث خطوات لتنظيم يوم مزدحم.",
+      "human_review_criteria": "حصر المهام، ترتيب الأولويات، تقدير الوقت وترك فواصل."
+    },
+    {
+      "id": "AR-06",
+      "dialect": "msa",
+      "question": "ما عاصمة مصر؟",
+      "human_review_criteria": "القاهرة."
+    },
+    {
+      "id": "AR-07",
+      "dialect": "msa",
+      "question": "لماذا نغسل أيدينا قبل الطعام؟",
+      "human_review_criteria": "لتقليل انتقال الجراثيم والملوثات إلى الطعام والجسم."
+    },
+    {
+      "id": "AR-08",
+      "dialect": "msa",
+      "question": "اكتب رسالة قصيرة تشكر فيها معلمًا.",
+      "human_review_criteria": "رسالة عربية مهذبة ومتماسكة تشكر المعلم."
+    },
+    {
+      "id": "AR-09",
+      "dialect": "msa",
+      "question": "اشرح معنى كلمة تعاون مع مثال.",
+      "human_review_criteria": "العمل مع الآخرين لتحقيق هدف مشترك، مع مثال صحيح."
+    },
+    {
+      "id": "AR-10",
+      "dialect": "msa",
+      "question": "ما الذي ينبغي فعله إذا لم تكن متأكدًا من معلومة؟",
+      "human_review_criteria": "التصريح بعدم اليقين والتحقق من مصدر موثوق بدل اختلاق إجابة."
+    },
+    {
+      "id": "AR-11",
+      "dialect": "egyptian",
+      "question": "عامل إيه؟",
+      "human_review_criteria": "رد مصري طبيعي ومفهوم مثل الحمد لله، إنت عامل إيه؟"
+    },
+    {
+      "id": "AR-12",
+      "dialect": "egyptian",
+      "question": "أنا معايا 20 جنيه واشتريت حاجة بـ 7 جنيه، فاضل كام؟",
+      "human_review_criteria": "الإجابة 13 جنيهًا."
+    },
+    {
+      "id": "AR-13",
+      "dialect": "egyptian",
+      "question": "اشرحلي يعني إيه تعلم آلي بالمصري.",
+      "human_review_criteria": "شرح مبسط بأن الكمبيوتر يتعلم أنماطًا من أمثلة وبيانات بدل كتابة كل قاعدة يدويًا."
+    },
+    {
+      "id": "AR-14",
+      "dialect": "egyptian",
+      "question": "لو صحيت متأخر وعندي شغل كتير، أبدأ بإيه؟",
+      "human_review_criteria": "اقتراح عملي يبدأ بأهم وأقرب مهمة مع ترتيب الأولويات."
+    },
+    {
+      "id": "AR-15",
+      "dialect": "egyptian",
+      "question": "اكتبلي جملة حلوة عن الصداقة.",
+      "human_review_criteria": "جملة مصرية سليمة ومفهومة عن الصداقة."
+    },
+    {
+      "id": "AR-16",
+      "dialect": "egyptian",
+      "question": "إيه الفرق بين الموبايل والكمبيوتر؟",
+      "human_review_criteria": "مقارنة صحيحة ومختصرة بين جهاز محمول وهاتف ذكي وجهاز حاسوب، دون خلط."
+    },
+    {
+      "id": "AR-17",
+      "dialect": "egyptian",
+      "question": "لو الإجابة مش عندك، تعمل إيه؟",
+      "human_review_criteria": "يقول إنه لا يعرف أو يحتاج للتحقق، ولا يخترع."
+    },
+    {
+      "id": "AR-18",
+      "dialect": "egyptian",
+      "question": "قولّي طريقة بسيطة أوفر بيها فلوسي.",
+      "human_review_criteria": "نصيحة عملية مثل تسجيل المصروفات وتحديد مبلغ ادخار."
+    },
+    {
+      "id": "AR-19",
+      "dialect": "egyptian",
+      "question": "ليه النوم مهم؟",
+      "human_review_criteria": "شرح مبسط لدوره في الراحة والتركيز والصحة."
+    },
+    {
+      "id": "AR-20",
+      "dialect": "egyptian",
+      "question": "لخصلي معنى الصدق في سطر واحد.",
+      "human_review_criteria": "تعريف موجز بأن الصدق قول الحقيقة والابتعاد عن الكذب."
+    }
+  ]
+}
