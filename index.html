@@ -530,11 +530,7 @@ document.getElementById("form").addEventListener("submit", async event => {
       addMessage(translations[lang].requestFailed, "bot");
       return;
     }
-    if (!isJon2ReplyDisplayable(payload.reply)) {
-      addMessage(translations[lang].localQualityRejected, "bot");
-      console.warn("Jon2 original-model reply failed the Arabic display-integrity check.");
-      return;
-    }
+    // Display the original Jon2 model's text as generated, even if unclear or repetitive.
     addMessage(payload.reply.trim(), "assistant");
   } catch (error) {
     addMessage(translations[lang].requestFailed, "bot");
