@@ -354,17 +354,17 @@ test("Safari chat sends identity questions to the model and falls back after fai
   assert.match(page, /alternate runtime is selected; disclose that this is a UI fallback/);
   assert.match(page, /result\.qualityPassed\s*!==\s*true/);
   assert.match(page, /result\.qualityPassed !== true/);
-  assert.match(page, /window\.JON2_LOCAL_CLIENT\.generate\(value, history\)/);
+  assert.match(page, /window\\.JON2_LOCAL_CLIENT\\.generate\\(normalizedValue, history\\)/);
   assert.doesNotMatch(page, /promptParts = chatMessages\.slice\(-10\)/);
   assert.match(page, /throw new Error\("JON2_QUALITY_REJECTED"\)/);
-  assert.match(page, /addMessage\(experimentalAutoReply\(value\), "assistant"\)/);
+  assert.match(page, /addMessage\\(experimentalAutoReply\\(normalizedValue\\), "assistant"\\)/);
   assert.doesNotMatch(page, /Keep the quality signal visible, but do not hide/);
 });
 
 test("Safari keeps experimental replies available across local and backend failures", async () => {
   const page = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(page, /function experimentalAutoReply\(message\)/);
-  assert.match(page, /addMessage\(experimentalAutoReply\(value\), "assistant"\)/);
+  assert.match(page, /addMessage\\(experimentalAutoReply\\(normalizedValue\\), "assistant"\\)/);
   assert.match(page, /alternate runtime is selected; disclose that this is a UI fallback/);
   assert.match(page, /If original-model inference fails, continue with the disclosed/);
   assert.match(page, /backend rejected the chat request; used experimental fallback/);
