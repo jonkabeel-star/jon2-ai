@@ -86,7 +86,7 @@ Only after all conditions pass may the owner set all four deployment secrets/var
 - `JON2_CHAT_RELEASE_APPROVED=true`
 - the production runtime must load the exact reviewed checkpoint hash.
 
-These flags are release attestations, not substitutes for evidence. Never set them to make health look green. `JON2_EXPERIMENTAL_CHAT` never bypasses the public release gate.
+These flags are release attestations, not substitutes for evidence. Never set them to make health look green. Jon2 has no experimental chat mode or alternate reply path.
 
 ## 6. Current status
 

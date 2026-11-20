@@ -72,7 +72,7 @@ class Jon2ApiTests(unittest.TestCase):
         self.assertEqual(response.json()["detail"]["message"], "عقل Jon2 غير جاهز للرد")
         generate.assert_not_called()
 
-    def test_experimental_mode_never_opens_chat(self):
+    def test_legacy_experimental_flag_never_opens_chat(self):
         with patch.dict(jon2_api.os.environ, {
             "JON2_CHAT_RELEASE_APPROVED": "false",
             "JON2_EXPERIMENTAL_CHAT": "true",
@@ -83,7 +83,7 @@ class Jon2ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 503)
         generate.assert_not_called()
 
-    def test_experimental_health_requires_loaded_checkpoint(self):
+    def test_health_does_not_expose_experimental_chat_mode(self):
         with patch.dict(jon2_api.os.environ, {
             "JON2_CHAT_RELEASE_APPROVED": "false",
             "JON2_EXPERIMENTAL_CHAT": "true",
@@ -91,7 +91,7 @@ class Jon2ApiTests(unittest.TestCase):
             jon2_api, "model_is_ready", return_value=True
         ):
             response = self.client.get("/api/health")
-        self.assertTrue(response.json()["experimental_chat_enabled"])
+        self.assertNotIn("experimental_chat_enabled", response.json())
         self.assertFalse(response.json()["chat_ready"])
         self.assertEqual(response.json()["model_status"], "release_blocked")
 

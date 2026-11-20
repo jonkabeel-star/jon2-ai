@@ -143,7 +143,7 @@ def generate_reply(message: str, history=None, memories=None, knowledge_context=
     answer = full_text[len(prompt):].strip()
     if not answer:
         raise RuntimeError("لم ينتج نموذج Jon2 إجابة.")
-    # Experimental mode must never bypass basic output-integrity checks.
+    # The original model's output must pass basic text-integrity checks.
     # This catches malformed characters and obvious repetition, not semantic quality.
     if not validate_generated_answer(answer):
         raise RuntimeError(

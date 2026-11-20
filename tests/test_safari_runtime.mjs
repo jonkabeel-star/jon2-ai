@@ -65,7 +65,7 @@ test("Safari Arabic answer guard rejects the observed fragmented output", () => 
   const corrupted = "لا وأ ال ال الر ال ال الد الذي ال الذي ال الاست الطريقة ال ال الاسب الاسة ال الذي الذف ال ال ال الأو الذي الأو الاسة الاسب ال ال الذي الذي الأو الذي الاسم الأو الاسب ال ال ال ال ال ال ال ال ال ال ال ال ال الد الد الد ال الذي ال الد ال ال ال الد الاسة الذي الذي ال ال ال ال ال ال الد ال الذي الأو ال الد الد الأو الذي ال الد الذي الذي الد الد الد الد الد";
   assert.equal(validateJon2ArabicAnswer(corrupted), false);
   assert.equal(
-    validateJon2ArabicAnswer("مرحباً! أنا مساعد تجريبي من مشروع جون2، كيف يمكنني مساعدتك؟"),
+    validateJon2ArabicAnswer("مرحباً، هذا رد من العقل الأصلي."),
     true
   );
 });
@@ -346,44 +346,37 @@ test("Safari worker never bypasses the original model with canned small-talk rep
   );
 });
 
-test("Safari chat sends identity questions to the model and falls back after failed quality checks", async () => {
+test("Safari chat uses only original Jon2 inference and exposes failures without canned replies", async () => {
   const page = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  assert.doesNotMatch(page, /function\s+getJon2LocalIdentityReply/);
-  assert.doesNotMatch(page, /const\s+localIntentReply\s*=/);
-  assert.doesNotMatch(page, /window\.JON2_OPEN_MODEL\.generate\(history\)/);
-  assert.match(page, /alternate runtime is selected; disclose that this is a UI fallback/);
-  assert.match(page, /result\.qualityPassed\s*!==\s*true/);
-  assert.match(page, /result\.qualityPassed !== true/);
-  assert.match(page, /window\.JON2_LOCAL_CLIENT\.generate\(normalizedValue, history\)/);
-  assert.doesNotMatch(page, /promptParts = chatMessages\.slice\(-10\)/);
-  assert.match(page, /throw new Error\("JON2_QUALITY_REJECTED"\)/);
-  assert.match(page, /addMessage\(experimentalAutoReply\(normalizedValue\), "assistant"\)/);
-  assert.doesNotMatch(page, /Keep the quality signal visible, but do not hide/);
+  assert.doesNotMatch(page, /getJon2LocalIdentityReply|localIntentReply/);
+  assert.doesNotMatch(page, /JON2_OPEN_MODEL|openModel-client|Qwen|Jais/i);
+  assert.doesNotMatch(page, /experimentalAutoReply/);
+  assert.ok(page.includes("window.JON2_LOCAL_CLIENT.generate(normalizedValue, history)"));
+  assert.ok(page.includes("result.qualityPassed !== true"));
+  assert.ok(page.includes('addMessage(translations[lang].localRequestFailed, "bot")'));
+  assert.ok(page.includes('addMessage(translations[lang].requestFailed, "bot")'));
+  assert.ok(page.includes('addMessage(detail, "bot")'));
 });
 
-test("Safari keeps experimental replies available across local and backend failures", async () => {
+test("Safari never substitutes a canned reply for missing, rejected, or corrupted model output", async () => {
   const page = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  assert.match(page, /addMessage\(experimentalAutoReply\(normalizedValue\), "assistant"\)/);
-  assert.match(page, /function isJon2ReplyDisplayable\(answer\)/);
-  assert.match(page, /Jon2 backend reply was suppressed because Arabic token fragmentation was detected/);
-  assert.match(page, /addMessage\(experimentalAutoReply\(normalizedValue\), "assistant"\)/);
-  assert.match(page, /alternate runtime is selected; disclose that this is a UI fallback/);
-  assert.match(page, /If original-model inference fails, continue with the disclosed/);
-  assert.match(page, /backend rejected the chat request; used experimental fallback/);
-  assert.doesNotMatch(page, /addMessage\("عقل Jon2 غير جاهز للرد", "bot"\)/);
-  assert.doesNotMatch(page, /addMessage\(translations\[lang\]\.localQualityRejected, "bot"\)/);
+  assert.doesNotMatch(page, /experimentalAutoReply/);
+  assert.ok(page.includes("function isJon2ReplyDisplayable(answer)"));
+  assert.ok(page.includes("Jon2 original-model reply failed the Arabic display-integrity check"));
+  assert.ok(page.includes('addMessage(translations[lang].localQualityRejected, "bot")'));
+  assert.doesNotMatch(page, /JON2_OPEN_MODEL_REQUESTED|JON2_OPEN_MODEL_READY/);
 });
 
-test("Safari experimental mode preserves non-empty output and flags fragmented Arabic for UI fallback", () => {
+test("Original Jon2 generation rejects empty output and quality-checks its own generated text", () => {
   assert.equal(
-    requireUsableJon2Answer("مرحباً! أنا مساعد تجريبي من مشروع جون2، كيف يمكنني مساعدتك؟"),
-    "مرحباً! أنا مساعد تجريبي من مشروع جون2، كيف يمكنني مساعدتك؟"
+    requireUsableJon2Answer("مرحباً، هذا رد من العقل الأصلي."),
+    "مرحباً، هذا رد من العقل الأصلي."
   );
   const fragmented = "لا وأ ال ال الر ال ال الد الذي ال الذي ال الاست";
   assert.equal(requireUsableJon2Answer(fragmented), fragmented);
   assert.equal(validateJon2ArabicAnswer(fragmented), false);
   assert.equal(
-    validateJon2ArabicAnswer("مرحباً! أنا مساعد تجريبي من مشروع جون2، كيف يمكنني مساعدتك؟"),
+    validateJon2ArabicAnswer("مرحباً، هذا رد من العقل الأصلي."),
     true
   );
   assert.throws(
