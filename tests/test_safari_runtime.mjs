@@ -372,14 +372,17 @@ test("Safari keeps experimental replies available across local and backend failu
   assert.doesNotMatch(page, /addMessage\(translations\[lang\]\.localQualityRejected, "bot"\)/);
 });
 
-test("Safari experimental mode returns any non-empty original-model output", () => {
+test("Safari experimental mode preserves non-empty output and flags fragmented Arabic for UI fallback", () => {
   assert.equal(
     requireUsableJon2Answer("مرحباً! أنا مساعد تجريبي من مشروع جون2، كيف يمكنني مساعدتك؟"),
     "مرحباً! أنا مساعد تجريبي من مشروع جون2، كيف يمكنني مساعدتك؟"
   );
+  const fragmented = "لا وأ ال ال الر ال ال الد الذي ال الذي ال الاست";
+  assert.equal(requireUsableJon2Answer(fragmented), fragmented);
+  assert.equal(validateJon2ArabicAnswer(fragmented), false);
   assert.equal(
-    requireUsableJon2Answer("لا وأ ال ال الر ال ال الد الذي ال الذي ال الاست"),
-    "لا وأ ال ال الر ال ال الد الذي ال الذي ال الاست"
+    validateJon2ArabicAnswer("مرحباً! أنا مساعد تجريبي من مشروع جون2، كيف يمكنني مساعدتك؟"),
+    true
   );
   assert.throws(
     () => requireUsableJon2Answer(""),
