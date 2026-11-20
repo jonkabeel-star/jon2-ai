@@ -1,0 +1,32 @@
+name: Jon2 Dialogue Split Tests
+
+on:
+  pull_request:
+    paths:
+      - "ai_engine/dialogue_split.py"
+      - "ai_engine/tests/test_dialogue_split.py"
+      - ".github/workflows/dialogue-split-tests.yml"
+  push:
+    branches:
+      - main
+      - "review/dialogue-audit-split-v1"
+    paths:
+      - "ai_engine/dialogue_split.py"
+      - "ai_engine/tests/test_dialogue_split.py"
+      - ".github/workflows/dialogue-split-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  dialogue-split-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run dialogue split isolation tests
+        run: python -m unittest discover -s ai_engine/tests -p "test_dialogue_split.py" -v
