@@ -63,6 +63,9 @@ def _training_plan(args):
     )
     plan = {name: getattr(args, name) for name in names}
     plan["validation_split_algorithm"] = "seeded_source_files_v1"
+    if getattr(args, "dialogue_splits_dir", None):
+        plan["validation_split_algorithm"] = "approved_jsonl_conversation_three_way_v1"
+        plan["dialogue_split_manifest_sha256"] = getattr(args, "dialogue_split_manifest_sha256", None)
     # Keep legacy TXT-only checkpoint plans byte-for-byte compatible.
     if getattr(args, "include_jsonl", False):
         plan["include_jsonl"] = True
@@ -120,6 +123,14 @@ def save_checkpoint(
     }
     if torch.cuda.is_available():
         state["cuda_rng_state_all"] = torch.cuda.get_rng_state_all()
+    if getattr(args, "dialogue_splits_dir", None):
+        metadata = getattr(args, "dialogue_split_metadata", {})
+        state["checkpoint_status"] = "candidate_pending_arabic_quality_review"
+        state["arabic_quality_review_passed"] = False
+        state["public_release_approved"] = False
+        state["dialogue_split_metadata"] = metadata
+        state["test_partition_used_for_training"] = False
+        state["test_partition_used_for_checkpoint_selection"] = False
     if optimizer is not None:
         state["optimizer_state"] = optimizer.state_dict()
     if scheduler is not None:
@@ -148,20 +159,40 @@ def train(args):
     validate_source_approvals(
         data_dir, Path(args.approval_manifest), include_jsonl=args.include_jsonl
     )
-    sources = read_corpus_sources(data_dir, include_jsonl=args.include_jsonl)
-    corpus = "\n\n".join(text for _, text in sources)
-    args.corpus_characters = len(corpus)
-    if len(corpus) < args.minimum_chars:
+    if getattr(args, "dialogue_splits_dir", None):
+        from dialogue_training import load_dialogue_training_partitions
+
+        train_text, validation_text, split_metadata = load_dialogue_training_partitions(
+            args.dialogue_splits_dir, data_dir, Path(args.approval_manifest)
+        )
+        args.dialogue_split_metadata = split_metadata
+        args.dialogue_split_manifest_sha256 = split_metadata["split_manifest_sha256"]
+        corpus_for_hash = train_text + "\n\n<VALIDATION-PARTITION>\n\n" + validation_text
+        args.corpus_characters = len(train_text) + len(validation_text)
+        print(
+            "Three-way approved dialogue mode | "
+            f"train_conversations={split_metadata['partitions']['train']['conversation_count']} | "
+            f"validation_conversations={split_metadata['partitions']['validation']['conversation_count']} | "
+            f"held_out_test_conversations={split_metadata['partitions']['test']['conversation_count']}"
+        )
+        print("Held-out test partition verified by hash only; it is not decoded, tokenized, or evaluated during training.")
+    else:
+        sources = read_corpus_sources(data_dir, include_jsonl=args.include_jsonl)
+        corpus = "\n\n".join(text for _, text in sources)
+        args.corpus_characters = len(corpus)
+        train_text, validation_text = split_corpus_sources(
+            sources, args.validation_fraction, args.seed
+        )
+        corpus_for_hash = corpus
+
+    if args.corpus_characters < args.minimum_chars:
         raise ValueError(
-            f"Training corpus has {len(corpus):,} characters; this run requires "
+            f"Training corpus has {args.corpus_characters:,} characters; this run requires "
             f"at least {args.minimum_chars:,}. Add reviewed, project-owned or "
             "properly licensed data. Do not duplicate text to pass this check."
         )
 
-    corpus_sha256 = hashlib.sha256(corpus.encode("utf-8")).hexdigest()
-    train_text, validation_text = split_corpus_sources(
-        sources, args.validation_fraction, args.seed
-    )
+    corpus_sha256 = hashlib.sha256(corpus_for_hash.encode("utf-8")).hexdigest()
     # Fit vocabulary/merges on training text only: validation data stays unseen.
     tokenizer = ByteBPETokenizer.train(
         train_text,
@@ -225,6 +256,8 @@ def train(args):
                 "Resume training settings differ from the saved run. "
                 "The checkpoint is preserved; match the listed settings before resuming."
             )
+        if getattr(args, "dialogue_splits_dir", None) and saved.get("checkpoint_status") != "candidate_pending_arabic_quality_review":
+            raise ValueError("Three-way training can resume only from a candidate checkpoint awaiting Arabic quality review.")
         model.load_state_dict(saved["model_state"])
         if "optimizer_state" in saved:
             optimizer.load_state_dict(saved["optimizer_state"])
@@ -407,12 +440,23 @@ def main():
     if args.minimum_chars < MINIMUM_CORPUS_CHARACTERS:
         parser.error(f"minimum-chars cannot be lower than {MINIMUM_CORPUS_CHARACTERS:,}")
 
+    if bool(args.dialogue_splits_dir) != bool(args.candidate_only):
+        parser.error("--dialogue-splits-dir and --candidate-only must be supplied together.")
+    suffix = args.profile or "small"
     if args.output is None:
-        suffix = args.profile or "small"
-        args.output = f"ai_engine/checkpoints/jon2-{suffix}.pt"
+        args.output = (
+            f"ai_engine/checkpoints/candidates/jon2-{suffix}-candidate.pt"
+            if args.candidate_only else f"ai_engine/checkpoints/jon2-{suffix}.pt"
+        )
     if args.last_checkpoint is None:
-        suffix = args.profile or "small"
-        args.last_checkpoint = f"ai_engine/checkpoints/jon2-{suffix}-last.pt"
+        args.last_checkpoint = (
+            f"ai_engine/checkpoints/candidates/jon2-{suffix}-candidate-last.pt"
+            if args.candidate_only else f"ai_engine/checkpoints/jon2-{suffix}-last.pt"
+        )
+    if args.candidate_only:
+        for label, value in (("output", args.output), ("last-checkpoint", args.last_checkpoint)):
+            if Path(value).parent.name != "candidates":
+                parser.error(f"Candidate-only {label} must be stored in a directory named candidates/.")
 
     positive = [
         args.steps, args.batch_size, args.context, args.width, args.heads,
