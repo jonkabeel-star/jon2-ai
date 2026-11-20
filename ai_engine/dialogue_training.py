@@ -104,10 +104,12 @@ def load_dialogue_training_partitions(
             raise PermissionError(f"Dialogue source changed after splitting: {relative}")
         # Hash the complete approved source bytes without parsing source conversations.
         # This preserves the held-out partition as evaluation-only data.
+        if type(entry.get("conversation_count")) is not int or entry["conversation_count"] < 1:
+            raise ValueError(f"Invalid conversation count in source inventory: {relative}")
         verified_sources.append({
             "file": relative.as_posix(),
             "sha256": entry["sha256"],
-            "conversation_count": len(records),
+            "conversation_count": entry["conversation_count"],
         })
 
     actual_sources = {
