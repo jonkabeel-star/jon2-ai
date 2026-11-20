@@ -40,7 +40,7 @@ SYSTEM_PROMPT = (
 )
 
 _state: dict = {
-    "model": None, "processor": None, "ready": False,
+    "model": None, "tokenizer": None, "ready": False,
     "adapter_loaded": False, "error": None,
 }
 
@@ -68,12 +68,12 @@ async def lifespan(app: FastAPI):
     else:
         try:
             from transformers import (
-                AutoProcessor,
+                AutoTokenizer,
                 BitsAndBytesConfig,
-                Qwen3_5ForConditionalGeneration,
+                Qwen3_5ForCausalLM,
             )
 
-            processor = AutoProcessor.from_pretrained(
+            tokenizer = AutoTokenizer.from_pretrained(
                 BASE_MODEL, trust_remote_code=False
             )
             quantization = BitsAndBytesConfig(
@@ -82,7 +82,7 @@ async def lifespan(app: FastAPI):
                 bnb_4bit_use_double_quant=True,
                 bnb_4bit_compute_dtype=torch.float16,
             )
-            model = Qwen3_5ForConditionalGeneration.from_pretrained(
+            model = Qwen3_5ForCausalLM.from_pretrained(
                 BASE_MODEL,
                 quantization_config=quantization,
                 device_map={"": 0},
@@ -103,7 +103,7 @@ async def lifespan(app: FastAPI):
             model.eval()
             _state.update(
                 model=model,
-                processor=processor,
+                tokenizer=tokenizer,
                 ready=True,
                 adapter_loaded=adapter_loaded,
                 error=None,
@@ -111,7 +111,7 @@ async def lifespan(app: FastAPI):
         except Exception as exc:
             _state["error"] = f"{type(exc).__name__}: {exc}"
     yield
-    _state.update(model=None, processor=None, ready=False, adapter_loaded=False)
+    _state.update(model=None, tokenizer=None, ready=False, adapter_loaded=False)
 
 
 app = FastAPI(
@@ -128,8 +128,8 @@ def _authorized(authorization: str | None) -> bool:
     )
 
 
-def _template_token_count(processor, messages: list[dict[str, str]]) -> int:
-    encoded = processor.apply_chat_template(
+def _template_token_count(tokenizer, messages: list[dict[str, str]]) -> int:
+    encoded = tokenizer.apply_chat_template(
         messages, tokenize=True, add_generation_prompt=True
     )
     if isinstance(encoded, dict):
@@ -176,14 +176,14 @@ def chat(
     if not _state["ready"]:
         raise HTTPException(status_code=503, detail="Qwen3.5 runtime is not ready.")
 
-    processor = _state["processor"]
+    tokenizer = _state["tokenizer"]
     model = _state["model"]
     try:
         messages, context_meta = build_context_messages(
             system_prompt=SYSTEM_PROMPT,
             history=[item.model_dump() for item in payload.history],
             current_message=payload.message,
-            count_tokens=lambda candidate: _template_token_count(processor, candidate),
+            count_tokens=lambda candidate: _template_token_count(tokenizer, candidate),
             max_input_tokens=MAX_INPUT_TOKENS,
             max_history_messages=MAX_HISTORY_MESSAGES,
         )
@@ -192,7 +192,7 @@ def chat(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    inputs = processor.apply_chat_template(
+    inputs = tokenizer.apply_chat_template(
         messages,
         tokenize=True,
         add_generation_prompt=True,
@@ -206,14 +206,14 @@ def chat(
         do_sample=True,
         temperature=0.7,
         top_p=0.8,
-        pad_token_id=processor.tokenizer.pad_token_id,
-        eos_token_id=processor.tokenizer.eos_token_id,
+        pad_token_id=tokenizer.pad_token_id,
+        eos_token_id=tokenizer.eos_token_id,
     )
     new_tokens = generated[:, inputs["input_ids"].shape[1]:]
-    reply = processor.batch_decode(
-        new_tokens, skip_special_tokens=True,
+    reply = tokenizer.decode(
+        new_tokens[0], skip_special_tokens=True,
         clean_up_tokenization_spaces=False,
-    )[0].strip()
+    ).strip()
     if not reply:
         raise HTTPException(status_code=502, detail="Model returned an empty response.")
 
