@@ -124,6 +124,24 @@ class SourceApprovalTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             validate_source_approvals(self.data, self.manifest)
 
+    def test_research_gate_rejects_public_model_only_approval(self):
+        self.write_manifest([self.record(intended_use="public_model")])
+        with self.assertRaisesRegex(PermissionError, "not the requested 'research_training' use"):
+            validate_source_approvals(self.data, self.manifest)
+
+    def test_explicit_public_model_scope_requires_matching_approval(self):
+        self.write_manifest([self.record(intended_use="public_model")])
+        validate_source_approvals(
+            self.data, self.manifest, required_intended_use="public_model"
+        )
+
+    def test_unknown_requested_scope_blocks(self):
+        self.write_manifest([self.record()])
+        with self.assertRaisesRegex(ValueError, "Unsupported required intended_use"):
+            validate_source_approvals(
+                self.data, self.manifest, required_intended_use="deployment"
+            )
+
     def test_exact_approvals_pass(self):
         (self.data / "nested").mkdir()
         (self.data / "nested" / "two.txt").write_text("second", encoding="utf-8")

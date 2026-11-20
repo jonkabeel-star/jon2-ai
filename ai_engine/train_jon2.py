@@ -60,6 +60,7 @@ def _training_plan(args):
         "validation_fraction", "eval_steps", "eval_every", "patience",
         "min_delta", "grad_clip", "minimum_chars", "tokenizer_vocab_size",
         "tokenizer_min_frequency", "seed", "no_amp",
+        "required_intended_use",
     )
     plan = {name: getattr(args, name) for name in names}
     plan["validation_split_algorithm"] = "seeded_source_files_v1"
@@ -77,6 +78,10 @@ def resume_plan_differences(saved_plan, current_plan):
         return {}
     saved = dict(saved_plan)
     current = dict(current_plan)
+    # Checkpoints created before use-scope metadata existed are treated as
+    # private research only. They must never silently resume into public or
+    # commercial training.
+    saved.setdefault("required_intended_use", "research_training")
     # Continuation runs increase the total target; exclude steps on BOTH sides.
     saved.pop("steps", None)
     current.pop("steps", None)
@@ -146,7 +151,10 @@ def train(args):
 
     data_dir = Path(args.data)
     validate_source_approvals(
-        data_dir, Path(args.approval_manifest), include_jsonl=args.include_jsonl
+        data_dir,
+        Path(args.approval_manifest),
+        include_jsonl=args.include_jsonl,
+        required_intended_use=args.required_intended_use,
     )
     sources = read_corpus_sources(data_dir, include_jsonl=args.include_jsonl)
     corpus = "\n\n".join(text for _, text in sources)
@@ -352,6 +360,15 @@ def main():
         help="Include JSONL dialogues only when every exact file has a private approval-manifest entry.",
     )
     parser.add_argument("--approval-manifest", default="ai_engine/training_data/source_approvals.json")
+    parser.add_argument(
+        "--required-intended-use",
+        choices=("research_training", "public_model", "commercial_model"),
+        default="research_training",
+        help=(
+            "Require every selected source to be approved for this exact use. "
+            "Public/commercial training needs matching private manifest approvals."
+        ),
+    )
     parser.add_argument("--profile", choices=sorted(PROFILES), default="", help="Select a scalable Jon2 architecture preset.")
     parser.add_argument("--output", default=None, help="Best checkpoint path; profile-specific path is selected by default.")
     parser.add_argument("--last-checkpoint", default=None, help="Resumable checkpoint path; profile-specific path is selected by default.")

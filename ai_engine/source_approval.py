@@ -8,9 +8,17 @@ from pathlib import Path, PurePosixPath
 
 
 def validate_source_approvals(
-    data_dir: Path, manifest_path: Path, *, include_jsonl: bool = False
+    data_dir: Path,
+    manifest_path: Path,
+    *,
+    include_jsonl: bool = False,
+    required_intended_use: str = "research_training",
 ) -> None:
-    """Require exact-file approval for every selected TXT and optional JSONL source."""
+    """Require exact-file approval for the requested training-use scope.
+
+    The default is private research training. Public or commercial training must
+    explicitly request its own scope, and every selected source must match it.
+    """
     data_dir = Path(data_dir)
     root = data_dir.resolve()
     if not root.is_dir():
@@ -112,6 +120,10 @@ def validate_source_approvals(
         )
 
     allowed_uses = {"research_training", "public_model", "commercial_model"}
+    if required_intended_use not in allowed_uses:
+        raise ValueError(
+            f"Unsupported required intended_use: {required_intended_use!r}."
+        )
     for name in sorted(files):
         record = approvals[name]
         expected_hash = files[name]["sha256"]
@@ -127,8 +139,14 @@ def validate_source_approvals(
         for field in ("reviewer", "review_date", "rights_basis"):
             if not isinstance(record.get(field), str) or not record[field].strip():
                 raise PermissionError(f"Training blocked: {name} lacks {field}.")
-        if record.get("intended_use") not in allowed_uses:
+        supplied_use = record.get("intended_use")
+        if supplied_use not in allowed_uses:
             raise PermissionError(
                 f"Training blocked: {name} has no valid intended_use approval."
+            )
+        if supplied_use != required_intended_use:
+            raise PermissionError(
+                f"Training blocked: {name} is approved for {supplied_use!r}, "
+                f"not the requested {required_intended_use!r} use."
             )
     print(f"Source approval gate: PASS ({len(files)} text files explicitly approved).")
