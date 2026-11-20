@@ -157,7 +157,8 @@ def train(args):
 
     data_dir = Path(args.data)
     validate_source_approvals(
-        data_dir, Path(args.approval_manifest), include_jsonl=args.include_jsonl
+        data_dir, Path(args.approval_manifest),
+        include_jsonl=(args.include_jsonl or bool(getattr(args, "dialogue_splits_dir", None)))
     )
     if getattr(args, "dialogue_splits_dir", None):
         from dialogue_training import load_dialogue_training_partitions
