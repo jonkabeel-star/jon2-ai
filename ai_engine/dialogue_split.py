@@ -246,13 +246,13 @@ def prepare_approved_dialogue_splits(
         "total_conversations": len(records),
         "partitions": output_inventory,
         "test_partition_policy": "held_out_only_never_train_or_select_checkpoint",
-        "approval_manifest_path": str(manifest_path),
+        "approval_manifest_validated": True,
         "model_training_started": False,
         "source_files_modified": False,
     }
     report_path = destination / "split_manifest.json"
     report_path.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2) + "\\n",
+        json.dumps(report, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     return report
