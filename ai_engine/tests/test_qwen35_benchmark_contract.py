@@ -53,6 +53,20 @@ class Qwen35BenchmarkContractTests(unittest.TestCase):
                 self.assertNotIn("Qwen3_5ForConditionalGeneration", source)
                 self.assertNotIn("AutoProcessor", source)
 
+    def test_training_and_owner_review_are_off_by_default(self):
+        notebook = json.loads(NOTEBOOK.read_text(encoding="utf-8"))
+        code = "\\n".join("".join(cell.get("source", []))
+                           for cell in notebook["cells"] if cell.get("cell_type") == "code")
+        self.assertIn("RUN_QLORA_TRAINING = False", code)
+        self.assertIn("OWNER_REVIEWED_DERIVED_DATA = False", code)
+        self.assertIn("REVIEWED_OWNER_CSV", code)
+        self.assertIn("validate_owner_review_csv", code)
+        self.assertIn('["APPROVE", "REJECT"]', code)
+        self.assertIn("five approved dialogue source files", "\\n".join(
+            "".join(cell.get("source", []))
+            for cell in notebook["cells"] if cell.get("cell_type") == "markdown"
+        ))
+
     def test_kaggle_notebook_embedded_sources_match_repository(self):
         notebook = json.loads(NOTEBOOK.read_text(encoding="utf-8"))
         cell = "".join(notebook["cells"][5]["source"])
