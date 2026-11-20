@@ -1,4 +1,4 @@
-""""Private Qwen3.5-4B inference runtime for Jon2.
+"""Private Qwen3.5-4B inference runtime for Jon2.
 
 The runtime uses the official instruction-tuned Qwen3.5-4B checkpoint as a
 third-party base model. A Jon2 LoRA adapter is optional until it is trained
@@ -23,7 +23,7 @@ from ai_engine.conversation_context import (
 )
 
 BASE_MODEL = os.getenv("JON2_BASE_MODEL", "Qwen/Qwen3.5-4B")
-ADAPTER_DIR = Path(os.getenv("JON2_ADAPTER_PATH", "")).expanduser()
+ADAPTER_PATH = os.getenv("JON2_ADAPTER_PATH", "").strip()\nADAPTER_DIR = Path(ADAPTER_PATH).expanduser() if ADAPTER_PATH else None
 RUNTIME_TOKEN = os.getenv("JON2_RUNTIME_TOKEN", "")
 PUBLIC_CHAT_ENABLED = os.getenv("JON2_PUBLIC_CHAT_ENABLED", "false").lower() == "true"
 INFERENCE_TESTED = os.getenv("JON2_INFERENCE_TESTED", "false").lower() == "true"
@@ -92,7 +92,7 @@ async def lifespan(app: FastAPI):
             )
 
             adapter_loaded = False
-            if str(ADAPTER_DIR).strip() and (ADAPTER_DIR / "adapter_config.json").is_file():
+            if ADAPTER_DIR is not None and (ADAPTER_DIR / "adapter_config.json").is_file():
                 from peft import PeftModel
                 model = PeftModel.from_pretrained(
                     model, str(ADAPTER_DIR), is_trainable=False
