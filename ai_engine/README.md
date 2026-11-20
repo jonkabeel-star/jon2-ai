@@ -248,3 +248,19 @@ selected corpus. It reports the source-approval gate as APPROVED or BLOCKED.
 It never copies source text into the report. Token counts are specific to the
 selected corpus and vocabulary size; they are not a measure of language ability.
 The inventory does not grant rights or replace a human source review.
+
+
+## Separate Qwen3.5-4B research path (not the original Jon2 model)
+
+The project also contains an experimental, separately gated QLoRA path:
+- Base model: `Qwen/Qwen3.5-4B` (third-party open-weight instruction model; Apache-2.0 model card).
+- Jon2 artifact: a private LoRA adapter, not a complete independent foundation model.
+- GPU inference and adapter training require current Transformers, CUDA, bitsandbytes, PEFT, and adequate GPU/storage.
+- The self-contained Kaggle notebook is `notebooks/Jon2_Qwen35_GPU_Inference_Training_Evaluation.ipynb`.
+- The Arabic operational guide is `docs/JON2_QWEN35_GPU_TRAINING_EVALUATION_AR.md`.
+
+The notebook first runs real GPU inference on a separate 60-case pilot benchmark. It then prepares a conversation-level train/validation split from the six exact source files previously approved for private experimental research only. It emits new JSONL files with a **PENDING_OWNER_REVIEW** approval state. The owner must inspect the derived data and explicitly approve its exact hashes before the training cell can run.
+
+The current benchmark has 10 cases per capability (intent, natural conversation, context, Arabic register, reasoning, and personalization/privacy). It is a pilot, not a release benchmark. A release review requires at least 100 cases per capability, two independent human reviews, no critical privacy/fabrication failures, and a separate real Safari/runtime test.
+
+Do not mix the Qwen3.5 adapter with the original Jon2 Transformer checkpoint. Do not upload the base model, adapter, private data, approvals, or inference results to GitHub. The Qwen path does not enable public chat or commercial use; existing approved source scope is private research training only.
