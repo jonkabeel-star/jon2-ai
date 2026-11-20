@@ -25,8 +25,12 @@ export function diagnoseJon2ArabicAnswer(answer) {
   // responses, and use it as a corruption signal rather than a semantic score.
   const shortWordRatio = shortWords / Math.max(1, words.length);
   const averageWordLength = words.reduce((sum, word) => sum + Array.from(word).length, 0) / Math.max(1, words.length);
-  if (words.length >= 8 && shortWordRatio > 0.60 && averageWordLength < 3.2) {
-    warnings.push("fragmented_short_word_sequence");
+  const articlePrefixRatio = words.filter(word => word.startsWith("ال") || word.startsWith("وال")).length / Math.max(1, words.length);
+  if (words.length >= 8 && (
+    (shortWordRatio > 0.60 && averageWordLength < 3.2) ||
+    (articlePrefixRatio > 0.70 && averageWordLength < 5.2)
+  )) {
+    warnings.push("fragmented_arabic_word_sequence");
   }
 
   const uniqueWordRatio = uniqueWords.size / Math.max(1, words.length);
