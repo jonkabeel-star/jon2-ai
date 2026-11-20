@@ -104,7 +104,7 @@ async function handleChat(request, origin, env) {
       typeof payload.message !== "string" ||
       !payload.message.trim() || payload.message.length > 2000 ||
       (payload.history !== undefined && (!Array.isArray(payload.history) ||
-        payload.history.length > 8 ||
+        payload.history.length > 40 ||
         !payload.history.every(m => m && ["user", "assistant"].includes(m.role) &&
           typeof m.content === "string" && m.content.length <= 2000)))) {
     return json({ project: PROJECT, error: "invalid_chat_request",
@@ -122,7 +122,7 @@ async function handleChat(request, origin, env) {
       body: JSON.stringify({
         contract_version: "1",
         message: payload.message,
-        history: (payload.history || []).slice(-8),
+        history: (payload.history || []).slice(-40),
         session_id: payload.session_id,
       }),
       signal: AbortSignal.timeout(RUNTIME_TIMEOUT_MS),
