@@ -381,3 +381,12 @@ test("Safari only exposes non-empty model output that passes Arabic integrity ch
     /عقل Jon2 غير جاهز للرد/
   );
 });
+
+test("Safari Arabic quality guard rejects observed fragmented replies but preserves concise answers", () => {
+  const observedOne = "ال وط الر الد الضح الط ولا الب الاسة الهدف الًا.";
+  const observedTwo = "وأق الذلك ال الط المصف الب الاسم الد والح الر والجه والت والن والق والإني والع والأعديل المشخص والر الأو والكث والتوقبل والخل والولا.";
+  assert.equal(validateJon2ArabicAnswer(observedOne), false);
+  assert.equal(validateJon2ArabicAnswer(observedTwo), false);
+  assert.equal(validateJon2ArabicAnswer("نعم، بالتأكيد."), true);
+  assert.equal(validateJon2ArabicAnswer("أنا مساعد Jon2، كيف أساعدك؟"), false);
+});
