@@ -134,20 +134,24 @@ def main():
             "reviewer": "", "review_date": "", "rights_basis": "",
             "intended_use": "research_training",
         }
-    train_record = write_jsonl(args.output_dir / "train.jsonl", train_rows)
-    eval_record = write_jsonl(args.output_dir / "validation.jsonl", eval_rows)
-    pending = {
+    train_dir = args.output_dir / "train"
+    eval_dir = args.output_dir / "validation"
+    train_dir.mkdir(parents=True, exist_ok=True)
+    eval_dir.mkdir(parents=True, exist_ok=True)
+    train_record = write_jsonl(train_dir / "train.jsonl", train_rows)
+    eval_record = write_jsonl(eval_dir / "validation.jsonl", eval_rows)
+    common = {
         "format": "jon2-derived-qwen35-corpus-approval-v1",
         "note": "PENDING. Human owner must review exact bytes and quality before setting status APPROVED.",
         "source_manifest_sha256": sha256_bytes(args.source_approval_manifest.read_bytes()),
         "seed": args.seed, "validation_fraction": args.validation_fraction,
-        "train_conversations": len(train_rows), "validation_conversations": len(eval_rows),
         "approved_sources_used": sorted(records),
-        "approved_sources": [train_record, eval_record],
     }
-    (args.output_dir / "source_approvals.pending.json").write_text(
-        json.dumps(pending, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
+    for folder, record, count in ((train_dir, train_record, len(train_rows)), (eval_dir, eval_record, len(eval_rows))):
+        pending = {**common, "conversation_count": count, "approved_sources": [record]}
+        (folder / "source_approvals.pending.json").write_text(
+            json.dumps(pending, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8"
+        )
     with (args.output_dir / "owner_review.csv").open("w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=["split", "source_file", "messages_json", "review_decision", "review_notes"])
         writer.writeheader()
