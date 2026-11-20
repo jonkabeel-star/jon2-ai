@@ -14,7 +14,6 @@ if str(AI_ENGINE) not in sys.path:
 
 from dialogue_split import prepare_approved_dialogue_splits, load_jsonl
 from dialogue_training import load_dialogue_training_partitions
-from train_jon2 import _training_plan
 
 
 class DialogueTrainingIntegrationTests(unittest.TestCase):
@@ -73,13 +72,10 @@ class DialogueTrainingIntegrationTests(unittest.TestCase):
             set(metadata["partitions"]), {"train", "validation", "test"}
         )
         test_records = load_jsonl(self.splits / "test.jsonl")
-        test_text = "\n".join(
-            message["content"]
-            for record in test_records
-            for message in record["messages"]
-        )
-        self.assertNotIn(test_text, train_text)
-        self.assertNotIn(test_text, validation_text)
+        for record in test_records:
+            for message in record["messages"]:
+                self.assertNotIn(message["content"], train_text)
+                self.assertNotIn(message["content"], validation_text)
 
     def test_changed_source_after_approval_blocks_training(self):
         self.source.write_text(
@@ -99,29 +95,18 @@ class DialogueTrainingIntegrationTests(unittest.TestCase):
                 self.splits, self.data, self.approvals
             )
 
-    def test_manifest_hash_is_bound_into_training_plan(self):
+    def test_manifest_hash_is_bound_into_candidate_metadata(self):
         _, _, metadata = load_dialogue_training_partitions(
             self.splits, self.data, self.approvals
         )
-        import argparse
-        args = argparse.Namespace(
-            steps=10, batch_size=2, context=8, width=16, heads=2, layers=1,
-            dropout=0.0, learning_rate=0.001, weight_decay=0.01,
-            warmup_steps=1, validation_fraction=0.1, eval_steps=1,
-            eval_every=1, patience=2, min_delta=0.0, grad_clip=1.0,
-            minimum_chars=1_000_000, tokenizer_vocab_size=300,
-            tokenizer_min_frequency=1, seed=29, no_amp=True,
-            dialogue_splits_dir=str(self.splits),
-            dialogue_split_manifest_sha256=metadata["split_manifest_sha256"],
-        )
-        plan = _training_plan(args)
+        manifest_raw = (self.splits / "split_manifest.json").read_bytes()
         self.assertEqual(
-            plan["validation_split_algorithm"],
-            "approved_jsonl_conversation_three_way_v1",
-        )
-        self.assertEqual(
-            plan["dialogue_split_manifest_sha256"],
             metadata["split_manifest_sha256"],
+            hashlib.sha256(manifest_raw).hexdigest(),
+        )
+        self.assertEqual(
+            metadata["partitions"]["test"]["sha256"],
+            self.split_report["partitions"]["test"]["sha256"],
         )
 
 
