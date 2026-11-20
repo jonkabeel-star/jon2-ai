@@ -398,7 +398,7 @@ async function checkApiHealth() {
 function experimentalAutoReply(message) {
   const text = String(message || "").trim();
   const lower = text.toLowerCase();
-  if (/^(مرحبا|السلام عليكم|اهلا|أهلا|هاي|hello|hi)\b?/.test(lower)) {
+  if (/^(مرحبا|السلام عليكم|اهلا|أهلا|هاي|hello|hi)/.test(lower)) {
     return "أهلًا بك! أنا Jon2. وصلتني رسالتك، ومستمر معك في المحادثة بالوضع التجريبي.";
   }
   if (/[؟?]$/.test(text) || /^(كيف|ما|ماذا|لماذا|ليه|ازاي|هل|إيه|ايه|what|why|how|can|is|are)\b/i.test(text)) {
