@@ -434,15 +434,15 @@ function normalizeArabicTypos(value) {
 function isJon2ReplyDisplayable(answer) {
   if (typeof answer !== "string" || !answer.trim()) return false;
   const text = answer.trim();
-  const arabicCount = (text.match(/[\\u0621-\\u064A\\u066E-\\u06D3]/gu) || []).length;
+  const arabicCount = (text.match(/[\u0621-\u064A\u066E-\u06D3]/gu) || []).length;
   if (arabicCount < 12) return true;
-  const words = text.split(/\\s+/u).filter(Boolean);
+  const words = text.split(/\s+/u).filter(Boolean);
   if (words.length < 8) return true;
   const fragments = words.filter(word => /^(?:ال|وال|بال|لل|الم|الأ|ال[ء-ي]{1,2})$/u.test(word));
   const tinyWords = words.filter(word => Array.from(word).length <= 2);
   if (fragments.length >= 3 && fragments.length / words.length >= 0.22) return false;
   if (tinyWords.length >= 5 && tinyWords.length / words.length >= 0.45) return false;
-  if ((text.match(/(?:^|\\s)ال(?:\\s|$)/gu) || []).length >= 3) return false;
+  if ((text.match(/(?:^|\s)ال(?:\s|$)/gu) || []).length >= 3) return false;
   return true;
 }
 
