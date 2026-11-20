@@ -352,8 +352,8 @@ test("Safari chat uses only original Jon2 inference and exposes failures without
   assert.doesNotMatch(page, /JON2_OPEN_MODEL|openModel-client|Qwen|Jais/i);
   assert.doesNotMatch(page, /experimentalAutoReply/);
   assert.ok(page.includes("window.JON2_LOCAL_CLIENT.generate(normalizedValue, history)"));
-  assert.ok(page.includes("result.qualityPassed !== true"));
-  assert.ok(page.includes('addMessage(translations[lang].localRequestFailed, "bot")'));
+  assert.ok(page.includes("Show every non-empty string produced by the original Jon2 weights"));
+  assert.doesNotMatch(page, /تعذر على النموذج المحلي توليد رد|The local model could not generate a reply/);
   assert.ok(page.includes('addMessage(translations[lang].requestFailed, "bot")'));
   assert.ok(page.includes('addMessage(detail, "bot")'));
 });
@@ -362,8 +362,10 @@ test("Safari never substitutes a canned reply for missing, rejected, or corrupte
   const page = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.doesNotMatch(page, /experimentalAutoReply/);
   assert.ok(page.includes("function isJon2ReplyDisplayable(answer)"));
-  assert.ok(page.includes("Jon2 original-model reply failed the Arabic display-integrity check"));
-  assert.ok(page.includes('addMessage(translations[lang].localQualityRejected, "bot")'));
+  assert.doesNotMatch(page, /Jon2 original-model reply failed the Arabic display-integrity check/);
+  assert.doesNotMatch(page, /localQualityRejected/);
+  assert.ok(page.includes("Show every non-empty string produced by the original Jon2 weights"));
+  assert.doesNotMatch(page, /result\.qualityPassed !== true/);
   assert.doesNotMatch(page, /JON2_OPEN_MODEL_REQUESTED|JON2_OPEN_MODEL_READY/);
 });
 
