@@ -65,7 +65,7 @@ test("Safari Arabic answer guard rejects the observed fragmented output", () => 
   const corrupted = "لا وأ ال ال الر ال ال الد الذي ال الذي ال الاست الطريقة ال ال الاسب الاسة ال الذي الذف ال ال ال الأو الذي الأو الاسة الاسب ال ال الذي الذي الأو الذي الاسم الأو الاسب ال ال ال ال ال ال ال ال ال ال ال ال ال الد الد الد ال الذي ال الد ال ال ال الد الاسة الذي الذي ال ال ال ال ال ال الد ال الذي الأو ال الد الد الأو الذي ال الد الذي الذي الد الد الد الد الد";
   assert.equal(validateJon2ArabicAnswer(corrupted), false);
   assert.equal(
-    validateJon2ArabicAnswer("مرحباً! أنا مساعد تجريبي من مشروع جون2، كيف يمكنني مساعدتك؟"),
+    validateJon2ArabicAnswer("مرحباً، هذا ناتج من نموذج Jon2 الأصلي."),
     true
   );
 });
@@ -369,16 +369,16 @@ test("Safari never substitutes a canned reply for missing, rejected, or corrupte
   assert.doesNotMatch(page, /JON2_OPEN_MODEL_REQUESTED|JON2_OPEN_MODEL_READY/);
 });
 
-test("Safari experimental mode preserves non-empty output and flags fragmented Arabic for UI fallback", () => {
+test("Original Jon2 generation rejects empty output and quality-checks its own generated text", () => {
   assert.equal(
-    requireUsableJon2Answer("مرحباً! أنا مساعد تجريبي من مشروع جون2، كيف يمكنني مساعدتك؟"),
+    requireUsableJon2Answer("مرحباً، هذا ناتج من نموذج Jon2 الأصلي."),
     "مرحباً! أنا مساعد تجريبي من مشروع جون2، كيف يمكنني مساعدتك؟"
   );
   const fragmented = "لا وأ ال ال الر ال ال الد الذي ال الذي ال الاست";
   assert.equal(requireUsableJon2Answer(fragmented), fragmented);
   assert.equal(validateJon2ArabicAnswer(fragmented), false);
   assert.equal(
-    validateJon2ArabicAnswer("مرحباً! أنا مساعد تجريبي من مشروع جون2، كيف يمكنني مساعدتك؟"),
+    validateJon2ArabicAnswer("مرحباً، هذا ناتج من نموذج Jon2 الأصلي."),
     true
   );
   assert.throws(
