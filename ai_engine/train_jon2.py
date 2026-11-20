@@ -462,20 +462,17 @@ def main():
     if bool(args.dialogue_splits_dir) != bool(args.candidate_only):
         parser.error("--dialogue-splits-dir and --candidate-only must be supplied together.")
     suffix = args.profile or "small"
-    if args.output is None:
-        args.output = (
-            f"ai_engine/checkpoints/candidates/jon2-{suffix}-candidate.pt"
-            if args.candidate_only else f"ai_engine/checkpoints/jon2-{suffix}.pt"
-        )
-    if args.last_checkpoint is None:
-        args.last_checkpoint = (
-            f"ai_engine/checkpoints/candidates/jon2-{suffix}-candidate-last.pt"
-            if args.candidate_only else f"ai_engine/checkpoints/jon2-{suffix}-last.pt"
-        )
     if args.candidate_only:
+        if not args.output or not args.last_checkpoint:
+            parser.error("Candidate-only mode requires explicit private --output and --last-checkpoint paths.")
         for label, value in (("output", args.output), ("last-checkpoint", args.last_checkpoint)):
             if Path(value).parent.name != "candidates":
                 parser.error(f"Candidate-only {label} must be stored in a directory named candidates/.")
+    else:
+        if args.output is None:
+            args.output = f"ai_engine/checkpoints/jon2-{suffix}.pt"
+        if args.last_checkpoint is None:
+            args.last_checkpoint = f"ai_engine/checkpoints/jon2-{suffix}-last.pt"
 
     positive = [
         args.steps, args.batch_size, args.context, args.width, args.heads,
