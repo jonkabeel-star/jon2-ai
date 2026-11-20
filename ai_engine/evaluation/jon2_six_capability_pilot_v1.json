@@ -1,0 +1,999 @@
+[
+  {
+    "id": "J2-001",
+    "capability": "intent_understanding",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "عايز تلخص النص ده في نقطتين، من غير ما تضيف معلومات من بره: «تأخر المشروع بسبب نقص المواد، فتم تعديل الجدول الزمني وإبلاغ العملاء بالموعد الجديد.»"
+      }
+    ],
+    "rubric": [
+      "يلخص في نقطتين فقط",
+      "لا يضيف معلومات خارج النص"
+    ]
+  },
+  {
+    "id": "J2-002",
+    "capability": "intent_understanding",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "اكتب رسالة اعتذار رسمية قصيرة، لكن من غير ما تخترع سبب للتأخير."
+      }
+    ],
+    "rubric": [
+      "رسالة رسمية قصيرة",
+      "لا يخترع سببًا"
+    ]
+  },
+  {
+    "id": "J2-003",
+    "capability": "intent_understanding",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "قارن بين الخيارين من حيث التكلفة فقط، ولا تدخل السرعة في المقارنة: الخيار أ 500 جنيه، والخيار ب 420 جنيه."
+      }
+    ],
+    "rubric": [
+      "يقارن التكلفة فقط",
+      "يحدد أن ب أقل بـ80 جنيهًا"
+    ]
+  },
+  {
+    "id": "J2-004",
+    "capability": "intent_understanding",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "اشرح الفكرة لطفل عمره 10 سنوات في 3 جمل بالضبط: لماذا نحتاج إلى كلمات مرور قوية؟"
+      }
+    ],
+    "rubric": [
+      "ثلاث جمل بالضبط",
+      "شرح مناسب للعمر"
+    ]
+  },
+  {
+    "id": "J2-005",
+    "capability": "intent_understanding",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "عايز عنوانًا من خمس كلمات لمقال عن ترشيد المياه."
+      }
+    ],
+    "rubric": [
+      "خمسة كلمات",
+      "عنوان عن ترشيد المياه"
+    ]
+  },
+  {
+    "id": "J2-006",
+    "capability": "intent_understanding",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "حوّل التعليمات دي لقائمة تحقق، وحافظ على ترتيبها: افتح التطبيق، سجّل الدخول، اختر الملف، راجع البيانات، ثم احفظ."
+      }
+    ],
+    "rubric": [
+      "قائمة تحقق",
+      "يحافظ على الترتيب"
+    ]
+  },
+  {
+    "id": "J2-007",
+    "capability": "intent_understanding",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "اكتب ردًا يرفض الدعوة بأدب، من غير ما تقول إني مشغول أو تخترع عذر."
+      }
+    ],
+    "rubric": [
+      "رفض مهذب",
+      "لا يختلق عذرًا"
+    ]
+  },
+  {
+    "id": "J2-008",
+    "capability": "intent_understanding",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "استخرج الموعد والمكان فقط من الجملة: «الاجتماع يوم الثلاثاء الساعة 4 مساءً في قاعة النيل.»"
+      }
+    ],
+    "rubric": [
+      "يستخرج الثلاثاء 4 مساءً وقاعة النيل فقط"
+    ]
+  },
+  {
+    "id": "J2-009",
+    "capability": "intent_understanding",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "هل العبارة دي سؤال ولا طلب تنفيذ؟ «ممكن تراجع الأخطاء الإملائية في الفقرة؟»"
+      }
+    ],
+    "rubric": [
+      "يفهم أنها طلب مهذب لمراجعة الإملاء"
+    ]
+  },
+  {
+    "id": "J2-010",
+    "capability": "intent_understanding",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "أعد كتابة الجملة لتكون أوضح، مع الحفاظ على معناها وعدم تغيير الأرقام: «ارتفعت المبيعات 12% خلال الربع الثاني.»"
+      }
+    ],
+    "rubric": [
+      "يحافظ على 12% والربع الثاني",
+      "لا يضيف تفاصيل"
+    ]
+  },
+  {
+    "id": "J2-011",
+    "capability": "natural_conversation",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "أنا متضايق من كتر المهام ومش عارف أبدأ منين. ممكن تساعدني؟"
+      }
+    ],
+    "rubric": [
+      "رد مصري متعاطف بلا مبالغة",
+      "يقترح خطوة عملية صغيرة"
+    ]
+  },
+  {
+    "id": "J2-012",
+    "capability": "natural_conversation",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "تسلم، كده فهمت الفكرة."
+      }
+    ],
+    "rubric": [
+      "رد طبيعي قصير ومناسب",
+      "لا يعيد الشرح"
+    ]
+  },
+  {
+    "id": "J2-013",
+    "capability": "natural_conversation",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "مش عايز شرح طويل، قولّي الفرق في سطرين."
+      }
+    ],
+    "rubric": [
+      "يلتزم بسطرين",
+      "مباشر"
+    ]
+  },
+  {
+    "id": "J2-014",
+    "capability": "natural_conversation",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "طب اديني مثال من الحياة اليومية."
+      }
+    ],
+    "rubric": [
+      "يربط المثال بالسياق السابق إن وجد",
+      "مثال واضح"
+    ]
+  },
+  {
+    "id": "J2-015",
+    "capability": "natural_conversation",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "أنا مش فاهم النقطة التالتة، وضحها ببساطة."
+      }
+    ],
+    "rubric": [
+      "يطلب أو يستخدم مرجع النقطة الثالثة",
+      "لا يتظاهر بمعرفة إن لم يوجد سياق"
+    ]
+  },
+  {
+    "id": "J2-016",
+    "capability": "natural_conversation",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "خلينا نسيب الموضوع ده ونبدأ موضوع جديد: يعني إيه API؟"
+      }
+    ],
+    "rubric": [
+      "ينتقل للموضوع الجديد",
+      "شرح مبسط باللهجة المصرية"
+    ]
+  },
+  {
+    "id": "J2-017",
+    "capability": "natural_conversation",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "اكتبلي رسالة واتساب لصاحبي أعتذر فيها عن التأخير، تكون ودودة."
+      }
+    ],
+    "rubric": [
+      "صياغة طبيعية مصرية",
+      "جاهزة للإرسال"
+    ]
+  },
+  {
+    "id": "J2-018",
+    "capability": "natural_conversation",
+    "language": "msa",
+    "messages": [
+      {
+        "role": "user",
+        "content": "أشكرك على التوضيح. هل يمكنك اختصار النتيجة في عبارة واحدة؟"
+      }
+    ],
+    "rubric": [
+      "عبارة واحدة",
+      "فصحى طبيعية"
+    ]
+  },
+  {
+    "id": "J2-019",
+    "capability": "natural_conversation",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "تمام، بس عايزها أهدى ومن غير مبالغة."
+      }
+    ],
+    "rubric": [
+      "يعدل النبرة دون تغيير المعنى",
+      "يتجنب المبالغة"
+    ]
+  },
+  {
+    "id": "J2-020",
+    "capability": "natural_conversation",
+    "language": "msa",
+    "messages": [
+      {
+        "role": "user",
+        "content": "لم أفهم المقصود من المصطلح الأخير. هل تشرحه بمثال موجز؟"
+      }
+    ],
+    "rubric": [
+      "شرح المصطلح الأخير إن توفر السياق",
+      "مثال موجز"
+    ]
+  },
+  {
+    "id": "J2-021",
+    "capability": "context_tracking",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "قدامي خطتين: الأولى رخيصة وتاخد أسبوع، والتانية أغلى وتخلص في يومين."
+      },
+      {
+        "role": "assistant",
+        "content": "فهمت، عندك خيار أقل تكلفة وآخر أسرع."
+      },
+      {
+        "role": "user",
+        "content": "أنهي واحد أسرع؟"
+      }
+    ],
+    "rubric": [
+      "يلتقط أن المقصود الخيار الثاني",
+      "يذكر سببًا متعلقًا بالسعر دون خلط"
+    ]
+  },
+  {
+    "id": "J2-022",
+    "capability": "context_tracking",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "ده نص الإعلان: «نقدم خدمة توصيل سريعة وآمنة لكل العملاء»."
+      },
+      {
+        "role": "assistant",
+        "content": "وصلني النص."
+      },
+      {
+        "role": "user",
+        "content": "اختصره للنص."
+      }
+    ],
+    "rubric": [
+      "يفهم أن المقصود النص السابق",
+      "يعيد صياغته أقصر ويحافظ على المعنى"
+    ]
+  },
+  {
+    "id": "J2-023",
+    "capability": "context_tracking",
+    "language": "msa",
+    "messages": [
+      {
+        "role": "user",
+        "content": "أفضل الشرح بالأمثلة وبالعربية الفصحى."
+      },
+      {
+        "role": "assistant",
+        "content": "سأستخدم أمثلة وفصحى."
+      },
+      {
+        "role": "user",
+        "content": "اشرح لي مفهوم المتغير."
+      }
+    ],
+    "rubric": [
+      "يستخدم التفضيل المذكور سابقًا",
+      "لا يطلب إعادة ذكره"
+    ]
+  },
+  {
+    "id": "J2-024",
+    "capability": "context_tracking",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "اسمي في المسودة كان أحمد."
+      },
+      {
+        "role": "assistant",
+        "content": "حسنًا."
+      },
+      {
+        "role": "user",
+        "content": "تصحيح: الاسم الصحيح محمود."
+      },
+      {
+        "role": "assistant",
+        "content": "شكرًا للتصحيح."
+      },
+      {
+        "role": "user",
+        "content": "ما الاسم الذي أستخدمه في المسودة؟"
+      }
+    ],
+    "rubric": [
+      "يتذكر تصحيح الاسم في السياق",
+      "يستخدم الاسم المصحح فقط"
+    ]
+  },
+  {
+    "id": "J2-025",
+    "capability": "context_tracking",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "الموعد الأول الساعة 10 صباحًا والثاني الساعة 4 عصرًا."
+      },
+      {
+        "role": "assistant",
+        "content": "لديك موعدان."
+      },
+      {
+        "role": "user",
+        "content": "خلينا نختار التاني."
+      },
+      {
+        "role": "assistant",
+        "content": "تقصد موعد الرابعة عصرًا."
+      },
+      {
+        "role": "user",
+        "content": "أكدلي وقته."
+      }
+    ],
+    "rubric": [
+      "يعرف أن «التاني» يشير إلى موعد العصر",
+      "يؤكد الموعد المقصود"
+    ]
+  },
+  {
+    "id": "J2-026",
+    "capability": "context_tracking",
+    "language": "msa",
+    "messages": [
+      {
+        "role": "user",
+        "content": "أفكر في زراعة نباتات على الشرفة."
+      },
+      {
+        "role": "assistant",
+        "content": "يمكن اختيار نباتات مناسبة للضوء والمساحة."
+      },
+      {
+        "role": "user",
+        "content": "ما العوامل التي يجب مراعاتها؟"
+      }
+    ],
+    "rubric": [
+      "يتابع السؤال عن الفكرة السابقة",
+      "لا يبدأ موضوعًا جديدًا"
+    ]
+  },
+  {
+    "id": "J2-027",
+    "capability": "context_tracking",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "هذه خطة الأسبوع: السبت للمراجعة، والأحد للتطبيق، والاثنين للاختبار."
+      },
+      {
+        "role": "assistant",
+        "content": "الخطة موزعة على ثلاثة أيام."
+      },
+      {
+        "role": "user",
+        "content": "عدّلها وخلي الاختبار يوم الثلاثاء."
+      }
+    ],
+    "rubric": [
+      "يفهم أن الضمير يعود على خطة الأسبوع",
+      "يعدل الخطة لا القائمة"
+    ]
+  },
+  {
+    "id": "J2-028",
+    "capability": "context_tracking",
+    "language": "msa",
+    "messages": [
+      {
+        "role": "user",
+        "content": "أريد حلولًا مجانية فقط، ولا أستطيع الدفع حاليًا."
+      },
+      {
+        "role": "assistant",
+        "content": "سأركز على الخيارات المجانية."
+      },
+      {
+        "role": "user",
+        "content": "اقترح أداة لتنظيم المهام."
+      }
+    ],
+    "rubric": [
+      "يستخدم القيد السابق: دون تكلفة",
+      "لا يقترح حلولًا مدفوعة"
+    ]
+  },
+  {
+    "id": "J2-029",
+    "capability": "context_tracking",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Please answer in formal Arabic."
+      },
+      {
+        "role": "assistant",
+        "content": "بالطبع، سأستخدم العربية الفصحى."
+      },
+      {
+        "role": "user",
+        "content": "Actually, switch to Egyptian Arabic now. يعني إيه التخزين السحابي؟"
+      }
+    ],
+    "rubric": [
+      "ينتبه إلى تغيير اللهجة المطلوب",
+      "يجيب بالمصرية"
+    ]
+  },
+  {
+    "id": "J2-030",
+    "capability": "context_tracking",
+    "language": "msa",
+    "messages": [
+      {
+        "role": "user",
+        "content": "عدد الأيام في الأسبوع 8."
+      },
+      {
+        "role": "assistant",
+        "content": "ذكرت أن الأسبوع 8 أيام."
+      },
+      {
+        "role": "user",
+        "content": "أصحح كلامي: الأسبوع 7 أيام."
+      },
+      {
+        "role": "assistant",
+        "content": "شكرًا للتصحيح."
+      },
+      {
+        "role": "user",
+        "content": "كم عدد أيام الأسبوع؟"
+      }
+    ],
+    "rubric": [
+      "يفهم أن المستخدم صحح المعلومة السابقة",
+      "يعتمد التصحيح ولا يكرر الخطأ"
+    ]
+  },
+  {
+    "id": "J2-031",
+    "capability": "arabic_register",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "إزيك؟ عايز أفهم يعني إيه تعلم الآلة بكلام بسيط."
+      }
+    ],
+    "rubric": [
+      "مصري طبيعي",
+      "شرح صحيح ومبسط"
+    ]
+  },
+  {
+    "id": "J2-032",
+    "capability": "arabic_register",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "لو معايا 200 جنيه واشتريت حاجة بـ75، فاضل كام؟"
+      }
+    ],
+    "rubric": [
+      "مصري طبيعي",
+      "125 جنيهًا"
+    ]
+  },
+  {
+    "id": "J2-033",
+    "capability": "arabic_register",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "اكتبلي 3 أفكار لفيديو كرتون للأطفال عن التعاون."
+      }
+    ],
+    "rubric": [
+      "مصري طبيعي",
+      "ثلاث أفكار مناسبة للأطفال"
+    ]
+  },
+  {
+    "id": "J2-034",
+    "capability": "arabic_register",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "قولّي أبدأ أتعلم بايثون إزاي لو أنا مبتدئ."
+      }
+    ],
+    "rubric": [
+      "مصري طبيعي",
+      "خطة بداية عملية"
+    ]
+  },
+  {
+    "id": "J2-035",
+    "capability": "arabic_register",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "يعني إيه ذاكرة مؤقتة في الكمبيوتر؟"
+      }
+    ],
+    "rubric": [
+      "مصري طبيعي",
+      "شرح مبسط ودقيق"
+    ]
+  },
+  {
+    "id": "J2-036",
+    "capability": "arabic_register",
+    "language": "msa",
+    "messages": [
+      {
+        "role": "user",
+        "content": "عرّف مفهوم الاستدلال المنطقي، واذكر مثالًا بسيطًا."
+      }
+    ],
+    "rubric": [
+      "فصحى سليمة",
+      "تعريف ومثال"
+    ]
+  },
+  {
+    "id": "J2-037",
+    "capability": "arabic_register",
+    "language": "msa",
+    "messages": [
+      {
+        "role": "user",
+        "content": "اشرح الفرق بين الطاقة المتجددة والطاقة غير المتجددة."
+      }
+    ],
+    "rubric": [
+      "فصحى سليمة",
+      "تمييز دقيق"
+    ]
+  },
+  {
+    "id": "J2-038",
+    "capability": "arabic_register",
+    "language": "msa",
+    "messages": [
+      {
+        "role": "user",
+        "content": "اكتب فقرة قصيرة عن أهمية القراءة للطلاب."
+      }
+    ],
+    "rubric": [
+      "فصحى سليمة",
+      "فقرة مترابطة"
+    ]
+  },
+  {
+    "id": "J2-039",
+    "capability": "arabic_register",
+    "language": "msa",
+    "messages": [
+      {
+        "role": "user",
+        "content": "ما المقصود بالتعلم النشط؟"
+      }
+    ],
+    "rubric": [
+      "فصحى سليمة",
+      "تعريف واضح"
+    ]
+  },
+  {
+    "id": "J2-040",
+    "capability": "arabic_register",
+    "language": "msa",
+    "messages": [
+      {
+        "role": "user",
+        "content": "أعد صياغة العبارة بلغة عربية فصيحة: «الموضوع ده محتاج شوية تنظيم»."
+      }
+    ],
+    "rubric": [
+      "فصحى طبيعية",
+      "يحافظ على المعنى"
+    ]
+  },
+  {
+    "id": "J2-041",
+    "capability": "reasoning",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "اشترى شخص 3 دفاتر، سعر الدفتر 18 جنيهًا، ودفع 100 جنيه. كم يتبقى له؟ وضح الحساب."
+      }
+    ],
+    "rubric": [
+      "54 جنيهًا إجماليًا",
+      "46 جنيهًا متبقية"
+    ]
+  },
+  {
+    "id": "J2-042",
+    "capability": "reasoning",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "كل القطارات في هذا المثال تتوقف في المحطة أ. القطار س قطار. ماذا نستنتج؟"
+      }
+    ],
+    "rubric": [
+      "يستنتج أن س يتوقف في أ",
+      "لا يضيف افتراضات"
+    ]
+  },
+  {
+    "id": "J2-043",
+    "capability": "reasoning",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "لديك 90 دقيقة. المهمة الأولى 25 دقيقة والثانية 40 دقيقة. كم يتبقى؟"
+      }
+    ],
+    "rubric": [
+      "25 دقيقة"
+    ]
+  },
+  {
+    "id": "J2-044",
+    "capability": "reasoning",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "إذا كان اليوم الأربعاء، فما اليوم بعد 10 أيام؟ وضح طريقة الحساب."
+      }
+    ],
+    "rubric": [
+      "السبت",
+      "يشرح باقي القسمة على 7"
+    ]
+  },
+  {
+    "id": "J2-045",
+    "capability": "reasoning",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "خطة أ تكلف 300 جنيه وتنجز خلال 5 أيام. خطة ب تكلف 450 جنيهًا وتنجز خلال 3 أيام. ما الفرق في التكلفة والمدة؟"
+      }
+    ],
+    "rubric": [
+      "ب أغلى 150 جنيهًا",
+      "ب أسرع يومين"
+    ]
+  },
+  {
+    "id": "J2-046",
+    "capability": "reasoning",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "قال شخص: «كلما زادت مبيعات المظلات زادت حوادث المطر، إذن المظلات تسبب المطر». ما الخطأ المنطقي؟"
+      }
+    ],
+    "rubric": [
+      "يفرق بين الارتباط والسببية",
+      "يذكر المطر عاملًا مشتركًا محتملًا"
+    ]
+  },
+  {
+    "id": "J2-047",
+    "capability": "reasoning",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "هناك 4 صناديق، في كل صندوق 6 كرات. أخرجنا 5 كرات. كم بقي؟"
+      }
+    ],
+    "rubric": [
+      "19 كرة"
+    ]
+  },
+  {
+    "id": "J2-048",
+    "capability": "reasoning",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "إذا كان ثمن المنتج 800 جنيه ثم خُفّض 15%، فما السعر بعد الخصم؟"
+      }
+    ],
+    "rubric": [
+      "الخصم 120 جنيهًا",
+      "السعر 680 جنيهًا"
+    ]
+  },
+  {
+    "id": "J2-049",
+    "capability": "reasoning",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "لديك خياران: حل سريع مع احتمال خطأ كبير، وحل أبطأ يمكن التحقق منه. ما المعلومات التي تحتاجها قبل الاختيار؟"
+      }
+    ],
+    "rubric": [
+      "لا يختار عشوائيًا",
+      "يحدد أثر الخطأ والوقت وقابلية التراجع"
+    ]
+  },
+  {
+    "id": "J2-050",
+    "capability": "reasoning",
+    "language": "ar",
+    "messages": [
+      {
+        "role": "user",
+        "content": "في فريق من 5 أشخاص، أنجز كل شخص 2 مهمة متساوية. كم مهمة أُنجزت؟ وإذا أضيفت 3 مهام، كم يصبح الإجمالي؟"
+      }
+    ],
+    "rubric": [
+      "10 ثم 13 مهمة"
+    ]
+  },
+  {
+    "id": "J2-051",
+    "capability": "personalization_privacy",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "أنا بفضّل الإجابات المختصرة. اشرحلي معنى الحوسبة السحابية."
+      }
+    ],
+    "rubric": [
+      "شرح مختصر"
+    ]
+  },
+  {
+    "id": "J2-052",
+    "capability": "personalization_privacy",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "صحح المعلومة: أنا قلت إني بشتغل الصبح، لكن قصدي إني بشتغل بالليل. إيه وقت شغلي؟"
+      }
+    ],
+    "rubric": [
+      "يعتمد التصحيح: الليل"
+    ]
+  },
+  {
+    "id": "J2-053",
+    "capability": "personalization_privacy",
+    "language": "msa",
+    "messages": [
+      {
+        "role": "user",
+        "content": "أفضّل الأمثلة العملية على التعريفات المجردة. اشرح مفهوم قاعدة البيانات."
+      }
+    ],
+    "rubric": [
+      "مثال عملي",
+      "لا يفترض تفاصيل شخصية"
+    ]
+  },
+  {
+    "id": "J2-054",
+    "capability": "personalization_privacy",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "أنا ما قلتلكش أنا ساكن فين. تقدر تحدد مدينتي؟"
+      }
+    ],
+    "rubric": [
+      "يقول إنه لا يعرف",
+      "لا يخمن الموقع"
+    ]
+  },
+  {
+    "id": "J2-055",
+    "capability": "personalization_privacy",
+    "language": "msa",
+    "messages": [
+      {
+        "role": "user",
+        "content": "لا أريد أن تستخدم اسمي في الردود. ما الذي ينبغي أن تفعله؟"
+      }
+    ],
+    "rubric": [
+      "يؤكد عدم استخدام الاسم",
+      "لا يذكر اسمًا"
+    ]
+  },
+  {
+    "id": "J2-056",
+    "capability": "personalization_privacy",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "أنا قلت قبل كده إني مبتدئ في البرمجة. اقترح أول خطوة مناسبة."
+      }
+    ],
+    "rubric": [
+      "يستخدم مستوى المبتدئ",
+      "خطوة عملية بسيطة"
+    ]
+  },
+  {
+    "id": "J2-057",
+    "capability": "personalization_privacy",
+    "language": "msa",
+    "messages": [
+      {
+        "role": "user",
+        "content": "إذا لم أذكر ميزانيتي، فهل يمكنك افتراض ميزانية محددة عند اقتراح جهاز؟"
+      }
+    ],
+    "rubric": [
+      "لا يفترض ميزانية",
+      "يسأل عند الحاجة"
+    ]
+  },
+  {
+    "id": "J2-058",
+    "capability": "personalization_privacy",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "أنا غيرت رأيي؛ المرة دي عايز شرح مفصل بدل المختصر."
+      }
+    ],
+    "rubric": [
+      "يتبع التفضيل الأحدث",
+      "لا يتمسك بالتفضيل القديم"
+    ]
+  },
+  {
+    "id": "J2-059",
+    "capability": "personalization_privacy",
+    "language": "msa",
+    "messages": [
+      {
+        "role": "user",
+        "content": "هل ينبغي أن تحفظ كل معلومة شخصية أذكرها؟"
+      }
+    ],
+    "rubric": [
+      "لا",
+      "يشرح مبدأ تقليل البيانات والموافقة"
+    ]
+  },
+  {
+    "id": "J2-060",
+    "capability": "personalization_privacy",
+    "language": "eg",
+    "messages": [
+      {
+        "role": "user",
+        "content": "لو قلتلك امسح تفضيل قديم وخلّيك على الجديد، تتصرف إزاي؟"
+      }
+    ],
+    "rubric": [
+      "يحترم التصحيح والطلب",
+      "لا يدعي حذف بيانات لا يملك صلاحية حذفها"
+    ]
+  }
+]
