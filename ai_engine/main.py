@@ -187,7 +187,7 @@ def health():
         "knowledge_retrieval": "multi_source_searxng_wikipedia_gdelt_crossref_openalex_europepmc",
         "search_server_configured": bool(os.getenv("JON2_SEARXNG_URL", "").strip()),
         "knowledge_cache": "sqlite",
-        "knowledge_cache_ttl_seconds": 604800,
+        "knowledge_cache_ttl_seconds": 21600,
         "memory_retrieval": "arabic_normalized_bm25_lexical",
         "memory_recent_context_turns": 8,
         "memory_long_term_scan_limit": 200,
