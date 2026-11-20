@@ -1,12 +1,13 @@
 import { loadJon2SafariBundle } from "./jon2-safari-bundle.js";
 import { buildJon2ConversationPrompt } from "./jon2-prompt.js";
 import { JON2_SAFARI_GENERATION_OPTIONS, JON2_SAFARI_MAX_NEW_TOKENS } from "./jon2-inference-config.js";
+import { validateJon2ArabicAnswer } from "./jon2-answer-quality.js";
 
 let runtime = null;
 
-// Experimental mode: allow any non-empty output from the original Jon2 model.
-// This deliberately skips Arabic clarity/repetition validation at the user's request.
-// It does not make the model more capable; replies may be incoherent or repetitive.
+// Preserve non-empty experimental generation, but attach a real surface-integrity
+// signal so the UI can suppress fragmented Arabic instead of displaying corruption.
+// This is not a semantic or factuality guarantee.
 export function requireUsableJon2Answer(answer) {
   if (typeof answer !== "string" || !answer.trim()) {
     const error = new Error("لم ينتج عقل Jon2 أي نص");
@@ -73,7 +74,13 @@ if (typeof self !== "undefined") self.addEventListener("message", async event =>
         throw error;
       }
       const answer = requireUsableJon2Answer(rawGenerated);
-      self.postMessage({ type: "generated", requestId, answer, qualityPassed: true, experimental: true });
+      self.postMessage({
+        type: "generated",
+        requestId,
+        answer,
+        qualityPassed: validateJon2ArabicAnswer(answer),
+        experimental: true
+      });
       return;
     }
     throw new TypeError("Unsupported Jon2 worker message.");
