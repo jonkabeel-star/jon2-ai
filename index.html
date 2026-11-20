@@ -416,14 +416,14 @@ function normalizeArabicTypos(value) {
     "ايه":"إيه", "ازاي":"إزاي"
   };
   const phrases = [
-    [/انشاء\\s*الله|انشالله|إنشاء\\s*الله/gu, "إن شاء الله"],
-    [/الحمد\\s*لله|الحمدلله/gu, "الحمد لله"],
-    [/ما\\s*شاء\\s*الله|ماشاءالله/gu, "ما شاء الله"],
-    [/سبحان\\s*الله|سبحانالله/gu, "سبحان الله"]
+    [/انشاء\s*الله|انشالله|إنشاء\s*الله/gu, "إن شاء الله"],
+    [/الحمد\s*لله|الحمدلله/gu, "الحمد لله"],
+    [/ما\s*شاء\s*الله|ماشاءالله/gu, "ما شاء الله"],
+    [/سبحان\s*الله|سبحانالله/gu, "سبحان الله"]
   ];
   let normalized = String(value || "");
   for (const [pattern, replacement] of phrases) normalized = normalized.replace(pattern, replacement);
-  return normalized.replace(/[\\p{L}\\p{M}]+/gu, word => corrections[word] || word);
+  return normalized.replace(/[\p{L}\p{M}]+/gu, word => corrections[word] || word);
 }
 
 function experimentalAutoReply(message) {
