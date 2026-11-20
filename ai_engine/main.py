@@ -98,11 +98,6 @@ def _chat_release_approved() -> bool:
     return os.getenv("JON2_CHAT_RELEASE_APPROVED", "false").strip().lower() == "true"
 
 
-def _experimental_chat_enabled() -> bool:
-    """Allow owner-approved trial replies with an explicit quality warning."""
-    return os.getenv("JON2_EXPERIMENTAL_CHAT", "false").strip().lower() == "true"
-
-
 def _checkpoint_configured() -> bool:
     checkpoint = os.getenv(
         "JON2_CHECKPOINT",
@@ -140,7 +135,6 @@ def health():
     loaded = model_is_ready()
     checkpoint_available = _checkpoint_configured()
     release_approved = _chat_release_approved()
-    experimental = _experimental_chat_enabled() and not release_approved
     inference_tested = _inference_tested()
     quality_review_passed = _quality_review_passed()
     chat_enabled = (
@@ -175,10 +169,8 @@ def health():
         "checkpoint_size_bytes": checkpoint_size,
         "checkpoint_path": checkpoint_path,
         "kaggle_token_present": bool(os.getenv("KAGGLE_API_TOKEN")),
-        "experimental_chat_enabled": _experimental_chat_enabled(),
         "chat_ready": chat_enabled,
         "release_approved": release_approved,
-        "experimental_mode": experimental,
         "model_status": model_status,
         "chat_requires_model_checkpoint": True,
         "conversation_memory": "sqlite",
@@ -380,7 +372,6 @@ def chat(request: ChatRequest):
             "reply": reply,
             "memory_used": bool(memories),
             "session_id": request.session_id,
-            "experimental": False,
             "response_mode": "jon2_original_model_only",
         }
     except Exception as error:
