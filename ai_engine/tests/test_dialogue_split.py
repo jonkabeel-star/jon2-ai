@@ -95,5 +95,91 @@ class DialogueSplitTests(unittest.TestCase):
             split_dialogue_records(self.records[:2] + [malformed])
 
 
+class ApprovedDialoguePreparationTests(unittest.TestCase):
+    def setUp(self):
+        import hashlib
+        import json
+        import tempfile
+        from pathlib import Path
+
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        self.data = self.root / "training_data"
+        self.data.mkdir()
+        self.output = self.root / "prepared"
+        self.source = self.data / "owner_dialogues.jsonl"
+        self.records = [
+            conversation(f"سؤال فريد رقم {i}", f"إجابة أصلية رقم {i}")
+            for i in range(18)
+        ]
+        raw = "".join(
+            json.dumps(record, ensure_ascii=False) + "\n"
+            for record in self.records
+        )
+        self.source.write_text(raw, encoding="utf-8")
+        source_bytes = self.source.read_bytes()
+        manifest = {
+            "approved_sources": [{
+                "file": "owner_dialogues.jsonl",
+                "sha256": hashlib.sha256(source_bytes).hexdigest(),
+                "character_count": len(source_bytes.decode("utf-8")),
+                "status": "APPROVED",
+                "reviewer": "test reviewer",
+                "review_date": "2026-11-20",
+                "rights_basis": "temporary test fixture only",
+                "intended_use": "research_training",
+            }]
+        }
+        self.approvals = self.root / "source_approvals.json"
+        self.approvals.write_text(
+            json.dumps(manifest), encoding="utf-8"
+        )
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def test_requires_exact_approval_and_writes_hash_manifest(self):
+        from dialogue_split import prepare_approved_dialogue_splits, load_jsonl
+
+        before = self.source.read_bytes()
+        report = prepare_approved_dialogue_splits(
+            self.data, self.approvals, self.output, seed=7
+        )
+        self.assertEqual(report["total_conversations"], 18)
+        self.assertEqual(
+            set(report["partitions"]), {"train", "validation", "test"}
+        )
+        self.assertTrue((self.output / "split_manifest.json").is_file())
+        for name in ("train", "validation", "test"):
+            self.assertTrue((self.output / f"{name}.jsonl").is_file())
+            self.assertEqual(
+                report["partitions"][name]["conversation_count"],
+                len(load_jsonl(self.output / f"{name}.jsonl")),
+            )
+        self.assertEqual(self.source.read_bytes(), before)
+        self.assertFalse(report["model_training_started"])
+        self.assertTrue(report["source_files_modified"] is False)
+
+    def test_blocks_changed_source_after_approval(self):
+        from dialogue_split import prepare_approved_dialogue_splits
+
+        self.source.write_text(
+            self.source.read_text(encoding="utf-8") + "\n",
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(PermissionError, "changed after"):
+            prepare_approved_dialogue_splits(
+                self.data, self.approvals, self.output
+            )
+
+    def test_output_must_be_outside_source_directory(self):
+        from dialogue_split import prepare_approved_dialogue_splits
+
+        with self.assertRaisesRegex(ValueError, "outside"):
+            prepare_approved_dialogue_splits(
+                self.data, self.approvals, self.data / "splits"
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
