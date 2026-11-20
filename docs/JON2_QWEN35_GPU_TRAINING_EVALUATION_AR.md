@@ -18,7 +18,7 @@ https://huggingface.co/Qwen/Qwen3.5-4B
 1. افتح الدفترية من Safari.
 2. فعّل Internet.
 3. اختر GPU T4 أو أقوى.
-4. أضف Dataset خاصًا يحتوي النصوص الستة المعتمدة للبحث الخاص وملف `source_approvals.json` الخاص.
+4. أضف Dataset خاصًا يحتوي ملفات الحوارات الخمسة المعتمدة للبحث الخاص وملف `source_approvals.json` الخاص. ملف `original_seed_ar.txt` اختياري ولا يدخل التدريب.
 5. شغّل الخلايا بالترتيب.
 
 لا تحتاج إلى Terminal أو Colab. تحتاج Kaggle إلى GPU متاح وإلى مساحة تخزين وإنترنت لتنزيل النموذج والمكتبات. قد تختلف موارد الجلسة وحدودها حسب حساب Kaggle.
@@ -33,13 +33,13 @@ https://huggingface.co/Qwen/Qwen3.5-4B
 
 ## المرحلة الثانية: بيانات التدريب
 
-المصادر الوحيدة التي يسمح بها المسار الحالي هي ملفات المشروع الستة التي سبق اعتمادها **للتجارب البحثية الخاصة فقط**:
+المصادر الحوارية الوحيدة التي يسمح بها المسار الحالي هي ملفات المشروع الخمسة التي سبق اعتمادها **للتجارب البحثية الخاصة فقط**:
 - `original_dialogue_ar.txt`
 - `original_dialogue_ar_batch_01.txt`
 - `original_dialogue_ar_batch_02.txt`
 - `original_dialogue_ar_batch_03.txt`
 - `original_dialogue_ar_batch_04.txt`
-- `original_seed_ar.txt`
+- `original_seed_ar.txt` (اختياري إذا كان موجودًا ومغطى بالموافقة؛ يُستبعد من التحويل إلى حوارات إشرافية).
 
 لا تستخدم:
 - `ArabicText-Large`
