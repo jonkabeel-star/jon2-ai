@@ -33,7 +33,13 @@ def validate_generated_answer(answer: str) -> bool:
     if len(arabic_words) >= 8:
         short_ratio = sum(len(word) <= 2 for word in arabic_words) / len(arabic_words)
         average_length = sum(len(word) for word in arabic_words) / len(arabic_words)
-        if short_ratio > 0.60 and average_length < 3.2:
+        article_prefix_ratio = sum(
+            word.startswith(("ال", "وال")) for word in arabic_words
+        ) / len(arabic_words)
+        if (
+            (short_ratio > 0.60 and average_length < 3.2)
+            or (article_prefix_ratio > 0.70 and average_length < 5.2)
+        ):
             return False
 
     if len(words) >= 8:
@@ -69,8 +75,14 @@ def diagnose_answer(answer: str) -> dict:
     if len(arabic_words) >= 8:
         short_ratio = sum(len(word) <= 2 for word in arabic_words) / len(arabic_words)
         average_length = sum(len(word) for word in arabic_words) / len(arabic_words)
-        if short_ratio > 0.60 and average_length < 3.2:
-            warnings.append("fragmented_short_word_sequence")
+        article_prefix_ratio = sum(
+            word.startswith(("ال", "وال")) for word in arabic_words
+        ) / len(arabic_words)
+        if (
+            (short_ratio > 0.60 and average_length < 3.2)
+            or (article_prefix_ratio > 0.70 and average_length < 5.2)
+        ):
+            warnings.append("fragmented_arabic_word_sequence")
     if len(words) >= 8 and unique_ratio < 0.45:
         warnings.append("low_unique_word_ratio")
     if repeated_trigram:
