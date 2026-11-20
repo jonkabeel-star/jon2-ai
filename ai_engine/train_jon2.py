@@ -169,7 +169,7 @@ def train(args):
         args.dialogue_split_metadata = split_metadata
         args.dialogue_split_manifest_sha256 = split_metadata["split_manifest_sha256"]
         corpus_for_hash = train_text + "\n\n<VALIDATION-PARTITION>\n\n" + validation_text
-        args.corpus_characters = len(train_text) + len(validation_text)
+        args.corpus_characters = len(train_text)
         print(
             "Three-way approved dialogue mode | "
             f"train_conversations={split_metadata['partitions']['train']['conversation_count']} | "
@@ -217,10 +217,14 @@ def train(args):
     }
     model = Jon2Transformer(vocab_size=tokenizer.vocab_size, **config).to(device)
     parameter_count = sum(parameter.numel() for parameter in model.parameters())
-    corpus_tokens = len(train_data) + len(val_data)
+    corpus_tokens = (
+        len(train_data) if getattr(args, "dialogue_splits_dir", None)
+        else len(train_data) + len(val_data)
+    )
     tokens_per_parameter = corpus_tokens / max(1, parameter_count)
+    token_label = "approved_training_tokens" if getattr(args, "dialogue_splits_dir", None) else "approved_corpus_tokens"
     print(
-        f"Model parameters={parameter_count:,} | approved_corpus_tokens={corpus_tokens:,} | "
+        f"Model parameters={parameter_count:,} | {token_label}={corpus_tokens:,} | "
         f"tokens_per_parameter={tokens_per_parameter:.4f}"
     )
     if args.minimum_tokens_per_parameter and tokens_per_parameter < args.minimum_tokens_per_parameter:
