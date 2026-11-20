@@ -161,8 +161,6 @@ let chatReady = false;
 let localRuntimeReady = false;
 let chatBusy = false;
 let sessionId = "";
-window.JON2_OPEN_MODEL_REQUESTED = false;
-window.JON2_OPEN_MODEL_READY = false;
 
 function loadSavedState() {
   try {
@@ -216,7 +214,7 @@ function setLang(next) {
   });
   document.getElementById("language").textContent =
     lang === "ar" ? "English 🌐" : "العربية 🌐";
-  document.getElementById("status").textContent = window.JON2_OPEN_MODEL_REQUESTED ? translations[lang][window.JON2_OPEN_MODEL_READY ? "openModelReady" : "openModelLoading"] : translations[lang][apiStatusKey];
+  document.getElementById("status").textContent = translations[lang][apiStatusKey];
   updateChatNote();
   syncChatControls();
 }
@@ -238,7 +236,7 @@ function syncChatControls() {
   const enabled = !chatBusy;
   input.disabled = !enabled;
   send.disabled = !enabled;
-  input.placeholder = window.JON2_OPEN_MODEL_REQUESTED ? translations[lang].openModelPlaceholder : localRuntimeReady ? translations[lang].localPlaceholder : chatReady ? translations[lang].placeholder : translations[lang].waitingPlaceholder;
+  input.placeholder = localRuntimeReady ? translations[lang].localPlaceholder : chatReady ? translations[lang].placeholder : translations[lang].waitingPlaceholder;
   if (enabled) {
     input.removeAttribute("aria-disabled");
     send.removeAttribute("aria-disabled");
@@ -251,7 +249,6 @@ function syncChatControls() {
 function updateChatNote() {
   const note = document.getElementById("statusNote");
   if (!note) return;
-  if (window.JON2_OPEN_MODEL_REQUESTED) { note.textContent = window.JON2_OPEN_MODEL_READY ? translations[lang].openModelNote : translations[lang].openModelError; return; }
   if (localRuntimeReady) { note.textContent = translations[lang].localNote; return; }
   const key = !API_BASE_URL ? "offlineNote" : apiStatusKey === "experimentalReady" ? "experimentalNote" : apiStatusKey === "modelReady" ? "apiReadyNote" : apiStatusKey === "apiOnline" ? "apiNotReadyNote" : "offlineNote";
   note.textContent = translations[lang][key] || translations[lang].chatNote;
@@ -289,9 +286,7 @@ function renderMessages() {
     el.className = "msg " + (item.kind === "assistant" ? "bot" : item.kind);
     const content = document.createElement("div");
     // Never render fragmented Arabic output as if it were a usable answer.
-    content.textContent = item.kind === "assistant" && !isJon2ReplyDisplayable(item.text)
-      ? experimentalAutoReply("تعذر فهم الرد السابق بسبب تشوّه النص.")
-      : item.text;
+    content.textContent = item.text;
     el.appendChild(content);
     if (item.kind === "assistant") {
       const actions = document.createElement("div");
@@ -329,7 +324,7 @@ document.getElementById("language").addEventListener("click", () => {
 document.getElementById("clear").addEventListener("click", async () => {
   stopJon2Speech();
   const oldSession = sessionId;
-  if (!window.JON2_OPEN_MODEL_REQUESTED && API_BASE_URL && oldSession) {
+  if (API_BASE_URL && oldSession) {
     try {
       await fetch(API_BASE_URL + "/api/memory/" + encodeURIComponent(oldSession), { method: "DELETE" });
     } catch (error) {
@@ -345,14 +340,6 @@ document.getElementById("input").addEventListener("input", saveState);
 
 async function checkApiHealth() {
   const status = document.getElementById("status");
-  if (window.JON2_OPEN_MODEL_REQUESTED) {
-    chatReady = window.JON2_OPEN_MODEL_READY === true;
-    apiStatusKey = "offline";
-    status.textContent = translations[lang][window.JON2_OPEN_MODEL_READY ? "openModelReady" : "openModelLoading"];
-    updateChatNote();
-    syncChatControls();
-    return;
-  }
   if (localRuntimeReady) {
     chatReady = true;
     apiStatusKey = "localReady";
@@ -384,14 +371,6 @@ async function checkApiHealth() {
     chatReady = false;
     apiStatusKey = "offline";
     console.warn("Jon2 API health check failed.", error);
-  }
-  if (window.JON2_OPEN_MODEL_REQUESTED) {
-    chatReady = window.JON2_OPEN_MODEL_READY === true;
-    apiStatusKey = "offline";
-    status.textContent = translations[lang][window.JON2_OPEN_MODEL_READY ? "openModelReady" : "openModelLoading"];
-    updateChatNote();
-    syncChatControls();
-    return;
   }
   status.textContent = translations[lang][apiStatusKey];
   updateChatNote();
@@ -446,18 +425,6 @@ function isJon2ReplyDisplayable(answer) {
   return true;
 }
 
-function experimentalAutoReply(message) {
-  const text = String(message || "").trim();
-  const lower = text.toLowerCase();
-  if (/^(مرحبا|السلام عليكم|اهلا|أهلا|هاي|hello|hi)/.test(lower)) {
-    return "أهلًا بك! أنا Jon2. وصلتني رسالتك، ومستمر معك في المحادثة بالوضع التجريبي.";
-  }
-  if (/[؟?]$/.test(text) || /^(كيف|ما|ماذا|لماذا|ليه|ازاي|هل|إيه|ايه|what|why|how|can|is|are)\b/i.test(text)) {
-    return "وصلني سؤالك: «" + text + "»\nأنا Jon2 في وضع الرد التجريبي حاليًا. أقدر أتابع معك، لكن النموذج الأصلي لم يُحمّل بعد، لذلك هذا رد تلقائي مؤقت وليس ناتجًا من أوزان العقل.";
-  }
-  return "أنا Jon2، وصلتني رسالتك: «" + text + "»\nهتابع معك من هنا في الوضع التجريبي. تنبيه: العقل الأصلي غير محمّل بعد، وهذا رد تلقائي مؤقت وليس توليدًا من النموذج.";
-}
-
 document.getElementById("form").addEventListener("submit", async event => {
   event.preventDefault();
   const input = document.getElementById("input");
@@ -469,13 +436,6 @@ document.getElementById("form").addEventListener("submit", async event => {
   addMessage(value, "user");
   input.value = "";
   saveState();
-
-  if (window.JON2_OPEN_MODEL_REQUESTED) {
-    // Keep the user's requested experimental reply behavior even when the
-    // alternate runtime is selected; disclose that this is a UI fallback.
-    addMessage(experimentalAutoReply(normalizedValue), "assistant");
-    return;
-  }
 
   if (localRuntimeReady && window.JON2_LOCAL_CLIENT) {
     chatBusy = true;
@@ -501,9 +461,7 @@ document.getElementById("form").addEventListener("submit", async event => {
       }
       addMessage(result.answer.trim(), "assistant");
     } catch (error) {
-      // If original-model inference fails, continue with the disclosed
-      // experimental UI reply rather than stopping the conversation.
-      addMessage(experimentalAutoReply(normalizedValue), "assistant");
+      addMessage(translations[lang].localRequestFailed, "bot");
       console.warn("Local original-Jon2 inference failed.", {
         code: error?.code || "JON2_INFERENCE_FAILED",
         message: error?.message || "Unknown local inference failure",
@@ -519,10 +477,7 @@ document.getElementById("form").addEventListener("submit", async event => {
   }
 
   if (!API_BASE_URL) {
-    // User-requested fail-open experimental chat: keep replying even before
-    // the original checkpoint is available. Clearly disclose this is a UI
-    // fallback, not output generated by the original Jon2 model.
-    addMessage(experimentalAutoReply(normalizedValue), "assistant");
+    addMessage(translations[lang].requestFailed, "bot");
     return;
   }
 
@@ -572,23 +527,23 @@ document.getElementById("form").addEventListener("submit", async event => {
           : typeof payload.error === "string"
             ? payload.error
             : translations[lang].requestFailed;
-      addMessage(experimentalAutoReply(normalizedValue), "assistant");
-      console.warn("Jon2 backend rejected the chat request; used experimental fallback.", detail);
+      addMessage(detail, "bot");
+      console.warn("Jon2 original-model backend rejected the chat request.", detail);
       return;
     }
     if (typeof payload.reply !== "string" || !payload.reply.trim()) {
-      addMessage(experimentalAutoReply(normalizedValue), "assistant");
+      addMessage(translations[lang].requestFailed, "bot");
       return;
     }
     if (!isJon2ReplyDisplayable(payload.reply)) {
-      addMessage(experimentalAutoReply("وصلني رد من المحرك لكنه ظهر مشوّهًا، لذلك لن أعرض النص المكسّر."), "assistant");
-      console.warn("Jon2 backend reply was suppressed because Arabic token fragmentation was detected.");
+      addMessage(translations[lang].localQualityRejected, "bot");
+      console.warn("Jon2 original-model reply failed the Arabic display-integrity check.");
       return;
     }
     addMessage(payload.reply.trim(), "assistant");
   } catch (error) {
-    addMessage(experimentalAutoReply(normalizedValue), "assistant");
-    console.warn("Jon2 AI chat request failed.", error);
+    addMessage(translations[lang].requestFailed, "bot");
+    console.warn("Jon2 original-model chat request failed.", error);
   } finally {
     chatBusy = false;
     syncChatControls();
