@@ -4,7 +4,10 @@ on:
   pull_request:
     paths:
       - "ai_engine/dialogue_split.py"
+      - "ai_engine/dialogue_training.py"
+      - "ai_engine/train_jon2.py"
       - "ai_engine/tests/test_dialogue_split.py"
+      - "ai_engine/tests/test_dialogue_training.py"
       - ".github/workflows/dialogue-split-tests.yml"
   push:
     branches:
@@ -12,7 +15,10 @@ on:
       - "review/dialogue-audit-split-v1"
     paths:
       - "ai_engine/dialogue_split.py"
+      - "ai_engine/dialogue_training.py"
+      - "ai_engine/train_jon2.py"
       - "ai_engine/tests/test_dialogue_split.py"
+      - "ai_engine/tests/test_dialogue_training.py"
       - ".github/workflows/dialogue-split-tests.yml"
 
 permissions:
@@ -29,4 +35,4 @@ jobs:
         with:
           python-version: "3.11"
       - name: Run dialogue split isolation tests
-        run: python -m unittest discover -s ai_engine/tests -p "test_dialogue_split.py" -v
+        run: python -m unittest discover -s ai_engine/tests -p "test_dialogue*.py" -v
