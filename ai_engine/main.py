@@ -398,8 +398,8 @@ def chat(request: ChatRequest):
                 for item in retrieved.get("results", [])[:3]
             ]
             if retrieved.get("results"):
-                knowledge_context = "\\n\\n".join(
-                    f"{item['title']}: {item['extract']}\\nالمصدر: {item['source_url']}"
+                knowledge_context = "\n\n".join(
+                    f"{item['title']}: {item['extract']}\nالمصدر: {item['source_url']}"
                     for item in retrieved["results"][:2]
                 )
 
@@ -421,7 +421,8 @@ def chat(request: ChatRequest):
             "reply": reply,
             "memory_used": bool(memories),
             "session_id": request.session_id,
-            "response_mode": "jon2_original_model_with_source_retrieval",\n            "knowledge_sources": knowledge_sources,
+            "response_mode": "jon2_original_model_with_source_retrieval",
+            "knowledge_sources": knowledge_sources,
         }
     except Exception as error:
         print(f"Jon2 AI chat error: {type(error).__name__}: {error}")
