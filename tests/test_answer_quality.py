@@ -9,7 +9,7 @@ from answer_quality import diagnose_answer, validate_generated_answer
 def test_rejects_observed_fragmented_arabic_reply_one():
     answer = "ال وط الر الد الضح الط ولا الب الاسة الهدف الًا."
     assert validate_generated_answer(answer) is False
-    assert "fragmented_short_word_sequence" in diagnose_answer(answer)["surface_warnings"]
+    assert "fragmented_arabic_word_sequence" in diagnose_answer(answer)["surface_warnings"]
 
 
 def test_rejects_observed_fragmented_arabic_reply_two():
