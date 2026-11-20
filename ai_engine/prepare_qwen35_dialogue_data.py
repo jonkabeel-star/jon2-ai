@@ -91,6 +91,17 @@ def main():
         rel = path.relative_to(args.source_dir).as_posix()
         if records[rel].get("intended_use") != "research_training":
             raise PermissionError(f"{rel} is not approved for research_training.")
+        if path.name == "original_seed_ar.txt":
+            print(f"{rel}: approved prose seed; excluded from supervised dialogue conversion.")
+            continue
+        if path.name not in {
+            "original_dialogue_ar.txt",
+            "original_dialogue_ar_batch_01.txt",
+            "original_dialogue_ar_batch_02.txt",
+            "original_dialogue_ar_batch_03.txt",
+            "original_dialogue_ar_batch_04.txt",
+        }:
+            raise PermissionError(f"Unexpected approved text source for this dialogue converter: {rel}")
         parsed = parse_file(path)
         all_rows.extend(parsed)
         print(f"{rel}: {len(parsed)} conversations | sha256={sha256_bytes(path.read_bytes())}")
