@@ -356,7 +356,8 @@ test("Safari chat sends identity questions to the model and falls back after fai
   assert.match(page, /result\.qualityPassed !== true/);
   assert.match(page, /window\.JON2_LOCAL_CLIENT\.generate\(value, history\)/);
   assert.doesNotMatch(page, /promptParts = chatMessages\.slice\(-10\)/);
-  assert.match(page, /throw new Error\("JON2_QUALITY_REJECTED"\)/);\n  assert.match(page, /addMessage\(experimentalAutoReply\(value\), "assistant"\)/);
+  assert.match(page, /throw new Error\("JON2_QUALITY_REJECTED"\)/);
+  assert.match(page, /addMessage\(experimentalAutoReply\(value\), "assistant"\)/);
   assert.doesNotMatch(page, /Keep the quality signal visible, but do not hide/);
 });
 
