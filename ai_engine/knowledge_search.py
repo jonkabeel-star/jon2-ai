@@ -121,7 +121,7 @@ def _searxng(query: str, category: str, time_range: str) -> list[dict]:
         if not (url.startswith("https://") or url.startswith("http://")) or not title:
             continue
         image_url = str(row.get("thumbnail") or row.get("img_src") or "").strip()
-        if not (image_url.startswith("https://") or image_url.startswith("http://")):
+        if not image_url.startswith("https://"):
             image_url = None
         results.append({
             "title": title[:300], "extract": str(row.get("content", ""))[:MAX_EXTRACT_CHARS],
