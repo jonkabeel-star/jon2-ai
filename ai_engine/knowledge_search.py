@@ -120,11 +120,14 @@ def _searxng(query: str, category: str, time_range: str) -> list[dict]:
         title = str(row.get("title", "")).strip()
         if not (url.startswith("https://") or url.startswith("http://")) or not title:
             continue
+        image_url = str(row.get("thumbnail") or row.get("img_src") or "").strip()
+        if not (image_url.startswith("https://") or image_url.startswith("http://")):
+            image_url = None
         results.append({
             "title": title[:300], "extract": str(row.get("content", ""))[:MAX_EXTRACT_CHARS],
             "source_url": url[:2000], "source": str(row.get("engine", "SearXNG"))[:80],
             "category": category, "published": row.get("publishedDate"),
-            "result_type": "image" if category == "images" else "webpage",
+            "image_url": image_url, "result_type": "image" if category == "images" else "webpage",
         })
     return results
 
