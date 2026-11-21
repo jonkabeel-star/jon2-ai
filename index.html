@@ -376,7 +376,7 @@ function renderSearchResults(results) {
     link.rel = "noopener noreferrer";
     link.textContent = item.title || translations[lang].searchOpen;
     heading.appendChild(link);
-    if (item.image_url && /^https?:\\/\\//i.test(item.image_url)) {
+    if (item.image_url && (item.image_url.startsWith("https://") || item.image_url.startsWith("http://"))) {
       const preview = document.createElement("img");
       preview.src = item.image_url;
       preview.alt = item.title || "Search result image";
