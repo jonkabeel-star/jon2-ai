@@ -114,16 +114,16 @@ class Jon2ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 503)
         self.assertEqual(response.json()["detail"], "عقل Jon2 غير جاهز للرد")
 
-    def test_chat_has_no_retrieval_or_canned_answer_path(self):
+    def test_chat_uses_only_original_model_as_generator(self):
         with patch.object(
             jon2_api, "generate_reply", return_value="إجابة أنشأها نموذج جون تو للاختبار."
         ) as generate:
             response = self.client.post("/api/chat", json={"message": "سؤال اختباري"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["reply"], "إجابة أنشأها نموذج جون تو للاختبار.")
-        self.assertEqual(response.json()["response_mode"], "jon2_original_model_only")
-        self.assertNotIn("knowledge_used", response.json())
-        generate.assert_called_once_with("سؤال اختباري", [], [])
+        self.assertEqual(response.json()["response_mode"], "jon2_original_model_with_source_retrieval")
+        self.assertEqual(response.json()["knowledge_sources"], [])
+        generate.assert_called_once_with("سؤال اختباري", [], [], knowledge_context=None)
 
     def test_empty_model_output_is_never_returned_as_a_reply(self):
         with patch.object(jon2_api, "generate_reply", return_value="   "):
@@ -156,8 +156,9 @@ class Jon2ApiTests(unittest.TestCase):
             response = self.client.post("/api/chat", json={"message": "مرحبا"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["reply"], "أهلًا بك")
-        self.assertEqual(response.json()["response_mode"], "jon2_original_model_only")
-        generate.assert_called_once_with("مرحبا", [], [])
+        self.assertEqual(response.json()["response_mode"], "jon2_original_model_with_source_retrieval")
+        self.assertEqual(response.json()["knowledge_sources"], [])
+        generate.assert_called_once_with("مرحبا", [], [], knowledge_context=None)
 
     def test_chat_rejects_whitespace_only_message(self):
         with patch.object(jon2_api, "generate_reply") as generate:
@@ -296,6 +297,45 @@ class Jon2ApiTests(unittest.TestCase):
         payload = response.json()
         self.assertEqual(payload["model_status"], "checkpoint_missing")
         self.assertFalse(payload["chat_ready"])
+
+
+    def test_search_endpoint_accepts_categories_and_returns_source_metadata(self):
+        mocked = {
+            "query": "climate change", "category": "science", "time_range": "year",
+            "results": [{"title": "Paper", "extract": "Research summary", "source_url": "https://doi.org/example",
+                         "source": "Crossref", "category": "science", "published": "2025", "relevance": 0.9}],
+            "cached": False, "status": "ok", "sources_used": ["Crossref"],
+        }
+        with patch.object(jon2_api, "search_knowledge", return_value=mocked):
+            response = self.client.post("/api/knowledge/search", json={
+                "query": "climate change", "category": "science", "time_range": "year", "limit": 10
+            })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["results"][0]["source"], "Crossref")
+        self.assertEqual(response.json()["answer_type"], "retrieved_source_extract")
+
+    def test_search_endpoint_rejects_unknown_category(self):
+        response = self.client.post("/api/knowledge/search", json={
+            "query": "climate change", "category": "everything"
+        })
+        self.assertEqual(response.status_code, 422)
+
+    def test_factual_chat_passes_retrieved_evidence_to_original_model(self):
+        retrieved = {
+            "results": [{"title": "Cairo", "extract": "Cairo is the capital of Egypt.",
+                         "source_url": "https://en.wikipedia.org/wiki/Cairo"}]
+        }
+        with (
+            patch.object(jon2_api, "search_knowledge", return_value=retrieved),
+            patch.object(jon2_api, "generate_reply", return_value="القاهرة") as generate,
+        ):
+            response = self.client.post("/api/chat", json={"message": "ما عاصمة مصر؟"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["reply"], "القاهرة")
+        self.assertEqual(response.json()["knowledge_sources"], [
+            {"title": "Cairo", "url": "https://en.wikipedia.org/wiki/Cairo"}
+        ])
+        self.assertIn("Cairo is the capital of Egypt.", generate.call_args.kwargs["knowledge_context"])
 
 
 if __name__ == "__main__":

@@ -72,6 +72,20 @@ textarea{resize:vertical;min-height:54px;max-height:150px;flex:1;min-width:0;bac
 textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(113,140,255,.12)}
 .send{border:0;border-radius:13px;padding:0 24px;background:linear-gradient(120deg,#718cff,#596de9);color:white;font-weight:800}
 .status-note{padding:0 20px 15px;color:var(--muted);font-size:11px;line-height:1.8}
+.search-shell{border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,rgba(17,26,43,.98),rgba(10,16,28,.98));padding:18px}
+.search-form{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:9px}
+.search-form input,.search-form select{min-width:0;background:#0a1220;color:var(--text);border:1px solid #344766;border-radius:12px;padding:13px;outline:none}
+.search-form input:focus,.search-form select:focus{border-color:var(--blue)}
+.search-submit{border:0;border-radius:12px;padding:0 20px;background:linear-gradient(120deg,#718cff,#596de9);color:white;font-weight:800}
+.search-results{display:grid;gap:12px;margin-top:18px}
+.search-result{border:1px solid #263958;border-radius:14px;padding:15px;background:#111d30}
+.search-result h3{font-size:15px;line-height:1.6;margin:0 0 6px;color:#9eb4ff}
+.search-result img{display:block;max-width:min(100%,280px);max-height:190px;object-fit:contain;border-radius:10px;margin:8px 0;background:#0a1220}
+.search-result p{font-size:12px;line-height:1.8;color:#c4cee0;margin:0 0 8px;white-space:pre-wrap}
+.search-meta{font-size:10px;color:var(--cyan);display:flex;gap:10px;flex-wrap:wrap}
+.search-empty{font-size:12px;color:var(--muted);line-height:1.8;padding:12px}
+@media(max-width:700px){.search-form{grid-template-columns:1fr 1fr}.search-form input{grid-column:1/-1}.search-submit{min-height:45px}.search-form select{width:100%}}
+
 .local-model-panel{margin:14px 14px 0;padding:14px;border:1px solid #344766;border-radius:15px;background:#0c1525}.local-model-panel summary{display:none}.local-model-panel.is-hidden{display:none}.local-setup-heading{font-size:13px;font-weight:800;color:#dce7ff;margin-bottom:8px}
 .local-model-panel summary{cursor:pointer;font-weight:750;font-size:13px;color:#dce7ff}
 .local-model-panel p{font-size:11px;color:var(--muted);line-height:1.8;margin:9px 0}
@@ -82,14 +96,14 @@ footer{border-top:1px solid rgba(130,157,207,.14);padding:25px 0 34px;color:var(
 .footer-inner{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
 button:disabled{opacity:.6;cursor:not-allowed}
 @media(max-width:850px){.hero{grid-template-columns:1fr;padding-top:54px}.hero-art{min-height:240px}.tools{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:520px){.wrap{width:min(100% - 26px,1120px)}header{height:72px}.logo{width:42px;height:42px}.brand-name{font-size:18px}.hero{padding:45px 0 35px;gap:15px}h1{font-size:39px}.hero p{font-size:14px}.hero-art{min-height:215px}.orbit{width:205px;height:205px}.core{width:88px;height:88px;font-size:30px}.f1{top:8px}.f2{bottom:17px}.tools{grid-template-columns:1fr 1fr;gap:9px}.tool{padding:14px;min-height:174px}.tool-icon{width:42px;height:42px;margin-bottom:12px}.tool h3{font-size:14px}.tool p{font-size:11px}.section-head h2{font-size:21px}.chat-top{padding:14px}.messages{height:280px;padding:12px}.composer{flex-direction:column}.send{min-height:48px}.footer-inner{flex-direction:column}}
+@media(max-width:520px){.wrap{width:min(100% - 26px,1120px)}header{height:72px}.header-actions{gap:4px}.nav-link,.lang{padding:8px 7px;font-size:10px}.logo{width:42px;height:42px}.brand-name{font-size:18px}.hero{padding:45px 0 35px;gap:15px}h1{font-size:39px}.hero p{font-size:14px}.hero-art{min-height:215px}.orbit{width:205px;height:205px}.core{width:88px;height:88px;font-size:30px}.f1{top:8px}.f2{bottom:17px}.tools{grid-template-columns:1fr 1fr;gap:9px}.tool{padding:14px;min-height:174px}.tool-icon{width:42px;height:42px;margin-bottom:12px}.tool h3{font-size:14px}.tool p{font-size:11px}.section-head h2{font-size:21px}.chat-top{padding:14px}.messages{height:280px;padding:12px}.composer{flex-direction:column}.send{min-height:48px}.footer-inner{flex-direction:column}}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
   <a class="brand" href="#" aria-label="Jon2 AI home"><div class="logo">J2</div><div><div class="brand-name">Jon2 AI</div><div class="brand-sub" data-t="brandSub">منصتك للإبداع بالذكاء الاصطناعي</div></div></a>
-  <div class="header-actions"><a class="nav-link" href="#assistant" data-t="assistantNav">المحادثة العامة</a><a class="nav-link" href="#tools" data-t="toolsNav">الأدوات</a><button class="lang" id="language">English 🌐</button></div>
+  <div class="header-actions"><a class="nav-link" href="#search" data-t="searchNav">البحث</a><a class="nav-link" href="#assistant" data-t="assistantNav">المحادثة العامة</a><a class="nav-link" href="#tools" data-t="toolsNav">الأدوات</a><button class="lang" id="language">English 🌐</button></div>
 </header>
 <main>
 <section class="hero">
@@ -109,6 +123,30 @@ button:disabled{opacity:.6;cursor:not-allowed}
     <article class="tool"><div class="tool-icon">🎬</div><h3 data-t="videoTitle">توليد الفيديو</h3><p data-t="videoDesc">اصنع مشاهد وقصص فيديو من أفكارك.</p><span class="tag" data-t="soon">قريبًا</span></article>
     <article class="tool"><div class="tool-icon">🎙️</div><h3 data-t="audioTitle">الصوت والتعليق</h3><p data-t="audioDesc">أدوات صوتية ومساعدة في التعليق الصوتي.</p><span class="tag" data-t="soon">قريبًا</span></article>
     <article class="tool"><div class="tool-icon">📖</div><h3 data-t="storyTitle">كتابة القصص</h3><p data-t="storyDesc">طوّر أفكارك إلى قصص وسيناريوهات.</p><span class="tag" data-t="soon">قريبًا</span></article>
+  </div>
+</section>
+
+<section class="section" id="search">
+  <div class="section-head"><div><h2 data-t="searchTitle">محرك البحث في Jon2</h2><p data-t="searchDesc">ابحث في الويب والأخبار والأبحاث، واعرض المصادر الأصلية</p></div></div>
+  <div class="search-shell">
+    <form class="search-form" id="searchForm">
+      <input id="searchQuery" type="search" maxlength="500" minlength="3" required placeholder="ابحث في الإنترنت..." data-ph="searchPlaceholder" aria-label="Search the web">
+      <select id="searchCategory" aria-label="Search category">
+        <option value="web" data-t="searchWeb">الويب</option>
+        <option value="news" data-t="searchNews">الأخبار</option>
+        <option value="science" data-t="searchScience">الأبحاث</option>
+        <option value="images" data-t="searchImages">الصور</option>
+      </select>
+      <select id="searchTime" aria-label="Time range">
+        <option value="any" data-t="searchAnyTime">أي وقت</option>
+        <option value="day" data-t="searchDay">آخر 24 ساعة</option>
+        <option value="week" data-t="searchWeek">آخر أسبوع</option>
+        <option value="month" data-t="searchMonth">آخر شهر</option>
+        <option value="year" data-t="searchYear">آخر سنة</option>
+      </select>
+      <button class="search-submit" type="submit" id="searchSubmit" data-t="searchButton">ابحث ←</button>
+    </form>
+    <div class="search-results" id="searchResults" aria-live="polite"><div class="search-empty" data-t="searchIntro">اكتب ما تريد البحث عنه، وستظهر النتائج مع روابط مصادرها.</div></div>
   </div>
 </section>
 
@@ -134,9 +172,11 @@ button:disabled{opacity:.6;cursor:not-allowed}
 <script>
 const translations={
 ar:{
+searchNav:"البحث",searchTitle:"محرك البحث في Jon2",searchDesc:"ابحث في الويب والأخبار والأبحاث، واعرض المصادر الأصلية",searchPlaceholder:"ابحث في الإنترنت...",searchWeb:"الويب",searchNews:"الأخبار",searchScience:"الأبحاث",searchImages:"الصور",searchAnyTime:"أي وقت",searchDay:"آخر 24 ساعة",searchWeek:"آخر أسبوع",searchMonth:"آخر شهر",searchYear:"آخر سنة",searchButton:"ابحث ←",searchIntro:"اكتب ما تريد البحث عنه، وستظهر النتائج مع روابط مصادرها.",searching:"جارٍ البحث في المصادر المتاحة…",searchUnavailable:"تعذر الوصول إلى محرك البحث. تأكد من اتصال خادم Jon2.",searchNoResults:"لم نعثر على نتائج موثوقة لهذا الاستعلام.",searchSource:"المصدر",searchOpen:"فتح الصفحة الأصلية",searchFailed:"تعذر إكمال البحث. حاول مرة أخرى.",
 brandSub:"منصتك للإبداع بالذكاء الاصطناعي",assistantNav:"المحادثة العامة",toolsNav:"الأدوات",eyebrow:"مساحة إبداعية مفتوحة للجميع",heroLine1:"حوّل أفكارك إلى",heroLine2:"إبداع مع Jon2 AI",heroText:"اكتشف أدوات الذكاء الاصطناعي لصناعة المحتوى والصور والفيديوهات. ابدأ من فكرتك، واترك مساحة للإبداع.",explore:"استكشف الأدوات ←",tryChat:"جرّب المساعد",toolsTitle:"استوديو الأدوات",toolsDesc:"كل أفكارك الإبداعية في مكان واحد",imageTitle:"توليد الصور",imageDesc:"حوّل وصفك إلى أفكار وصور إبداعية.",videoTitle:"توليد الفيديو",videoDesc:"اصنع مشاهد وقصص فيديو من أفكارك.",audioTitle:"الصوت والتعليق",audioDesc:"أدوات صوتية ومساعدة في التعليق الصوتي.",storyTitle:"كتابة القصص",storyDesc:"طوّر أفكارك إلى قصص وسيناريوهات.",soon:"قريبًا",assistantHeading:"المحادثة العامة — Jon2 AI",assistantDesc:"متاحة للزوار بدون تسجيل دخول؛ محرك Jon2 الأصلي قيد التجهيز",assistantName:"مساعد Jon2 AI",offline:"عقل Jon2 الأصلي غير محمّل",apiOnline:"بوابة Jon2 متصلة — محرك النموذج الأصلي غير جاهز",modelReady:"نموذج Jon2 جاهز",requestFailed:"تعذر الحصول على رد من خادم Jon2 AI.",apiNotReadyNote:"المحادثة العامة مفتوحة للزوار، لكن إرسال الرسائل ينتظر جاهزية محرك Jon2 الأصلي واجتيازه مراجعة الجودة.",apiReadyNote:"محرك Jon2 الأصلي اجتاز اختبارات الجاهزية المعتمدة وأصبح متاحًا.",offlineNote:"يحاول Safari تشغيل نسخة Jon2 المحفوظة تلقائيًا. إذا لم تكن النسخة متاحة على هذا الجهاز، فستظل المحادثة مغلقة حتى يتوفر اتصال آمن بالعقل الأصلي.",localPanelTitle:"تشغيل عقل Jon2 تلقائيًا",localPanelHelp:"يحاول Safari استعادة نسخة Jon2 المحفوظة تلقائيًا على هذا الجهاز دون طلب ملفات.",bundleNotebookLink:"فتح دفتر تجهيز الحزمة الخاصة",bundleLabel:"ملف Jon2 الخاص ZIP",weightsHashLabel:"بصمة SHA-256 للأوزان",loadLocal:"تحقق من الحزمة وتشغيل Jon2",localNotLoaded:"لم يتم العثور على نسخة محلية من عقل Jon2. سيحاول Safari استعادتها تلقائيًا عند توفرها؛ لا يلزم اختيار ملف.",localLoading:"جارٍ التحقق من النموذج وتحميله على الجهاز…",localReady:"تم تحميل عقل Jon2 الأصلي على هذا الجهاز",localFailed:"فشل تحميل النموذج. راجع الملف وبصمة الأوزان.",localNote:"يتم توليد الردود من أوزان Jon2 الأصلية المحفوظة على هذا الجهاز. إذا تعذر التحميل أو فشل التوليد فستظهر رسالة خطأ صريحة. قد يوقف iOS المعالجة عند مغادرة الصفحة.",localPlaceholder:"اكتب رسالتك إلى Jon2 المحلي…",clear:"مسح المحادثة",welcome:"أهلًا بك في المحادثة العامة لـ Jon2 AI. يمكنك فتح الواجهة واستخدامها دون تسجيل دخول. الردود الذكية ستبدأ عندما يصبح محرك Jon2 الأصلي جاهزًا؛ لن نعرض إجابات وهمية.",placeholder:"اكتب رسالتك هنا...",waitingPlaceholder:"حمّل حزمة عقل Jon2 الأصلية أولًا لتفعيل المحادثة",send:"إرسال ↑",chatNote:"واجهة المحادثة العامة متاحة؛ محرك Jon2 الأصلي لم يجتز اختبار الجودة بعد، لذلك الردود متوقفة مؤقتًا.",adPlaceholder:"مساحة إعلانية مستقبلية — ستُفعّل بعد موافقة Google AdSense",footerText:"منصة إبداعية مستقلة — قيد التطوير",backendError:"تعذر الاتصال ببوابة Jon2 AI. أعد المحاولة لاحقًا."
 },
 en:{
+searchNav:"Search",searchTitle:"Jon2 Search",searchDesc:"Search the web, news, and research; open original sources",searchPlaceholder:"Search the internet...",searchWeb:"Web",searchNews:"News",searchScience:"Research",searchImages:"Images",searchAnyTime:"Any time",searchDay:"Past 24 hours",searchWeek:"Past week",searchMonth:"Past month",searchYear:"Past year",searchButton:"Search →",searchIntro:"Enter a query to see results with links to their original sources.",searching:"Searching available sources…",searchUnavailable:"Search service is unavailable. Check the Jon2 server connection.",searchNoResults:"No reliable results were found for this query.",searchSource:"Source",searchOpen:"Open original page",searchFailed:"Search could not be completed. Try again.",
 brandSub:"Your AI-powered creative space",toolsNav:"Tools",eyebrow:"A creative space open to everyone",heroLine1:"Turn your ideas into",heroLine2:"creativity with Jon2 AI",heroText:"Explore AI tools for content, images and videos. Start with an idea and make room for creativity.",explore:"Explore tools →",tryChat:"Try the assistant",toolsTitle:"Creative tools",toolsDesc:"Your creative ideas, all in one place",imageTitle:"Image generation",imageDesc:"Turn your prompts into creative image concepts.",videoTitle:"Video generation",videoDesc:"Create video scenes and stories from your ideas.",audioTitle:"Audio & voice",audioDesc:"Audio tools and voice-over assistance.",storyTitle:"Story writing",storyDesc:"Develop ideas into stories and scripts.",soon:"Coming soon",assistantHeading:"Public Jon2 AI Chat",assistantDesc:"Open to visitors without sign-in; the original Jon2 engine is being prepared",assistantName:"Jon2 AI Assistant",offline:"Original Jon2 model is not loaded",apiOnline:"Jon2 gateway connected — original model is not ready",modelReady:"Jon2 model is ready",requestFailed:"Could not get a reply from the Jon2 AI server.",apiNotReadyNote:"The public chat page is open, but message replies are waiting for the original Jon2 engine to pass quality review.",apiReadyNote:"The original Jon2 engine passed its readiness checks and is available.",offlineNote:"Chat is locked until the original Jon2 bundle is loaded. Prepare the private ZIP with the export notebook, then select it here. Safari will verify it before enabling local chat.",localPanelTitle:"Step 1 — Load the original Jon2 brain on this iPhone",localPanelHelp:"Prepare the private Jon2 ZIP in Kaggle, select it from the iPhone Files app, and tap Load. Safari verifies the model fingerprint before running it. Your model weights and messages are not sent to an external AI provider.",bundleNotebookLink:"Open the private bundle export notebook",bundleLabel:"Private Jon2 bundle ZIP",weightsHashLabel:"Weights SHA-256 fingerprint",loadLocal:"Verify bundle and start Jon2",localNotLoaded:"The original Jon2 model is not loaded. Chat stays locked until its private bundle is selected and verified.",localLoading:"Verifying and loading the model on this device…",localReady:"Original Jon2 model loaded on this device",localFailed:"Model loading failed. Check the file and weights fingerprint.",localNote:"Replies are generated from the original Jon2 weights saved on this device. Loading or generation failures are reported explicitly. iOS may stop processing when you leave the page.",localPlaceholder:"Message your local Jon2 model…",clear:"Clear chat",welcome:"Welcome to the public Jon2 AI chat. The page is open without sign-in. AI replies will start when the original Jon2 engine is ready; we will not show fake answers.",placeholder:"Type your message here...",waitingPlaceholder:"اكتب رسالتك — الرد ينتظر جاهزية عقل Jon2 الأصلي",send:"Send ↑",chatNote:"The public chat interface is available. The original Jon2 engine has not passed quality checks yet, so replies are temporarily paused.",adPlaceholder:"Future ad space — enabled only after Google AdSense approval",footerText:"Independent creative platform — in development",backendError:"Could not connect to the Jon2 AI gateway. Please try again later."
 }};
 const STORAGE_KEY = "jon2_ai_site_state_v2";
@@ -315,6 +355,86 @@ function addMessage(value, kind) {
   renderMessages();
   saveState();
 }
+
+function renderSearchResults(results) {
+  const box = document.getElementById("searchResults");
+  box.replaceChildren();
+  if (!Array.isArray(results) || results.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "search-empty";
+    empty.textContent = translations[lang].searchNoResults;
+    box.appendChild(empty);
+    return;
+  }
+  results.forEach(item => {
+    const card = document.createElement("article");
+    card.className = "search-result";
+    const heading = document.createElement("h3");
+    const link = document.createElement("a");
+    link.href = item.source_url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = item.title || translations[lang].searchOpen;
+    heading.appendChild(link);
+    if (item.image_url && item.image_url.startsWith("https://")) {
+      const preview = document.createElement("img");
+      preview.src = item.image_url;
+      preview.alt = item.title || "Search result image";
+      preview.loading = "lazy";
+      preview.referrerPolicy = "no-referrer";
+      card.appendChild(preview);
+    }
+    const excerpt = document.createElement("p");
+    excerpt.textContent = item.extract || "";
+    const meta = document.createElement("div");
+    meta.className = "search-meta";
+    const source = document.createElement("span");
+    source.textContent = translations[lang].searchSource + ": " + (item.source || "Web");
+    meta.appendChild(source);
+    if (item.published) {
+      const date = document.createElement("span");
+      date.textContent = String(item.published);
+      meta.appendChild(date);
+    }
+    card.append(heading, excerpt, meta);
+    box.appendChild(card);
+  });
+}
+
+document.getElementById("searchForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  const query = document.getElementById("searchQuery").value.trim();
+  const box = document.getElementById("searchResults");
+  const button = document.getElementById("searchSubmit");
+  if (query.length < 3 || !API_BASE_URL) {
+    box.textContent = translations[lang].searchUnavailable;
+    return;
+  }
+  button.disabled = true;
+  box.textContent = translations[lang].searching;
+  try {
+    const response = await fetch(API_BASE_URL + "/api/knowledge/search", {
+      method: "POST",
+      headers: {"Content-Type":"application/json","Accept":"application/json"},
+      body: JSON.stringify({
+        query,
+        category: document.getElementById("searchCategory").value,
+        time_range: document.getElementById("searchTime").value,
+        limit: 10
+      }),
+      cache: "no-store",
+      signal: AbortSignal.timeout(25000)
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.detail || translations[lang].searchFailed);
+    renderSearchResults(payload.results);
+  } catch (error) {
+    box.textContent = translations[lang].searchFailed + " " + (error?.message || "");
+    console.warn("Jon2 search request failed.", error);
+  } finally {
+    button.disabled = false;
+  }
+});
 
 document.getElementById("language").addEventListener("click", () => {
   setLang(lang === "ar" ? "en" : "ar");
