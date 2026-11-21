@@ -5,7 +5,8 @@ services:
     plan: free
     dockerfilePath: ./search_service/Dockerfile
     dockerContext: .
-    healthCheckPath: /\n    autoDeployTrigger: off
+    healthCheckPath: /
+    autoDeployTrigger: off
     envVars:
       - key: SEARXNG_SECRET
         generateValue: true
