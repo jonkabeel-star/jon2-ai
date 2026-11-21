@@ -5,7 +5,7 @@ services:
     plan: free
     dockerfilePath: ./search_service/Dockerfile
     dockerContext: .
-    healthCheckPath: /healthz
+    healthCheckPath: /
     envVars:
       - key: SEARXNG_SECRET
         generateValue: true
