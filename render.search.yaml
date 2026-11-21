@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: jon2-search-engine
+    runtime: docker
+    plan: free
+    dockerfilePath: ./search_service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    envVars:
+      - key: SEARXNG_SECRET
+        generateValue: true
