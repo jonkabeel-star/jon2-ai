@@ -154,10 +154,14 @@ def _wikipedia(query: str) -> list[dict]:
 
 
 def _gdelt_news(query: str, time_range: str) -> list[dict]:
-    days = {"day": 1, "week": 7, "month": 30, "year": 365}.get(time_range, 7)
-    start = time.strftime("%Y%m%d%H%M%S", time.gmtime(time.time() - days * 86400))
-    params = urlencode({"query": query, "mode": "ArtList", "format": "json", "maxrecords": 15,
-                        "sort": "HybridRel", "startdatetime": start})
+    params_data = {"query": query, "mode": "ArtList", "format": "json", "maxrecords": 15,
+                   "sort": "HybridRel"}
+    days = {"day": 1, "week": 7, "month": 30, "year": 365}.get(time_range)
+    if days is not None:
+        params_data["startdatetime"] = time.strftime(
+            "%Y%m%d%H%M%S", time.gmtime(time.time() - days * 86400)
+        )
+    params = urlencode(params_data)
     payload = _json("https://api.gdeltproject.org/api/v2/doc/doc?" + params)
     output = []
     for row in payload.get("articles", []):
