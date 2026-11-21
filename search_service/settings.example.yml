@@ -1,7 +1,7 @@
 use_default_settings: true
 server:
   secret_key: "CHANGE_THIS_TO_A_LONG_RANDOM_SECRET"
-  limiter: true
+  limiter: false
   image_proxy: false
   method: GET
   port: 8080
