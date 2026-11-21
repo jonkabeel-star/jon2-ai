@@ -4,7 +4,7 @@ This folder contains a separate SearXNG metasearch service, independent from the
 
 ## Run with Docker Compose
 1. Copy `settings.example.yml` to `settings.yml`.
-2. Create a local `.env` file with `SEARXNG_SECRET=` followed by a long random secret. Never commit the secret or `.env`.
+2. Copy `.env.example` to `.env` and replace the placeholder with a long random secret. Never commit the secret or `.env`.
 3. Run `docker compose up -d`.
 4. Check `http://localhost:8080/healthz` and `/search?q=arabic&format=json`.
 5. Set the Jon2 API environment variable `JON2_SEARXNG_URL=https://YOUR-SEARCH-HOST`.
