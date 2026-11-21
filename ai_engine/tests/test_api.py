@@ -325,8 +325,10 @@ class Jon2ApiTests(unittest.TestCase):
             "results": [{"title": "Cairo", "extract": "Cairo is the capital of Egypt.",
                          "source_url": "https://en.wikipedia.org/wiki/Cairo"}]
         }
-        with patch.object(jon2_api, "search_knowledge", return_value=retrieved), \\
-             patch.object(jon2_api, "generate_reply", return_value="القاهرة") as generate:
+        with (
+            patch.object(jon2_api, "search_knowledge", return_value=retrieved),
+            patch.object(jon2_api, "generate_reply", return_value="القاهرة") as generate,
+        ):
             response = self.client.post("/api/chat", json={"message": "ما عاصمة مصر؟"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["reply"], "القاهرة")
