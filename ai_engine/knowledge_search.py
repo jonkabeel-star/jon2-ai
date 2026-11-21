@@ -7,6 +7,7 @@ import re
 import sqlite3
 import time
 import unicodedata
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from urllib.parse import quote, urlencode
@@ -269,11 +270,16 @@ def search_knowledge(query: str, limit: int = 10, category: str = "web", time_ra
     elif category == "science":
         providers.extend([lambda: _crossref(clean), lambda: _openalex(clean), lambda: _europe_pmc(clean)])
     # SearXNG is the broad-web connector; open APIs provide independent fallback coverage.
-    for provider in providers:
-        try:
-            gathered.extend(provider())
-        except Exception as exc:
-            errors.append(type(exc).__name__)
+    if providers:
+        with ThreadPoolExecutor(max_workers=min(5, len(providers))) as pool:
+            futures = [pool.submit(provider) for provider in providers]
+            for future in futures:
+                try:
+                    gathered.extend(future.result(timeout=10))
+                except FutureTimeout:
+                    errors.append("ProviderTimeout")
+                except Exception as exc:
+                    errors.append(type(exc).__name__)
     ranked = _rank(clean, gathered)[:limit]
     _cache_put(key, ranked, now)
     return {"query": query, "category": category, "time_range": time_range, "results": ranked,
