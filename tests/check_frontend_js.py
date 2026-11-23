@@ -66,6 +66,12 @@ def check_inline_scripts(html_path: Path) -> int:
         "limitedPublicReply",
         "Jon2 limited rule-based reply",
         'addMessage(limitedPublicReply(value), "assistant")',
+        'const oneWord = text.split(" ").filter(Boolean).length === 1',
+        'وصلتني كلمة «',
+        'هل تقصد الذكاء البشري أم الاصطناعي؟',
+        'أنا سامعك',
+        'ولا يهمك',
+
     )
     missing = [marker for marker in required_contract if marker not in combined]
     if missing:
