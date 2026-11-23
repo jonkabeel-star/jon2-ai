@@ -291,8 +291,8 @@ window.JON2_REFRESH_CHAT_STATE = function () {
 function syncChatControls() {
   const input = document.getElementById("input");
   const send = document.getElementById("send");
-  // Keep the public composer accessible. The submit handler still fails closed
-  // unless the original Jon2 model or a verified Jon2 API is genuinely ready.
+  // Keep public chat usable: native Jon2 takes priority, then the configured API,
+  // and the clearly labeled rule-based public mode is used when neither is available.
   const enabled = !chatBusy;
   input.disabled = !enabled;
   send.disabled = !enabled;
