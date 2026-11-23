@@ -65,7 +65,7 @@ def check_inline_scripts(html_path: Path) -> int:
         "limitedPublicReply",
         "Jon2 limited rule-based reply",
         'addMessage(limitedPublicReply(value), "assistant")',
-        "Keep it out of public answer generation",
+        "public answer generation; use the transparent limited reply path instead.",
         "حتى يجتاز النموذج مراجعة الجودة والاعتماد البشري",
 
         'const oneWord = text.split(" ").filter(Boolean).length === 1',
