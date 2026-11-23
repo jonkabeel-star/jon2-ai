@@ -1,4 +1,4 @@
-const CACHE_NAME = "jon2-iphone-shell-v4";
+const CACHE_NAME = "jon2-iphone-shell-v5";
 const APP_SHELL = [
   "./",
   "./index.html",

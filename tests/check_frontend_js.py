@@ -57,7 +57,6 @@ def check_inline_scripts(html_path: Path) -> int:
         "payload.message",
         "apiNotReadyNote",
         "AbortSignal.timeout",
-        "window.JON2_LOCAL_CLIENT.generate",
         "CHECKPOINT_SHA256",
         "readSavedJon2Bundle",
         "MODEL_DB_NAME",
@@ -66,6 +65,15 @@ def check_inline_scripts(html_path: Path) -> int:
         "limitedPublicReply",
         "Jon2 limited rule-based reply",
         'addMessage(limitedPublicReply(value), "assistant")',
+        "public answer generation; use the transparent limited reply path instead.",
+        "حتى يجتاز النموذج مراجعة الجودة والاعتماد البشري",
+
+        'const oneWord = text.split(" ").filter(Boolean).length === 1',
+        'وصلتني كلمة «',
+        'هل تقصد الذكاء البشري أم الاصطناعي؟',
+        'أنا سامعك',
+        'ولا يهمك',
+
     )
     missing = [marker for marker in required_contract if marker not in combined]
     if missing:
