@@ -1,0 +1,33 @@
+name: Jon2 Search Validation
+
+on:
+  pull_request:
+    paths:
+      - "search_service/**"
+      - ".github/workflows/jon2-search-validation.yml"
+  push:
+    branches: [main]
+    paths:
+      - "search_service/**"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Compile Python backend
+        run: python -m py_compile search_service/main.py
+      - name: Check Worker JavaScript syntax
+        run: node --input-type=module --check < search_service/worker.js
