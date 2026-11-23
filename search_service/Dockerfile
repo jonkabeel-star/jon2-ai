@@ -1,8 +1,3 @@
-FROM python:3.12-slim
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
-WORKDIR /app
-COPY search_service/requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
-COPY search_service/main.py ./main.py
-EXPOSE 10000
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-10000}"]
+FROM searxng/searxng:latest
+COPY search_service/settings.example.yml /etc/searxng/settings.yml
+EXPOSE 8080
