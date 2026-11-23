@@ -63,6 +63,9 @@ def check_inline_scripts(html_path: Path) -> int:
         "MODEL_DB_NAME",
         "saved.weightsSha256",
         "saved.manifestText",
+        "limitedPublicReply",
+        "Jon2 limited rule-based reply",
+        'addMessage(limitedPublicReply(value), "assistant")',
     )
     missing = [marker for marker in required_contract if marker not in combined]
     if missing:
