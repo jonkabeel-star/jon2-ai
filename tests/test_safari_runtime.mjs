@@ -353,7 +353,7 @@ test("Public Safari chat keeps the unapproved native checkpoint out of answers",
   assert.doesNotMatch(page, /experimentalAutoReply/);
   assert.doesNotMatch(page, /window.JON2_LOCAL_CLIENT.generate(normalizedValue, history)/);
   assert.ok(page.includes('addMessage(limitedPublicReply(value), "assistant")'));
-  assert.ok(page.includes("quality review and human approval"));
+  assert.ok(page.includes("مراجعة الجودة والاعتماد البشري"));
   assert.doesNotMatch(page, /تعذر على النموذج المحلي توليد رد|The local model could not generate a reply/);
 });
 
