@@ -26,6 +26,17 @@ class ArabicCorpusAuditTests(unittest.TestCase):
             self.assertFalse(report["ready_for_training"])
             self.assertFalse(report["human_review"]["approved"])
 
+    def test_empty_split_is_blocked(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            paths = {
+                "train": self.write_split(root, "train", [{"text": "مرحبا"}]),
+                "validation": self.write_split(root, "validation", []),
+                "test": self.write_split(root, "test", [{"text": "اختبار منفصل"}]),
+            }
+            report = audit_splits(paths, "text")
+            self.assertIn("one_or_more_splits_are_empty", report["blockers"])
+
     def test_cross_split_duplicate_is_blocked(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
