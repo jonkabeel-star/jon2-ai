@@ -59,8 +59,9 @@ async def _download_private_blob(pathname: str, destination: Path) -> None:
         raise
 
 
-def ensure_private_checkpoint() -> Path:
-    """Return a verified local checkpoint, downloading it only when needed."""
+async def ensure_private_checkpoint_async() -> Path:
+    """Return a verified local checkpoint using async Blob I/O."""
+
     pathname = os.getenv("JON2_CHECKPOINT_BLOB", "jon2-last.pt").strip()
     expected_hash = _APPROVED_CHECKPOINTS.get(pathname)
     if expected_hash is None:
@@ -77,10 +78,21 @@ def ensure_private_checkpoint() -> Path:
         return destination
 
     destination.unlink(missing_ok=True)
-    asyncio.run(_download_private_blob(pathname, destination))
+    await _download_private_blob(pathname, destination)
 
     actual_hash = _sha256_file(destination)
     if actual_hash != expected_hash:
         destination.unlink(missing_ok=True)
         raise RuntimeError("فشل التحقق من سلامة ملف أوزان Jon2 (SHA-256).")
     return destination
+
+
+def ensure_private_checkpoint() -> Path:
+    """Synchronous adapter for worker-thread callers outside an event loop."""
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(ensure_private_checkpoint_async())
+    raise RuntimeError(
+        "A running event loop is active; use ensure_private_checkpoint_async()."
+    )
