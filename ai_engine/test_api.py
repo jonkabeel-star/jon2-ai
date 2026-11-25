@@ -15,11 +15,15 @@ import main
 class ApiHealthTests(unittest.TestCase):
 
     def test_startup_preload_uses_async_runtime_loader(self):
+        main.PRELOAD_STATE = "not_started"
+        main.PRELOAD_ERROR = None
         with patch.dict(os.environ, {"JON2_PRELOAD_MODEL": "true"}, clear=False), patch(
             "main.load_runtime_async", new_callable=AsyncMock
         ) as loader:
             asyncio.run(main.preload_original_jon2_model())
         loader.assert_awaited_once_with()
+        self.assertEqual(main.PRELOAD_STATE, "loaded")
+        self.assertIsNone(main.PRELOAD_ERROR)
 
     def test_liveness_is_independent_of_model_weights(self):
         self.assertEqual(main.liveness()["status"], "alive")
