@@ -37,6 +37,10 @@ The existing GitHub Actions workflow `.github/workflows/jon2-private-gpu-trainin
 
 No training run should be dispatched until that runner is online, the private paths are configured, the approved corpus passes preflight, and the training plan is confirmed. Do not substitute a hosted CPU runner or the user's iPhone for GPU training.
 
+## Dataset format gate
+
+The current three-way dialogue trainer accepts structured UTF-8 JSONL records shaped as `{"messages":[{"role":"user","content":"..."},{"role":"assistant","content":"..."}]}`, with complete alternating user/assistant turns. It does not directly ingest arbitrary Parquet, scraped web pages, or plain-text corpora as dialogue. Each candidate source therefore needs a separately reviewed adapter/normalization step that preserves source IDs and attribution. No candidate dataset has yet been downloaded, transformed, or approved. A source must not be converted into synthetic assistant turns or labelled as a conversation when its original data does not contain that structure.
+
 ## Corrected training workflow integration
 
 The manual GPU workflow now follows the existing three-way dialogue pipeline instead of the older source-file-only split:
