@@ -352,6 +352,54 @@
         "Egyptian_Arabic_pretraining_research_candidate_only_after_source_level_rights_review"
       ],
       "reference_checked": "2026-11-25"
+    },
+    {
+      "id": "HeshamHaroon-asfar",
+      "url": "https://huggingface.co/datasets/HeshamHaroon/asfar",
+      "language": [
+        "Modern Standard Arabic",
+        "Classical Arabic"
+      ],
+      "declared_license": "CC-BY-4.0 for aggregation/normalization/metadata; underlying books claimed public domain per book",
+      "reported_records": 123062,
+      "reported_size": "123,062 page rows; 461 PDF volumes; 121 titles recovered; 78,049 rows have filename-code-only title provenance",
+      "current_status": "candidate_text_only_per_book_public_domain_and_source_provenance_review",
+      "permitted_scope_if_terms_confirmed": "private_research_training_only_after_per_book_rights_and_attribution_review",
+      "blockers": [
+        "Dataset card says CC BY 4.0 covers metadata and normalization work; underlying book text is asserted public domain and each original book must be checked independently",
+        "78,049 rows are from 339 filename-coded PDFs whose titles are not recovered in the dataset metadata; exclude until each source work and public-domain status are identified",
+        "Single train split only; create a source-book-level held-out split before training and never treat pages from one book as independent train/test examples",
+        "OCR text was cleaned using an LLM; audit OCR errors, factual corruption, and source-specific quality before inclusion",
+        "Classical/MSA heritage text does not provide Egyptian colloquial dialogue or conversational instruction"
+      ],
+      "intended_role": [
+        "MSA_and_classical_arabic_text_pretraining_candidate_only_not_dialogue"
+      ],
+      "reference_checked": "2026-11-25"
+    },
+    {
+      "id": "Mo-Abdalkader-Egyptian-Arabic-English-Parallel-Corpus",
+      "url": "https://huggingface.co/datasets/Mo-Abdalkader/Egyptian-Arabic-English-Parallel-Corpus",
+      "language": [
+        "Egyptian Arabic",
+        "English"
+      ],
+      "declared_license": "CC-BY-4.0 (dataset card declaration; verify pinned revision and attribution requirements)",
+      "reported_records": 420000,
+      "reported_size": "Current card reports 277,319 SFT train pairs, 18,000 SFT test pairs, and 124,681 DPO preference pairs; 1,089,362 sentences total",
+      "current_status": "candidate_parallel_supervised_data_rights_and_quality_review",
+      "permitted_scope_if_terms_confirmed": "research_training_only_after_exact_revision_rights_and_attribution_review",
+      "blockers": [
+        "This is Egyptian Arabic to English parallel translation/generation data, not general multi-turn Arabic assistant dialogue or monolingual pretraining text",
+        "Keep SFT test completely held out; never use DPO preference records or test pairs in the pretraining corpus",
+        "Verify provenance, author/contributor rights, immutable dataset revision, exact LICENSE file, and attribution obligations before intake",
+        "Human-review Egyptian dialect naturalness, translation correctness, topic coverage, and potential synthetic or machine-generated content",
+        "Do not count sentence pairs as tokenizer tokens; measure actual token count with Jon2 tokenizer after approved ingestion"
+      ],
+      "intended_role": [
+        "Egyptian_translation_and_supervised_task_candidate_only"
+      ],
+      "reference_checked": "2026-11-25"
     }
   ],
   "ingestion_invariants": [
