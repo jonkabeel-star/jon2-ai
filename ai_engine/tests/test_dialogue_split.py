@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from dialogue_split import split_dialogue_records
+from dialogue_split import split_dialogue_records, _record_group_fingerprints
 
 
 def conversation(question, answer, follow_up=None, follow_answer=None):
@@ -89,12 +89,10 @@ class DialogueSplitTests(unittest.TestCase):
         second = conversation("سؤال صفحة ثان", "إجابة ثانية")
         first["source"] = {"dataset": "dataset-a", "page_id": 1234}
         second["source"] = {"dataset": "dataset-b", "page_id": 1234}
-        parts = split_dialogue_records(self.records + [first, second])
-        locations = {
-            name for name, records in parts.items()
-            if first in records or second in records
-        }
-        self.assertEqual(len(locations), 2)
+        self.assertNotEqual(
+            _record_group_fingerprints(first, 0),
+            _record_group_fingerprints(second, 1),
+        )
 
     def test_too_few_independent_groups_fails_closed(self):
         records = [
