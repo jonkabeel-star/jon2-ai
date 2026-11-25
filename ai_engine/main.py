@@ -50,7 +50,7 @@ def _run_original_model_self_test() -> dict:
     results = []
     for case in cases:
         try:
-            answer = generate_reply(case["message"], history=case["history"])
+            answer = chat_engine.generate_raw_reply(case["message"], history=case["history"])
             valid = isinstance(answer, str) and bool(answer.strip()) and validate_generated_answer(answer)
             results.append({
                 "id": case["id"],
@@ -259,6 +259,7 @@ def health():
         "model_self_test_state": PRELOAD_SELF_TEST_STATE,
         "model_self_test_cases": len(PRELOAD_SELF_TEST_RESULTS),
         "model_self_test_passed": PRELOAD_INFERENCE_TESTED,
+        "model_self_test_results": PRELOAD_SELF_TEST_RESULTS if os.getenv("VERCEL_ENV") == "preview" else None,
         "model_type": "jon2_original",
         "inference_tested": inference_tested,
         "quality_review_passed": quality_review_passed,
