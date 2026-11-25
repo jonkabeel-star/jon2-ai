@@ -208,8 +208,20 @@ def internal_model_self_test(token: str):
                 {"id": case["id"], "generated": True, "answer": answer[:300]}
             )
         except Exception as error:
+            detail = str(error)
+            blob_token = os.getenv("BLOB_READ_WRITE_TOKEN", "")
+            test_token = os.getenv("JON2_MODEL_TEST_TOKEN", "")
+            if blob_token:
+                detail = detail.replace(blob_token, "[redacted]")
+            if test_token:
+                detail = detail.replace(test_token, "[redacted]")
             results.append(
-                {"id": case["id"], "generated": False, "error_type": type(error).__name__}
+                {
+                    "id": case["id"],
+                    "generated": False,
+                    "error_type": type(error).__name__,
+                    "error_detail": detail[:240],
+                }
             )
     return {
         "status": "completed",
