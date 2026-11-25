@@ -2,8 +2,8 @@
 
 This module is a data-preparation utility, not an approval mechanism. Callers must
 run the exact-file rights/approval gate before using any returned partition for
-training. Conversations sharing any normalized message are kept in one group so
-question/answer text cannot leak across train, validation, and test.
+training. Conversations sharing normalized messages or source/document identifiers
+(including dataset-scoped page IDs) stay together across all three partitions.
 """
 from __future__ import annotations
 
@@ -74,7 +74,7 @@ def split_dialogue_records(
     test_fraction: float = 0.1,
     seed: int = 42,
 ) -> dict[str, list[dict]]:
-    """Split whole conversations; shared normalized message text forms one group.
+    """Split whole conversations; shared messages and source IDs form one group.
 
     The split fails closed when fewer than three independent groups exist.
     Fractions refer to conversation counts approximately; linked duplicate
