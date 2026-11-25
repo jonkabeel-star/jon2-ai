@@ -65,3 +65,15 @@ This is a research intake note, not legal advice or an approval to download/trai
 - Card says the majority is synthetic (Gemini API / LearnLM) and a minority is scraped from Egyptian Reddit communities.
 - The card states that models or datasets derived from this work must be released under CC BY-SA 4.0.
 - Decision: quarantine pending Reddit user-content rights, privacy/platform terms, source provenance, and written analysis of the model-weight ShareAlike condition. Synthetic quality and teacher-model provenance also need review. No download or approval.
+
+
+## T0KII MASRISET V4 upstream split
+
+- Dataset: https://huggingface.co/datasets/T0KII/MASRISET-V4-UPSTREAM-SPLIT
+- Declared licence: CC BY-NC 4.0; current card reports 8,643,243 rows and 1.17 GB.
+- Card describes a mixed Egyptian Arabic corpus intended for MLM pretraining and acknowledges Egyptian Wikipedia, MBZUAI-Paris Egyptian-SFT-Mixture, a Kaggle Egyptian dataset bundle, and AraBERT/ArbML teams.
+- Decision: non-commercial candidate only; quarantine until exact source-level licences, provenance, data redistribution rights and any upstream restrictions are established. Row count is not token count or unique text count. Require immutable revision, deduplication, leakage checks and source/genre preservation. No download or approval.
+
+## Rights-index review aid
+
+Bayanat Labs' Arabic Dataset Rights Index (https://www.bayanatlabs.com/open/arabic-dataset-rights-index) is a secondary screening aid covering declared licences, extra card restrictions, upstream sources, personal data and copies with inconsistent licence declarations. It is not legal advice and is not itself training data. Check each original dataset card and upstream source before any approval.
