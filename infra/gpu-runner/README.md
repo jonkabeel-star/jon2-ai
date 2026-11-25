@@ -71,6 +71,8 @@ The current trainer's dialogue path requires JSONL conversations with alternatin
 
 The GitHub workflow is manual and requires the exact confirmation string. It checks the runner, CUDA, private paths, exact-file approval manifest, 3-way split, capacity preflight, and candidate-only checkpoint output. The held-out test partition is not loaded by the trainer. A candidate still needs separate semantic evaluation and human review; no automatic release approval is granted.
 
-## Shutdown and cost control
+## Zero-cost stop condition
+
+No GPU instance or paid persistent storage is authorized. Do not start a provider instance, accept a paid trial, or create a storage volume. If no genuinely free GPU resource is available, training remains blocked. The scripts in this directory are preparation and validation tools only; they do not create a host.
 
 Stop the Pod/instance when the runner is not being used. Persistent volume storage may continue to bill while the GPU is stopped. Confirm storage and compute billing separately in the provider dashboard. Never leave an idle GPU running just to keep the runner online.
