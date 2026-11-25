@@ -28,12 +28,7 @@ def _sha256_file(path: Path) -> str:
 
 
 async def _download_private_blob(pathname: str, destination: Path) -> None:
-    from vercel.blob import AsyncBlobClient
-
-    client = AsyncBlobClient()
-    result = await client.get(pathname, access="private")
-    if result is None or result.status_code != 200 or result.stream is None:
-        raise RuntimeError("تعذر جلب ملف Jon2 من التخزين الخاص.")
+    from vercel import blob
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     fd, temporary_name = tempfile.mkstemp(
@@ -42,14 +37,15 @@ async def _download_private_blob(pathname: str, destination: Path) -> None:
     temporary = Path(temporary_name)
     total = 0
     try:
-        with os.fdopen(fd, "wb") as output:
-            async for chunk in result.stream:
-                total += len(chunk)
-                if total > _MAX_CHECKPOINT_BYTES:
-                    raise RuntimeError("حجم ملف الأوزان تجاوز الحد المسموح.")
-                output.write(chunk)
-            output.flush()
-            os.fsync(output.fileno())
+        async with blob.stream_blob(pathname, access="private") as download:
+            with os.fdopen(fd, "wb") as output:
+                async for chunk in download:
+                    total += len(chunk)
+                    if total > _MAX_CHECKPOINT_BYTES:
+                        raise RuntimeError("حجم ملف الأوزان تجاوز الحد المسموح.")
+                    output.write(chunk)
+                output.flush()
+                os.fsync(output.fileno())
         if total == 0:
             raise RuntimeError("ملف الأوزان المسترجع فارغ.")
         os.chmod(temporary, 0o600)
