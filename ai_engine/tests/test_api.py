@@ -352,7 +352,7 @@ class Jon2ApiTests(unittest.TestCase):
             )
         )
         with patch.object(
-            jon2_api, "generate_reply",
+            jon2_api.chat_engine, "generate_raw_reply",
             side_effect=["إجابة عربية أولى", "إجابة مصرية ثانية", "الإجابة خمسة", "اسمك سامح"],
         ) as generate, patch.object(
             jon2_api, "validate_generated_answer", return_value=True
@@ -382,7 +382,7 @@ class Jon2ApiTests(unittest.TestCase):
             )
         )
         with patch.object(
-            jon2_api, "generate_reply", side_effect=["إجابة سليمة"] * 4
+            jon2_api.chat_engine, "generate_raw_reply", side_effect=["إجابة سليمة"] * 4
         ), patch.object(
             jon2_api, "validate_generated_answer", side_effect=[True, False, True, True]
         ):
