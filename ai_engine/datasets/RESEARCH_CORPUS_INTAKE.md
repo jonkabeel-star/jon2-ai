@@ -15,12 +15,12 @@ The source registry is `research_candidate_registry.json`. It is a shortlist, no
 | TheArabicPile Conversational | CC BY-NC 4.0 | MSA/general Arabic candidate | Access, provenance, and exact revision review required |
 | NileChat FineWeb-Edu Egypt | CC BY-NC 4.0 | Egyptian Arabic text candidate | Upstream FineWeb-Edu rights and machine-translation provenance review required |
 | NileChat Arabizi-Egypt | CC BY-NC 4.0 | Optional Arabizi coverage | Upstream rights review required; keep separate from Arabic-script data |
-| Alexandria | CC BY-NC 4.0 (current card) | Egyptian multi-turn dialogue/evaluation | ~1.7K Egyptian rows; retain official splits; small/domain-limited; research-only |
+| Alexandria | Conflicting CC BY-NC 4.0 current card vs CC BY-NC-ND 4.0 pinned revision | None until resolved | Quarantined; no intake/training pending written rights-holder clarification |
 | ArSyra Chatbot | CC BY-NC-SA 4.0 | Dialogue-quality candidate | Gated access, non-redistribution, and ShareAlike implications review required |
 | fr3on Egyptian Dialogue | Uploader declares CC BY 4.0 | None yet | Quarantine because TV subtitle provenance does not establish underlying rights |
 | ShawarmaChats | CC BY-SA 4.0 | MSA/Egyptian/Maghrebi multi-turn dialogue | 28,500 train / 1,512 official test; Wikipedia-grounded, AI-generated and rated/repaired; ShareAlike review required |
 | QCRI WASIL | CC BY-NC-SA 4.0 | Held-out spoken-assistant evaluation | 9,304 prompts with feedback; keep test/feedback splits isolated; data viewer currently reports invalid audio paths |
-| 4FACTORS Egyptian sample | CC BY-NC 4.0 | Native-written Egyptian Q&A smoke test | 50 pairs only; too small for pretraining |
+| 4FACTORS Egyptian sample | CC BY-NC 4.0; access-gated | Potential human-reviewed smoke test only | Request-access gate; no request or terms acceptance; 50 pairs only |
 | fr3on Arabic Dialect Corpus | Uploader declares MIT | None yet | Quarantine: YouTube comments, upstream rights/platform terms/privacy review required |
 
 ## Training phases
@@ -97,3 +97,8 @@ PYTHONPATH=ai_engine python ai_engine/evaluate_staged_arabic.py \
 ```
 
 The original `jon2-last.pt` remains read-only. Training workflow writes only under the separate candidate directory and does not overwrite or replace the original checkpoint. No training is authorized by adding this evaluator.
+
+
+## Rights recheck (2026-11-25)
+
+See `DATA_SOURCE_RIGHTS_RECHECK_2026-11-25.md` for the exact page/revision findings. Alexandria is quarantined due conflicting license declarations across revisions. 4FACTORS is access-gated and no access request was made. ShawarmaChats remains a candidate pending ShareAlike/model-weight review and immutable revision pinning. No source is approved and no data was downloaded.
