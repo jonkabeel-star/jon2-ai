@@ -25,16 +25,26 @@ app = FastAPI(
 
 app.include_router(compute_router)
 
+PRELOAD_STATE = "not_started"
+PRELOAD_ERROR = None
+
 
 @app.on_event("startup")
 async def preload_original_jon2_model() -> None:
     """Optionally load the existing private checkpoint without opening chat."""
+    global PRELOAD_STATE, PRELOAD_ERROR
     if os.getenv("JON2_PRELOAD_MODEL", "false").strip().lower() != "true":
+        PRELOAD_STATE = "disabled"
         return
+    PRELOAD_STATE = "loading"
+    PRELOAD_ERROR = None
     try:
         await load_runtime_async()
+        PRELOAD_STATE = "loaded"
         print("Jon2 original checkpoint loaded successfully; chat release gates remain unchanged.")
     except Exception as error:
+        PRELOAD_STATE = "failed"
+        PRELOAD_ERROR = type(error).__name__
         # Keep health endpoints available so the host can report the load failure.
         print(f"Jon2 original checkpoint preload failed: {type(error).__name__}: {error}")
 
@@ -180,6 +190,8 @@ def health():
         "model": "Jon2 Original Transformer",
         "model_loaded": loaded,
         "model_preload_enabled": os.getenv("JON2_PRELOAD_MODEL", "false").strip().lower() == "true",
+        "model_preload_state": PRELOAD_STATE,
+        "model_preload_error": PRELOAD_ERROR,
         "model_type": "jon2_original",
         "inference_tested": inference_tested,
         "quality_review_passed": quality_review_passed,
