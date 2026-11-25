@@ -147,6 +147,15 @@ jobs:
           print(json.dumps(manifest, ensure_ascii=False, indent=2))
           PY
 
+      - name: Verify candidate manifest and checkpoint hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=ai_engine python ai_engine/verify_candidate_manifest.py \
+            --manifest "$JON2_PRIVATE_CHECKPOINT_DIR/candidate-manifest.json" \
+            --candidates-dir "$JON2_PRIVATE_CHECKPOINT_DIR/candidates" \
+            --expected-commit "$GITHUB_SHA"
+
       - name: Load candidate and run MSA and Egyptian diagnostic prompts
         shell: bash
         run: |
