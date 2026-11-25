@@ -91,13 +91,13 @@ def build_conversation_prompt(message: str, history=None, memories=None, tokeniz
         if reference_context:
             sections.append(
                 "معلومات مرجعية مسترجعة للاسترشاد والتحقق، وليست إجابة جاهزة؛ "
-                "أجب بصياغتك أنت ولا تنسخ النص حرفيًا:\\n" + reference_context
+                "أجب بصياغتك أنت ولا تنسخ النص حرفيًا:\n" + reference_context
             )
         if memory_items:
-            sections.append("ذاكرة سابقة:\\n" + "\\n".join(memory_items))
-        dialogue = list(turns) + [f"المستخدم: {question}\\nJon2:"]
-        sections.append("\\n".join(dialogue))
-        prompt = "\\n".join(sections)
+            sections.append("ذاكرة سابقة:\n" + "\n".join(memory_items))
+        dialogue = list(turns) + [f"المستخدم: {question}\nJon2:"]
+        sections.append("\n".join(dialogue))
+        prompt = "\n".join(sections)
         if tokenizer is None or len(tokenizer.encode(prompt)) <= token_limit - 1:
             return prompt
         if turns:
