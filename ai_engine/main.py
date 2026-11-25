@@ -179,6 +179,7 @@ def health():
         "api_version": app.version,
         "model": "Jon2 Original Transformer",
         "model_loaded": loaded,
+        "model_preload_enabled": os.getenv("JON2_PRELOAD_MODEL", "false").strip().lower() == "true",
         "model_type": "jon2_original",
         "inference_tested": inference_tested,
         "quality_review_passed": quality_review_passed,
