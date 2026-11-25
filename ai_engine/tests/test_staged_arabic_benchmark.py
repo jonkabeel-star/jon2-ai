@@ -1,6 +1,6 @@
 import unittest
 
-from evaluate_staged_arabic import CONVERSATIONS, SENTENCES, SINGLE_WORDS
+from ai_engine.evaluate_staged_arabic import CONVERSATIONS, SENTENCES, SINGLE_WORDS
 
 
 class StagedArabicBenchmarkTests(unittest.TestCase):
