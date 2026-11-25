@@ -28,14 +28,18 @@ def verify_candidate_manifest(
     *,
     expected_commit: str | None = None,
 ) -> dict:
-    manifest_path = Path(manifest_path).resolve(strict=True)
-    candidates_dir = Path(candidates_dir).resolve(strict=True)
+    manifest_input = Path(manifest_path)
+    candidates_input = Path(candidates_dir)
+    if manifest_input.is_symlink():
+        raise ValueError("Candidate manifest must not be a symlink.")
+    if candidates_input.is_symlink():
+        raise ValueError("Candidate checkpoint directory must not be a symlink.")
+    manifest_path = manifest_input.resolve(strict=True)
+    candidates_dir = candidates_input.resolve(strict=True)
     if not candidates_dir.is_dir():
         raise ValueError("Candidate checkpoint path must be a directory.")
     if manifest_path.parent != candidates_dir.parent:
         raise ValueError("Candidate manifest must sit beside, not inside, candidates/.")
-    if manifest_path.is_symlink():
-        raise ValueError("Candidate manifest must not be a symlink.")
 
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
