@@ -1,6 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
+  "git": {
+    "deploymentEnabled": {
+      "vercel-static-preview": false
+    }
+  },
   "builds": [
     { "src": "index.html", "use": "@vercel/static" },
     { "src": "*.js", "use": "@vercel/static" },
