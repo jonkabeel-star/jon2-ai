@@ -116,7 +116,7 @@ function validChatRequest(body) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env = {}) {
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/+$/, "") || "/";
     const method = request.method.toUpperCase();
