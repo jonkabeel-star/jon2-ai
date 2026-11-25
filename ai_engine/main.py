@@ -320,8 +320,29 @@ def model_profile(profile_name: str):
         raise HTTPException(status_code=404, detail=str(error))
 
 
+def _verify_memory_admin_token(authorization: str | None) -> None:
+    """Protect administrative memory inspection/deletion with a server-only secret."""
+    expected_token = os.getenv("JON2_MEMORY_ADMIN_TOKEN", "")
+    if len(expected_token) < 32:
+        raise HTTPException(
+            status_code=503,
+            detail="Memory administration is disabled until its private token is configured.",
+        )
+    supplied_token = (
+        authorization.removeprefix("Bearer ").strip()
+        if authorization and authorization.startswith("Bearer ")
+        else ""
+    )
+    if not supplied_token or not hmac.compare_digest(expected_token, supplied_token):
+        raise HTTPException(status_code=401, detail="Memory administration authentication failed.")
+
+
 @app.get("/api/memory/{session_id}")
-def memory_status(session_id: str):
+def memory_status(
+    session_id: str,
+    authorization: str | None = Header(default=None),
+):
+    _verify_memory_admin_token(authorization)
     try:
         return {"project": "Jon2 AI", **chat_memory.session_stats(session_id)}
     except ValueError as error:
@@ -329,7 +350,11 @@ def memory_status(session_id: str):
 
 
 @app.delete("/api/memory/{session_id}")
-def clear_memory(session_id: str):
+def clear_memory(
+    session_id: str,
+    authorization: str | None = Header(default=None),
+):
+    _verify_memory_admin_token(authorization)
     try:
         chat_memory.clear_session(session_id)
         return {"project": "Jon2 AI", "cleared": True}
