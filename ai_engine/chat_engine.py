@@ -46,8 +46,10 @@ def load_runtime() -> None:
     if model_is_ready():
         return
     if not checkpoint_is_available():
-        # Private Blob retrieval is lazy: health-only deployments do not
-        # download weights, and the model is never exposed before verification.
+        # Keep the historical missing-file contract when Blob is not configured.
+        # In configured deployments, fetch only the approved private checkpoint.
+        if not os.getenv("BLOB_READ_WRITE_TOKEN"):
+            raise FileNotFoundError(f"Jon2 checkpoint not found: {CHECKPOINT_PATH}")
         from blob_checkpoint import ensure_private_checkpoint
 
         CHECKPOINT_PATH = ensure_private_checkpoint()
@@ -89,13 +91,13 @@ def build_conversation_prompt(message: str, history=None, memories=None, tokeniz
         if reference_context:
             sections.append(
                 "معلومات مرجعية مسترجعة للاسترشاد والتحقق، وليست إجابة جاهزة؛ "
-                "أجب بصياغتك أنت ولا تنسخ النص حرفيًا:\n" + reference_context
+                "أجب بصياغتك أنت ولا تنسخ النص حرفيًا:\\n" + reference_context
             )
         if memory_items:
-            sections.append("ذاكرة سابقة:\n" + "\n".join(memory_items))
-        dialogue = list(turns) + [f"المستخدم: {question}\nJon2:"]
-        sections.append("\n".join(dialogue))
-        prompt = "\n".join(sections)
+            sections.append("ذاكرة سابقة:\\n" + "\\n".join(memory_items))
+        dialogue = list(turns) + [f"المستخدم: {question}\\nJon2:"]
+        sections.append("\\n".join(dialogue))
+        prompt = "\\n".join(sections)
         if tokenizer is None or len(tokenizer.encode(prompt)) <= token_limit - 1:
             return prompt
         if turns:
