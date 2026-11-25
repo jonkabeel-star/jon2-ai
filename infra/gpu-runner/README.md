@@ -32,7 +32,7 @@ No Hugging Face token, GitHub runner token, or private dataset file belongs in G
 1. In the private repository open **Settings → Actions → Runners → New self-hosted runner**.
 2. Select **Linux → x64**. GitHub shows a short-lived registration token and commands. The token is valid only briefly; do not paste it into chat, a Git file, or a screenshot.
 3. On the GPU host, use a dedicated non-root runner account. Install/configure the Actions runner with the repository URL and the short-lived token. Set custom label exactly `jon2-gpu`; default labels `self-hosted`, `linux`, and `x64` are added by GitHub.
-4. Install it as a service and start it. Confirm GitHub shows **Idle/Online** and all four labels: `self-hosted`, `linux`, `x64`, `jon2-gpu`.
+4. Export the short-lived token as `RUNNER_TOKEN` in the host shell (do not put it in a command argument or file), set `GITHUB_REPOSITORY=jonkabeel-star/jon2-ai`, then run `bash infra/gpu-runner/register-runner.sh`. The script downloads the latest official Linux x64 runner only when GitHub supplies an asset SHA-256 digest, verifies it, configures the `jon2-gpu` label, and installs the service. Confirm GitHub shows **Idle/Online** and all four labels: `self-hosted`, `linux`, `x64`, `jon2-gpu`.
 5. Never run untrusted fork pull-request code on this machine. The training workflow is manual-dispatch only; keep the runner scoped to this private repository and stop the Pod when not training.
 
 GitHub routes jobs only when every `runs-on` label matches. The host must remain running and connected to GitHub over outbound HTTPS/443.
@@ -55,12 +55,14 @@ The runner must pass:
 
 The updated registry contains 10 candidates. None is auto-approved. Initial candidates to review:
 
-- ShawarmaChats: 28,500 train / 1,512 test conversations across MSA, Egyptian and Maghrebi; generated from Wikipedia, AI-generated then rated/repaired, with CC BY-SA 4.0. Strong structure, but ShareAlike and Wikipedia derivative obligations need written legal review before training.
-- Alexandria: human-translated, multi-turn, Egyptian subset ~1.7K rows; CC BY-NC 4.0. Keep its official split metadata. Small and domain-limited.
+- ShawarmaChats: 28,500 train / 1,512 test conversations across MSA, Egyptian and Maghrebi; generated from Wikipedia, AI-generated then rated/repaired, with CC BY-SA 4.0. The private adapter is `ai_engine/datasets/adapters/ingest_shawarmachats.py`; it requires an immutable revision plus explicit research-only and ShareAlike acknowledgements, keeps the official test split in a separate evaluation-only directory, and does not create approvals.
+- Alexandria: human-translated, multi-turn, Egyptian subset ~1.7K rows; CC BY-NC 4.0. Keep its official split metadata. Small and domain-limited; candidate for a supplementary set or evaluation.
 - 4FACTORS Egyptian sample: 50 native-written Q&A pairs, CC BY-NC 4.0. Useful as a tiny human-written smoke/evaluation set, not a training corpus.
-- NileChat FineWeb-Edu Egypt: 5.52M rows / 11.2 GB, machine-translated text, CC BY-NC 4.0 and gated access requiring account-information agreement. Do not accept the gate automatically; text-only pretraining adapter is needed.
+- NileChat FineWeb-Edu Egypt: 5.52M rows / 11.2 GB, machine-translated text, CC BY-NC 4.0 and gated access requiring account-information agreement. Do not accept the gate automatically; a separate text-only pretraining adapter is needed.
 - TheArabicPile Conversational: preview shows Reddit-derived posts/comments and multiple Arabic dialects; it is not necessarily dialogue. Text-only candidate with upstream-rights and privacy review, not dialogue training.
 - ArSyra: current card says the public repository contains a 50-record preview; full 34,880 dataset is paid. Gated contact-information agreement and CC BY-NC-SA terms need separate consent and legal review.
+- WASIL: 9,304 Arabic spoken-assistant prompts with human feedback; CC BY-NC-SA 4.0. Reserve for evaluation only; current viewer reports malformed audio paths.
+- 4FACTORS Egyptian sample: 50 native-written Egyptian Q&A pairs; CC BY-NC 4.0. Human-written quality smoke test only, not a pretraining corpus.
 - User-generated YouTube comments and TV-subtitle sources stay quarantined until underlying rights/privacy are proven.
 
 The current trainer's dialogue path requires JSONL conversations with alternating user/assistant turns. Text-only corpora require a separately reviewed text-pretraining pipeline; do not manufacture assistant turns from articles or comments. Do not start training with only the tiny dialogue samples.
