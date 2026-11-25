@@ -126,6 +126,8 @@ def audit_splits(split_paths: dict[str, Path], mode: str = "text") -> dict:
     duplicate_count = sum(item["within_split_duplicate_records"] for item in split_stats.values())
 
     blockers = []
+    if any(not records[name] for name in REQUIRED_SPLITS):
+        blockers.append("one_or_more_splits_are_empty")
     if cross_split_duplicates:
         blockers.append("exact_normalized_content_leakage_across_splits")
     if group_leakage:
