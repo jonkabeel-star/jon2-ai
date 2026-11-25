@@ -1,9 +1,6 @@
-# CPU-only runtime for the original Jon2 FastAPI service on Vercel Python 3.12.
-# Pin the +cpu build so the resolver cannot select a CUDA-enabled PyPI distribution.
---index-url https://download.pytorch.org/whl/cpu
---extra-index-url https://pypi.org/simple
-
+# Minimal CPU-only runtime for the original Jon2 FastAPI service on Python 3.12.
+# Direct wheel URL prevents uv from resolving a CUDA-enabled PyPI build.
 fastapi
 uvicorn[standard]
-torch==2.5.1+cpu
+torch @ https://download-r2.pytorch.org/whl/cpu/torch-2.5.1%2Bcpu-cp312-cp312-linux_x86_64.whl
 vercel>=0.5.0,<1.0.0
