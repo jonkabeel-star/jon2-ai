@@ -13,19 +13,18 @@
         "multiple"
       ],
       "declared_license": "CC-BY-NC-4.0",
-      "reported_records": 2493431,
-      "reported_size": "2.27 GB",
-      "current_status": "candidate_access_and_provenance_review",
+      "reported_records": 1300000,
+      "reported_size": "dataset card preview: 1.3M default rows / 1.19M deduplicated",
+      "current_status": "candidate_text_only_reddit_provenance_and_quality_review",
       "permitted_scope_if_terms_confirmed": "private_non_commercial_research_only",
       "blockers": [
-        "Confirm exact upstream source provenance and terms for every component",
-        "Review dataset card and license version at pinned revision",
-        "Do not use for commercial training or public redistribution",
-        "Obtain private access and retain attribution metadata"
+        "Observed sample contains Reddit subreddit submissions/comments, not necessarily multi-turn user-assistant dialogue",
+        "Verify upstream Reddit content rights, Reddit terms, and each component's provenance",
+        "Filter personal data, abusive content, spam, duplicates, and non-Egyptian dialects before any use",
+        "CC BY-NC-4.0 restricts use to non-commercial scope; do not redistribute"
       ],
       "intended_role": [
-        "MSA_pretraining_candidate",
-        "domain_coverage_candidate"
+        "text_pretraining_candidate_only_not_dialogue"
       ],
       "reference_checked": "2026-11-25"
     },
@@ -37,17 +36,19 @@
       ],
       "declared_license": "CC-BY-NC-4.0",
       "reported_records": 5520000,
-      "current_status": "candidate_upstream_rights_review",
+      "current_status": "candidate_text_only_gated_access_and_upstream_rights_review",
       "permitted_scope_if_terms_confirmed": "private_non_commercial_research_only",
       "blockers": [
-        "Dataset is machine-translated from FineWeb-Edu; verify upstream rights and transformation terms",
-        "Review access conditions and pinned dataset revision",
-        "Do not use for commercial training or public redistribution"
+        "Dataset card requires agreeing to share Hugging Face account information before access; do not accept automatically",
+        "Machine-translated FineWeb-Edu; verify upstream FineWeb-Edu rights and source-level licensing",
+        "Text corpus, not structured assistant dialogue; requires a separate text-pretraining pipeline",
+        "CC BY-NC-4.0; private non-commercial research only"
       ],
       "intended_role": [
-        "Egyptian_dialect_language_modeling_candidate"
+        "Egyptian_dialect_text_pretraining_candidate_only"
       ],
-      "reference_checked": "2026-11-25"
+      "reference_checked": "2026-11-25",
+      "reported_size": "11.2 GB"
     },
     {
       "id": "UBC-NLP-nilechat-arabizi-egy",
@@ -57,17 +58,19 @@
       ],
       "declared_license": "CC-BY-NC-4.0",
       "reported_rows": 572000,
-      "current_status": "candidate_upstream_rights_review",
+      "current_status": "candidate_text_only_upstream_rights_review",
       "permitted_scope_if_terms_confirmed": "private_non_commercial_research_only",
       "blockers": [
-        "Derived from other datasets; verify upstream rights and transformation terms",
-        "Arabizi is Latin-script Egyptian and must not be treated as Arabic-script dialogue",
-        "Review access conditions and pinned dataset revision"
+        "Derived from FineWeb-Edu Egypt and LHV-Egypt; verify both upstream licenses and rights",
+        "Arabizi is Latin-script Egyptian; keep in a separate tokenizer/evaluation stratum",
+        "Text corpus, not structured assistant dialogue",
+        "CC BY-NC-4.0; private non-commercial research only"
       ],
       "intended_role": [
-        "optional_Arabizi_coverage_only"
+        "optional_Arabizi_text_pretraining_candidate_only"
       ],
-      "reference_checked": "2026-11-25"
+      "reference_checked": "2026-11-25",
+      "reported_size": "894 MB"
     },
     {
       "id": "UBC-NLP-alexandria",
@@ -77,16 +80,20 @@
         "other Arabic dialects",
         "English"
       ],
-      "declared_license": "CC-BY-NC-ND-4.0",
-      "current_status": "evaluation_or_legal_review_only",
+      "declared_license": "CC-BY-NC-4.0",
+      "current_status": "candidate_egyptian_dialogue_evaluation_and_training_rights_review",
       "blockers": [
-        "NonCommercial and NoDerivatives terms; do not ingest into model training unless rights holder explicitly confirms training permission in writing",
-        "Keep benchmark evaluation separate from training"
+        "Current dataset card declares CC BY-NC-4.0 (not the earlier ND variant); verify pinned revision and license text before intake",
+        "Egyptian subset reports about 1.7K rows; train split 982 rows, with source-provided validation/test splits that must remain isolated",
+        "Human-translated English↔Egyptian conversations, but domain coverage is limited; not sufficient as the only training corpus",
+        "Private non-commercial research only; preserve source attribution and contributor/reviewer metadata"
       ],
       "intended_role": [
+        "Egyptian_dialect_dialogue_candidate",
         "held_out_dialect_evaluation_candidate"
       ],
-      "reference_checked": "2026-11-25"
+      "reference_checked": "2026-11-25",
+      "reported_records": 1700
     },
     {
       "id": "ArSyra-arsyra-chatbot",
@@ -96,17 +103,19 @@
         "Egyptian and other dialects"
       ],
       "declared_license": "CC-BY-NC-SA-4.0",
-      "reported_records": 34880,
-      "current_status": "access_terms_and_share_alike_review",
+      "reported_records": 50,
+      "current_status": "preview_only_full_dataset_paid_and_gated",
       "blockers": [
-        "Gated access requires accepting contact-information terms",
-        "Research-only use and non-redistribution conditions must be followed",
-        "Review ShareAlike implications for any derived model or weights before training"
+        "Dataset card says repository contains only a 50-record preview; full 34,880 records are paid",
+        "Gated access asks for full name, organization, use case, and agreement to terms; do not submit or accept automatically",
+        "Preview license CC BY-NC-SA-4.0; full license choices/pricing differ and require separate written terms",
+        "ShareAlike and model-weight implications require legal review"
       ],
       "intended_role": [
-        "dialogue_quality_candidate_after_written_review"
+        "small_research_evaluation_preview_only"
       ],
-      "reference_checked": "2026-11-25"
+      "reference_checked": "2026-11-25",
+      "reported_size": "50-record preview; full 34,880-record dataset requires purchase"
     },
     {
       "id": "fr3on-egyptian-dialogue",
@@ -125,6 +134,100 @@
         "none_until_rights_verified"
       ],
       "reference_checked": "2026-11-25"
+    },
+    {
+      "id": "Kamyar-zeinalipour-arabic-multi-dialect-dialogue",
+      "url": "https://huggingface.co/datasets/Kamyar-zeinalipour/arabic_multi_dialect_dialogue",
+      "language": [
+        "Modern Standard Arabic",
+        "Egyptian Arabic",
+        "Maghrebi Arabic"
+      ],
+      "declared_license": "CC-BY-SA-4.0",
+      "reported_records": 30012,
+      "reported_size": "355 MB repository; 28,500 train / 1,512 test dialogues in dialogues config",
+      "current_status": "strong_dialogue_candidate_sharealike_and_wikipedia_derivative_review",
+      "permitted_scope_if_terms_confirmed": "private_non_commercial_research_only_pending_sharealike_review",
+      "blockers": [
+        "Dataset card describes six-turn dialogues generated from Arabic Wikipedia with Gemini 2.5 Flash, graded by GPT-4o, and native-speaker correction of remaining 0.5%; treat as partly synthetic, not spontaneous human dialogue",
+        "CC BY-SA 4.0 because source text is derived from Arabic Wikipedia; review ShareAlike obligations for model weights and downstream use before training",
+        "Use only the dialogues config; preserve its official train/test split and never move test examples into training",
+        "Pin immutable dataset revision, record page/source IDs and attribution, and inspect Egyptian dialect quality separately from MSA and Maghrebi"
+      ],
+      "intended_role": [
+        "primary_structured_dialogue_candidate_after_rights_review",
+        "Egyptian_and_MSA_dialogue_training_candidate"
+      ],
+      "reference_checked": "2026-11-25"
+    },
+    {
+      "id": "QCRI-WASIL",
+      "url": "https://huggingface.co/datasets/QCRI/WASIL",
+      "language": [
+        "Arabic",
+        "Egyptian Arabic",
+        "Syrian Arabic",
+        "Algerian Arabic",
+        "Sudanese Arabic",
+        "Modern Standard Arabic"
+      ],
+      "declared_license": "CC-BY-NC-SA-4.0",
+      "reported_records": 9304,
+      "current_status": "held_out_evaluation_candidate_access_and_data_integrity_review",
+      "blockers": [
+        "Dataset contains 9,304 prompts with feedback; the published test set is 1,416 prompts and feedback set 988 prompts",
+        "CC BY-NC-SA-4.0; keep private and non-commercial, review ShareAlike implications",
+        "Hugging Face dataset viewer currently reports invalid audio file paths; inspect repository files and integrity before access",
+        "Do not train on official test or feedback/evaluation partitions"
+      ],
+      "intended_role": [
+        "held_out_evaluation_only_until_split_and_rights_review"
+      ],
+      "reference_checked": "2026-11-25"
+    },
+    {
+      "id": "fr3on-arabic-dialect-corpus",
+      "url": "https://huggingface.co/datasets/fr3on/arabic-dialect-corpus",
+      "language": [
+        "Egyptian Arabic",
+        "Saudi Arabic",
+        "Arabic"
+      ],
+      "declared_license": "MIT (uploader-declared dataset license)",
+      "reported_records": 1991193,
+      "reported_size": "123 MB",
+      "current_status": "quarantined_upstream_youtube_rights_and_privacy_review",
+      "blockers": [
+        "Dataset card says text comes from YouTube discussions/comments; uploader's MIT declaration does not by itself establish rights to each underlying comment or platform terms",
+        "Observed examples include political opinions, named public figures, abusive content, and user-generated text; privacy and safety filtering required",
+        "Single train split only; no official held-out evaluation split",
+        "Do not ingest until upstream rights, platform terms, provenance, privacy and moderation plan are independently verified"
+      ],
+      "intended_role": [
+        "none_until_rights_and_privacy_verified"
+      ],
+      "reference_checked": "2026-11-25"
+    },
+    {
+      "id": "4factors-arabic-egyptian-sample",
+      "url": "https://huggingface.co/datasets/4factors/arabic-egyptian-sample",
+      "language": [
+        "Egyptian Arabic"
+      ],
+      "declared_license": "CC-BY-NC-4.0",
+      "reported_records": 50,
+      "reported_size": "44.5 KB; 50 native-written Egyptian Q&A pairs",
+      "current_status": "candidate_human_written_evaluation_and_small_dialogue_seed",
+      "blockers": [
+        "Only 50 demonstration pairs; too small for meaningful pretraining",
+        "CC BY-NC-4.0 permits only non-commercial use; keep private and do not redistribute",
+        "Review immutable revision and attribution before intake"
+      ],
+      "intended_role": [
+        "human_written_egyptian_quality_smoke_test",
+        "evaluation_only_or_small_seed_after_review"
+      ],
+      "reference_checked": "2026-11-25"
     }
   ],
   "ingestion_invariants": [
@@ -134,6 +237,9 @@
     "Keep research-only data and derived checkpoints private; never promote them to a commercial/public model without separate rights clearance.",
     "Deduplicate by normalized conversation/message hashes before splitting.",
     "Split by conversation/source group into train, validation, and test before tokenizer fitting; test must never affect training or checkpoint selection.",
-    "Do not auto-approve a source from a dataset-card license string; require human rights review and private exact-file approval."
+    "Do not auto-approve a source from a dataset-card license string; require human rights review and private exact-file approval.",
+    "Classify each source by data shape: plain text, user comments, parallel translation, or multi-turn dialogue; never coerce text-only rows into fake assistant turns.",
+    "Preserve every upstream train/validation/test partition. Never reassign an official test split into training; source-level group deduplication must also cross-check between datasets.",
+    "CC BY-SA / CC BY-NC-SA sources require separate legal review of ShareAlike obligations for model weights and downstream use."
   ]
 }
