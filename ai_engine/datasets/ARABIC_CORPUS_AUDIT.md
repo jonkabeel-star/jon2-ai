@@ -7,7 +7,7 @@ The file ai_engine/audit_arabic_corpus.py is a dependency-free, offline diagnost
 - UTF-8 and JSONL structure.
 - Text records have a non-empty text field.
 - Dialogue records start with a user turn, end with an assistant turn, and alternate roles.
-- Exact duplicate normalized text within and across splits.
+- Empty partitions and exact duplicate normalized text within and across splits.
 - Repeated conversation_id, document_id, or group_id across splits.
 - Possible email/phone patterns and records without Arabic script.
 - Aggregate Arabic/Latin script counts. It explicitly does not infer Egyptian vs MSA.
