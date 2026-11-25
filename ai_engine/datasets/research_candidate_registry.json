@@ -281,6 +281,54 @@
         "Egyptian_Arabic_text_pretraining_candidate_only_not_dialogue"
       ],
       "reference_checked": "2026-11-25"
+    },
+    {
+      "id": "UBC-NLP-nilechat-lhv-egy",
+      "url": "https://huggingface.co/datasets/UBC-NLP/nilechat-lhv-egy",
+      "language": [
+        "Egyptian Arabic"
+      ],
+      "declared_license": "CC-BY-NC-4.0",
+      "reported_records": 1490000,
+      "reported_size": "1.49M rows; 1.98 GB",
+      "current_status": "gated_noncommercial_research_candidate_no_terms_accepted",
+      "permitted_scope_if_terms_confirmed": "private_noncommercial_research_only_subject_to_access_terms_and_upstream_rights_review",
+      "blockers": [
+        "Hugging Face requires agreement to share account information before file access; no agreement or access request has been made.",
+        "CC BY-NC 4.0 is non-commercial; incompatible with commercial use unless separate permission is obtained.",
+        "Dataset uses controlled generation by CohereLabs/c4ai-command-r-plus-08-2024; review generated-content provenance, teacher model terms, and source material from news, Wikipedia portals, local sources and World Values Survey.",
+        "1.49M rows are not equivalent to 1.49M unique high-quality tokens; audit duplicates, artifacts, factuality and Egyptian dialect authenticity.",
+        "Dataset mixes genres including stories, essays, blogs, reviews and conversations; preserve genre labels and do not treat every row as dialogue.",
+        "Require immutable revision, exact license and access terms, attribution and a human approval in the private manifest before any intake."
+      ],
+      "intended_role": [
+        "Egyptian_Arabic_text_pretraining_candidate_after_rights_and_access_review"
+      ],
+      "reference_checked": "2026-11-25"
+    },
+    {
+      "id": "Prickly-Labs-1.9M-Egyptian-Corpus",
+      "url": "https://huggingface.co/datasets/Prickly-Labs/1.9M-Egyptian-Corpus",
+      "language": [
+        "Egyptian Arabic"
+      ],
+      "declared_license": "CC-BY-SA-4.0",
+      "reported_records": 1922049,
+      "reported_size": "1.92M rows; approximately 648 MB dataset-card figure; independent catalog reports approximately 617.7 MB",
+      "current_status": "quarantined_reddit_provenance_and_sharealike_model_terms_review",
+      "permitted_scope_if_terms_confirmed": "only_after_reddit_content_rights_privacy_review_and_written_model_weight_sharealike_analysis",
+      "blockers": [
+        "Card says majority of corpus is synthetic generated with Gemini API and LearnLM, with minority scraped from Egyptian Reddit communities.",
+        "Underlying Reddit user-content rights, platform terms, consent/privacy, and provenance are unresolved; do not ingest Reddit-derived records until cleared.",
+        "Dataset card states models or datasets derived from this work must be released under CC BY-SA 4.0; this condition needs review for model weights and any future distribution.",
+        "Synthetic text can contain teacher-model artifacts, factual errors and repetition; run deduplication and human quality sampling.",
+        "Flattened text includes less conversational material than intended; keep source and genre distinctions where possible.",
+        "No dataset was downloaded and no source was approved."
+      ],
+      "intended_role": [
+        "Egyptian_Arabic_text_candidate_quarantined_until_rights_review"
+      ],
+      "reference_checked": "2026-11-25"
     }
   ],
   "ingestion_invariants": [
