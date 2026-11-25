@@ -80,20 +80,23 @@
         "other Arabic dialects",
         "English"
       ],
-      "declared_license": "CC-BY-NC-4.0",
-      "current_status": "candidate_egyptian_dialogue_evaluation_and_training_rights_review",
+      "declared_license": "conflicting: current Hugging Face card CC-BY-NC-4.0; pinned historical revision fc9d1f14... declares CC-BY-NC-ND-4.0",
+      "current_status": "quarantined_license_conflict_no_training",
       "blockers": [
         "Current dataset card declares CC BY-NC-4.0 (not the earlier ND variant); verify pinned revision and license text before intake",
         "Egyptian subset reports about 1.7K rows; train split 982 rows, with source-provided validation/test splits that must remain isolated",
         "Human-translated English↔Egyptian conversations, but domain coverage is limited; not sufficient as the only training corpus",
-        "Private non-commercial research only; preserve source attribution and contributor/reviewer metadata"
+        "Private non-commercial research only; preserve source attribution and contributor/reviewer metadata",
+        "A pinned historical README revision declares CC BY-NC-ND 4.0 while the current card declares CC BY-NC 4.0; do not ingest or train until the rights holder resolves the discrepancy in writing",
+        "If ND terms apply, no adapted/derivative training use is allowed under that license; evaluation-only handling still requires terms review"
       ],
       "intended_role": [
         "Egyptian_dialect_dialogue_candidate",
         "held_out_dialect_evaluation_candidate"
       ],
       "reference_checked": "2026-11-25",
-      "reported_records": 1700
+      "reported_records": 1700,
+      "permitted_scope_if_terms_confirmed": "evaluation_only_after_exact_revision_license_review"
     },
     {
       "id": "ArSyra-arsyra-chatbot",
@@ -217,11 +220,12 @@
       "declared_license": "CC-BY-NC-4.0",
       "reported_records": 50,
       "reported_size": "44.5 KB; 50 native-written Egyptian Q&A pairs",
-      "current_status": "candidate_human_written_evaluation_and_small_dialogue_seed",
+      "current_status": "gated_access_request_required_no_access_requested",
       "blockers": [
         "Only 50 demonstration pairs; too small for meaningful pretraining",
         "CC BY-NC-4.0 permits only non-commercial use; keep private and do not redistribute",
-        "Review immutable revision and attribution before intake"
+        "Review immutable revision and attribution before intake",
+        "Current dataset page displays a Request access gate; do not request access or accept terms without separate explicit user authorization"
       ],
       "intended_role": [
         "human_written_egyptian_quality_smoke_test",
