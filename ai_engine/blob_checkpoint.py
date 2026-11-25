@@ -37,15 +37,15 @@ async def _download_private_blob(pathname: str, destination: Path) -> None:
     temporary = Path(temporary_name)
     total = 0
     try:
-        async with blob.stream_blob(pathname, access="private") as download:
-            with os.fdopen(fd, "wb") as output:
+        with os.fdopen(fd, "wb") as output:
+            async with blob.stream_blob(pathname, access="private") as download:
                 async for chunk in download:
                     total += len(chunk)
                     if total > _MAX_CHECKPOINT_BYTES:
                         raise RuntimeError("حجم ملف الأوزان تجاوز الحد المسموح.")
                     output.write(chunk)
-                output.flush()
-                os.fsync(output.fileno())
+            output.flush()
+            os.fsync(output.fileno())
         if total == 0:
             raise RuntimeError("ملف الأوزان المسترجع فارغ.")
         os.chmod(temporary, 0o600)
