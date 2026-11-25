@@ -141,5 +141,18 @@ class ArabicCorpusAuditTests(unittest.TestCase):
                 audit_splits(paths, "dialogue")
 
 
+    def test_arabic_script_counts_and_tatweel_normalization(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            paths = {
+                "train": self.write_split(root, "train", [{"text": "الســــلام عليكم"}]),
+                "validation": self.write_split(root, "validation", [{"text": "أهلا وسهلا"}]),
+                "test": self.write_split(root, "test", [{"text": "اختبار مستقل"}]),
+            }
+            report = audit_splits(paths, "text")
+            self.assertGreater(report["script_counts"]["arabic_characters"], 0)
+            self.assertEqual(report["quality_flags"]["records_without_arabic_script"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()
