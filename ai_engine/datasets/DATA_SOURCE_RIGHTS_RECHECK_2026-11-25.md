@@ -30,3 +30,21 @@ This is a research intake note, not legal advice or an approval to download/trai
 - Keep raw source files out of Git and store any approved material only in private storage.
 - The original `jon2-last.pt` remains unchanged.
 - Training remains blocked by the separate zero-cost GPU and corpus-capacity gates.
+
+
+## Bayanat Labs Open Arabic Books
+
+- Dataset: https://huggingface.co/datasets/Bayanat-Labs/open-arabic-books
+- Dataset card: https://www.bayanatlabs.com/open/open-arabic-books
+- Declared release licence: CC BY 4.0 for dataset rows, metadata and documentation; builder code Apache-2.0.
+- Reported release: 1,545 books, 27,544 chapter rows, 54,204,272 body-text words.
+- Rights nuance: each book's colophon was read. The card reports 1,212 books with original Arabic text stated public domain and design CC BY 4.0; 332 translations with Arabic translation and design CC BY 4.0; one book with original text CC BY 3.0. Other source-corpus books were excluded for missing/contradictory rights evidence.
+- Decision: strong general-Arabic text candidate, not dialogue. Require per-record metadata/colophon filtering, retain all attribution, and review publisher public-domain statements against applicable Egyptian law before approval. Dataset-level CC BY 4.0 is not a substitute for checking each book's source-rights statement. No download or approval.
+
+## Bayanat Labs Arabic Wikipedia Monthly — Egyptian Arabic
+
+- Dataset: https://huggingface.co/datasets/Bayanat-Labs/arabic-wikipedia-monthly
+- Dataset card: https://www.bayanatlabs.com/open/arabic-wikipedia-monthly
+- Declared licence: CC BY-SA 4.0 for article text; CC BY 4.0 for labels/documentation.
+- Reported Egyptian (arz) subset: 1,632,785 articles with running text; 1,580,156 are rule-flagged template-generated and 50,971 rule-flagged individually written. The combined 119,064,440 word count covers Arabic, Egyptian and Moroccan text configs and must not be attributed to Egyptian alone.
+- Decision: strong Egyptian-script text candidate, not dialogue. Start review with the individually-written subset only; its generation flag is rule-based and needs sample checks. Preserve exact revision links and attribution. Review ShareAlike implications, vandalism, stale facts, bias, privacy and biographies of living people. No download or approval.
