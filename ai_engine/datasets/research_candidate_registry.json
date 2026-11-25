@@ -232,6 +232,55 @@
         "evaluation_only_or_small_seed_after_review"
       ],
       "reference_checked": "2026-11-25"
+    },
+    {
+      "id": "Bayanat-Labs-open-arabic-books",
+      "url": "https://huggingface.co/datasets/Bayanat-Labs/open-arabic-books",
+      "language": [
+        "Arabic",
+        "Modern Standard Arabic and literary registers; per-book metadata must be inspected"
+      ],
+      "declared_license": "CC-BY-4.0 dataset release; each book has its own colophon and source-rights wording",
+      "reported_records": 1545,
+      "reported_size": "54,204,272 body-text words; 27,544 chapter rows; 1,545 of 1,745 source books released",
+      "current_status": "strong_general_arabic_text_candidate_per_book_rights_review_required",
+      "permitted_scope_if_terms_confirmed": "research_and_training_with_CC_BY_4.0_attribution_and_per_book_rights_filtering",
+      "blockers": [
+        "Dataset card states 1,212 books have publisher statements that original Arabic text is public domain and book design CC BY 4.0; 332 translations state Arabic translation and design CC BY 4.0; one book states original text CC BY 3.0. Filter using per-record license_quote and metadata.",
+        "Publisher public-domain assertions are not legal advice; copyright terms differ by jurisdiction. Review Egypt-specific applicability and each selected title before approval.",
+        "Keep attribution to authors/translators/editors, Hindawi Foundation, Andreas Hallberg / The Arabic E-Book Corpus, and Bayanat Labs.",
+        "Dataset-level CC BY 4.0 does not remove the need to inspect each book's source rights and colophon.",
+        "Text-only long-form books, not Egyptian dialogue; do not convert chapters into synthetic assistant conversations.",
+        "54.2M words is not a token count and does not by itself satisfy the current 20 tokens-per-parameter target for the 29.9M-parameter profile."
+      ],
+      "intended_role": [
+        "general_arabic_text_pretraining_candidate_after_per_book_rights_review"
+      ],
+      "reference_checked": "2026-11-25"
+    },
+    {
+      "id": "Bayanat-Labs-arabic-wikipedia-monthly-arz",
+      "url": "https://huggingface.co/datasets/Bayanat-Labs/arabic-wikipedia-monthly",
+      "language": [
+        "Egyptian Arabic"
+      ],
+      "declared_license": "CC-BY-SA-4.0 article text; CC-BY-4.0 labels and documentation",
+      "reported_records": 1632785,
+      "reported_size": "1,632,785 Egyptian Arabic articles with running text; 50,971 flagged individually written; 1,580,156 flagged template-generated",
+      "current_status": "strong_egyptian_text_candidate_sharealike_and_quality_filter_review",
+      "permitted_scope_if_terms_confirmed": "private_research_candidate_with_CC_BY_SA_attribution_and_sharealike_review",
+      "blockers": [
+        "Filter to generation=human as a conservative quality starting point; the generation flag is rule-based, not human-verified.",
+        "CC BY-SA 4.0 requires attribution and ShareAlike review for redistributed adaptations and potential model-weight implications; no weights/public release approval.",
+        "Wikipedia revisions can contain vandalism, biased or stale material, and biographies of living people; apply quality, privacy, safety and factuality filters.",
+        "Preserve exact article revision IDs, source URLs, attribution, and file hashes.",
+        "This is encyclopedic text, not conversational dialogue; do not coerce articles into assistant turns.",
+        "The reported 119,064,440 words cover Arabic, Egyptian and Moroccan text configs together, not Egyptian-only."
+      ],
+      "intended_role": [
+        "Egyptian_Arabic_text_pretraining_candidate_only_not_dialogue"
+      ],
+      "reference_checked": "2026-11-25"
     }
   ],
   "ingestion_invariants": [
