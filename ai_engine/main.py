@@ -27,6 +27,61 @@ app.include_router(compute_router)
 
 PRELOAD_STATE = "not_started"
 PRELOAD_ERROR = None
+PRELOAD_SELF_TEST_STATE = "not_started"
+PRELOAD_SELF_TEST_RESULTS = []
+PRELOAD_INFERENCE_TESTED = False
+
+
+def _run_original_model_self_test() -> dict:
+    """Run fixed Arabic probes against the loaded original model; never approve release."""
+    global PRELOAD_SELF_TEST_STATE, PRELOAD_SELF_TEST_RESULTS, PRELOAD_INFERENCE_TESTED
+    import json
+
+    cases = [
+        {"id": "msa_explanation", "message": "اشرح معنى الذكاء الاصطناعي بكلمات بسيطة.", "history": []},
+        {"id": "egyptian_instruction", "message": "أنا عايز أتعلم البرمجة من الصفر، أبدأ بإيه؟", "history": []},
+        {"id": "basic_reasoning", "message": "معايا 3 تفاحات وخدت تفاحتين كمان، بقى معايا كام تفاحة؟", "history": []},
+        {"id": "conversation_context", "message": "ما اسمي؟", "history": [
+            {"role": "user", "content": "اسمي سامح"},
+            {"role": "assistant", "content": "تشرفت بمعرفتك."},
+        ]},
+    ]
+    PRELOAD_SELF_TEST_STATE = "running"
+    results = []
+    for case in cases:
+        try:
+            answer = generate_reply(case["message"], history=case["history"])
+            valid = isinstance(answer, str) and bool(answer.strip()) and validate_generated_answer(answer)
+            results.append({
+                "id": case["id"],
+                "generated": bool(valid),
+                "answer": answer[:300] if isinstance(answer, str) else "",
+                "error_type": None if valid else "InvalidGeneratedText",
+            })
+        except Exception as error:
+            results.append({
+                "id": case["id"],
+                "generated": False,
+                "answer": "",
+                "error_type": type(error).__name__,
+            })
+    PRELOAD_SELF_TEST_RESULTS = results
+    PRELOAD_INFERENCE_TESTED = all(item["generated"] for item in results)
+    PRELOAD_SELF_TEST_STATE = "passed" if PRELOAD_INFERENCE_TESTED else "failed"
+    print("JON2_ORIGINAL_MODEL_SELF_TEST " + json.dumps({
+        "state": PRELOAD_SELF_TEST_STATE,
+        "technical_generation_passed": PRELOAD_INFERENCE_TESTED,
+        "results": results,
+        "public_chat_opened": False,
+        "semantic_quality_review": "pending_human_review",
+    }, ensure_ascii=False))
+    return {
+        "state": PRELOAD_SELF_TEST_STATE,
+        "technical_generation_passed": PRELOAD_INFERENCE_TESTED,
+        "results": results,
+        "public_chat_opened": False,
+        "semantic_quality_review": "pending_human_review",
+    }
 
 
 @app.on_event("startup")
@@ -42,6 +97,8 @@ async def preload_original_jon2_model() -> None:
         await load_runtime_async()
         PRELOAD_STATE = "loaded"
         print("Jon2 original checkpoint loaded successfully; chat release gates remain unchanged.")
+        if os.getenv("JON2_MODEL_SELF_TEST_ENABLED", "false").strip().lower() == "true":
+            _run_original_model_self_test()
     except Exception as error:
         PRELOAD_STATE = "failed"
         detail = str(error)
@@ -142,7 +199,10 @@ def _checkpoint_configured() -> bool:
 
 
 def _inference_tested() -> bool:
-    return os.getenv("JON2_INFERENCE_TESTED", "false").strip().lower() == "true"
+    return (
+        os.getenv("JON2_INFERENCE_TESTED", "false").strip().lower() == "true"
+        or PRELOAD_INFERENCE_TESTED
+    )
 
 
 def _quality_review_passed() -> bool:
@@ -269,6 +329,9 @@ def health():
         "model_preload_enabled": os.getenv("JON2_PRELOAD_MODEL", "false").strip().lower() == "true",
         "model_preload_state": PRELOAD_STATE,
         "model_preload_error": PRELOAD_ERROR,
+        "model_self_test_state": PRELOAD_SELF_TEST_STATE,
+        "model_self_test_cases": len(PRELOAD_SELF_TEST_RESULTS),
+        "model_self_test_passed": PRELOAD_INFERENCE_TESTED,
         "model_type": "jon2_original",
         "inference_tested": inference_tested,
         "quality_review_passed": quality_review_passed,
