@@ -9,7 +9,7 @@ from ai_engine.audit_arabic_corpus import audit_splits
 class ArabicCorpusAuditTests(unittest.TestCase):
     def write_split(self, root, name, rows):
         path = root / f"{name}.jsonl"
-        path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\\n" for row in rows), encoding="utf-8")
+        path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows), encoding="utf-8")
         return path
 
     def test_clean_text_splits_are_diagnostic_not_approval(self):
