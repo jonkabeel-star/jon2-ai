@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "purpose": "private_non_commercial_research_only",
+  "approved_sources": [
+    {
+      "file": "REPLACE_WITH_EXACT_RELATIVE_FILENAME.jsonl",
+      "sha256": "REPLACE_WITH_64_CHAR_LOWERCASE_SHA256",
+      "character_count": 0,
+      "status": "PENDING_REVIEW",
+      "reviewer": "REPLACE_WITH_HUMAN_REVIEWER",
+      "review_date": "YYYY-MM-DD",
+      "rights_basis": "RECORD_EXACT_LICENSE_AND_UPSTREAM_RIGHTS_BASIS",
+      "intended_use": "research_training",
+      "source_url": "RECORD_EXACT_DATASET_CARD_URL",
+      "revision": "RECORD_IMMUTABLE_UPSTREAM_COMMIT_SHA",
+      "license": "RECORD_EXACT_LICENSE_VERSION",
+      "upstream_provenance": "RECORD_ORIGINAL_DATA_SOURCE_AND_TRANSFORMATION",
+      "attribution": "RECORD_REQUIRED_ATTRIBUTION"
+    }
+  ],
+  "note": "Template only. Do not put this file or raw datasets in Git. Copy privately to the data volume, replace placeholders, and set status APPROVED only after human rights/provenance review."
+}
