@@ -116,7 +116,14 @@ def _checkpoint_configured() -> bool:
         "JON2_CHECKPOINT",
         os.path.join(os.path.dirname(__file__), "checkpoints", "jon2-small.pt"),
     )
-    return os.path.isfile(checkpoint)
+    if os.path.isfile(checkpoint):
+        return True
+    # A private Blob source is configuration, not proof that weights loaded.
+    blob_name = os.getenv("JON2_CHECKPOINT_BLOB", "jon2-last.pt").strip()
+    return (
+        blob_name in {"jon2-last.pt", "jon2-small.pt"}
+        and bool(os.getenv("BLOB_READ_WRITE_TOKEN"))
+    )
 
 
 def _inference_tested() -> bool:
