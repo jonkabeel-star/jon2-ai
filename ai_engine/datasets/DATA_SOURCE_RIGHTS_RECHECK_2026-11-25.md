@@ -48,3 +48,20 @@ This is a research intake note, not legal advice or an approval to download/trai
 - Declared licence: CC BY-SA 4.0 for article text; CC BY 4.0 for labels/documentation.
 - Reported Egyptian (arz) subset: 1,632,785 articles with running text; 1,580,156 are rule-flagged template-generated and 50,971 rule-flagged individually written. The combined 119,064,440 word count covers Arabic, Egyptian and Moroccan text configs and must not be attributed to Egyptian alone.
 - Decision: strong Egyptian-script text candidate, not dialogue. Start review with the individually-written subset only; its generation flag is rule-based and needs sample checks. Preserve exact revision links and attribution. Review ShareAlike implications, vandalism, stale facts, bias, privacy and biographies of living people. No download or approval.
+
+
+## UBC-NLP LHV-Egypt
+
+- Dataset: https://huggingface.co/datasets/UBC-NLP/nilechat-lhv-egy
+- Declared licence: CC BY-NC 4.0; reported size 1.49M rows and 1.98 GB.
+- The card describes controlled generation using CohereLabs/c4ai-command-r-plus-08-2024, drawing on local news websites, Wikipedia portals, local cultural/linguistic sources and WVS-based personas. Genres include stories, essays, blogs, reviews and conversations.
+- Hugging Face currently requires agreement to share account information before files can be accessed. No agreement or access request was made.
+- Decision: promising Egyptian text candidate for private non-commercial research only, subject to exact access terms, teacher-model/source provenance, attribution and quality review. Do not use commercially under the displayed NC licence without separate permission. Do not assume every row is dialogue. No download or approval.
+
+## Prickly Labs 1.9M Egyptian Corpus
+
+- Dataset: https://huggingface.co/datasets/Prickly-Labs/1.9M-Egyptian-Corpus
+- Declared licence: CC BY-SA 4.0; 1,922,049 rows. Dataset-card size is approximately 648 MB; another catalog reports approximately 617.7 MB.
+- Card says the majority is synthetic (Gemini API / LearnLM) and a minority is scraped from Egyptian Reddit communities.
+- The card states that models or datasets derived from this work must be released under CC BY-SA 4.0.
+- Decision: quarantine pending Reddit user-content rights, privacy/platform terms, source provenance, and written analysis of the model-weight ShareAlike condition. Synthetic quality and teacher-model provenance also need review. No download or approval.
