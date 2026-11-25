@@ -22,6 +22,8 @@ The source registry is `research_candidate_registry.json`. It is a shortlist, no
 | QCRI WASIL | CC BY-NC-SA 4.0 | Held-out spoken-assistant evaluation | 9,304 prompts with feedback; keep test/feedback splits isolated; data viewer currently reports invalid audio paths |
 | 4FACTORS Egyptian sample | CC BY-NC 4.0; access-gated | Potential human-reviewed smoke test only | Request-access gate; no request or terms acceptance; 50 pairs only |
 | fr3on Arabic Dialect Corpus | Uploader declares MIT | None yet | Quarantine: YouTube comments, upstream rights/platform terms/privacy review required |
+| Bayanat Open Arabic Books | CC BY 4.0 dataset; per-book colophon rights | General Arabic long-form text | 1,545 books / 54.2M body words; per-title rights and Egypt-specific review required |
+| Bayanat Arabic Wikipedia Monthly (Egyptian) | CC BY-SA 4.0 | Egyptian Arabic encyclopedic text, not dialogue | 1.63M articles; begin with 50,971 rule-flagged human-written articles; ShareAlike and quality review required |
 
 ## Training phases
 
@@ -101,4 +103,4 @@ The original `jon2-last.pt` remains read-only. Training workflow writes only und
 
 ## Rights recheck (2026-11-25)
 
-See `DATA_SOURCE_RIGHTS_RECHECK_2026-11-25.md` for the exact page/revision findings. Alexandria is quarantined due conflicting license declarations across revisions. 4FACTORS is access-gated and no access request was made. ShawarmaChats remains a candidate pending ShareAlike/model-weight review and immutable revision pinning. No source is approved and no data was downloaded.
+See `DATA_SOURCE_RIGHTS_RECHECK_2026-11-25.md` for the exact page/revision findings. Alexandria is quarantined due conflicting license declarations across revisions. 4FACTORS is access-gated and no access request was made. ShawarmaChats remains a candidate pending ShareAlike/model-weight review and immutable revision pinning. Open Arabic Books and Egyptian Arabic Wikipedia Monthly were added as text-only candidates, both requiring per-source rights and quality review. No source is approved and no data was downloaded.
