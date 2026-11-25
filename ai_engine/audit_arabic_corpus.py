@@ -1,7 +1,8 @@
 """Offline, read-only corpus audit for pre-split Jon2 Arabic JSONL data.
 
 This tool never downloads data, changes source files, approves rights, or trains.
-It emits aggregate diagnostics only and never copies raw text into the report.
+It emits aggregate diagnostics only and never copies raw text or raw group IDs
+into the report.
 """
 from __future__ import annotations
 
@@ -13,21 +14,36 @@ import unicodedata
 from collections import Counter
 from pathlib import Path
 
-EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)
-PHONE_RE = re.compile(r"(?<!\w)(?:\+?\d[\d\s().-]{7,}\d)(?!\w)")
-ARABIC_RE = re.compile(r"[\u0600-\u06ff]")
+EMAIL_RE = re.compile(r"\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b", re.I)
+PHONE_RE = re.compile(r"(?<!\\w)(?:\\+?\\d[\\d\\s().-]{7,}\\d)(?!\\w)")
+ARABIC_RE = re.compile(r"[\\u0600-\\u06ff]")
 LATIN_RE = re.compile(r"[A-Za-z]")
 REQUIRED_SPLITS = ("train", "validation", "test")
+GROUP_ID_FIELDS = ("conversation_id", "document_id", "group_id", "source_id")
 
 
 def normalize_text(value: str) -> str:
     value = unicodedata.normalize("NFKC", value)
-    value = value.replace("\u0640", "")
+    value = value.replace("\\u0640", "")
     return " ".join(value.split())
 
 
 def content_hash(value: str) -> str:
     return hashlib.sha256(normalize_text(value).encode("utf-8")).hexdigest()
+
+
+def _group_fingerprints(row: dict, split: str, index: int) -> list[str]:
+    fingerprints = []
+    for field in GROUP_ID_FIELDS:
+        value = row.get(field)
+        if value is None:
+            continue
+        if not isinstance(value, (str, int)) or not str(value).strip():
+            raise ValueError(f"{split}:{index + 1}: invalid {field}")
+        # Namespace the hash so equal IDs in different fields are not conflated.
+        payload = f"{field}\\0{unicodedata.normalize('NFKC', str(value)).strip()}"
+        fingerprints.append(hashlib.sha256(payload.encode("utf-8")).hexdigest())
+    return fingerprints
 
 
 def _read_jsonl(path: Path, split: str, mode: str) -> list[dict]:
@@ -69,7 +85,7 @@ def _read_jsonl(path: Path, split: str, mode: str) -> list[dict]:
 def _record_text(row: dict, mode: str) -> str:
     if mode == "text":
         return row["text"]
-    return "\n".join(message["content"] for message in row["messages"])
+    return "\\n".join(message["content"] for message in row["messages"])
 
 
 def audit_splits(split_paths: dict[str, Path], mode: str = "text") -> dict:
@@ -103,11 +119,8 @@ def audit_splits(split_paths: dict[str, Path], mode: str = "text") -> dict:
                 no_arabic += 1
             if EMAIL_RE.search(value) or PHONE_RE.search(value):
                 privacy_hits += 1
-            group = row.get("conversation_id") or row.get("document_id") or row.get("group_id")
-            if group is not None:
-                if not isinstance(group, (str, int)) or not str(group).strip():
-                    raise ValueError(f"{split}:{index + 1}: invalid group identifier")
-                group_splits.setdefault(str(group), set()).add(split)
+            for fingerprint in _group_fingerprints(row, split, index):
+                group_splits.setdefault(fingerprint, set()).add(split)
         split_stats[split] = {
             "records": len(rows),
             "characters": chars,
@@ -122,7 +135,7 @@ def audit_splits(split_paths: dict[str, Path], mode: str = "text") -> dict:
                 "splits": sorted(by_split),
                 "record_counts": {split: len(indices) for split, indices in by_split.items()},
             })
-    group_leakage = sorted(group for group, names in group_splits.items() if len(names) > 1)
+    group_leakage = sorted(fingerprint for fingerprint, names in group_splits.items() if len(names) > 1)
     duplicate_count = sum(item["within_split_duplicate_records"] for item in split_stats.values())
 
     blockers = []
@@ -140,7 +153,7 @@ def audit_splits(split_paths: dict[str, Path], mode: str = "text") -> dict:
         blockers.append("within_split_exact_duplicates_found")
 
     return {
-        "report_version": 1,
+        "report_version": 2,
         "mode": mode,
         "split_stats": split_stats,
         "total_records": sum(item["records"] for item in split_stats.values()),
@@ -158,7 +171,7 @@ def audit_splits(split_paths: dict[str, Path], mode: str = "text") -> dict:
         },
         "leakage_details": {
             "cross_split_duplicate_hashes": cross_split_duplicates,
-            "group_ids_across_splits": group_leakage,
+            "group_id_sha256_fingerprints": group_leakage,
         },
         "blockers": blockers,
         "ready_for_training": False,
@@ -192,7 +205,7 @@ def main() -> int:
         mode=args.mode,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
     print(json.dumps({
         "total_records": report["total_records"],
         "quality_flags": report["quality_flags"],
