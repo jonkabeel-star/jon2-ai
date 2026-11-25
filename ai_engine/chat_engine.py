@@ -56,6 +56,20 @@ def load_runtime() -> None:
     _model, _tokenizer, _device = load_model(str(CHECKPOINT_PATH))
 
 
+async def load_runtime_async() -> None:
+    """Load the private checkpoint without nesting an event loop."""
+    global _model, _tokenizer, _device, CHECKPOINT_PATH
+    if model_is_ready():
+        return
+    if not checkpoint_is_available():
+        if not os.getenv("BLOB_READ_WRITE_TOKEN"):
+            raise FileNotFoundError(f"Jon2 checkpoint not found: {CHECKPOINT_PATH}")
+        from blob_checkpoint import ensure_private_checkpoint_async
+
+        CHECKPOINT_PATH = await ensure_private_checkpoint_async()
+    _model, _tokenizer, _device = load_model(str(CHECKPOINT_PATH))
+
+
 def build_conversation_prompt(message: str, history=None, memories=None, tokenizer=None, context=None, knowledge_context=None) -> str:
     """Build a prompt that fits the checkpoint's actual token context."""
     question = str(message).strip()
