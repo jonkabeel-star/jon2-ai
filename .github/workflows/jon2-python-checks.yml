@@ -56,6 +56,9 @@ jobs:
       - name: Test quarantined dataset acquisition safeguards
         run: python -m unittest ai_engine.tests.test_download_arabic_candidate -v
 
+      - name: Test read-only Arabic corpus audit
+        run: python -m unittest ai_engine.tests.test_research_corpus_audit -v
+
       - name: Audit current training text
         run: python ai_engine/audit_data.py
 
