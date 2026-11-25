@@ -1,5 +1,8 @@
-# Minimal runtime dependencies for the original Jon2 FastAPI service.
-# PyTorch is required only when a private Jon2 checkpoint is loaded for inference.
+# CPU-only runtime for the original Jon2 FastAPI service on Vercel.
+# Keep the PyTorch index first so CUDA wheels are never pulled into this CPU service.
+--index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://pypi.org/simple
+
 fastapi
 uvicorn[standard]
 torch>=2.3
