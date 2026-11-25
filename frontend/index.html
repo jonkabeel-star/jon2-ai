@@ -171,15 +171,15 @@ button:disabled{opacity:.6;cursor:not-allowed}
 </section>
 
 <section class="chat-section" id="assistant">
-  <div class="section-head"><div><h2 data-t="assistantHeading">المحادثة العامة — Jon2 AI</h2><p data-t="assistantDesc">مفتوحة للجميع؛ ردود محدودة بالقواعد إلى أن يجتاز عقل Jon2 الأصلي مراجعة الجودة</p></div></div>
+  <div class="section-head"><div><h2 data-t="assistantHeading">المحادثة العامة — Jon2 AI</h2><p data-t="assistantDesc">واجهة المحادثة جاهزة؛ الإرسال سيفتح بعد اجتياز عقل Jon2 الأصلي اختبارات الفهم والجودة</p></div></div>
   <div class="chat-shell">
     <div class="local-model-panel" aria-label="حالة تشغيل عقل Jon2 الأصلي">
       <div class="local-model-status" id="localModelStatus" role="status" aria-live="polite">جارٍ تشغيل عقل Jon2 تلقائيًا…</div>
     </div>
     <div class="chat-top"><div class="chat-title"><div class="chat-avatar">J2</div><div><strong data-t="assistantName">المساعد الذكي</strong><small id="status" data-t="offline">الخادم غير متصل حاليًا</small></div></div><button class="clear" id="clear" data-t="clear">مسح المحادثة</button></div>
-    <div class="messages" id="messages" aria-live="polite"><div class="msg bot" data-t="welcome">أهلًا بك! المحادثة العامة ترد الآن بردود محدودة بالقواعد، وليست من النموذج الأصلي.</div></div>
+    <div class="messages" id="messages" aria-live="polite"><div class="msg bot" data-t="welcome">أهلًا بك في Jon2 AI. تم توصيل الموقع بالخادم الأصلي. الإرسال متوقف مؤقتًا حتى يجتاز العقل اختبارات الفهم والجودة.</div></div>
     <form class="composer" id="form"><textarea id="input" placeholder="الردود متوقفة حتى جاهزية محرك Jon2 الأصلي" data-ph="placeholder" maxlength="2000" required disabled></textarea><button class="send" id="send" type="submit" data-t="send" disabled>إرسال ↑</button></form>
-    <div class="status-note" id="statusNote" data-t="chatNote">الردود الحالية محدودة بالقواعد ولا تمثل قدرات النموذج الأصلي.</div>
+    <div class="status-note" id="statusNote" data-t="chatNote">لن نعرض ردودًا بديلة أو وهمية. سيُتاح الإرسال عندما يجتاز عقل Jon2 الأصلي اختبارات الجودة.</div>
   </div>
 </section>
 
@@ -291,9 +291,8 @@ window.JON2_REFRESH_CHAT_STATE = function () {
 function syncChatControls() {
   const input = document.getElementById("input");
   const send = document.getElementById("send");
-  // Keep public chat usable: native Jon2 takes priority, then the configured API,
-  // and the clearly labeled rule-based public mode is used when neither is available.
-  const enabled = !chatBusy;
+  // Never enable sending unless the original Jon2 runtime has passed its release gates.
+  const enabled = !chatBusy && (chatReady || localRuntimeReady);
   input.disabled = !enabled;
   send.disabled = !enabled;
   input.placeholder = localRuntimeReady ? translations[lang].localPlaceholder : translations[lang].placeholder;
