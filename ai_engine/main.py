@@ -274,7 +274,6 @@ def health():
         "checkpoint_path": checkpoint_path,
         "kaggle_token_present": bool(os.getenv("KAGGLE_API_TOKEN")),
         "chat_ready": chat_enabled,
-        "experimental_chat_enabled": _experimental_chat_enabled() and loaded,
         "release_approved": release_approved,
         "model_status": model_status,
         "chat_requires_model_checkpoint": True,
