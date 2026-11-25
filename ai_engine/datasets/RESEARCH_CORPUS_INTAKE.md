@@ -106,3 +106,9 @@ The original `jon2-last.pt` remains read-only. Training workflow writes only und
 ## Rights recheck (2026-11-25)
 
 See `DATA_SOURCE_RIGHTS_RECHECK_2026-11-25.md` for the exact page/revision findings. Alexandria is quarantined due conflicting license declarations across revisions. 4FACTORS is access-gated and no access request was made. ShawarmaChats remains a candidate pending ShareAlike/model-weight review and immutable revision pinning. Open Arabic Books and Egyptian Arabic Wikipedia Monthly were added as text-only candidates, both requiring per-source rights and quality review. LHV-Egypt and Prickly Labs' 1.9M Egyptian corpus were also added with access/rights blockers. No source is approved and no data was downloaded.
+
+| T0KII MASRISET V4 upstream split | CC BY-NC 4.0 | Egyptian Arabic mixed-source pretraining corpus | 8.64M rows reported; non-commercial only; quarantine until every upstream source licence and provenance is checked |
+
+### MASRISET V4 — additional caution
+
+The 8.64M-row figure is not a token count or unique-text count. The dataset card acknowledges Egyptian Wikipedia, MBZUAI-Paris Egyptian-SFT-Mixture, a Kaggle Egyptian dataset bundle, and AraBERT/ArbML teams. Do not infer that every upstream source inherits the wrapper dataset licence. Require source-level licence evidence, exact revision pinning, duplicate/split-leakage checks and an explicit decision on whether NC-only research is compatible with Jon2's intended release.
