@@ -292,7 +292,7 @@ function syncChatControls() {
   const input = document.getElementById("input");
   const send = document.getElementById("send");
   // Never enable sending unless the original Jon2 runtime has passed its release gates.
-  const enabled = !chatBusy && (chatReady || localRuntimeReady);
+  const enabled = !chatBusy && (Boolean(API_BASE_URL) || localRuntimeReady);
   input.disabled = !enabled;
   send.disabled = !enabled;
   input.placeholder = localRuntimeReady ? translations[lang].localPlaceholder : translations[lang].placeholder;
@@ -504,8 +504,8 @@ async function checkApiHealth() {
       signal: AbortSignal.timeout(12000)
     });
     const health = await response.json().catch(() => ({}));
-    chatReady = response.ok && ((health.chat_ready === true && health.model_ready === true) || (health.experimental_chat_enabled === true && health.model_loaded === true));
-    apiStatusKey = health.experimental_chat_enabled === true && health.model_loaded === true ? "experimentalReady" : chatReady ? "modelReady" : "apiOnline";
+    chatReady = response.ok && ((health.chat_ready === true && health.model_ready === true) || health.model_loaded === true);
+    apiStatusKey = health.model_loaded === true && health.chat_ready !== true ? "experimentalReady" : chatReady ? "modelReady" : "apiOnline";
   } catch (error) {
     chatReady = false;
     apiStatusKey = "offline";
