@@ -2,7 +2,12 @@
 name = "jon2-cloud-api"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+  "fastapi>=0.117.1,<1.0",
+]
+
+[tool.vercel]
+entrypoint = "api.index:app"
 
 [dependency-groups]
 dev = [
