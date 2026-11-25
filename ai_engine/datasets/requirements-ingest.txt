@@ -1,0 +1,2 @@
+# Install only on the private GPU ingestion host, inside its isolated virtual environment.
+datasets>=4.0

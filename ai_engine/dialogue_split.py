@@ -2,8 +2,8 @@
 
 This module is a data-preparation utility, not an approval mechanism. Callers must
 run the exact-file rights/approval gate before using any returned partition for
-training. Conversations sharing any normalized message are kept in one group so
-question/answer text cannot leak across train, validation, and test.
+training. Conversations sharing normalized messages or source/document identifiers
+(including dataset-scoped page IDs) stay together across all three partitions.
 """
 from __future__ import annotations
 
@@ -25,6 +25,31 @@ def normalize_message(text: str) -> str:
 
 def _fingerprint(text: str) -> str:
     return hashlib.sha256(normalize_message(text).encode("utf-8")).hexdigest()
+
+
+def _record_group_fingerprints(record: dict, index: int) -> list[str]:
+    """Return namespaced fingerprints for source/document grouping metadata."""
+    if not isinstance(record, dict):
+        raise ValueError(f"Conversation {index}: record must be an object.")
+    source = record.get("source")
+    if source is not None and not isinstance(source, dict):
+        raise ValueError(f"Conversation {index}: source metadata must be an object.")
+    source = source or {}
+    dataset = source.get("dataset", "")
+    if not isinstance(dataset, str):
+        raise ValueError(f"Conversation {index}: source dataset identifier must be text.")
+    fingerprints = []
+    for container_name, container in (("record", record), ("source", source)):
+        for field in ("conversation_id", "document_id", "group_id", "source_id", "page_id"):
+            value = container.get(field)
+            if value is None:
+                continue
+            if isinstance(value, bool) or not isinstance(value, (str, int)) or not str(value).strip():
+                raise ValueError(f"Conversation {index}: invalid {container_name}.{field}.")
+            namespace = dataset if container_name == "source" else ""
+            key = f"{namespace}\0{container_name}.{field}\0{normalize_message(str(value))}"
+            fingerprints.append(hashlib.sha256(key.encode("utf-8")).hexdigest())
+    return fingerprints
 
 
 def validate_conversation(record: dict, index: int) -> list[str]:
@@ -49,7 +74,7 @@ def split_dialogue_records(
     test_fraction: float = 0.1,
     seed: int = 42,
 ) -> dict[str, list[dict]]:
-    """Split whole conversations; shared normalized message text forms one group.
+    """Split whole conversations; shared messages and source IDs form one group.
 
     The split fails closed when fewer than three independent groups exist.
     Fractions refer to conversation counts approximately; linked duplicate
@@ -63,9 +88,12 @@ def split_dialogue_records(
         raise ValueError("Validation and test fractions must leave at least 20% for training.")
 
     message_owners: dict[str, list[int]] = defaultdict(list)
+    group_owners: dict[str, list[int]] = defaultdict(list)
     for index, record in enumerate(records):
         for content in validate_conversation(record, index):
             message_owners[_fingerprint(content)].append(index)
+        for fingerprint in _record_group_fingerprints(record, index):
+            group_owners[fingerprint].append(index)
 
     parent = list(range(len(records)))
 
@@ -80,7 +108,7 @@ def split_dialogue_records(
         if a != b:
             parent[b] = a
 
-    for owners in message_owners.values():
+    for owners in (*message_owners.values(), *group_owners.values()):
         for owner in owners[1:]:
             union(owners[0], owner)
 

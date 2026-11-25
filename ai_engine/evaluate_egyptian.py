@@ -58,12 +58,16 @@ def load_benchmark_cases(
                 and turn["content"].strip()
                 for turn in turns
             )
-            and any(turn["role"] == "user" for turn in turns)
+            and turns[0]["role"] == "user"
             and turns[-1]["role"] == "user"
+            and all(
+                turns[index]["role"] != turns[index - 1]["role"]
+                for index in range(1, len(turns))
+            )
         )
         if prompt_present == turns_present or (prompt_present and not has_prompt) or (turns_present and not has_turns):
             raise ValueError(
-                f"Record {item['id']} must contain exactly one valid prompt or valid turns"
+                f"Record {item['id']} must contain exactly one valid prompt or alternating user/assistant turns"
             )
         seen.add(item["id"])
         cases.append(item)
@@ -73,24 +77,45 @@ def load_benchmark_cases(
 
 
 def run_case(chat_engine, item: dict) -> dict:
+    """Generate every assistant turn and feed Jon2's own prior output back as context.
+
+    Assistant turns in the benchmark are reference/context placeholders. They
+    are deliberately not injected into model history: doing so would leak a
+    reference answer and could make a follow-up look better than the model's
+    actual conversational ability.
+    """
     if "turns" not in item:
+        prompt = item["prompt"]
+        answer = chat_engine.generate_reply(prompt)
         return {
-            "answer": chat_engine.generate_reply(item["prompt"]),
-            "conversation": [{"role": "user", "content": item["prompt"]}],
+            "answer": answer,
+            "generated_turns": [{"prompt": prompt, "answer": answer}],
+            "conversation": [
+                {"role": "user", "content": prompt},
+                {"role": "assistant", "content": answer},
+            ],
         }
 
     history = []
-    answer = None
+    generated_turns = []
     for turn in item["turns"]:
         if turn["role"] == "assistant":
-            history.append({"role": "assistant", "content": turn["content"]})
+            # This is a human-authored reference turn, not a model response.
             continue
-        answer = chat_engine.generate_reply(turn["content"], history=history)
+        prompt = turn["content"]
+        answer = chat_engine.generate_reply(prompt, history=history)
+        generated_turns.append({"prompt": prompt, "answer": answer})
         history.extend([
-            {"role": "user", "content": turn["content"]},
+            {"role": "user", "content": prompt},
             {"role": "assistant", "content": answer},
         ])
-    return {"answer": answer, "conversation": history}
+    if not generated_turns:
+        raise ValueError("Multi-turn benchmark case produced no user turns.")
+    return {
+        "answer": generated_turns[-1]["answer"],
+        "generated_turns": generated_turns,
+        "conversation": history,
+    }
 
 
 def main() -> int:
@@ -155,8 +180,10 @@ def main() -> int:
                 record.update({
                     "status": "generated",
                     "answer": answer,
+                    "generated_turns": result["generated_turns"],
                     "conversation": result["conversation"],
                     "surface_diagnostics": diagnose_answer(answer),
+                    "human_semantic_review_required": True,
                 })
             except Exception as exc:
                 record.update({
