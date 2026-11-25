@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
 
 import chat_engine
-from chat_engine import generate_reply, load_runtime, load_runtime_async, model_is_ready
+from chat_engine import generate_raw_reply, generate_reply, load_runtime, load_runtime_async, model_is_ready
 from knowledge_engine import looks_like_fact_question
 from knowledge_search import search_knowledge, answer_from_sources
 import chat_memory
@@ -178,6 +178,11 @@ def home():
     }
 
 
+def _experimental_chat_enabled() -> bool:
+    """Allow clearly labeled original-model experiments on an explicitly enabled environment."""
+    return os.getenv("JON2_EXPERIMENTAL_CHAT_ENABLED", "false").strip().lower() == "true"
+
+
 def _chat_release_approved() -> bool:
     """Require an explicit release decision after human quality review."""
     return os.getenv("JON2_CHAT_RELEASE_APPROVED", "false").strip().lower() == "true"
@@ -269,6 +274,7 @@ def health():
         "checkpoint_path": checkpoint_path,
         "kaggle_token_present": bool(os.getenv("KAGGLE_API_TOKEN")),
         "chat_ready": chat_enabled,
+        "experimental_chat_enabled": _experimental_chat_enabled() and loaded,
         "release_approved": release_approved,
         "model_status": model_status,
         "chat_requires_model_checkpoint": True,
@@ -464,7 +470,8 @@ def chat(request: ChatRequest):
 
     # Fail closed before inference. No canned replies, FAQ answer bank,
     # retrieval-answer shortcut, or external model fallback is permitted.
-    if not _public_release_ready():
+    experimental_mode = _experimental_chat_enabled() and model_is_ready()
+    if not _public_release_ready() and not experimental_mode:
         snapshot = health()
         raise HTTPException(
             status_code=503,
@@ -501,16 +508,21 @@ def chat(request: ChatRequest):
                 )
 
         # The original Jon2 checkpoint is the only source of the generated answer.
-        reply = generate_reply(message, history, memories, knowledge_context=knowledge_context)
+        reply = (
+            generate_raw_reply(message, history, memories, knowledge_context=knowledge_context)
+            if experimental_mode and not _public_release_ready()
+            else generate_reply(message, history, memories, knowledge_context=knowledge_context)
+        )
         if not isinstance(reply, str) or not reply.strip():
             raise RuntimeError("empty original-model output")
         # Reject obviously corrupted, non-Arabic, or looping generations before
         # returning them or persisting them as conversation memory. This is a
         # surface sanity gate only; it does not certify semantic correctness.
-        if not validate_generated_answer(reply):
+        if not experimental_mode and not validate_generated_answer(reply):
             raise RuntimeError("original-model output failed Arabic surface checks")
 
-        if request.session_id:
+        # Experimental outputs are deliberately not saved as long-term memory.
+        if request.session_id and not experimental_mode:
             chat_memory.add_exchange(request.session_id, message, reply)
 
         return {
@@ -518,7 +530,8 @@ def chat(request: ChatRequest):
             "reply": reply,
             "memory_used": bool(memories),
             "session_id": request.session_id,
-            "response_mode": "jon2_original_model_with_source_retrieval",
+            "response_mode": "jon2_original_experimental" if experimental_mode and not _public_release_ready() else "jon2_original_model_with_source_retrieval",
+            "experimental": bool(experimental_mode and not _public_release_ready()),
             "knowledge_sources": knowledge_sources,
         }
     except Exception as error:
