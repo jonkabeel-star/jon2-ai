@@ -72,7 +72,8 @@ class ArabicCorpusAuditTests(unittest.TestCase):
             self.assertNotIn(secret_id, report_text)
             self.assertNotIn("src-a", report_text)
             self.assertNotIn("grp-b", report_text)
-            self.assertIn("group_id_sha256_fingerprints", report_text)
+            self.assertNotIn("group_id_sha256", report_text)
+            self.assertNotIn("leakage_details", report_text)
 
     def test_all_group_fields_are_checked(self):
         with tempfile.TemporaryDirectory() as temp:
