@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "purpose": "private_non_commercial_research_only",
+  "policy": "No source is approved for ingestion until its exact upstream terms, access conditions, provenance, and file hashes are reviewed and recorded in the private source_approvals.json manifest.",
+  "public_release_allowed": false,
+  "redistribute_raw_data": false,
+  "sources": [
+    {
+      "id": "premio-ai-thearabicpile-conversational",
+      "url": "https://huggingface.co/datasets/premio-ai/TheArabicPile_Conversational",
+      "language": [
+        "Arabic",
+        "multiple"
+      ],
+      "declared_license": "CC-BY-NC-4.0",
+      "reported_records": 2493431,
+      "reported_size": "2.27 GB",
+      "current_status": "candidate_access_and_provenance_review",
+      "permitted_scope_if_terms_confirmed": "private_non_commercial_research_only",
+      "blockers": [
+        "Confirm exact upstream source provenance and terms for every component",
+        "Review dataset card and license version at pinned revision",
+        "Do not use for commercial training or public redistribution",
+        "Obtain private access and retain attribution metadata"
+      ],
+      "intended_role": [
+        "MSA_pretraining_candidate",
+        "domain_coverage_candidate"
+      ],
+      "reference_checked": "2026-11-25"
+    },
+    {
+      "id": "UBC-NLP-nilechat-fw-edu-egy",
+      "url": "https://huggingface.co/datasets/UBC-NLP/nilechat-fw-edu-egy",
+      "language": [
+        "Egyptian Arabic"
+      ],
+      "declared_license": "CC-BY-NC-4.0",
+      "reported_records": 5520000,
+      "current_status": "candidate_upstream_rights_review",
+      "permitted_scope_if_terms_confirmed": "private_non_commercial_research_only",
+      "blockers": [
+        "Dataset is machine-translated from FineWeb-Edu; verify upstream rights and transformation terms",
+        "Review access conditions and pinned dataset revision",
+        "Do not use for commercial training or public redistribution"
+      ],
+      "intended_role": [
+        "Egyptian_dialect_language_modeling_candidate"
+      ],
+      "reference_checked": "2026-11-25"
+    },
+    {
+      "id": "UBC-NLP-nilechat-arabizi-egy",
+      "url": "https://huggingface.co/datasets/UBC-NLP/nilechat-arabizi-egy",
+      "language": [
+        "Egyptian Arabic Arabizi"
+      ],
+      "declared_license": "CC-BY-NC-4.0",
+      "reported_rows": 572000,
+      "current_status": "candidate_upstream_rights_review",
+      "permitted_scope_if_terms_confirmed": "private_non_commercial_research_only",
+      "blockers": [
+        "Derived from other datasets; verify upstream rights and transformation terms",
+        "Arabizi is Latin-script Egyptian and must not be treated as Arabic-script dialogue",
+        "Review access conditions and pinned dataset revision"
+      ],
+      "intended_role": [
+        "optional_Arabizi_coverage_only"
+      ],
+      "reference_checked": "2026-11-25"
+    },
+    {
+      "id": "UBC-NLP-alexandria",
+      "url": "https://huggingface.co/datasets/UBC-NLP/alexandria",
+      "language": [
+        "Egyptian Arabic",
+        "other Arabic dialects",
+        "English"
+      ],
+      "declared_license": "CC-BY-NC-ND-4.0",
+      "current_status": "evaluation_or_legal_review_only",
+      "blockers": [
+        "NonCommercial and NoDerivatives terms; do not ingest into model training unless rights holder explicitly confirms training permission in writing",
+        "Keep benchmark evaluation separate from training"
+      ],
+      "intended_role": [
+        "held_out_dialect_evaluation_candidate"
+      ],
+      "reference_checked": "2026-11-25"
+    },
+    {
+      "id": "ArSyra-arsyra-chatbot",
+      "url": "https://huggingface.co/datasets/ArSyra/arsyra-chatbot",
+      "language": [
+        "Arabic",
+        "Egyptian and other dialects"
+      ],
+      "declared_license": "CC-BY-NC-SA-4.0",
+      "reported_records": 34880,
+      "current_status": "access_terms_and_share_alike_review",
+      "blockers": [
+        "Gated access requires accepting contact-information terms",
+        "Research-only use and non-redistribution conditions must be followed",
+        "Review ShareAlike implications for any derived model or weights before training"
+      ],
+      "intended_role": [
+        "dialogue_quality_candidate_after_written_review"
+      ],
+      "reference_checked": "2026-11-25"
+    },
+    {
+      "id": "fr3on-egyptian-dialogue",
+      "url": "https://huggingface.co/datasets/fr3on/egyptian-dialogue",
+      "language": [
+        "Egyptian Arabic"
+      ],
+      "declared_license": "CC-BY-4.0 (uploader declaration)",
+      "reported_records": 4322,
+      "current_status": "quarantined_source_provenance",
+      "blockers": [
+        "Dataset card says examples originate from TV-series subtitles; uploader license alone does not establish rights to underlying scripts/subtitles",
+        "Do not ingest until rights holder permission or provenance is independently verified"
+      ],
+      "intended_role": [
+        "none_until_rights_verified"
+      ],
+      "reference_checked": "2026-11-25"
+    }
+  ],
+  "ingestion_invariants": [
+    "Never store downloaded corpus files or access tokens in Git.",
+    "Pin each dataset to an immutable revision and record the revision and source URL.",
+    "Record source license, upstream provenance, access terms, attribution, file SHA-256, and exact character/record counts.",
+    "Keep research-only data and derived checkpoints private; never promote them to a commercial/public model without separate rights clearance.",
+    "Deduplicate by normalized conversation/message hashes before splitting.",
+    "Split by conversation/source group into train, validation, and test before tokenizer fitting; test must never affect training or checkpoint selection.",
+    "Do not auto-approve a source from a dataset-card license string; require human rights review and private exact-file approval."
+  ]
+}
