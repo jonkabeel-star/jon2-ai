@@ -72,6 +72,30 @@ class DialogueSplitTests(unittest.TestCase):
         }
         self.assertEqual(len(locations), 1)
 
+    def test_shared_source_page_id_links_records_into_one_partition(self):
+        first = conversation("سؤال صفحة أول", "إجابة أولى")
+        second = conversation("سؤال صفحة ثان", "إجابة ثانية")
+        first["source"] = {"dataset": "wikipedia-egyptian", "page_id": 1234}
+        second["source"] = {"dataset": "wikipedia-egyptian", "page_id": 1234}
+        parts = split_dialogue_records(self.records + [first, second])
+        locations = {
+            name for name, records in parts.items()
+            if first in records or second in records
+        }
+        self.assertEqual(len(locations), 1)
+
+    def test_same_page_id_from_different_datasets_does_not_link(self):
+        first = conversation("سؤال صفحة أول", "إجابة أولى")
+        second = conversation("سؤال صفحة ثان", "إجابة ثانية")
+        first["source"] = {"dataset": "dataset-a", "page_id": 1234}
+        second["source"] = {"dataset": "dataset-b", "page_id": 1234}
+        parts = split_dialogue_records(self.records + [first, second])
+        locations = {
+            name for name, records in parts.items()
+            if first in records or second in records
+        }
+        self.assertEqual(len(locations), 2)
+
     def test_too_few_independent_groups_fails_closed(self):
         records = [
             conversation("السؤال نفسه", "إجابة أ"),
