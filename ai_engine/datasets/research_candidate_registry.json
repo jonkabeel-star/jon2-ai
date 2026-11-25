@@ -329,6 +329,29 @@
         "Egyptian_Arabic_text_candidate_quarantined_until_rights_review"
       ],
       "reference_checked": "2026-11-25"
+    },
+    {
+      "id": "T0KII-MASRISET-V4-UPSTREAM-SPLIT",
+      "url": "https://huggingface.co/datasets/T0KII/MASRISET-V4-UPSTREAM-SPLIT",
+      "language": [
+        "Egyptian Arabic",
+        "Arabic"
+      ],
+      "declared_license": "CC-BY-NC-4.0",
+      "reported_records": 8643243,
+      "reported_size": "1.17 GB",
+      "current_status": "noncommercial_candidate_upstream_rights_and_provenance_quarantine",
+      "blockers": [
+        "Declared CC BY-NC 4.0 prohibits commercial use under the displayed licence; not suitable for a future commercial Jon2 service without separate written permission.",
+        "Dataset is an upstream-assembled corpus; acknowledgements include Egyptian Wikipedia, MBZUAI-Paris Egyptian-SFT-Mixture, Mostafa Nofal Kaggle Egyptian dataset bundle, and AraBERT/ArbML teams. Exact per-source licences, redistribution rights, and provenance must be established.",
+        "Reported 8,643,243 rows are not token count or unique text count; deduplication, split leakage, quality and dialect authenticity need independent audit.",
+        "Contains mixed source genres and possible conversations; preserve source/genre and split metadata; do not flatten all material into dialogue.",
+        "No data download, no access terms accepted, no approval."
+      ],
+      "intended_role": [
+        "Egyptian_Arabic_pretraining_research_candidate_only_after_source_level_rights_review"
+      ],
+      "reference_checked": "2026-11-25"
     }
   ],
   "ingestion_invariants": [
