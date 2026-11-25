@@ -27,6 +27,21 @@ Four fixed smoke-test cases were run against the loaded original checkpoint:
 
 Representative outputs were malformed word fragments rather than useful answers. The technical model load succeeded; conversational quality did not.
 
+## Representative raw output
+
+The model emitted the following fragments during the Preview-only smoke test:
+
+- MSA: `ال الر الاسة الب المولا الط الأو الث الضر م الد التحسختلف الآخرى الي الل التشغيل الولا.`
+- Egyptian: `وت الط م المح ال الب الاسة أو الذي الضع الر الد الأو والنف والق والأي والجوحدود الث والإجه والح والت والولا.`
+- Arithmetic: `ال ولا الط الاسة والت المص الذلك الضع الب الر الأو الآخرجد التطل الث الودة التحسخاطر م الاستخدام الي الاختبارات الد أو وجم وحدود الهدف الطلب التشغيل ال.`
+- Context: the raw output included malformed fragments and an unrelated `Jon2` continuation; the text-integrity guard rejected it.
+
+These outputs are evidence of failed language generation, not merely a missing deployment connection.
+
+## Persistence limitation
+
+The API currently reports SQLite for conversation memory and knowledge cache. Vercel function storage is not a durable shared database, so cross-instance or long-term memory persistence has not been verified. A durable database design is still required before claiming reliable public conversation memory.
+
 ## Release decision
 
 **FAIL — do not open public chat.**
