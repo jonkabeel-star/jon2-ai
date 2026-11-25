@@ -6,7 +6,7 @@ Date reviewed: 2026-11-25
 
 This intake is for a **private, non-commercial research checkpoint only**. It does not grant rights to publish raw datasets, release derived weights, or use any research-only data in a commercial Jon2 service.
 
-The source registry is `research_candidate_registry.json`. It is a shortlist, not an approval manifest. Every source remains blocked until its exact upstream terms and provenance have been reviewed. No dataset files are committed to this repository.
+The source registry is `research_candidate_registry.json`. It is a shortlist, not an approval manifest. Every source remains blocked until its exact upstream terms and provenance have been reviewed. No dataset files or private approvals are committed to this repository. `source_approvals.example.json` is a placeholder template only; copy it to the private data volume, replace all placeholders, and mark an exact file `APPROVED` only after a human rights/provenance review.
 
 ## Candidate triage
 
