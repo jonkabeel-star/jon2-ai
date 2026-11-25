@@ -79,3 +79,21 @@ The workflow remains manual and requires the exact confirmation phrase, an onlin
 - Never mark semantic quality or public release as approved automatically.
 - Never set `JON2_CHAT_RELEASE_APPROVED=true` as part of research training.
 - Keep the original checkpoint intact; all new runs are candidate checkpoints until review.
+
+
+## Staged Arabic evaluation added
+
+The evaluation-only harness `ai_engine/evaluate_staged_arabic.py` runs in this order:
+1. Single-word intent recognition (greetings, thanks, questions, help, agreement, negation, continuation).
+2. Short MSA and Egyptian sentence understanding and instruction following.
+3. Multi-turn context retention and follow-up consistency.
+
+It writes the checkpoint SHA-256 and every generated answer into a review report. Human score fields start empty; all human pass flags and release approval start false. The harness is diagnostic and cannot approve a checkpoint. Run it only against a private candidate checkpoint, for example:
+
+```bash
+PYTHONPATH=ai_engine python ai_engine/evaluate_staged_arabic.py \
+  --checkpoint /private/checkpoints/candidates/jon2-candidate.pt \
+  --output /private/checkpoints/candidates/staged-evaluation.json
+```
+
+The original `jon2-last.pt` remains read-only. Training workflow writes only under the separate candidate directory and does not overwrite or replace the original checkpoint. No training is authorized by adding this evaluator.
