@@ -1,0 +1,143 @@
+{
+  "benchmark": "jon2_arabic_single_word_v1",
+  "purpose": "Evaluate the original Jon2 checkpoint on short Arabic user messages. This is an evaluation set, not training data.",
+  "language": [
+    "Egyptian Arabic",
+    "Modern Standard Arabic"
+  ],
+  "scoring_note": "Surface checks are not semantic approval. A human reviewer must judge whether each response matches the intent and conversation context.",
+  "cases": [
+    {
+      "id": "sw01",
+      "message": "مرحبا",
+      "history": [],
+      "intent": "greeting",
+      "acceptance": "Respond naturally to the greeting; do not demand a longer question."
+    },
+    {
+      "id": "sw02",
+      "message": "أهلاً",
+      "history": [],
+      "intent": "greeting",
+      "acceptance": "Recognize a greeting and respond briefly."
+    },
+    {
+      "id": "sw03",
+      "message": "شكراً",
+      "history": [],
+      "intent": "gratitude",
+      "acceptance": "Recognize thanks; do not answer an unrelated question."
+    },
+    {
+      "id": "sw04",
+      "message": "ليه؟",
+      "history": [
+        {
+          "role": "user",
+          "content": "الماء بيتجمد عند صفر درجة مئوية."
+        },
+        {
+          "role": "assistant",
+          "content": "لأن حركة جزيئاته بتقل."
+        }
+      ],
+      "intent": "contextual_why",
+      "acceptance": "Explain the preceding statement; use context rather than inventing a new topic."
+    },
+    {
+      "id": "sw05",
+      "message": "كمّل",
+      "history": [
+        {
+          "role": "user",
+          "content": "علمني أساسيات البرمجة."
+        },
+        {
+          "role": "assistant",
+          "content": "أول خطوة هي فهم المتغيرات."
+        }
+      ],
+      "intent": "continue_context",
+      "acceptance": "Continue the previous explanation without restarting or changing topic."
+    },
+    {
+      "id": "sw06",
+      "message": "نعم",
+      "history": [
+        {
+          "role": "assistant",
+          "content": "تحب أشرح بمثال؟"
+        }
+      ],
+      "intent": "confirmation",
+      "acceptance": "Treat this as confirmation and provide the offered example."
+    },
+    {
+      "id": "sw07",
+      "message": "لا",
+      "history": [
+        {
+          "role": "assistant",
+          "content": "هل تريد مثالاً إضافياً؟"
+        }
+      ],
+      "intent": "negative_confirmation",
+      "acceptance": "Respect the negative answer; do not provide the declined example."
+    },
+    {
+      "id": "sw08",
+      "message": "بكام؟",
+      "history": [
+        {
+          "role": "user",
+          "content": "أنا بسأل عن سعر الهاتف المذكور."
+        }
+      ],
+      "intent": "price_followup",
+      "acceptance": "Understand this as a price follow-up; ask which item only if the item is not available in context."
+    },
+    {
+      "id": "sw09",
+      "message": "إمتى؟",
+      "history": [
+        {
+          "role": "user",
+          "content": "موعد بدء الدورة لم يتحدد بعد."
+        }
+      ],
+      "intent": "time_followup",
+      "acceptance": "Ask or answer about the timing of the event in context; do not fabricate a date."
+    },
+    {
+      "id": "sw10",
+      "message": "فين؟",
+      "history": [
+        {
+          "role": "user",
+          "content": "المفتاح موجود في مكان ما بالبيت."
+        }
+      ],
+      "intent": "location_followup",
+      "acceptance": "Ask for or clarify the location; do not invent one."
+    },
+    {
+      "id": "sw11",
+      "message": "ساعدني",
+      "history": [],
+      "intent": "help_request",
+      "acceptance": "Ask one concise question about what help is needed."
+    },
+    {
+      "id": "sw12",
+      "message": "موافق",
+      "history": [
+        {
+          "role": "assistant",
+          "content": "أقدر أبدأ بالخطوة الأولى الآن."
+        }
+      ],
+      "intent": "agreement",
+      "acceptance": "Recognize agreement and proceed with the offered step."
+    }
+  ]
+}
