@@ -61,6 +61,14 @@ class ChatMemoryTests(unittest.TestCase):
         )
 
     def test_relevant_memories_only_returns_matching_older_messages(self):
+        chat_memory.add_exchange(
+            self.session_a,
+            "مشروع Jon2 يستخدم محرك ذاكرة SQLite",
+            "ذاكرة Jon2 تحفظ المحادثات في SQLite",
+            path=self.db_path,
+        )
+        # Add enough newer turns to move the matching exchange outside the
+        # eight-message recent-context window supplied separately to the model.
         for index in range(5):
             chat_memory.add_exchange(
                 self.session_a,
@@ -68,12 +76,6 @@ class ChatMemoryTests(unittest.TestCase):
                 f"تفاصيل عامة {index}",
                 path=self.db_path,
             )
-        chat_memory.add_exchange(
-            self.session_a,
-            "مشروع Jon2 يستخدم محرك ذاكرة SQLite",
-            "ذاكرة Jon2 تحفظ المحادثات في SQLite",
-            path=self.db_path,
-        )
         results = chat_memory.relevant_memories(
             self.session_a, "ذاكرة Jon2 SQLite", limit=4, path=self.db_path
         )
