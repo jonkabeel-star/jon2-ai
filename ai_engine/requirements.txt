@@ -1,6 +1,6 @@
+# Minimal runtime dependencies for the original Jon2 FastAPI service.
+# PyTorch is required only when a private Jon2 checkpoint is loaded for inference.
 fastapi
 uvicorn[standard]
 torch>=2.3
-transformers
-accelerate
-safetensors
+vercel>=0.5.0,<1.0.0
