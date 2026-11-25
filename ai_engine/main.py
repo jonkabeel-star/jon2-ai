@@ -44,9 +44,13 @@ async def preload_original_jon2_model() -> None:
         print("Jon2 original checkpoint loaded successfully; chat release gates remain unchanged.")
     except Exception as error:
         PRELOAD_STATE = "failed"
-        PRELOAD_ERROR = type(error).__name__
-        # Keep health endpoints available so the host can report the load failure.
-        print(f"Jon2 original checkpoint preload failed: {type(error).__name__}: {error}")
+        detail = str(error)
+        blob_token = os.getenv("BLOB_READ_WRITE_TOKEN", "")
+        if blob_token:
+            detail = detail.replace(blob_token, "[redacted]")
+        PRELOAD_ERROR = f"{type(error).__name__}: {detail[:240]}"
+        # Keep health endpoints available so the host can report a redacted failure.
+        print(f"Jon2 original checkpoint preload failed: {PRELOAD_ERROR}")
 
 app.add_middleware(
     CORSMiddleware,
