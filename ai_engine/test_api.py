@@ -1,9 +1,10 @@
 """Regression tests for the FastAPI service and its release gates."""
+import asyncio
 import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from fastapi import HTTPException
 from pydantic import ValidationError
@@ -12,6 +13,14 @@ import main
 
 
 class ApiHealthTests(unittest.TestCase):
+
+    def test_startup_preload_uses_async_runtime_loader(self):
+        with patch.dict(os.environ, {"JON2_PRELOAD_MODEL": "true"}, clear=False), patch(
+            "main.load_runtime_async", new_callable=AsyncMock
+        ) as loader:
+            asyncio.run(main.preload_original_jon2_model())
+        loader.assert_awaited_once_with()
+
     def test_liveness_is_independent_of_model_weights(self):
         self.assertEqual(main.liveness()["status"], "alive")
 
