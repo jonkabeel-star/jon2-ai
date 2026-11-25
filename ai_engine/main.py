@@ -8,7 +8,7 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
 
-from chat_engine import generate_reply, load_runtime, model_is_ready
+from chat_engine import generate_reply, load_runtime, load_runtime_async, model_is_ready
 from knowledge_engine import looks_like_fact_question
 from knowledge_search import search_knowledge, answer_from_sources
 import chat_memory
@@ -26,12 +26,12 @@ app.include_router(compute_router)
 
 
 @app.on_event("startup")
-def preload_original_jon2_model() -> None:
+async def preload_original_jon2_model() -> None:
     """Optionally load the existing private checkpoint without opening chat."""
     if os.getenv("JON2_PRELOAD_MODEL", "false").strip().lower() != "true":
         return
     try:
-        load_runtime()
+        await load_runtime_async()
         print("Jon2 original checkpoint loaded successfully; chat release gates remain unchanged.")
     except Exception as error:
         # Keep health endpoints available so the host can report the load failure.
