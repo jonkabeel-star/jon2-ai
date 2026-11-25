@@ -42,14 +42,15 @@ def generate(*args, **kwargs):
 
 
 def load_runtime() -> None:
-    global _model, _tokenizer, _device
+    global _model, _tokenizer, _device, CHECKPOINT_PATH
     if model_is_ready():
         return
     if not checkpoint_is_available():
-        raise FileNotFoundError(
-            "لم يتم تدريب نموذج Jon2 الأصلي بعد. ملف الأوزان غير موجود: "
-            f"{CHECKPOINT_PATH}"
-        )
+        # Private Blob retrieval is lazy: health-only deployments do not
+        # download weights, and the model is never exposed before verification.
+        from blob_checkpoint import ensure_private_checkpoint
+
+        CHECKPOINT_PATH = ensure_private_checkpoint()
     _model, _tokenizer, _device = load_model(str(CHECKPOINT_PATH))
 
 
