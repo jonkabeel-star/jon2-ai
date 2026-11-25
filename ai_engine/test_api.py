@@ -86,6 +86,8 @@ class ApiHealthTests(unittest.TestCase):
 
     def test_public_frontend_never_claims_rule_based_fallback_as_jon2(self):
         frontend = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
+        if not frontend.is_file():
+            self.skipTest("Frontend assets are not included in the API-only container image.")
         source = frontend.read_text(encoding="utf-8")
         self.assertNotIn("limitedPublicReply", source)
         self.assertNotIn('/api/auth/me', source)
