@@ -9,7 +9,7 @@ from ai_engine.audit_arabic_corpus import audit_splits
 class ArabicCorpusAuditTests(unittest.TestCase):
     def write_split(self, root, name, rows):
         path = root / f"{name}.jsonl"
-        path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows), encoding="utf-8")
+        path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\\n" for row in rows), encoding="utf-8")
         return path
 
     def test_clean_text_splits_are_diagnostic_not_approval(self):
@@ -55,6 +55,32 @@ class ArabicCorpusAuditTests(unittest.TestCase):
                 "train": self.write_split(root, "train", [{"text": "مرحبا", "document_id": "same"}]),
                 "validation": self.write_split(root, "validation", [{"text": "أهلا", "document_id": "same"}]),
                 "test": self.write_split(root, "test", [{"text": "اختبار", "document_id": "other"}]),
+            }
+            report = audit_splits(paths, "text")
+            self.assertIn("conversation_or_document_group_leakage_across_splits", report["blockers"])
+
+    def test_group_leakage_report_never_exposes_raw_identifiers(self):
+        secret_id = "PRIVATE-DOCUMENT-ID-987654"
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            paths = {
+                "train": self.write_split(root, "train", [{"text": "مرحبا", "document_id": secret_id, "source_id": "src-a"}]),
+                "validation": self.write_split(root, "validation", [{"text": "أهلا", "document_id": secret_id, "group_id": "grp-b"}]),
+                "test": self.write_split(root, "test", [{"text": "اختبار", "document_id": "other"}]),
+            }
+            report_text = json.dumps(audit_splits(paths, "text"), ensure_ascii=False)
+            self.assertNotIn(secret_id, report_text)
+            self.assertNotIn("src-a", report_text)
+            self.assertNotIn("grp-b", report_text)
+            self.assertIn("group_id_sha256_fingerprints", report_text)
+
+    def test_all_group_fields_are_checked(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            paths = {
+                "train": self.write_split(root, "train", [{"text": "مرحبا", "document_id": "doc-a", "source_id": "source-shared"}]),
+                "validation": self.write_split(root, "validation", [{"text": "أهلا", "document_id": "doc-b", "source_id": "source-shared"}]),
+                "test": self.write_split(root, "test", [{"text": "اختبار", "document_id": "doc-c"}]),
             }
             report = audit_splits(paths, "text")
             self.assertIn("conversation_or_document_group_leakage_across_splits", report["blockers"])
