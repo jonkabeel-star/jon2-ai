@@ -8,6 +8,7 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
 
+import chat_engine
 from chat_engine import generate_reply, load_runtime, load_runtime_async, model_is_ready
 from knowledge_engine import looks_like_fact_question
 from knowledge_search import search_knowledge, answer_from_sources
@@ -169,10 +170,7 @@ def health():
         else "release_blocked" if not release_approved
         else "ready"
     )
-    checkpoint_path = os.getenv(
-        "JON2_CHECKPOINT",
-        os.path.join(os.path.dirname(__file__), "checkpoints", "jon2-small.pt"),
-    )
+    checkpoint_path = os.getenv("JON2_CHECKPOINT", str(chat_engine.CHECKPOINT_PATH))
     checkpoint_size = os.path.getsize(checkpoint_path) if os.path.isfile(checkpoint_path) else 0
     checkpoint_readable = os.path.isfile(checkpoint_path) and os.access(checkpoint_path, os.R_OK)
     return {
