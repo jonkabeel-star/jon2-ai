@@ -8,7 +8,8 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
 
-from chat_engine import generate_reply, load_runtime, model_is_ready
+import chat_engine
+from chat_engine import generate_raw_reply, generate_reply, load_runtime, load_runtime_async, model_is_ready
 from knowledge_engine import looks_like_fact_question
 from knowledge_search import search_knowledge, answer_from_sources
 import chat_memory
@@ -24,18 +25,89 @@ app = FastAPI(
 
 app.include_router(compute_router)
 
+PRELOAD_STATE = "not_started"
+PRELOAD_ERROR = None
+PRELOAD_SELF_TEST_STATE = "not_started"
+PRELOAD_SELF_TEST_RESULTS = []
+PRELOAD_INFERENCE_TESTED = False
+
+
+def _run_original_model_self_test() -> dict:
+    """Run fixed Arabic probes against the loaded original model; never approve release."""
+    global PRELOAD_SELF_TEST_STATE, PRELOAD_SELF_TEST_RESULTS, PRELOAD_INFERENCE_TESTED
+    import json
+
+    cases = [
+        {"id": "msa_explanation", "message": "اشرح معنى الذكاء الاصطناعي بكلمات بسيطة.", "history": []},
+        {"id": "egyptian_instruction", "message": "أنا عايز أتعلم البرمجة من الصفر، أبدأ بإيه؟", "history": []},
+        {"id": "basic_reasoning", "message": "معايا 3 تفاحات وخدت تفاحتين كمان، بقى معايا كام تفاحة؟", "history": []},
+        {"id": "conversation_context", "message": "ما اسمي؟", "history": [
+            {"role": "user", "content": "اسمي سامح"},
+            {"role": "assistant", "content": "تشرفت بمعرفتك."},
+        ]},
+    ]
+    PRELOAD_SELF_TEST_STATE = "running"
+    results = []
+    for case in cases:
+        try:
+            answer = chat_engine.generate_raw_reply(case["message"], history=case["history"])
+            valid = isinstance(answer, str) and bool(answer.strip()) and validate_generated_answer(answer)
+            results.append({
+                "id": case["id"],
+                "generated": bool(valid),
+                "answer": answer[:300] if isinstance(answer, str) else "",
+                "error_type": None if valid else "InvalidGeneratedText",
+            })
+        except Exception as error:
+            results.append({
+                "id": case["id"],
+                "generated": False,
+                "answer": "",
+                "error_type": type(error).__name__,
+            })
+    PRELOAD_SELF_TEST_RESULTS = results
+    PRELOAD_INFERENCE_TESTED = all(item["generated"] for item in results)
+    PRELOAD_SELF_TEST_STATE = "passed" if PRELOAD_INFERENCE_TESTED else "failed"
+    print("JON2_ORIGINAL_MODEL_SELF_TEST " + json.dumps({
+        "state": PRELOAD_SELF_TEST_STATE,
+        "technical_generation_passed": PRELOAD_INFERENCE_TESTED,
+        "results": results,
+        "public_chat_opened": False,
+        "semantic_quality_review": "pending_human_review",
+    }, ensure_ascii=False))
+    return {
+        "state": PRELOAD_SELF_TEST_STATE,
+        "technical_generation_passed": PRELOAD_INFERENCE_TESTED,
+        "results": results,
+        "public_chat_opened": False,
+        "semantic_quality_review": "pending_human_review",
+    }
+
 
 @app.on_event("startup")
-def preload_original_jon2_model() -> None:
+async def preload_original_jon2_model() -> None:
     """Optionally load the existing private checkpoint without opening chat."""
+    global PRELOAD_STATE, PRELOAD_ERROR
     if os.getenv("JON2_PRELOAD_MODEL", "false").strip().lower() != "true":
+        PRELOAD_STATE = "disabled"
         return
+    PRELOAD_STATE = "loading"
+    PRELOAD_ERROR = None
     try:
-        load_runtime()
+        await load_runtime_async()
+        PRELOAD_STATE = "loaded"
         print("Jon2 original checkpoint loaded successfully; chat release gates remain unchanged.")
+        if os.getenv("JON2_MODEL_SELF_TEST_ENABLED", "false").strip().lower() == "true":
+            _run_original_model_self_test()
     except Exception as error:
-        # Keep health endpoints available so the host can report the load failure.
-        print(f"Jon2 original checkpoint preload failed: {type(error).__name__}: {error}")
+        PRELOAD_STATE = "failed"
+        detail = str(error)
+        blob_token = os.getenv("BLOB_READ_WRITE_TOKEN", "")
+        if blob_token:
+            detail = detail.replace(blob_token, "[redacted]")
+        PRELOAD_ERROR = f"{type(error).__name__}: {detail[:240]}"
+        # Keep health endpoints available so the host can report a redacted failure.
+        print(f"Jon2 original checkpoint preload failed: {PRELOAD_ERROR}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -106,6 +178,11 @@ def home():
     }
 
 
+def _experimental_chat_enabled() -> bool:
+    """Allow clearly labeled original-model experiments on an explicitly enabled environment."""
+    return os.getenv("JON2_EXPERIMENTAL_CHAT_ENABLED", "false").strip().lower() == "true"
+
+
 def _chat_release_approved() -> bool:
     """Require an explicit release decision after human quality review."""
     return os.getenv("JON2_CHAT_RELEASE_APPROVED", "false").strip().lower() == "true"
@@ -116,11 +193,21 @@ def _checkpoint_configured() -> bool:
         "JON2_CHECKPOINT",
         os.path.join(os.path.dirname(__file__), "checkpoints", "jon2-small.pt"),
     )
-    return os.path.isfile(checkpoint)
+    if os.path.isfile(checkpoint):
+        return True
+    # A private Blob source is configuration, not proof that weights loaded.
+    blob_name = os.getenv("JON2_CHECKPOINT_BLOB", "jon2-last.pt").strip()
+    return (
+        blob_name in {"jon2-last.pt", "jon2-small.pt"}
+        and bool(os.getenv("BLOB_READ_WRITE_TOKEN"))
+    )
 
 
 def _inference_tested() -> bool:
-    return os.getenv("JON2_INFERENCE_TESTED", "false").strip().lower() == "true"
+    return (
+        os.getenv("JON2_INFERENCE_TESTED", "false").strip().lower() == "true"
+        or PRELOAD_INFERENCE_TESTED
+    )
 
 
 def _quality_review_passed() -> bool:
@@ -162,10 +249,7 @@ def health():
         else "release_blocked" if not release_approved
         else "ready"
     )
-    checkpoint_path = os.getenv(
-        "JON2_CHECKPOINT",
-        os.path.join(os.path.dirname(__file__), "checkpoints", "jon2-small.pt"),
-    )
+    checkpoint_path = os.getenv("JON2_CHECKPOINT", str(chat_engine.CHECKPOINT_PATH))
     checkpoint_size = os.path.getsize(checkpoint_path) if os.path.isfile(checkpoint_path) else 0
     checkpoint_readable = os.path.isfile(checkpoint_path) and os.access(checkpoint_path, os.R_OK)
     return {
@@ -174,6 +258,13 @@ def health():
         "api_version": app.version,
         "model": "Jon2 Original Transformer",
         "model_loaded": loaded,
+        "model_preload_enabled": os.getenv("JON2_PRELOAD_MODEL", "false").strip().lower() == "true",
+        "model_preload_state": PRELOAD_STATE,
+        "model_preload_error": PRELOAD_ERROR,
+        "model_self_test_state": PRELOAD_SELF_TEST_STATE,
+        "model_self_test_cases": len(PRELOAD_SELF_TEST_RESULTS),
+        "model_self_test_passed": PRELOAD_INFERENCE_TESTED,
+        "model_self_test_results": PRELOAD_SELF_TEST_RESULTS if (os.getenv("VERCEL_ENV") == "preview" and os.getenv("JON2_MODEL_SELF_TEST_ENABLED", "false").strip().lower() == "true") else None,
         "model_type": "jon2_original",
         "inference_tested": inference_tested,
         "quality_review_passed": quality_review_passed,
@@ -378,7 +469,8 @@ def chat(request: ChatRequest):
 
     # Fail closed before inference. No canned replies, FAQ answer bank,
     # retrieval-answer shortcut, or external model fallback is permitted.
-    if not _public_release_ready():
+    experimental_mode = _experimental_chat_enabled() and model_is_ready()
+    if not _public_release_ready() and not experimental_mode:
         snapshot = health()
         raise HTTPException(
             status_code=503,
@@ -415,16 +507,21 @@ def chat(request: ChatRequest):
                 )
 
         # The original Jon2 checkpoint is the only source of the generated answer.
-        reply = generate_reply(message, history, memories, knowledge_context=knowledge_context)
+        reply = (
+            generate_raw_reply(message, history, memories, knowledge_context=knowledge_context)
+            if experimental_mode and not _public_release_ready()
+            else generate_reply(message, history, memories, knowledge_context=knowledge_context)
+        )
         if not isinstance(reply, str) or not reply.strip():
             raise RuntimeError("empty original-model output")
         # Reject obviously corrupted, non-Arabic, or looping generations before
         # returning them or persisting them as conversation memory. This is a
         # surface sanity gate only; it does not certify semantic correctness.
-        if not validate_generated_answer(reply):
+        if not experimental_mode and not validate_generated_answer(reply):
             raise RuntimeError("original-model output failed Arabic surface checks")
 
-        if request.session_id:
+        # Experimental outputs are deliberately not saved as long-term memory.
+        if request.session_id and not experimental_mode:
             chat_memory.add_exchange(request.session_id, message, reply)
 
         return {
@@ -432,7 +529,8 @@ def chat(request: ChatRequest):
             "reply": reply,
             "memory_used": bool(memories),
             "session_id": request.session_id,
-            "response_mode": "jon2_original_model_with_source_retrieval",
+            "response_mode": "jon2_original_experimental" if experimental_mode and not _public_release_ready() else "jon2_original_model_with_source_retrieval",
+            "experimental": bool(experimental_mode and not _public_release_ready()),
             "knowledge_sources": knowledge_sources,
         }
     except Exception as error:

@@ -69,3 +69,12 @@ A previously observed legacy workflow run `42538599326` remained in `pending` wi
 ### Human review
 
 No human review or release approval is recorded for the current checkpoint. The 40-prompt historical evaluation was explicitly marked for human review and showed incoherent Arabic. The release flag must remain false.
+
+## Verified Vercel preview runtime and model-quality check — 2026-11-25
+
+- The Vercel Preview FastAPI service started successfully and loaded the approved `jon2-last.pt` checkpoint from the private Vercel Blob store. The runtime verified the checkpoint SHA-256 before loading it; the health endpoint reported 3,471,600 bytes, a readable checkpoint path under `/tmp`, and `model_loaded=true`.
+- A preview-only four-prompt diagnostic exercised MSA explanation, Egyptian instruction following, simple arithmetic, and conversation context. The raw model output was malformed/incoherent Arabic on the MSA, Egyptian, and arithmetic prompts; the conversation-context output failed the text-integrity validator. This is a technical inference failure, not a semantic-quality pass.
+- The preview health state correctly remained `inference_tested=false`, `quality_review_passed=false`, `release_approved=false`, and `chat_ready=false`. Public chat must remain closed.
+- The latest read-only `arabic_30m` preflight (GitHub Actions run 1121) measured 305,406 corpus characters, 129,768 training tokens, 63,751 validation tokens, and 193,519 total probe tokens. The target profile estimates 29,938,688 parameters and requires at least 20 approved tokens per parameter (about 598.8 million tokens). The measured ratio is only 0.006464 tokens per parameter.
+- The preflight correctly reported `ready=false` with blockers `corpus_below_minimum_characters` and `insufficient_tokens_per_parameter`. The 8,192-token tokenizer fit was skipped. No 30M model was instantiated or trained, and no candidate dataset was downloaded or approved.
+- Conclusion: the current checkpoint is genuinely loaded and executable on Preview, but it is not a usable Arabic conversational model. Do not enable public chat, lower the data gate, or pad the corpus with duplicates or synthetic low-quality text. Next work requires a materially larger rights-cleared Arabic corpus, conversation-aware held-out splits, a private GPU runner, and human review of the next checkpoint.

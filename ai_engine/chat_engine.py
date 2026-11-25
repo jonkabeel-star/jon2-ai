@@ -42,14 +42,31 @@ def generate(*args, **kwargs):
 
 
 def load_runtime() -> None:
-    global _model, _tokenizer, _device
+    global _model, _tokenizer, _device, CHECKPOINT_PATH
     if model_is_ready():
         return
     if not checkpoint_is_available():
-        raise FileNotFoundError(
-            "لم يتم تدريب نموذج Jon2 الأصلي بعد. ملف الأوزان غير موجود: "
-            f"{CHECKPOINT_PATH}"
-        )
+        # Keep the historical missing-file contract when Blob is not configured.
+        # In configured deployments, fetch only the approved private checkpoint.
+        if not os.getenv("BLOB_READ_WRITE_TOKEN"):
+            raise FileNotFoundError(f"Jon2 checkpoint not found: {CHECKPOINT_PATH}")
+        from blob_checkpoint import ensure_private_checkpoint
+
+        CHECKPOINT_PATH = ensure_private_checkpoint()
+    _model, _tokenizer, _device = load_model(str(CHECKPOINT_PATH))
+
+
+async def load_runtime_async() -> None:
+    """Load the private checkpoint without nesting an event loop."""
+    global _model, _tokenizer, _device, CHECKPOINT_PATH
+    if model_is_ready():
+        return
+    if not checkpoint_is_available():
+        if not os.getenv("BLOB_READ_WRITE_TOKEN"):
+            raise FileNotFoundError(f"Jon2 checkpoint not found: {CHECKPOINT_PATH}")
+        from blob_checkpoint import ensure_private_checkpoint_async
+
+        CHECKPOINT_PATH = await ensure_private_checkpoint_async()
     _model, _tokenizer, _device = load_model(str(CHECKPOINT_PATH))
 
 
@@ -114,7 +131,8 @@ def build_conversation_prompt(message: str, history=None, memories=None, tokeniz
         )
 
 
-def generate_reply(message: str, history=None, memories=None, knowledge_context=None) -> str:
+def generate_raw_reply(message: str, history=None, memories=None, knowledge_context=None) -> str:
+    """Generate raw text for isolated diagnostics; public chat must use generate_reply."""
     if not message or not message.strip():
         raise ValueError("اكتب رسالتك أولًا.")
 
@@ -131,8 +149,6 @@ def generate_reply(message: str, history=None, memories=None, knowledge_context=
         prompt,
         _device,
         max_new_chars=int(os.getenv("JON2_MAX_NEW_CHARS", "256")),
-        # Greedy decoding is more stable for this small from-scratch model.
-        # Sampling can turn an already weak language model into visibly broken Arabic.
         temperature=float(os.getenv("JON2_TEMPERATURE", "1.0")),
         stop_sequences=["المستخدم:"],
         do_sample=False,
@@ -143,8 +159,17 @@ def generate_reply(message: str, history=None, memories=None, knowledge_context=
     answer = full_text[len(prompt):].strip()
     if not answer:
         raise RuntimeError("لم ينتج نموذج Jon2 إجابة.")
-    # The original model's output must pass basic text-integrity checks.
-    # This catches malformed characters and obvious repetition, not semantic quality.
+    return answer
+
+
+def generate_reply(message: str, history=None, memories=None, knowledge_context=None) -> str:
+    answer = generate_raw_reply(
+        message,
+        history=history,
+        memories=memories,
+        knowledge_context=knowledge_context,
+    )
+    # Public chat rejects malformed or obviously repetitive output.
     if not validate_generated_answer(answer):
         raise RuntimeError(
             "رفض Jon2 عرض الإجابة لأن ناتج النموذج فشل فحص سلامة النص. "

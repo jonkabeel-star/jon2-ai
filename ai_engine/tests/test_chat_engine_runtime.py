@@ -35,9 +35,57 @@ class ChatEngineRuntimeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             chat_engine.CHECKPOINT_PATH = Path(directory) / "missing.pt"
             self.assertFalse(chat_engine.checkpoint_is_available())
-            with self.assertRaises(FileNotFoundError):
-                chat_engine.load_runtime()
+            with mock.patch.dict("os.environ", {}, clear=True):
+                with self.assertRaises(FileNotFoundError):
+                    chat_engine.load_runtime()
         self.assertFalse(chat_engine.model_is_ready())
+
+
+    def test_private_blob_checkpoint_is_used_only_when_configured(self):
+        with tempfile.TemporaryDirectory() as directory:
+            missing = Path(directory) / "missing.pt"
+            downloaded = Path(directory) / "verified-jon2-last.pt"
+            downloaded.write_bytes(b"verified test fixture")
+            chat_engine.CHECKPOINT_PATH = missing
+            fake_runtime = (object(), object(), "cpu")
+            with mock.patch.dict(
+                "os.environ", {"BLOB_READ_WRITE_TOKEN": "test-only-token"}, clear=True
+            ), mock.patch(
+                "blob_checkpoint.ensure_private_checkpoint", return_value=downloaded
+            ) as fetcher, mock.patch.object(
+                chat_engine, "load_model", return_value=fake_runtime
+            ) as loader:
+                chat_engine.load_runtime()
+
+            fetcher.assert_called_once_with()
+            loader.assert_called_once_with(str(downloaded))
+            self.assertEqual(chat_engine.CHECKPOINT_PATH, downloaded)
+            self.assertTrue(chat_engine.model_is_ready())
+
+
+    def test_async_runtime_uses_async_private_blob_loader(self):
+        with tempfile.TemporaryDirectory() as directory:
+            missing = Path(directory) / "missing.pt"
+            downloaded = Path(directory) / "verified-jon2-last.pt"
+            downloaded.write_bytes(b"verified test fixture")
+            chat_engine.CHECKPOINT_PATH = missing
+            fake_runtime = (object(), object(), "cpu")
+            with mock.patch.dict(
+                "os.environ", {"BLOB_READ_WRITE_TOKEN": "test-only-token"}, clear=True
+            ), mock.patch(
+                "blob_checkpoint.ensure_private_checkpoint_async",
+                new_callable=mock.AsyncMock,
+                return_value=downloaded,
+            ) as fetcher, mock.patch.object(
+                chat_engine, "load_model", return_value=fake_runtime
+            ) as loader:
+                import asyncio
+                asyncio.run(chat_engine.load_runtime_async())
+
+            fetcher.assert_awaited_once_with()
+            loader.assert_called_once_with(str(downloaded))
+            self.assertEqual(chat_engine.CHECKPOINT_PATH, downloaded)
+            self.assertTrue(chat_engine.model_is_ready())
 
     def test_runtime_loads_checkpoint_only_once(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -1,9 +1,10 @@
 """Regression tests for the FastAPI service and its release gates."""
+import asyncio
 import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from fastapi import HTTPException
 from pydantic import ValidationError
@@ -12,6 +13,18 @@ import main
 
 
 class ApiHealthTests(unittest.TestCase):
+
+    def test_startup_preload_uses_async_runtime_loader(self):
+        main.PRELOAD_STATE = "not_started"
+        main.PRELOAD_ERROR = None
+        with patch.dict(os.environ, {"JON2_PRELOAD_MODEL": "true"}, clear=False), patch(
+            "main.load_runtime_async", new_callable=AsyncMock
+        ) as loader:
+            asyncio.run(main.preload_original_jon2_model())
+        loader.assert_awaited_once_with()
+        self.assertEqual(main.PRELOAD_STATE, "loaded")
+        self.assertIsNone(main.PRELOAD_ERROR)
+
     def test_liveness_is_independent_of_model_weights(self):
         self.assertEqual(main.liveness()["status"], "alive")
 
@@ -70,6 +83,17 @@ class ApiHealthTests(unittest.TestCase):
             main.ChatRequest(message="مرحبا", history=[
                 {"role": "user", "content": "x"} for _ in range(9)
             ])
+
+    def test_public_frontend_never_claims_rule_based_fallback_as_jon2(self):
+        frontend = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
+        if not frontend.is_file():
+            self.skipTest("Frontend assets are not included in the API-only container image.")
+        source = frontend.read_text(encoding="utf-8")
+        self.assertNotIn("limitedPublicReply", source)
+        self.assertNotIn('/api/auth/me', source)
+        self.assertIn('fetch(API_BASE_URL + "/api/chat"', source)
+        self.assertIn("modelNotReady", source)
+        self.assertIn("offlineChatUnavailable", source)
 
     def test_root_serves_the_chat_website(self):
         from fastapi.responses import FileResponse

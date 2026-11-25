@@ -1,6 +1,6 @@
+# Minimal CPU-only runtime for the original Jon2 FastAPI service on Python 3.12.
+# Direct wheel URL prevents uv from resolving a CUDA-enabled PyPI build.
 fastapi
 uvicorn[standard]
-torch>=2.3
-transformers
-accelerate
-safetensors
+torch @ https://download-r2.pytorch.org/whl/cpu/torch-2.5.1%2Bcpu-cp312-cp312-linux_x86_64.whl
+vercel>=0.5.0,<1.0.0
