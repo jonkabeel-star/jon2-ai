@@ -338,5 +338,60 @@ class Jon2ApiTests(unittest.TestCase):
         self.assertIn("Cairo is the capital of Egypt.", generate.call_args.kwargs["knowledge_context"])
 
 
+    def test_original_model_self_test_runs_fixed_probes_without_opening_public_chat(self):
+        previous = (
+            jon2_api.PRELOAD_SELF_TEST_STATE,
+            jon2_api.PRELOAD_SELF_TEST_RESULTS,
+            jon2_api.PRELOAD_INFERENCE_TESTED,
+        )
+        self.addCleanup(
+            lambda: (
+                setattr(jon2_api, "PRELOAD_SELF_TEST_STATE", previous[0]),
+                setattr(jon2_api, "PRELOAD_SELF_TEST_RESULTS", previous[1]),
+                setattr(jon2_api, "PRELOAD_INFERENCE_TESTED", previous[2]),
+            )
+        )
+        with patch.object(
+            jon2_api, "generate_reply",
+            side_effect=["إجابة عربية أولى", "إجابة مصرية ثانية", "الإجابة خمسة", "اسمك سامح"],
+        ) as generate, patch.object(
+            jon2_api, "validate_generated_answer", return_value=True
+        ), patch.dict(jon2_api.os.environ, {"JON2_CHAT_RELEASE_APPROVED": "false"}):
+            result = jon2_api._run_original_model_self_test()
+            health = self.client.get("/api/health").json()
+
+        self.assertEqual(generate.call_count, 4)
+        self.assertTrue(result["technical_generation_passed"])
+        self.assertEqual(result["semantic_quality_review"], "pending_human_review")
+        self.assertFalse(result["public_chat_opened"])
+        self.assertTrue(health["inference_tested"])
+        self.assertTrue(health["model_self_test_passed"])
+        self.assertFalse(health["chat_ready"])
+
+    def test_original_model_self_test_fails_closed_on_invalid_generation(self):
+        previous = (
+            jon2_api.PRELOAD_SELF_TEST_STATE,
+            jon2_api.PRELOAD_SELF_TEST_RESULTS,
+            jon2_api.PRELOAD_INFERENCE_TESTED,
+        )
+        self.addCleanup(
+            lambda: (
+                setattr(jon2_api, "PRELOAD_SELF_TEST_STATE", previous[0]),
+                setattr(jon2_api, "PRELOAD_SELF_TEST_RESULTS", previous[1]),
+                setattr(jon2_api, "PRELOAD_INFERENCE_TESTED", previous[2]),
+            )
+        )
+        with patch.object(
+            jon2_api, "generate_reply", side_effect=["إجابة سليمة"] * 4
+        ), patch.object(
+            jon2_api, "validate_generated_answer", side_effect=[True, False, True, True]
+        ):
+            result = jon2_api._run_original_model_self_test()
+
+        self.assertFalse(result["technical_generation_passed"])
+        self.assertEqual(result["state"], "failed")
+        self.assertFalse(jon2_api.PRELOAD_INFERENCE_TESTED)
+
+
 if __name__ == "__main__":
     unittest.main()
