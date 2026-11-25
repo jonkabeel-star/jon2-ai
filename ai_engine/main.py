@@ -259,7 +259,7 @@ def health():
         "model_self_test_state": PRELOAD_SELF_TEST_STATE,
         "model_self_test_cases": len(PRELOAD_SELF_TEST_RESULTS),
         "model_self_test_passed": PRELOAD_INFERENCE_TESTED,
-        "model_self_test_results": PRELOAD_SELF_TEST_RESULTS if os.getenv("VERCEL_ENV") == "preview" else None,
+        "model_self_test_results": PRELOAD_SELF_TEST_RESULTS if (os.getenv("VERCEL_ENV") == "preview" and os.getenv("JON2_MODEL_SELF_TEST_ENABLED", "false").strip().lower() == "true") else None,
         "model_type": "jon2_original",
         "inference_tested": inference_tested,
         "quality_review_passed": quality_review_passed,
