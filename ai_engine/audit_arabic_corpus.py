@@ -168,10 +168,6 @@ def audit_splits(split_paths: dict[str, Path], mode: str = "text") -> dict:
             "possible_pii_records": privacy_hits,
             "records_without_arabic_script": no_arabic,
         },
-        "leakage_details": {
-            "cross_split_duplicate_hashes": cross_split_duplicates,
-            "group_id_sha256_fingerprints": group_leakage,
-        },
         "blockers": blockers,
         "ready_for_training": False,
         "human_review": {
