@@ -41,6 +41,9 @@ jobs:
       - name: Compile Python modules
         run: python -m compileall -q ai_engine tests
 
+      - name: Validate private GPU bootstrap shell scripts
+        run: bash -n infra/gpu-runner/bootstrap.sh infra/gpu-runner/register-runner.sh
+
       - name: Test training source approval gate
         run: python -m unittest discover -s tests -v
 
