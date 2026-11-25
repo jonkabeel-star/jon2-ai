@@ -84,6 +84,15 @@ class ApiHealthTests(unittest.TestCase):
                 {"role": "user", "content": "x"} for _ in range(9)
             ])
 
+    def test_public_frontend_never_claims_rule_based_fallback_as_jon2(self):
+        frontend = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
+        source = frontend.read_text(encoding="utf-8")
+        self.assertNotIn("limitedPublicReply", source)
+        self.assertNotIn('/api/auth/me', source)
+        self.assertIn('fetch(API_BASE_URL + "/api/chat"', source)
+        self.assertIn("modelNotReady", source)
+        self.assertIn("offlineChatUnavailable", source)
+
     def test_root_serves_the_chat_website(self):
         from fastapi.responses import FileResponse
         response = main.home()
