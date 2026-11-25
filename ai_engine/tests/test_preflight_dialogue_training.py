@@ -31,7 +31,7 @@ class DialoguePreflightTests(unittest.TestCase):
                 for i in range(30)
             ]
             raw = "".join(
-                json.dumps(record, ensure_ascii=False) + "\\n"
+                json.dumps(record, ensure_ascii=False) + "\n"
                 for record in records
             ).encode("utf-8")
             source.write_bytes(raw)
