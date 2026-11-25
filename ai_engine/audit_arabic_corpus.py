@@ -14,9 +14,9 @@ import unicodedata
 from collections import Counter
 from pathlib import Path
 
-EMAIL_RE = re.compile(r"\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b", re.I)
-PHONE_RE = re.compile(r"(?<!\\w)(?:\\+?\\d[\\d\\s().-]{7,}\\d)(?!\\w)")
-ARABIC_RE = re.compile(r"[\\u0600-\\u06ff]")
+EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)
+PHONE_RE = re.compile(r"(?<!\w)(?:\+?\d[\d\s().-]{7,}\d)(?!\w)")
+ARABIC_RE = re.compile(r"[\u0600-\u06ff]")
 LATIN_RE = re.compile(r"[A-Za-z]")
 REQUIRED_SPLITS = ("train", "validation", "test")
 GROUP_ID_FIELDS = ("conversation_id", "document_id", "group_id", "source_id")
@@ -24,7 +24,7 @@ GROUP_ID_FIELDS = ("conversation_id", "document_id", "group_id", "source_id")
 
 def normalize_text(value: str) -> str:
     value = unicodedata.normalize("NFKC", value)
-    value = value.replace("\\u0640", "")
+    value = value.replace("\u0640", "")
     return " ".join(value.split())
 
 
@@ -40,8 +40,7 @@ def _group_fingerprints(row: dict, split: str, index: int) -> list[str]:
             continue
         if not isinstance(value, (str, int)) or not str(value).strip():
             raise ValueError(f"{split}:{index + 1}: invalid {field}")
-        # Namespace the hash so equal IDs in different fields are not conflated.
-        payload = f"{field}\\0{unicodedata.normalize('NFKC', str(value)).strip()}"
+        payload = f"{field}\0{unicodedata.normalize('NFKC', str(value)).strip()}"
         fingerprints.append(hashlib.sha256(payload.encode("utf-8")).hexdigest())
     return fingerprints
 
@@ -85,7 +84,7 @@ def _read_jsonl(path: Path, split: str, mode: str) -> list[dict]:
 def _record_text(row: dict, mode: str) -> str:
     if mode == "text":
         return row["text"]
-    return "\\n".join(message["content"] for message in row["messages"])
+    return "\n".join(message["content"] for message in row["messages"])
 
 
 def audit_splits(split_paths: dict[str, Path], mode: str = "text") -> dict:
@@ -205,7 +204,7 @@ def main() -> int:
         mode=args.mode,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({
         "total_records": report["total_records"],
         "quality_flags": report["quality_flags"],
