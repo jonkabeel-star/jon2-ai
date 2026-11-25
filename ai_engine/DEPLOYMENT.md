@@ -39,7 +39,13 @@ bundle model checkpoints or training data. Container platforms should provide:
 - JON2_CHECKPOINT pointing to a privately mounted checkpoint, once one has
   passed evaluation and human review;
 - JON2_CHAT_RELEASE_APPROVED=true only after the exact deployed checkpoint
-  has passed the full held-out evaluation and human approval.
+  has passed the full held-out evaluation and human approval;
+- JON2_MEMORY_DB_PATH pointing inside a provider-managed persistent disk
+  (for example, /var/data/jon2/memory.sqlite3). Do not point it at /tmp on
+  a serverless host; local ephemeral storage is not durable across instances;
+- JON2_MEMORY_ADMIN_TOKEN as a random server-only secret of at least 32
+  characters. It protects the administrative GET/DELETE memory endpoints.
+  Never expose it in index.html, browser JavaScript, or a public mobile app.
 
 Never put a checkpoint, approval manifest, API token, or training corpus in the
 public Git repository or Docker image.
