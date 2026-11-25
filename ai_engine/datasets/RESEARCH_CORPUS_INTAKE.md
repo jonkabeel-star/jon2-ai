@@ -37,6 +37,19 @@ The existing GitHub Actions workflow `.github/workflows/jon2-private-gpu-trainin
 
 No training run should be dispatched until that runner is online, the private paths are configured, the approved corpus passes preflight, and the training plan is confirmed. Do not substitute a hosted CPU runner or the user's iPhone for GPU training.
 
+## Corrected training workflow integration
+
+The manual GPU workflow now follows the existing three-way dialogue pipeline instead of the older source-file-only split:
+
+1. Validate the private data/checkpoint directories and CUDA GPU.
+2. Run `prepare_dialogue_splits.py` against the exact-file approval manifest to create train, validation, and held-out test partitions under private checkpoint storage.
+3. Run `preflight_dialogue_training.py`, which loads only train/validation text, hash-checks the test partition without decoding it, and blocks below the configured corpus/token-per-parameter thresholds.
+4. Train with both `--dialogue-splits-dir` and `--candidate-only`; candidate checkpoints must live in a private `candidates/` directory.
+5. Hash the candidate and bind its manifest to the split-manifest SHA-256. Run the existing MSA/Egyptian diagnostic prompts.
+6. Keep the held-out test partition reserved for a separate evaluation and human review. Automatic diagnostics are not a semantic pass.
+
+The workflow remains manual and requires the exact confirmation phrase, an online `jon2-gpu` runner, CUDA, private storage variables, and a valid exact-file approval manifest. This integration has been committed to the draft PR branch only; it has not been run on a GPU and does not mean a checkpoint has been trained or approved.
+
 ## Non-negotiable gates
 
 - Never add raw datasets, checkpoints, tokens, or private manifests to Git.
