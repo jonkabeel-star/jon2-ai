@@ -1,4 +1,4 @@
-"""Regression tests for selecting the deployed Jon2 checkpoint by configured path."""
+"""Regression tests ensuring container startup never fetches model weights."""
 from pathlib import Path
 import unittest
 
@@ -8,17 +8,16 @@ ENTRYPOINT = (ROOT / "docker-entrypoint.sh").read_text(encoding="utf-8")
 
 
 class EntrypointCheckpointSelectionTests(unittest.TestCase):
-    def test_default_checkpoint_remains_backward_compatible(self):
-        self.assertIn('${JON2_CHECKPOINT:-/app/model-weights/jon2-small.pt}', ENTRYPOINT)
+    def test_entrypoint_does_not_use_kaggle_or_external_weight_downloads(self):
+        lowered = ENTRYPOINT.lower()
+        self.assertNotIn("kaggle", lowered)
+        self.assertNotIn("curl", lowered)
+        self.assertNotIn("wget", lowered)
 
-    def test_runtime_filename_is_derived_from_configured_checkpoint_path(self):
-        self.assertIn('CHECKPOINT_FILENAME="$(basename "$CHECKPOINT_PATH")"', ENTRYPOINT)
-        self.assertIn('CHECKPOINT_PATH="$FALLBACK_DIR/$CHECKPOINT_FILENAME"', ENTRYPOINT)
-
-    def test_kaggle_listing_download_and_extraction_use_selected_filename(self):
-        self.assertIn('grep -Fq "$CHECKPOINT_FILENAME" "$TEMP_DIR/files.log"', ENTRYPOINT)
-        self.assertIn('-f "$CHECKPOINT_FILENAME"', ENTRYPOINT)
-        self.assertIn('-name "$CHECKPOINT_FILENAME"', ENTRYPOINT)
+    def test_entrypoint_executes_container_command_without_mutating_weights(self):
+        self.assertIn('exec "$@"', ENTRYPOINT)
+        self.assertNotIn("JON2_CHECKPOINT=", ENTRYPOINT)
+        self.assertNotIn("model-weights", ENTRYPOINT)
 
 
 if __name__ == "__main__":
