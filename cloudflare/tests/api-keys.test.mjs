@@ -2,11 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+
 const workerSource = await readFile(fileURLToPath(new URL("../worker.js", import.meta.url)), "utf8");
 const workerModule = await import("data:text/javascript;base64," + Buffer.from(workerSource).toString("base64"));
 const worker = workerModule.default;
+const MASTER = "test-master-secret-value-which-is-long-enough-for-tests";
 
-function makeEnv() {
+function makeEnv(options = {}) {
   const records = new Map();
   const db = {
     prepare(sql) {
@@ -39,7 +41,14 @@ function makeEnv() {
       };
     }
   };
-  return { env: { JON2_DB: db, JON2_MASTER_KEY: "test-master-secret-value-which-is-long-enough" }, records };
+  return {
+    env: {
+      ...(options.withoutDb ? {} : { JON2_DB: db }),
+      ...(options.master === undefined ? { JON2_MASTER_KEY: MASTER } :
+        options.master === null ? {} : { JON2_MASTER_KEY: options.master })
+    },
+    records
+  };
 }
 
 async function call(env, path, body, headers = {}) {
@@ -50,43 +59,118 @@ async function call(env, path, body, headers = {}) {
   }), env);
 }
 
-test("issue, verify, and revoke are owner-gated and store only a hash", async () => {
-  const { env, records } = makeEnv();
-  const denied = await call(env, "/api/keys/issue", {});
-  assert.equal(denied.status, 401);
+const adminHeaders = master => ({ Authorization: "Bearer " + master });
 
-  const issued = await call(env, "/api/keys/issue", { label: "test", scopes: ["api:read"] }, {
-    Authorization: "Bearer " + env.JON2_MASTER_KEY
-  });
-  assert.equal(issued.status, 201);
-  const payload = await issued.json();
-  assert.match(payload.keyInfo.prefix, /^jon2_live_/);
-  assert.equal(typeof payload.key, "string");
-  assert.equal(records.size, 1);
-  assert.equal(records.has(payload.key), false);
+async function issue(env, overrides = {}, master = MASTER) {
+  const response = await call(env, "/api/keys/issue", overrides, adminHeaders(master));
+  const payload = await response.json();
+  return { response, payload };
+}
 
-  const verified = await call(env, "/api/keys/verify", { key: payload.key });
-  assert.equal(verified.status, 200);
-  assert.equal((await verified.json()).valid, true);
+async function issueValidKey(env) {
+  const { response, payload } = await issue(env, { scopes: ["api:read"] });
+  assert.equal(response.status, 201);
+  return payload;
+}
 
-  const revoked = await call(env, "/api/keys/revoke", { keyId: payload.keyInfo.id }, {
-    Authorization: "Bearer " + env.JON2_MASTER_KEY
-  });
-  assert.equal(revoked.status, 200);
-
-  const rejected = await call(env, "/api/keys/verify", { key: payload.key });
-  assert.equal(rejected.status, 401);
+test("D1 missing fails closed with 503", async () => {
+  const { env } = makeEnv({ withoutDb: true });
+  const response = await call(env, "/api/keys/verify", { key: "jon2_live_" + "a".repeat(48) });
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error, "api_key_service_unavailable");
 });
 
-test("unknown scopes and invalid expiration are rejected", async () => {
+test("admin secret missing, weak, or incorrect is rejected with 401", async () => {
+  const missing = makeEnv({ master: null });
+  assert.equal((await call(missing.env, "/api/keys/issue", {})).status, 401);
+
+  const weak = makeEnv({ master: "short" });
+  assert.equal((await call(weak.env, "/api/keys/issue", {}, adminHeaders("short"))).status, 401);
+
   const { env } = makeEnv();
-  const headers = { Authorization: "Bearer " + env.JON2_MASTER_KEY };
-  assert.equal((await call(env, "/api/keys/issue", { scopes: ["admin"] }, headers)).status, 400);
-  assert.equal((await call(env, "/api/keys/issue", { expirationDays: 0 }, headers)).status, 400);
+  assert.equal((await call(env, "/api/keys/issue", {}, adminHeaders("wrong-master-secret-value-that-is-long-enough"))).status, 401);
 });
 
-test("chat remains unavailable and does not consume API keys", async () => {
+test("correct admin secret can issue a key", async () => {
+  const { env, records } = makeEnv();
+  const { response, payload } = await issue(env, { label: "owner-test", scopes: ["api:read"] });
+  assert.equal(response.status, 201);
+  assert.match(payload.key, /^jon2_live_/);
+  assert.equal(records.size, 1);
+  assert.equal(records.has(payload.key), false, "only the hash may be stored");
+});
+
+test("valid subkey verifies and reports allowed scopes", async () => {
+  const { env } = makeEnv();
+  const payload = await issueValidKey(env);
+  const response = await call(env, "/api/keys/verify", { key: payload.key });
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.keyInfo.scopes, ["api:read"]);
+});
+
+test("revoked subkey is rejected", async () => {
+  const { env } = makeEnv();
+  const payload = await issueValidKey(env);
+  const revoked = await call(env, "/api/keys/revoke", { keyId: payload.keyInfo.id }, adminHeaders(MASTER));
+  assert.equal(revoked.status, 200);
+  const verify = await call(env, "/api/keys/verify", { key: payload.key });
+  assert.equal(verify.status, 401);
+});
+
+test("expired subkey is rejected", async () => {
+  const { env, records } = makeEnv();
+  const payload = await issueValidKey(env);
+  for (const record of records.values()) record.expires_at = new Date(Date.now() - 1000).toISOString();
+  const verify = await call(env, "/api/keys/verify", { key: payload.key });
+  assert.equal(verify.status, 401);
+});
+
+test("expiry equal to current time is rejected", async () => {
+  const { env, records } = makeEnv();
+  const payload = await issueValidKey(env);
+  const fixedNow = 1900000000000;
+  for (const record of records.values()) record.expires_at = new Date(fixedNow).toISOString();
+  const originalNow = Date.now;
+  try {
+    Date.now = () => fixedNow;
+    const verify = await call(env, "/api/keys/verify", { key: payload.key });
+    assert.equal(verify.status, 401);
+  } finally {
+    Date.now = originalNow;
+  }
+});
+
+test("invalid and unparseable expiry is rejected", async () => {
+  const { env, records } = makeEnv();
+  const payload = await issueValidKey(env);
+  for (const record of records.values()) record.expires_at = "not-a-date";
+  const verify = await call(env, "/api/keys/verify", { key: payload.key });
+  assert.equal(verify.status, 401);
+});
+
+test("unknown subkey is rejected", async () => {
+  const { env } = makeEnv();
+  const response = await call(env, "/api/keys/verify", { key: "jon2_live_" + "z".repeat(48) });
+  assert.equal(response.status, 401);
+});
+
+test("disallowed scopes cannot be issued", async () => {
+  const { env } = makeEnv();
+  const { response } = await issue(env, { scopes: ["admin"] });
+  assert.equal(response.status, 400);
+});
+
+test("duplicate scopes and invalid expiration are rejected", async () => {
+  const { env } = makeEnv();
+  assert.equal((await issue(env, { scopes: ["api:read", "api:read"] })).response.status, 400);
+  assert.equal((await issue(env, { expirationDays: 0 })).response.status, 400);
+});
+
+test("chat remains unchanged and unavailable", async () => {
   const { env } = makeEnv();
   const response = await worker.fetch(new Request("https://worker.example/api/chat", { method: "POST" }), env);
   assert.equal(response.status, 503);
+  assert.equal((await response.json()).error, "local_model_not_loaded");
 });
