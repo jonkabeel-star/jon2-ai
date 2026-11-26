@@ -39,14 +39,18 @@ def parse_txt_dialogue(text: str, source: str) -> list[list[dict[str, str]]]:
         body = "\n".join(active_parts).strip()
         if not body:
             raise ValueError(f"{source}: empty {active_role} message.")
-        if active_role == "user" and current and current[-1]["role"] == "assistant":
+        if active_role == "user":
+            if current and current[-1]["role"] != "assistant":
+                raise ValueError(f"{source}: dialogue must alternate user then assistant.")
             current.append({"role": "user", "content": body})
-        elif active_role == "assistant" and current and current[-1]["role"] == "user":
+        elif active_role == "assistant":
+            if not current or current[-1]["role"] != "user":
+                raise ValueError(f"{source}: dialogue must alternate user then assistant.")
             current.append({"role": "assistant", "content": body})
             conversations.append(current)
             current = []
         else:
-            raise ValueError(f"{source}: dialogue must alternate user then assistant.")
+            raise ValueError(f"{source}: unsupported speaker role.")
         active_role, active_parts = None, []
 
     for line_no, line in enumerate(text.splitlines(), 1):
