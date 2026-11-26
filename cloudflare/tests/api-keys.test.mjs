@@ -17,8 +17,19 @@ function makeEnv(options = {}) {
         bind(...values) { this.values = values; return this; },
         async run() {
           if (sql.startsWith("INSERT INTO jon2_api_keys")) {
-            const [id, key_hash, key_prefix, label, scopes_json, status, created_at, expires_at] = this.values;
-            records.set(key_hash, { id, key_prefix, label, scopes_json, status, created_at, expires_at });
+            assert.match(sql, /VALUES \(\?, \?, \?, \?, \?, 'active', \?, \?\)/);
+            const [id, key_hash, key_prefix, label, scopes_json, created_at, expires_at] = this.values;
+            const createdAtMs = Date.parse(created_at);
+            const expiresAtMs = Date.parse(expires_at);
+            assert.ok(Number.isFinite(createdAtMs), "created_at must be a valid date");
+            assert.ok(Number.isFinite(expiresAtMs), "expires_at must be a valid date");
+            assert.ok(expiresAtMs > Date.now(), "expires_at must be in the future");
+            records.set(key_hash, {
+              id, key_prefix, label, scopes_json,
+              status: "active",
+              created_at,
+              expires_at
+            });
             return { meta: { changes: 1 } };
           }
           if (sql.startsWith("UPDATE jon2_api_keys")) {
@@ -98,6 +109,19 @@ test("correct admin secret can issue a key", async () => {
   assert.match(payload.key, /^jon2_live_/);
   assert.equal(records.size, 1);
   assert.equal(records.has(payload.key), false, "only the hash may be stored");
+});
+
+test("issued key is stored with active status and valid future timestamps", async () => {
+  const { env, records } = makeEnv();
+  const payload = await issueValidKey(env);
+  const record = [...records.values()][0];
+
+  assert.equal(records.size, 1);
+  assert.equal(record.status, "active");
+  assert.ok(Number.isFinite(Date.parse(record.created_at)));
+  assert.ok(Number.isFinite(Date.parse(record.expires_at)));
+  assert.ok(Date.parse(record.expires_at) > Date.now());
+  assert.equal(record.id, payload.keyInfo.id);
 });
 
 test("valid subkey verifies and reports allowed scopes", async () => {
