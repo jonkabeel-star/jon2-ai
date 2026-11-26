@@ -571,9 +571,9 @@ function limitedPublicReply(value) {
   // Small, explicit session facts: local to this browser and this chat session.
   // This is deterministic rule-based memory, not semantic understanding.
   const factPatterns = [
-    ["projectName", /(?:اسم مشروعي|اسم المشروع)\\s+(?:هو|:)?\\s*([^،,.;؟!?]+)/u],
-    ["testWord", /(?:كلمة الاختبار|رمز الاختبار)\\s+(?:هي|هو|:)?\\s*([^،,.;؟!?]+)/u],
-    ["logoColor", /(?:لون شعاره|لون الشعار)\\s+(?:هو|هي|:)?\\s*([^،,.;؟!?]+)/u]
+    ["projectName", /(?:اسم مشروعي|اسم المشروع)\s+(?:هو|:)?\s*([^،,.;؟!?]+)/u],
+    ["testWord", /(?:كلمة الاختبار|رمز الاختبار)\s+(?:هي|هو|:)?\s*([^،,.;؟!?]+)/u],
+    ["logoColor", /(?:لون شعاره|لون الشعار)\s+(?:هو|هي|:)?\s*([^،,.;؟!?]+)/u]
   ];
   const learned = [];
   for (const [key, pattern] of factPatterns) {
