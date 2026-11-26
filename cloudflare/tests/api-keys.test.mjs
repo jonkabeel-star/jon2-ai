@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import worker from "../worker.js";
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+const workerSource = await readFile(fileURLToPath(new URL("../worker.js", import.meta.url)), "utf8");
+const workerModule = await import("data:text/javascript;base64," + Buffer.from(workerSource).toString("base64"));
+const worker = workerModule.default;
 
 function makeEnv() {
   const records = new Map();
