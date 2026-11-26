@@ -1,20 +1,18 @@
-"""Fail-closed full-parameter SFT trainer for the separate Jon2 helper model.
+"""Fail-closed full-parameter SFT trainer for Jon2's separate helper model.
 
-This script reads local JSONL files only. It never downloads model/data files,
-never imports or modifies the original Jon2 checkpoint, and requires CUDA for
-actual training. Every model parameter remains trainable (no PEFT/LoRA).
+Reads only local approved TXT/JSONL data and a local model directory.
+Never downloads anything, never touches the original Jon2 checkpoint, and
+requires CUDA for training. All helper-model parameters remain trainable.
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
-import random
 from pathlib import Path, PurePosixPath
 from typing import Any
 
 import torch
-
 
 ALLOWED_USES = {"research_training", "public_model", "commercial_model"}
 
@@ -23,56 +21,144 @@ def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def normalized_conversation(messages: list[dict[str, str]]) -> str:
-    return json.dumps(messages, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+def parse_txt_dialogue(text: str, source: str) -> list[list[dict[str, str]]]:
+    """Parse explicitly labeled alternating Arabic/English user and Jon2 turns."""
+    labels = {
+        "المستخدم": "user", "user": "user",
+        "jon2": "assistant", "assistant": "assistant",
+    }
+    conversations = []
+    current = []
+    active_role = None
+    active_parts = []
+
+    def flush_message():
+        nonlocal active_role, active_parts, current, conversations
+        if active_role is None:
+            return
+        body = "\n".join(active_parts).strip()
+        if not body:
+            raise ValueError(f"{source}: empty {active_role} message.")
+        if active_role == "user" and current and current[-1]["role"] == "assistant":
+            current.append({"role": "user", "content": body})
+        elif active_role == "assistant" and current and current[-1]["role"] == "user":
+            current.append({"role": "assistant", "content": body})
+            conversations.append(current)
+            current = []
+        else:
+            raise ValueError(f"{source}: dialogue must alternate user then assistant.")
+        active_role, active_parts = None, []
+
+    for line_no, line in enumerate(text.splitlines(), 1):
+        stripped = line.strip()
+        if not stripped:
+            if active_role is not None:
+                active_parts.append("")
+            continue
+        if ":" in stripped or "：" in stripped:
+            separator = ":" if ":" in stripped else "："
+            label, remainder = stripped.split(separator, 1)
+            role = labels.get(label.strip().lower())
+            if role:
+                flush_message()
+                active_role = role
+                active_parts = [remainder.strip()] if remainder.strip() else []
+                continue
+        if active_role is None:
+            raise ValueError(
+                f"{source}:{line_no}: expected a speaker label such as 'المستخدم:' or 'Jon2:'."
+            )
+        active_parts.append(stripped)
+    flush_message()
+    if current:
+        raise ValueError(f"{source}: file ends with an unanswered user turn.")
+    if not conversations:
+        raise ValueError(f"{source}: no labeled dialogue pairs found.")
+    return conversations
 
 
-def validate_manifest(data_dir: Path, manifest_path: Path, intended_use: str) -> list[tuple[Path, list[dict[str, str]]]]:
+def parse_jsonl(text: str, source: str) -> list[list[dict[str, str]]]:
+    conversations = []
+    for line_no, line in enumerate(text.splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"{source}:{line_no}: invalid JSON: {exc.msg}") from exc
+        messages = record.get("messages") if isinstance(record, dict) else None
+        if not isinstance(messages, list) or len(messages) < 2:
+            raise ValueError(f"{source}:{line_no}: expected a messages array.")
+        clean = []
+        previous_role = None
+        for msg in messages:
+            if not isinstance(msg, dict):
+                raise ValueError(f"{source}:{line_no}: invalid message object.")
+            role, body = msg.get("role"), msg.get("content")
+            if role not in {"system", "user", "assistant"} or not isinstance(body, str) or not body.strip():
+                raise ValueError(f"{source}:{line_no}: invalid role/content.")
+            if role == "system" and clean:
+                raise ValueError(f"{source}:{line_no}: system message must be first.")
+            if role == previous_role and role != "system":
+                raise ValueError(f"{source}:{line_no}: consecutive {role} messages.")
+            clean.append({"role": role, "content": body.strip()})
+            previous_role = role
+        if not any(m["role"] == "user" for m in clean) or clean[-1]["role"] != "assistant":
+            raise ValueError(f"{source}:{line_no}: conversation must include user and end with assistant.")
+        conversations.append(clean)
+    return conversations
+
+
+def validate_manifest(data_dir: Path, manifest_path: Path, intended_use: str):
     if intended_use not in ALLOWED_USES:
         raise ValueError(f"Unsupported intended use: {intended_use}")
     root = data_dir.resolve()
     if not root.is_dir():
         raise FileNotFoundError(f"Data directory does not exist: {data_dir}")
+    if not manifest_path.is_file():
+        raise PermissionError(f"Private approval manifest not found: {manifest_path}")
 
-    files = sorted(data_dir.rglob("*.jsonl"))
+    files = sorted(
+        path for path in data_dir.rglob("*")
+        if path.is_file() and path.suffix.lower() in {".txt", ".jsonl"}
+    )
     if not files:
-        raise FileNotFoundError("No JSONL training sources found; training is blocked.")
-
+        raise FileNotFoundError("No TXT/JSONL training sources found.")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     records = manifest.get("approved_sources") if isinstance(manifest, dict) else None
     if not isinstance(records, list):
-        raise PermissionError("Manifest must contain approved_sources as a list.")
+        raise PermissionError("Manifest must contain an approved_sources list.")
 
     approvals: dict[str, dict[str, Any]] = {}
     for item in records:
         if not isinstance(item, dict) or not isinstance(item.get("file"), str):
-            raise PermissionError("Every approval must contain a relative file path.")
+            raise PermissionError("Every approval needs a relative file path.")
         name = item["file"]
         rel = PurePosixPath(name)
-        if (not name or rel.is_absolute() or rel.as_posix() != name
-                or "\\" in name or any(p in ("", ".", "..") for p in rel.parts)):
-            raise PermissionError(f"Unsafe manifest path: {name!r}")
+        if (not name or rel.is_absolute() or rel.as_posix() != name or "\\" in name
+                or any(part in ("", ".", "..") for part in rel.parts)):
+            raise PermissionError(f"Unsafe approval path: {name!r}")
         if name in approvals:
-            raise PermissionError(f"Duplicate approval for {name}")
+            raise PermissionError(f"Duplicate approval: {name}")
         approvals[name] = item
 
-    loaded: list[tuple[Path, list[dict[str, str]]]] = []
-    actual_names: set[str] = set()
+    loaded = []
+    actual_names = set()
     for path in files:
         if not path.resolve().is_relative_to(root):
-            raise PermissionError(f"Data file escapes data directory: {path}")
+            raise PermissionError(f"Source escapes data directory: {path}")
         name = path.relative_to(data_dir).as_posix()
         actual_names.add(name)
         raw = path.read_bytes()
-        text = raw.decode("utf-8", errors="strict")
+        decoded = raw.decode("utf-8", errors="strict")
         approval = approvals.get(name)
         if approval is None:
             raise PermissionError(f"Training blocked: {name} has no exact-file approval.")
         if approval.get("status") != "APPROVED":
             raise PermissionError(f"Training blocked: {name} is not APPROVED.")
         if approval.get("sha256") != sha256_bytes(raw):
-            raise PermissionError(f"Training blocked: {name} SHA-256 changed after review.")
-        if type(approval.get("character_count")) is not int or approval["character_count"] != len(text):
+            raise PermissionError(f"Training blocked: {name} SHA-256 changed after approval.")
+        if type(approval.get("character_count")) is not int or approval["character_count"] != len(decoded):
             raise PermissionError(f"Training blocked: {name} character count mismatch.")
         for field in ("reviewer", "review_date", "rights_basis"):
             if not isinstance(approval.get(field), str) or not approval[field].strip():
@@ -80,55 +166,36 @@ def validate_manifest(data_dir: Path, manifest_path: Path, intended_use: str) ->
         if approval.get("intended_use") != intended_use:
             raise PermissionError(
                 f"Training blocked: {name} approval is for {approval.get('intended_use')!r}, "
-                f"not requested use {intended_use!r}."
+                f"not {intended_use!r}."
             )
-
-        for line_no, line in enumerate(text.splitlines(), 1):
-            if not line.strip():
-                continue
-            record = json.loads(line)
-            messages = record.get("messages") if isinstance(record, dict) else None
-            if not isinstance(messages, list) or len(messages) < 2:
-                raise ValueError(f"{name}:{line_no} must contain at least two messages.")
-            clean: list[dict[str, str]] = []
-            previous_role = None
-            saw_user = False
-            saw_assistant = False
-            for msg in messages:
-                if not isinstance(msg, dict):
-                    raise ValueError(f"{name}:{line_no} contains a non-object message.")
-                role, content = msg.get("role"), msg.get("content")
-                if role not in {"system", "user", "assistant"} or not isinstance(content, str) or not content.strip():
-                    raise ValueError(f"{name}:{line_no} has an invalid role/content pair.")
-                if role == "system" and (clean or previous_role is not None):
-                    raise ValueError(f"{name}:{line_no} system message must be first.")
-                if role == previous_role and role != "system":
-                    raise ValueError(f"{name}:{line_no} has consecutive {role} messages.")
-                clean.append({"role": role, "content": content.strip()})
-                previous_role = role
-                saw_user |= role == "user"
-                saw_assistant |= role == "assistant"
-            if not saw_user or not saw_assistant or clean[-1]["role"] != "assistant":
-                raise ValueError(f"{name}:{line_no} must include user and assistant and end with assistant.")
-            loaded.append((path, clean))
+        parsed = parse_jsonl(decoded, name) if path.suffix.lower() == ".jsonl" else parse_txt_dialogue(decoded, name)
+        loaded.extend((path, conversation) for conversation in parsed)
 
     if actual_names != set(approvals):
-        missing = sorted(actual_names - set(approvals))
-        stale = sorted(set(approvals) - actual_names)
-        raise PermissionError(f"Approval manifest mismatch. Missing={missing}; stale={stale}")
+        raise PermissionError(
+            f"Manifest mismatch. Missing={sorted(actual_names - set(approvals))}; "
+            f"stale={sorted(set(approvals) - actual_names)}"
+        )
     if not loaded:
         raise ValueError("No valid conversations were found.")
     return loaded
 
 
-def split_conversations(items: list[tuple[Path, list[dict[str, str]]]], validation_fraction: float, seed: int):
-    deduped: dict[str, tuple[Path, list[dict[str, str]]]] = {}
+def normalized_conversation(messages):
+    return json.dumps(messages, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def split_conversations(items, validation_fraction: float, seed: int):
+    deduped = {}
     for item in items:
         key = hashlib.sha256(normalized_conversation(item[1]).encode("utf-8")).hexdigest()
         deduped.setdefault(key, item)
-    ordered = sorted(deduped.items(), key=lambda pair: hashlib.sha256(f"{seed}:{pair[0]}".encode()).hexdigest())
+    ordered = sorted(
+        deduped.items(),
+        key=lambda pair: hashlib.sha256(f"{seed}:{pair[0]}".encode()).hexdigest(),
+    )
     if len(ordered) < 3:
-        raise ValueError("At least 3 unique conversations are required for a train/validation split.")
+        raise ValueError("At least 3 unique conversations are required for train/validation.")
     validation_count = max(1, round(len(ordered) * validation_fraction))
     validation_count = min(validation_count, len(ordered) - 1)
     validation_keys = {key for key, _ in ordered[:validation_count]}
@@ -139,8 +206,7 @@ def split_conversations(items: list[tuple[Path, list[dict[str, str]]]], validati
 
 
 def build_turn_examples(conversations, tokenizer, max_length: int):
-    examples = []
-    skipped_long = 0
+    examples, skipped_long = [], 0
     for _, messages in conversations:
         for index, message in enumerate(messages):
             if message["role"] != "assistant":
@@ -152,12 +218,10 @@ def build_turn_examples(conversations, tokenizer, max_length: int):
                 prefix, tokenize=True, add_generation_prompt=True
             )
             full_ids = tokenizer.apply_chat_template(
-                messages[: index + 1], tokenize=True, add_generation_prompt=False
+                messages[:index + 1], tokenize=True, add_generation_prompt=False
             )
-            if full_ids[: len(prompt_ids)] != prompt_ids:
-                raise RuntimeError(
-                    "Tokenizer chat-template prefix is not stable; refusing unsafe label masking."
-                )
+            if full_ids[:len(prompt_ids)] != prompt_ids:
+                raise RuntimeError("Chat-template prefix mismatch; refusing unsafe label masking.")
             if len(full_ids) > max_length:
                 skipped_long += 1
                 continue
@@ -180,21 +244,16 @@ class SimpleCausalCollator:
         max_len = max(len(row["input_ids"]) for row in features)
         pad_id = self.tokenizer.pad_token_id
         if pad_id is None:
-            raise ValueError("Tokenizer has no pad token; configure a verified pad token first.")
-        input_ids, attention_mask, labels = [], [], []
+            raise ValueError("Tokenizer has no pad token.")
+        input_ids, masks, labels = [], [], []
         for row in features:
             pad = max_len - len(row["input_ids"])
-            if self.tokenizer.padding_side == "left":
-                input_ids.append([pad_id] * pad + row["input_ids"])
-                attention_mask.append([0] * pad + row["attention_mask"])
-                labels.append([-100] * pad + row["labels"])
-            else:
-                input_ids.append(row["input_ids"] + [pad_id] * pad)
-                attention_mask.append(row["attention_mask"] + [0] * pad)
-                labels.append(row["labels"] + [-100] * pad)
+            input_ids.append(row["input_ids"] + [pad_id] * pad)
+            masks.append(row["attention_mask"] + [0] * pad)
+            labels.append(row["labels"] + [-100] * pad)
         return {
             "input_ids": torch.tensor(input_ids, dtype=torch.long),
-            "attention_mask": torch.tensor(attention_mask, dtype=torch.long),
+            "attention_mask": torch.tensor(masks, dtype=torch.long),
             "labels": torch.tensor(labels, dtype=torch.long),
         }
 
@@ -245,9 +304,9 @@ def main() -> int:
     if args.model_dir is None or not args.model_dir.is_dir():
         raise FileNotFoundError("--model-dir must point to an already-downloaded local model directory.")
     if not torch.cuda.is_available():
-        raise RuntimeError("CUDA GPU not detected. Training is blocked; no CPU/iPhone fallback is allowed.")
+        raise RuntimeError("CUDA GPU not detected. Training is blocked; no CPU/iPhone fallback.")
     if args.precision == "bf16" and not torch.cuda.is_bf16_supported():
-        raise RuntimeError("This GPU does not report BF16 support. Select fp16 or fp32 after hardware review.")
+        raise RuntimeError("GPU does not support BF16; choose precision only after hardware review.")
 
     from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
 
@@ -256,7 +315,7 @@ def main() -> int:
     )
     if tokenizer.pad_token_id is None:
         if tokenizer.eos_token_id is None:
-            raise ValueError("Tokenizer has neither pad_token_id nor eos_token_id.")
+            raise ValueError("Tokenizer has neither pad token nor EOS token.")
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
 
@@ -268,18 +327,15 @@ def main() -> int:
     )
     model.config.use_cache = False
     model.gradient_checkpointing_enable()
-    trainable = sum(parameter.numel() for parameter in model.parameters() if parameter.requires_grad)
-    total = sum(parameter.numel() for parameter in model.parameters())
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    total = sum(p.numel() for p in model.parameters())
     if trainable != total:
         raise RuntimeError(f"Full fine-tuning guard failed: trainable={trainable}, total={total}.")
 
     train_examples, train_skipped = build_turn_examples(train_rows, tokenizer, args.max_length)
     eval_examples, eval_skipped = build_turn_examples(validation_rows, tokenizer, args.max_length)
     if len(train_examples) < 2 or not eval_examples:
-        raise ValueError(
-            f"Not enough tokenized examples. train={len(train_examples)}, eval={len(eval_examples)}. "
-            "Improve approved data or review max-length; do not weaken approval checks."
-        )
+        raise ValueError(f"Insufficient tokenized examples: train={len(train_examples)}, eval={len(eval_examples)}.")
 
     class TokenDataset(torch.utils.data.Dataset):
         def __init__(self, rows):
@@ -289,8 +345,6 @@ def main() -> int:
         def __getitem__(self, index):
             return self.rows[index]
 
-    use_bf16 = args.precision == "bf16"
-    use_fp16 = args.precision == "fp16"
     training_args = TrainingArguments(
         output_dir=str(args.output_dir),
         num_train_epochs=args.epochs,
@@ -308,8 +362,8 @@ def main() -> int:
         load_best_model_at_end=True,
         metric_for_best_model="eval_loss",
         greater_is_better=False,
-        bf16=use_bf16,
-        fp16=use_fp16,
+        bf16=args.precision == "bf16",
+        fp16=args.precision == "fp16",
         gradient_checkpointing=True,
         optim="adamw_torch",
         report_to="none",
@@ -337,8 +391,9 @@ def main() -> int:
         "full_fine_tuning": True,
     }, ensure_ascii=False, indent=2))
     trainer.train()
-    trainer.save_model(str(args.output_dir / "final"))
-    tokenizer.save_pretrained(str(args.output_dir / "final"))
+    final_dir = args.output_dir / "final"
+    trainer.save_model(str(final_dir))
+    tokenizer.save_pretrained(str(final_dir))
     metadata = {
         "model_source": str(args.model_dir),
         "intended_use": args.intended_use,
@@ -360,7 +415,7 @@ def main() -> int:
     (args.output_dir / "jon2_training_metadata.json").write_text(
         json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
     )
-    print("Training finished. This checkpoint is a candidate only; human quality review is still mandatory.")
+    print("Training finished. Candidate only; independent evaluation and human review remain mandatory.")
     return 0
 
 
