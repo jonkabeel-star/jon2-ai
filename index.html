@@ -576,7 +576,7 @@ function limitedPublicReply(value) {
     || /^(?:ما|ماذا|مين|من|هل|كيف|لماذا|ليه|ازاي)(?:\s|$)/u.test(text)
     || /(?:اخبرتك|قلت لك|سبق وقلت)/u.test(text);
 
-  if (asksProject || asksTestWord || asksLogoColor) {
+  if (isQuestion && (asksProject || asksTestWord || asksLogoColor)) {
     const answers = [];
     if (asksProject) answers.push(jon2SessionFacts.projectName ? "اسم المشروع: " + jon2SessionFacts.projectName : "اسم المشروع: لم تخبرني به في هذه الجلسة");
     if (asksTestWord) answers.push(jon2SessionFacts.testWord ? "كلمة الاختبار: " + jon2SessionFacts.testWord : "كلمة الاختبار: لم تخبرني بها في هذه الجلسة");
