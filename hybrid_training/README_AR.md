@@ -29,6 +29,8 @@
 - `source_approvals.example.json`: قالب فارغ فقط؛ لا يوافق على أي ملف.
 - `requirements-training.txt`: مكتبات مسار التدريب. ثبّت PyTorch المطابق لإصدار CUDA في جهاز GPU بدل افتراض wheel واحد لكل الأجهزة.
 - `.gitignore`: يمنع إدخال البيانات الخاصة والنماذج والتقارير إلى Git.
+- `tests/test_training_data_parser.py`: اختبارات CPU مستقلة لقارئ الملفات الحوارية.
+- `.github/workflows/jon2-hybrid-preflight.yml`: يشغّل اختبارات القارئ فقط عند تحديث طلب المراجعة؛ لا يحتاج GPU ولا ينفّذ تدريبًا.
 
 ## صيغ البيانات
 
