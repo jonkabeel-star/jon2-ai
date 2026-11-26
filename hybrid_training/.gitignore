@@ -1,0 +1,14 @@
+# Private corpora, manifests, model weights, logs, and checkpoints
+data/
+*.jsonl
+source_approvals.json
+models/
+checkpoints/
+runs/
+artifacts/
+outputs/
+*.pt
+*.pth
+*.safetensors
+*.bin
+*.log
