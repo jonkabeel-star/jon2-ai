@@ -78,12 +78,12 @@ Jon2: نصف التفاحة مثال على كسر...
 5. افحص البيانات دون بدء تدريب:
    `python hybrid_training/train_full.py --data-dir /secure/jon2-data --approval-manifest /secure/source_approvals.json --preflight-only`
 6. بعد اجتياز المراجعة وتوفر GPU فقط، نفّذ التدريب:
-   `python hybrid_training/train_full.py --model-dir /models/qwen3-0.6b --data-dir /secure/jon2-data --approval-manifest /secure/source_approvals.json --output-dir /secure/runs/jon2-qwen3-full-v1 --intended-use research_training --precision bf16`
+   `python hybrid_training/train_full.py --model-dir /models/qwen3-0.6b --model-revision <40-character-reviewed-commit-sha> --data-dir /secure/jon2-data --approval-manifest /secure/source_approvals.json --output-dir /secure/runs/jon2-qwen3-full-v1 --intended-use research_training --precision bf16`
 7. قيّم النسخة الأساسية والنسخة المدربة على نفس مجموعة الاختبار:
    `python hybrid_training/evaluate_helper.py --model-dir /models/qwen3-0.6b --prompts hybrid_training/evaluation_prompts.example.jsonl --output /secure/reports/base.jsonl`
    `python hybrid_training/evaluate_helper.py --model-dir /secure/runs/jon2-qwen3-full-v1/final --prompts hybrid_training/evaluation_prompts.example.jsonl --output /secure/reports/fine-tuned.jsonl`
 
-التدريب الحقيقي يرفض العمل دون CUDA، ويرفض الملفات غير المعتمدة أو المتغيرة، ويحمّل النموذج من المسار المحلي فقط. لا تضف `--trust-remote-code` ولا تفعّل تنزيلًا تلقائيًا.
+التدريب الحقيقي يرفض العمل دون CUDA، ويرفض الملفات غير المعتمدة أو المتغيرة، ويحمّل النموذج من المسار المحلي فقط. كما يشترط بصمة commit ثابتة من 40 خانة للنموذج، ويسجل بصمة محتويات مجلد النموذج وبصمات مصادر التدريب في metadata. لا تضف `--trust-remote-code` ولا تفعّل تنزيلًا تلقائيًا.
 
 ## تقدير الموارد
 
