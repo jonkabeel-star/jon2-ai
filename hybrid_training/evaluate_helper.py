@@ -19,6 +19,7 @@ def main() -> int:
     parser.add_argument("--prompts", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--max-new-tokens", type=int, default=180)
+    parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
     if not args.model_dir.is_dir() or not args.prompts.is_file():
@@ -30,6 +31,9 @@ def main() -> int:
         str(args.model_dir), local_files_only=True, trust_remote_code=False
     )
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
     model.to(device)
     model.eval()
 
@@ -57,8 +61,11 @@ def main() -> int:
                 generated = model.generate(
                     input_ids=input_ids,
                     max_new_tokens=args.max_new_tokens,
-                    do_sample=False,
-                    pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
+                    do_sample=True,
+                    temperature=0.7,
+                    top_p=0.8,
+                    top_k=20,
+                    pad_token_id=tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id,
                     eos_token_id=tokenizer.eos_token_id,
                 )
             answer_ids = generated[0, input_ids.shape[-1]:]
