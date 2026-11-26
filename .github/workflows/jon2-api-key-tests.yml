@@ -1,0 +1,27 @@
+name: Jon2 API Key Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "cloudflare/worker.js"
+      - "cloudflare/tests/api-keys.test.mjs"
+      - ".github/workflows/jon2-api-key-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api-key-tests:
+    name: API key security regression tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out review branch
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run API key tests
+        run: node --test cloudflare/tests/api-keys.test.mjs
