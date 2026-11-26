@@ -221,6 +221,7 @@ let chatReady = false;
 let localRuntimeReady = false;
 let chatBusy = false;
 let sessionId = "";
+let jon2SessionFacts = {};
 
 function loadSavedState() {
   try {
@@ -241,6 +242,11 @@ function loadSavedState() {
         .map(item => ({ kind: item.kind, text: item.text.slice(0, 20000) }));
     }
     if (typeof state.draft === "string") savedDraft = state.draft.slice(0, 2000);
+    if (state.sessionFacts && typeof state.sessionFacts === "object" && !Array.isArray(state.sessionFacts)) {
+      jon2SessionFacts = Object.fromEntries(Object.entries(state.sessionFacts)
+        .filter(([key, value]) => ["projectName", "testWord", "logoColor"].includes(key) && typeof value === "string")
+        .map(([key, value]) => [key, value.slice(0, 120)]));
+    }
   } catch (error) {
     console.warn("Jon2 AI could not read its local saved state.", error);
   }
@@ -253,7 +259,8 @@ function saveState() {
       sessionId,
       lang,
       messages: chatMessages.slice(-MAX_SAVED_MESSAGES),
-      draft: document.getElementById("input").value.slice(0, 2000)
+      draft: document.getElementById("input").value.slice(0, 2000),
+      sessionFacts: jon2SessionFacts
     }));
   } catch (error) {
     console.warn("Jon2 AI could not save state in this browser.", error);
@@ -473,6 +480,7 @@ document.getElementById("clear").addEventListener("click", async () => {
   }
   sessionId = crypto.randomUUID();
   chatMessages = [];
+  jon2SessionFacts = {};
   addMessage(translations[lang].welcome, "bot");
 });
 
@@ -559,6 +567,40 @@ function limitedPublicReply(value) {
     .replace(/\s+/gu, " ").trim();
   const oneWord = text.split(" ").filter(Boolean).length === 1;
   const has = pattern => pattern.test(text);
+
+  // Small, explicit session facts: local to this browser and this chat session.
+  // This is deterministic rule-based memory, not semantic understanding.
+  const factPatterns = [
+    ["projectName", /(?:اسم مشروعي|اسم المشروع)\\s+(?:هو|:)?\\s*([^،,.;؟!?]+)/u],
+    ["testWord", /(?:كلمة الاختبار|رمز الاختبار)\\s+(?:هي|هو|:)?\\s*([^،,.;؟!?]+)/u],
+    ["logoColor", /(?:لون شعاره|لون الشعار)\\s+(?:هو|هي|:)?\\s*([^،,.;؟!?]+)/u]
+  ];
+  const learned = [];
+  for (const [key, pattern] of factPatterns) {
+    const match = raw.match(pattern);
+    if (match && match[1] && match[1].trim()) {
+      jon2SessionFacts[key] = match[1].trim().slice(0, 120);
+      learned.push(key);
+    }
+  }
+  if (learned.length) {
+    saveState();
+    const labels = { projectName: "اسم المشروع", testWord: "كلمة الاختبار", logoColor: "لون الشعار" };
+    const saved = learned.map(key => labels[key]).join(" و");
+    return (lang === "ar" ? "رد Jon2 المحدود بالقواعد: حفظت " + saved + " في ذاكرة هذه الجلسة على هذا المتصفح. يمكنك سؤالي عنها لاحقًا. هذه ذاكرة محلية وليست ذاكرة مشتركة بين الأجهزة." : "Jon2 limited rule-based reply: I saved " + learned.join(", ") + " in this browser session. This is local memory, not shared across devices.");
+  }
+
+  const asksProject = has(/(اسم مشروعي|اسم المشروع)/u);
+  const asksTestWord = has(/(كلمة الاختبار|رمز الاختبار)/u);
+  const asksLogoColor = has(/(لون شعاره|لون الشعار)/u);
+  if (asksProject || asksTestWord || asksLogoColor) {
+    const answers = [];
+    if (asksProject) answers.push(jon2SessionFacts.projectName ? "اسم المشروع: " + jon2SessionFacts.projectName : "اسم المشروع: لم تخبرني به في هذه الجلسة");
+    if (asksTestWord) answers.push(jon2SessionFacts.testWord ? "كلمة الاختبار: " + jon2SessionFacts.testWord : "كلمة الاختبار: لم تخبرني بها في هذه الجلسة");
+    if (asksLogoColor) answers.push(jon2SessionFacts.logoColor ? "لون الشعار: " + jon2SessionFacts.logoColor : "لون الشعار: لم تخبرني به في هذه الجلسة");
+    return (lang === "ar" ? "رد Jon2 المحدود بالقواعد: " : "Jon2 limited rule-based reply: ") + answers.join("؛ ");
+  }
+
   let reply;
 
   if (has(/(^| )(مرحبا|مرحباً|اهلا|السلام عليكم|سلام|هاي|hello|hi)( |$)/u)) {
