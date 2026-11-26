@@ -111,6 +111,19 @@ footer{border-top:1px solid rgba(130,157,207,.14);padding:25px 0 34px;color:var(
 button:disabled{opacity:.6;cursor:not-allowed}
 @media(max-width:850px){.hero{grid-template-columns:1fr;padding-top:54px}.hero-art{min-height:240px}.tools{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.wrap{width:min(100% - 26px,1120px)}header{height:72px}.header-actions{gap:4px}.nav-link,.lang{padding:8px 7px;font-size:10px}.logo{width:42px;height:42px}.brand-name{font-size:18px}.hero{padding:45px 0 35px;gap:15px}h1{font-size:39px}.hero p{font-size:14px}.hero-art{min-height:215px}.orbit{width:205px;height:205px}.core{width:88px;height:88px;font-size:30px}.f1{top:8px}.f2{bottom:17px}.tools{grid-template-columns:1fr 1fr;gap:9px}.tool{padding:14px;min-height:174px}.tool-icon{width:42px;height:42px;margin-bottom:12px}.tool h3{font-size:14px}.tool p{font-size:11px}.section-head h2{font-size:21px}.chat-top{padding:14px}.messages{height:280px;padding:12px}.composer{flex-direction:column}.send{min-height:48px}.footer-inner{flex-direction:column}}
+
+/* Local API key settings — isolated from chat and network requests */
+.jon2-key-panel{margin:22px 0 34px;padding:20px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,rgba(22,34,56,.98),rgba(10,16,28,.98))}
+.jon2-key-panel h2{margin:0 0 8px;font-size:20px}
+.jon2-key-panel p{margin:0 0 14px;color:var(--muted);font-size:12px;line-height:1.9}
+.jon2-key-panel label{display:block;margin-bottom:8px;font-size:13px;color:var(--text)}
+.jon2-key-panel input{display:block;width:100%;min-height:54px;box-sizing:border-box;padding:14px;border:1px solid #526b98;border-radius:12px;background:#fff!important;color:#111!important;-webkit-text-fill-color:#111!important;font-size:16px;line-height:1.5;direction:ltr;text-align:left;opacity:1;user-select:text;-webkit-user-select:text;-webkit-touch-callout:default}
+.jon2-key-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.jon2-key-actions button{min-height:46px;padding:11px 18px;border:0;border-radius:11px;background:linear-gradient(120deg,#718cff,#596de9);color:#fff;font-weight:750}
+.jon2-key-actions .jon2-key-clear{border:1px solid var(--line);background:#17243a;color:var(--text)}
+#jon2KeyStatus{margin-top:12px;color:var(--cyan);font-size:12px;line-height:1.8}
+@media(max-width:520px){.jon2-key-panel{padding:15px}.jon2-key-actions button{flex:1}}
+
 </style>
 </head>
 <body>
@@ -181,6 +194,19 @@ button:disabled{opacity:.6;cursor:not-allowed}
     <form class="composer" id="form"><textarea id="input" placeholder="الردود متوقفة حتى جاهزية محرك Jon2 الأصلي" data-ph="placeholder" maxlength="2000" required disabled></textarea><button class="send" id="send" type="submit" data-t="send" disabled>إرسال ↑</button></form>
     <div class="status-note" id="statusNote" data-t="chatNote">الردود الحالية محدودة بالقواعد ولا تمثل قدرات النموذج الأصلي.</div>
   </div>
+</section>
+
+
+<section class="jon2-key-panel" id="jon2ApiSettings" aria-labelledby="jon2ApiHeading">
+  <h2 id="jon2ApiHeading">إعداد مفتاح API</h2>
+  <p>يمكنك حفظ المفتاح في هذا المتصفح فقط. لن يُكتب في ملفات GitHub ولن ترسله هذه الخانة إلى أي خادم. الحفظ هنا لا يفعّل اتصال API تلقائيًا.</p>
+  <label for="jon2ApiKeyInput">مفتاح API</label>
+  <input id="jon2ApiKeyInput" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="الصق مفتاح API هنا" aria-describedby="jon2KeyStatus">
+  <div class="jon2-key-actions">
+    <button type="button" id="jon2ApiSave">حفظ المفتاح</button>
+    <button type="button" class="jon2-key-clear" id="jon2ApiClear">حذف المفتاح</button>
+  </div>
+  <div id="jon2KeyStatus" role="status" aria-live="polite">لا يوجد مفتاح محفوظ في هذا المتصفح.</div>
 </section>
 
 <!-- مساحة مخصصة لإعلانات AdSense مستقبلًا بعد الموافقة وإضافة كود الناشر -->
@@ -914,6 +940,56 @@ document.addEventListener("visibilitychange", () => {
 window.addEventListener("pageshow", () => {
   if (!window.JON2_LOCAL_RUNTIME_READY) restoreJon2Model();
 });
+</script>
+
+
+<script>
+(() => {
+  "use strict";
+  const storageKey = "jon2_user_api_key";
+  const input = document.getElementById("jon2ApiKeyInput");
+  const saveButton = document.getElementById("jon2ApiSave");
+  const clearButton = document.getElementById("jon2ApiClear");
+  const status = document.getElementById("jon2KeyStatus");
+  if (!input || !saveButton || !clearButton || !status) return;
+
+  try {
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      input.value = saved;
+      status.textContent = "يوجد مفتاح محفوظ محليًا في هذا المتصفح.";
+    }
+  } catch {
+    status.textContent = "تعذر الوصول إلى التخزين المحلي في هذا المتصفح.";
+  }
+
+  // Do not intercept paste or input events: allow Safari's native paste behavior.
+  saveButton.addEventListener("click", () => {
+    const value = input.value.trim();
+    if (!value) {
+      status.textContent = "الخانة فارغة. الصق المفتاح أولًا.";
+      input.focus();
+      return;
+    }
+    try {
+      localStorage.setItem(storageKey, value);
+      status.textContent = "تم حفظ المفتاح محليًا في هذا المتصفح فقط.";
+    } catch {
+      status.textContent = "تعذر حفظ المفتاح. تحقق من إعدادات Safari.";
+    }
+  });
+
+  clearButton.addEventListener("click", () => {
+    try {
+      localStorage.removeItem(storageKey);
+      input.value = "";
+      status.textContent = "تم حذف المفتاح من التخزين المحلي.";
+      input.focus();
+    } catch {
+      status.textContent = "تعذر حذف المفتاح من التخزين المحلي.";
+    }
+  });
+})();
 </script>
 
 <script>
