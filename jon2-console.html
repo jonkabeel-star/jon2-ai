@@ -126,7 +126,7 @@
         const data = await api("/api/health");
         chatReady = data.chat_ready === true;
         setDot(chatReady ? "#22c55e" : "#f59e0b");
-        addMsg("الخادم: "+(data.status||"غير معروف")+" | API: "+(data.api_ready ? "جاهز":"غير مكتمل")+" | النموذج: "+(data.model_ready ? "محمّل":"غير جاهز")+" | المحادثة: "+(chatReady ? "متاحة":"مغلقة ببوابة الجودة"),"meta");
+        addMsg("الخادم: "+(data.status||"غير معروف")+" | API: "+((data.api_ready === true || data.aiEngine === "connected") ? "جاهز":"غير مكتمل")+" | النموذج: "+(data.model_ready ? "محمّل":"غير جاهز")+" | المحادثة: "+(chatReady ? "متاحة":"مغلقة ببوابة الجودة"),"meta");
       }catch(error){
         chatReady = false; setDot("#ef4444"); addMsg("تعذر فحص الخادم: "+error.message,"meta");
       }
