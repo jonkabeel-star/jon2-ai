@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: jon2-ai-python-runtime
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health/live
+    autoDeploy: false
+    envVars:
+      - key: JON2_CHAT_RELEASE_APPROVED
+        value: "false"
+      - key: JON2_CHECKPOINT
+        value: /app/model-weights/jon2-small.pt
+      - key: JON2_RUNTIME_TOKEN
+        sync: false
