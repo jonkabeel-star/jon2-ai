@@ -105,6 +105,8 @@ def parse_jsonl(text: str, source: str) -> list[list[dict[str, str]]]:
                 raise ValueError(f"{source}:{line_no}: system message must be first.")
             if role == previous_role and role != "system":
                 raise ValueError(f"{source}:{line_no}: consecutive {role} messages.")
+            if role != "system" and not any(m["role"] != "system" for m in clean) and role != "user":
+                raise ValueError(f"{source}:{line_no}: conversation must begin with a user turn.")
             clean.append({"role": role, "content": body.strip()})
             previous_role = role
         if not any(m["role"] == "user" for m in clean) or clean[-1]["role"] != "assistant":
@@ -219,10 +221,10 @@ def build_turn_examples(conversations, tokenizer, max_length: int):
             if not prefix or not any(m["role"] == "user" for m in prefix):
                 continue
             prompt_ids = tokenizer.apply_chat_template(
-                prefix, tokenize=True, add_generation_prompt=True
+                prefix, tokenize=True, add_generation_prompt=True, enable_thinking=False
             )
             full_ids = tokenizer.apply_chat_template(
-                messages[:index + 1], tokenize=True, add_generation_prompt=False
+                messages[:index + 1], tokenize=True, add_generation_prompt=False, enable_thinking=False
             )
             if full_ids[:len(prompt_ids)] != prompt_ids:
                 raise RuntimeError("Chat-template prefix mismatch; refusing unsafe label masking.")
