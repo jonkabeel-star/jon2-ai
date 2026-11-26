@@ -1,0 +1,29 @@
+name: Jon2 Hybrid Training Preflight
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "hybrid_training/**"
+      - ".github/workflows/jon2-hybrid-preflight.yml"
+  push:
+    branches: ["jon2/hybrid-full-finetune-prep"]
+    paths:
+      - "hybrid_training/**"
+      - ".github/workflows/jon2-hybrid-preflight.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  parser-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout review branch
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run dependency-free dialogue parser tests
+        run: python -m unittest discover -s hybrid_training/tests -v
