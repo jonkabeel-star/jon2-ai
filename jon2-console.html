@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0f17">
+  <title>Jon2 AI — لوحة المحادثة</title>
+  <style>
+    :root{--bg:#0b0f17;--card:#131a26;--card2:#1a2436;--text:#eef2f7;--muted:#94a3b8;--accent:#38bdf8;--green:#22c55e;--red:#ef4444;--border:#263248}
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column}
+    header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--border);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .brand{display:flex;align-items:center;gap:9px;font-weight:800}.dot{width:10px;height:10px;border-radius:50%;background:#f59e0b;box-shadow:0 0 10px currentColor}
+    .head-actions,.quick,.settings{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+    button{border:1px solid var(--border);background:var(--card2);color:var(--text);border-radius:10px;padding:9px 12px;font-size:13px;font-weight:650;cursor:pointer}
+    button:disabled{opacity:.45;cursor:not-allowed}
+    button.primary{background:var(--accent);color:#061018;border-color:transparent}
+    button.ghost{background:transparent}
+    .settings{padding:10px 14px;background:var(--card);border-bottom:1px solid var(--border)}
+    input{min-width:0;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px;font-size:14px}
+    .settings input:first-child{flex:1 1 190px}.settings input:nth-child(2){flex:1 1 140px}
+    .auth{padding:12px 14px;background:#101827;border-bottom:1px solid var(--border);display:flex;gap:7px;flex-wrap:wrap}
+    .auth input{flex:1 1 140px}.auth-status{width:100%;font-size:12px;color:var(--muted)}
+    .quick{padding:10px 14px;overflow-x:auto;flex-wrap:nowrap;border-bottom:1px solid var(--border)}
+    .quick button{white-space:nowrap}
+    main{width:100%;max-width:900px;margin:0 auto;flex:1;padding:14px;display:flex;flex-direction:column;gap:10px;padding-bottom:100px}
+    .notice{border:1px solid var(--border);background:#111a29;color:var(--muted);border-radius:12px;padding:11px 12px;font-size:12px;line-height:1.7}
+    .msg{max-width:92%;padding:11px 13px;border-radius:14px;line-height:1.65;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+    .msg.user{align-self:flex-start;background:var(--accent);color:#061018}
+    .msg.bot{align-self:flex-end;background:var(--card);border:1px solid var(--border)}
+    .msg.meta{align-self:center;color:var(--muted);font-size:12px;padding:4px 8px}
+    .composer{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;z-index:4}
+    .composer input{flex:1;font-size:16px}
+    .section-title{font-size:13px;color:var(--muted);margin:4px 2px}
+    .disabled-note{font-size:11px;color:#fbbf24}
+    @media(min-width:700px){header,.settings,.auth,.quick{padding-left:max(18px,calc((100vw - 900px)/2));padding-right:max(18px,calc((100vw - 900px)/2))}.composer{padding-left:max(18px,calc((100vw - 900px)/2));padding-right:max(18px,calc((100vw - 900px)/2))}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand"><span class="dot" id="statusDot"></span><span>Jon2 AI</span></div>
+    <div class="head-actions">
+      <button type="button" id="healthBtn">فحص الاتصال</button>
+      <button type="button" id="exportBtn">تصدير المحادثة</button>
+    </div>
+  </header>
+
+  <div class="settings">
+    <input id="apiUrl" type="url" inputmode="url" placeholder="رابط خادم Jon2 HTTPS">
+    <button type="button" id="saveUrlBtn">حفظ الرابط</button>
+  </div>
+
+  <section class="auth" aria-label="تسجيل الدخول">
+    <input id="email" type="email" autocomplete="username" placeholder="البريد الإلكتروني">
+    <input id="password" type="password" autocomplete="current-password" placeholder="كلمة المرور">
+    <button type="button" class="primary" id="loginBtn">تسجيل الدخول</button>
+    <button type="button" id="logoutBtn" class="ghost" disabled>خروج</button>
+    <div class="auth-status" id="authStatus">سجّل الدخول قبل استخدام المحادثة.</div>
+  </section>
+
+  <div class="quick">
+    <button type="button" id="healthQuick">حالة الخادم</button>
+    <button type="button" id="exportQuick">تصدير سجل المحادثة</button>
+    <button type="button" id="clearBtn">مسح المحادثة من الشاشة</button>
+  </div>
+
+  <main id="chat" aria-live="polite">
+    <div class="notice">
+      هذه واجهة متصلة بعقد API الحالي في مشروع Jon2: /api/health و /api/auth و /api/chat.
+      لا يوجد مفتاح API داخل المتصفح. لا تُرسل المحادثة إلا بعد تسجيل الدخول واجتياز بوابة جاهزية النموذج.
+      إدارة ذاكرة الخادم واستيرادها وتصديرها ليست متاحة بعد في الـAPI الحالي.
+    </div>
+  </main>
+
+  <form class="composer" id="composer">
+    <input id="messageInput" type="text" maxlength="4000" autocomplete="off" placeholder="اكتب رسالتك إلى Jon2..." aria-label="رسالتك">
+    <button type="submit" class="primary" id="sendBtn" disabled>إرسال</button>
+  </form>
+
+  <script>
+    "use strict";
+    const $ = id => document.getElementById(id);
+    const chat = $("chat");
+    const messages = [];
+    let csrfToken = "";
+    let loggedIn = false;
+    let chatReady = false;
+    const savedBase = localStorage.getItem("jon2_console_api_url") || window.JON2_API_BASE_URL || "";
+    $("apiUrl").value = savedBase;
+
+    function baseUrl(){
+      const raw = $("apiUrl").value.trim().replace(/\/+$/, "");
+      if(!raw) throw new Error("أدخل رابط خادم Jon2 أولًا.");
+      const url = new URL(raw);
+      if(url.protocol !== "https:" && !(url.protocol === "http:" && ["localhost","127.0.0.1"].includes(url.hostname))){
+        throw new Error("يجب استخدام HTTPS، باستثناء localhost للتطوير.");
+      }
+      return url.origin;
+    }
+    function addMsg(text, role="bot"){
+      const node = document.createElement("div");
+      node.className = "msg " + role;
+      node.textContent = String(text);
+      chat.appendChild(node);
+      if(role === "user" || role === "bot") messages.push({role:role === "user" ? "user" : "assistant",content:String(text),at:new Date().toISOString()});
+      window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"});
+    }
+    function setDot(color){$("statusDot").style.background=color;}
+    function syncControls(){
+      $("sendBtn").disabled = !(loggedIn && chatReady);
+      $("logoutBtn").disabled = !loggedIn;
+    }
+    async function api(path, options={}){
+      const response = await fetch(baseUrl()+path,{
+        credentials:"include",
+        cache:"no-store",
+        ...options,
+        headers:{"Accept":"application/json",...(options.headers||{})}
+      });
+      const data = await response.json().catch(()=>({}));
+      if(!response.ok) throw new Error(data.error || data.detail || ("HTTP "+response.status));
+      return data;
+    }
+    async function checkHealth(){
+      try{
+        const data = await api("/api/health");
+        chatReady = data.chat_ready === true;
+        setDot(chatReady ? "#22c55e" : "#f59e0b");
+        addMsg("الخادم: "+(data.status||"غير معروف")+" | API: "+(data.api_ready ? "جاهز":"غير مكتمل")+" | النموذج: "+(data.model_ready ? "محمّل":"غير جاهز")+" | المحادثة: "+(chatReady ? "متاحة":"مغلقة ببوابة الجودة"),"meta");
+      }catch(error){
+        chatReady = false; setDot("#ef4444"); addMsg("تعذر فحص الخادم: "+error.message,"meta");
+      }
+      syncControls();
+    }
+    async function refreshSession(){
+      const data = await api("/api/auth/me");
+      csrfToken = typeof data.csrfToken === "string" ? data.csrfToken : "";
+      loggedIn = Boolean(csrfToken);
+      $("authStatus").textContent = loggedIn ? "تم التحقق من جلسة الدخول." : "سجّل الدخول قبل استخدام المحادثة.";
+      syncControls();
+      return loggedIn;
+    }
+    async function login(){
+      const email = $("email").value.trim();
+      const password = $("password").value;
+      if(!email || !password){$("authStatus").textContent="أدخل البريد الإلكتروني وكلمة المرور.";return;}
+      $("loginBtn").disabled=true;
+      try{
+        await api("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password})});
+        await refreshSession();
+        $("password").value="";
+        addMsg("تم تسجيل الدخول. سأفحص جاهزية المحادثة الآن.","meta");
+        await checkHealth();
+      }catch(error){loggedIn=false;csrfToken="";$("authStatus").textContent=error.message;syncControls();}
+      finally{$("loginBtn").disabled=false;}
+    }
+    async function logout(){
+      try{await api("/api/auth/logout",{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-Token":csrfToken},body:"{}"});}
+      catch(error){addMsg("تعذر تسجيل الخروج: "+error.message,"meta");}
+      loggedIn=false;csrfToken="";$("authStatus").textContent="تم إنهاء الجلسة على هذه الواجهة.";syncControls();
+    }
+    async function sendMessage(text){
+      const value=(text||"").trim();
+      if(!value)return;
+      if(!loggedIn || !csrfToken){addMsg("سجّل الدخول أولًا.","meta");return;}
+      if(!chatReady){addMsg("المحادثة مغلقة حاليًا: النموذج لم يجتز بوابة الجاهزية بعد.","meta");return;}
+      addMsg(value,"user");
+      $("sendBtn").disabled=true;
+      try{
+        const data=await api("/api/chat",{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-Token":csrfToken},body:JSON.stringify({
+          api_version:"1",
+          message:value,
+          request_id:crypto.randomUUID(),
+          session_id:sessionId,
+          history:messages.slice(0,-1).slice(-8).map(item=>({role:item.role,content:item.content.slice(0,2000)}))
+        })});
+        if(typeof data.reply!=="string" || !data.reply.trim()) throw new Error("لم يصل رد صالح من الخادم.");
+        addMsg(data.reply.trim(),"bot");
+      }catch(error){addMsg("تعذر إرسال الرسالة: "+error.message,"bot");}
+      finally{syncControls();}
+    }
+    const sessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+    function exportConversation(){
+      const payload={format:"jon2-chat-export-v1",exported_at:new Date().toISOString(),note:"هذا سجل محادثة محلي وليس تصديرًا لذاكرة الخادم.",messages};
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");a.href=url;a.download="jon2-chat-export.json";a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+      addMsg("تم تجهيز تصدير سجل المحادثة المحلي. هذا لا يصدّر ذاكرة الخادم.","meta");
+    }
+    $("saveUrlBtn").addEventListener("click",()=>{
+      try{const url=baseUrl();localStorage.setItem("jon2_console_api_url",url);$("apiUrl").value=url;addMsg("تم حفظ رابط الخادم على هذا الجهاز.","meta");}
+      catch(error){addMsg(error.message,"meta");}
+    });
+    $("healthBtn").addEventListener("click",checkHealth);
+    $("healthQuick").addEventListener("click",checkHealth);
+    $("exportBtn").addEventListener("click",exportConversation);
+    $("exportQuick").addEventListener("click",exportConversation);
+    $("clearBtn").addEventListener("click",()=>{chat.querySelectorAll(".msg").forEach(node=>node.remove());messages.length=0;addMsg("تم مسح سجل المحادثة من الشاشة فقط. لا يؤثر ذلك على ذاكرة الخادم.","meta");});
+    $("loginBtn").addEventListener("click",login);
+    $("logoutBtn").addEventListener("click",logout);
+    $("composer").addEventListener("submit",event=>{event.preventDefault();const input=$("messageInput");const value=input.value;input.value="";sendMessage(value);});
+    addMsg("أهلًا بك في واجهة Jon2 الجديدة. ابدأ بفحص الاتصال ثم سجّل الدخول.","bot");
+    checkHealth();
+    refreshSession().catch(()=>{loggedIn=false;syncControls();});
+  </script>
+</body>
+</html>
