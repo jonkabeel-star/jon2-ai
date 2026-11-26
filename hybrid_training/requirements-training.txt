@@ -1,0 +1,6 @@
+# Install a PyTorch build that matches the actual NVIDIA driver/CUDA runtime first.
+# Example: follow the selector at https://pytorch.org/get-started/locally/
+torch
+transformers>=4.51.0,<5
+accelerate>=1.0.0
+safetensors>=0.4.5
