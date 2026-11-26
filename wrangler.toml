@@ -1,3 +1,8 @@
 name = "jon2-ai"
 main = "cloudflare/worker.js"
 compatibility_date = "2026-11-06"
+
+[[d1_databases]]
+binding = "JON2_DB"
+database_name = "jon2-api-keys-db"
+database_id = "fc8f764c-7fd7-4238-8da1-a2be618beb29"
