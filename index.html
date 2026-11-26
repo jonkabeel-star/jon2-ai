@@ -573,7 +573,7 @@ function limitedPublicReply(value) {
   const asksTestWord = has(/(كلم(?:ة|ه) الاختبار|رمز الاختبار)/u);
   const asksLogoColor = has(/(لون شعاره|لون الشعار)/u);
   const isQuestion = /[؟?]/u.test(raw)
-    || /^(?:ما|ماذا|مين|من|هل|كيف|لماذا|ليه|ازاي)(?:\\s|$)/u.test(text)
+    || /^(?:ما|ماذا|مين|من|هل|كيف|لماذا|ليه|ازاي)(?:\s|$)/u.test(text)
     || /(?:اخبرتك|قلت لك|سبق وقلت)/u.test(text);
 
   if (asksProject || asksTestWord || asksLogoColor) {
@@ -587,9 +587,9 @@ function limitedPublicReply(value) {
   // Small, explicit session facts: local to this browser and this chat session.
   // This is deterministic rule-based memory, not semantic understanding.
   const factPatterns = [
-    ["projectName", /(?:اسم مشروعي|اسم المشروع)\\s+(?:هو|:)?\\s*([^،,.;؟!?]+)/u],
-    ["testWord", /(?:كلمة الاختبار|رمز الاختبار)\\s+(?:هي|هو|:)?\\s*([^،,.;؟!?]+)/u],
-    ["logoColor", /(?:لون شعاره|لون الشعار)\\s+(?:هو|هي|:)?\\s*([^،,.;؟!?]+)/u]
+    ["projectName", /(?:اسم مشروعي|اسم المشروع)\s+(?:هو|:)?\s*([^،,.;؟!?]+)/u],
+    ["testWord", /(?:كلمة الاختبار|رمز الاختبار)\s+(?:هي|هو|:)?\s*([^،,.;؟!?]+)/u],
+    ["logoColor", /(?:لون شعاره|لون الشعار)\s+(?:هو|هي|:)?\s*([^،,.;؟!?]+)/u]
   ];
   const learned = [];
   if (!isQuestion) {
