@@ -51,7 +51,7 @@ def main() -> int:
             if messages[-1]["role"] != "user":
                 raise ValueError(f"Prompt line {line_no} must end with a user message.")
             input_ids = tokenizer.apply_chat_template(
-                messages, tokenize=True, add_generation_prompt=True, return_tensors="pt"
+                messages, tokenize=True, add_generation_prompt=True, return_tensors="pt", enable_thinking=False
             ).to(device)
             with torch.inference_mode():
                 generated = model.generate(
