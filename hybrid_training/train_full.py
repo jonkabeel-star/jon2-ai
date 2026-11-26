@@ -59,6 +59,11 @@ def parse_txt_dialogue(text: str, source: str) -> list[list[dict[str, str]]]:
             if active_role is not None:
                 active_parts.append("")
             continue
+        # Project-authored source files begin with metadata comments. Ignore
+        # comment lines only outside an active speaker turn; never discard
+        # text inside a user's or assistant's message.
+        if active_role is None and stripped.startswith("#"):
+            continue
         if ":" in stripped or "：" in stripped:
             separator = ":" if ":" in stripped else "："
             label, remainder = stripped.split(separator, 1)
