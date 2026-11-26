@@ -92,6 +92,8 @@ def main() -> int:
         "cases": count,
         "output": str(args.output),
         "device": str(device),
+        "seed": args.seed,
+        "sampling": {"temperature": 0.7, "top_p": 0.8, "top_k": 20},
         "human_review_required": True
     }, ensure_ascii=False, indent=2))
     return 0
