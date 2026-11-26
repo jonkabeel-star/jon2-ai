@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -196,6 +197,21 @@ def normalized_conversation(messages):
     return json.dumps(messages, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
+def fingerprint_model_snapshot(model_dir: Path) -> str:
+    root = model_dir.resolve()
+    digest = hashlib.sha256()
+    files = sorted(path for path in root.rglob("*") if path.is_file())
+    if not files:
+        raise FileNotFoundError("Local model directory is empty.")
+    for path in files:
+        if not path.resolve().is_relative_to(root):
+            raise PermissionError(f"Model file resolves outside model directory: {path}")
+        relative = path.relative_to(root).as_posix().encode("utf-8")
+        file_hash = hashlib.sha256(path.read_bytes()).hexdigest().encode("ascii")
+        digest.update(relative + b"\\0" + file_hash + b"\\n")
+    return digest.hexdigest()
+
+
 def split_conversations(items, validation_fraction: float, seed: int):
     deduped = {}
     for item in items:
@@ -275,6 +291,7 @@ def main() -> int:
     parser.add_argument("--approval-manifest", required=True, type=Path)
     parser.add_argument("--intended-use", choices=sorted(ALLOWED_USES), default="research_training")
     parser.add_argument("--model-dir", type=Path)
+    parser.add_argument("--model-revision", type=str)
     parser.add_argument("--output-dir", type=Path, default=Path("artifacts/jon2-helper-full-ft"))
     parser.add_argument("--validation-fraction", type=float, default=0.10)
     parser.add_argument("--seed", type=int, default=42)
@@ -314,6 +331,9 @@ def main() -> int:
 
     if args.model_dir is None or not args.model_dir.is_dir():
         raise FileNotFoundError("--model-dir must point to an already-downloaded local model directory.")
+    if not args.model_revision or not re.fullmatch(r"[0-9a-fA-F]{40}", args.model_revision):
+        raise ValueError("--model-revision must be the reviewed 40-character Hugging Face commit SHA.")
+    model_snapshot_sha256 = fingerprint_model_snapshot(args.model_dir)
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA GPU not detected. Training is blocked; no CPU/iPhone fallback.")
     if args.precision == "bf16" and not torch.cuda.is_bf16_supported():
@@ -405,8 +425,15 @@ def main() -> int:
     final_dir = args.output_dir / "final"
     trainer.save_model(str(final_dir))
     tokenizer.save_pretrained(str(final_dir))
+    source_fingerprints = {
+        path.relative_to(args.data_dir).as_posix(): sha256_bytes(path.read_bytes())
+        for path in sorted({path for path, _ in conversations})
+    }
     metadata = {
         "model_source": str(args.model_dir),
+        "model_revision": args.model_revision.lower(),
+        "model_snapshot_sha256": model_snapshot_sha256,
+        "training_source_sha256": source_fingerprints,
         "intended_use": args.intended_use,
         "seed": args.seed,
         "max_length": args.max_length,
