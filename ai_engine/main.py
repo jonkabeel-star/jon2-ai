@@ -41,6 +41,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://jonkabeel-star.github.io",
+        "https://jon2-fkd7qoudi-jon-2-ai.vercel.app",
+        "https://jon2-ai.vercel.app",
+        "https://jon2-ai-jon-2-ai.vercel.app",
         "http://localhost:3000",
         "http://127.0.0.1:5500",
     ],
