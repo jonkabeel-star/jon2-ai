@@ -26,11 +26,26 @@ The D1 database and Worker binding are not created by GitHub commits. Cloudflare
 - Keys are generated with Web Crypto randomness (32 bytes).
 - Only SHA-256 key hashes are stored in D1; plaintext is returned once on issuance.
 - The master secret is read only from the Worker secret binding and is never returned.
+- Master authentication rejects absent, short, whitespace-padded, or malformed secrets. Both the configured and supplied values are SHA-256 hashed; the resulting fixed 64-character hexadecimal digests are compared over the full fixed length without early exit on the first differing character. This is a constant-work digest comparison in application code, not a claim of mathematically perfect constant-time behavior across the JavaScript runtime and platform.
+- Expiration is accepted only when it is a parseable date whose timestamp is finite and strictly greater than the current time. Invalid dates, `NaN`, past dates, and dates exactly equal to now are rejected.
+- Verification accepts only records with status `active`; revoked keys are rejected.
+- Stored scope JSON must parse to a non-empty array containing only the currently allowed scopes; corrupt or unsupported scope records fail closed.
 - CORS remains restricted to the existing allowlist; preflight permits only Content-Type and Authorization.
 - Request bodies are size-limited; unknown scopes and invalid expiration are rejected.
-- Revoked and expired keys fail verification.
 - Error responses do not echo secrets or raw database errors.
 - No key value is written to logs, HTML, localStorage, or repository configuration.
+
+## Tests
+
+Run from the repository root with Node.js 22 or later:
+
+```sh
+node --test cloudflare/tests/api-keys.test.mjs
+```
+
+The regression suite covers missing D1, missing/weak/wrong/correct master secrets, valid subkey verification, revoked keys, expired keys, expiry equal to the current time, malformed expiry dates, unknown keys, disallowed scopes, duplicate scopes, invalid expiration settings, and unchanged chat fail-closed behavior.
+
+The dedicated GitHub Actions workflow `.github/workflows/jon2-api-key-tests.yml` runs this command on relevant pull-request changes. A passing test run must be confirmed in the Actions UI before treating this branch as test-verified.
 
 ## Important boundaries
 
