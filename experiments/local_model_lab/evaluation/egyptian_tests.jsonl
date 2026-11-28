@@ -1,0 +1,30 @@
+{"id":"EGY-01","language":"ar-EG","category":"محادثة","prompt":"عامل إيه؟ رد عليا بالمصري وباختصار.","review_focus":"طبيعية اللهجة"}
+{"id":"EGY-02","language":"ar-EG","category":"شرح","prompt":"اشرحلي يعني إيه ذكاء اصطناعي كأني لسه مبتدئ.","review_focus":"تبسيط بالمصرية"}
+{"id":"EGY-03","language":"ar-EG","category":"نصيحة عامة","prompt":"أنا بتشتت وأنا بذاكر، أبدأ بإيه؟","review_focus":"خطوة عملية دون لوم"}
+{"id":"EGY-04","language":"ar-EG","category":"تنظيم","prompt":"عندي مشوارين ومذاكرة النهارده، أرتب يومي إزاي؟","review_focus":"خطة واقعية"}
+{"id":"EGY-05","language":"ar-EG","category":"حساب","prompt":"لو الحاجة بـ 250 جنيه وعليها خصم 20%، هدفع كام؟","review_focus":"صحة الحساب"}
+{"id":"EGY-06","language":"ar-EG","category":"إعادة صياغة","prompt":"قول الجملة دي بالمصري الطبيعي: أود الاستفسار عن موعد وصول الطلب.","review_focus":"طبيعية التعبير"}
+{"id":"EGY-07","language":"ar-EG","category":"رسالة","prompt":"اكتبلي رسالة واتساب محترمة أعتذر فيها عن التأخير.","review_focus":"نبرة مصرية مهذبة"}
+{"id":"EGY-08","language":"ar-EG","category":"توضيح","prompt":"يعني إيه كلمة استهلاك؟ اديني مثال من البيت.","review_focus":"شرح ومثال"}
+{"id":"EGY-09","language":"ar-EG","category":"مقارنة","prompt":"إيه الفرق بين الموبايل والتابلت من ناحية الاستخدام؟","review_focus":"مقارنة واضحة"}
+{"id":"EGY-10","language":"ar-EG","category":"خطوات","prompt":"عايز أبدأ أتعلم إنجليزي من الصفر، أعمل إيه أول أسبوع؟","review_focus":"خطة بسيطة"}
+{"id":"EGY-11","language":"ar-EG","category":"استنتاج","prompt":"لو كل القطط حيوانات، هل كل الحيوانات قطط؟ وضحلي بالمصري.","review_focus":"صحة المنطق"}
+{"id":"EGY-12","language":"ar-EG","category":"تصحيح","prompt":"صححلي بالمصري: انا مروحتش الشغل عشان كنت تعبان.","review_focus":"كتابة طبيعية"}
+{"id":"EGY-13","language":"ar-EG","category":"محادثة متعددة","prompt":"أنا بحب الشرح المختصر. اشرحلي الأول يعني إيه سحابة إلكترونية، وبعدها اسألني لو عايز مثال.","review_focus":"اتباع التفضيل"}
+{"id":"EGY-14","language":"ar-EG","category":"تفسير","prompt":"هو ليه لازم نعمل نسخة احتياطية للملفات؟","review_focus":"شرح عملي"}
+{"id":"EGY-15","language":"ar-EG","category":"تخطيط","prompt":"معايا 300 جنيه للأكل لمدة 3 أيام، اقترح تنظيم اقتصادي من غير أسعار مؤكدة.","review_focus":"عدم اختلاق أسعار"}
+{"id":"EGY-16","language":"ar-EG","category":"تعلم","prompt":"إزاي أفرق بين المعلومة الموثوقة والكلام المنتشر على فيسبوك؟","review_focus":"خطوات تحقق"}
+{"id":"EGY-17","language":"ar-EG","category":"مساعدة","prompt":"مش فاهم السؤال ده: اشرح أسباب تغير الفصول الأربعة. بسّطهولي.","review_focus":"شرح صحيح"}
+{"id":"EGY-18","language":"ar-EG","category":"اختصار","prompt":"اختصر الكلام ده في نقطتين: النوم الكفاية بيساعد على التركيز وتنظيم اليوم وتحسين المزاج.","review_focus":"نقطتان فقط"}
+{"id":"EGY-19","language":"ar-EG","category":"حساب وقت","prompt":"لو بدأت الساعة 3:20 وذاكرت ساعة ونص، أخلص إمتى؟","review_focus":"حساب الوقت"}
+{"id":"EGY-20","language":"ar-EG","category":"تعامل","prompt":"صاحبي زعلان مني ومش عارف أبدأ الكلام إزاي، اقترح جملة.","review_focus":"تعاطف دون افتراض"}
+{"id":"EGY-21","language":"ar-EG","category":"مقارنة","prompt":"إيه الفرق بين حفظ الملف ومشاركته مع حد؟","review_focus":"تمييز واضح"}
+{"id":"EGY-22","language":"ar-EG","category":"طلب توضيح","prompt":"أنا عايز أشتري جهاز كويس. اسألني سؤال واحد يساعدك تفهم احتياجي.","review_focus":"سؤال واحد فقط"}
+{"id":"EGY-23","language":"ar-EG","category":"مصري مقابل فصحى","prompt":"حوّل الجملة للفصحى: أنا هخلص الشغل وبعدين هكلمك.","review_focus":"تحويل سليم"}
+{"id":"EGY-24","language":"ar-EG","category":"شرح مصطلح","prompt":"يعني إيه تحديث البرنامج؟","review_focus":"مثال مفهوم"}
+{"id":"EGY-25","language":"ar-EG","category":"حل مشكلة","prompt":"النت عندي بطيء، قولّي أول 3 حاجات أجربها من غير ما أغير إعدادات خطيرة.","review_focus":"خطوات آمنة"}
+{"id":"EGY-26","language":"ar-EG","category":"تلخيص","prompt":"لخصلي فكرة تنظيم الوقت في جملتين بالمصري.","review_focus":"جملتان"}
+{"id":"EGY-27","language":"ar-EG","category":"تفكير","prompt":"لو عندي اختيارين ومش عارف أقرر، أوازن بينهم إزاي؟","review_focus":"معايير قرار"}
+{"id":"EGY-28","language":"ar-EG","category":"تواصل","prompt":"اكتب رد قصير ومحترم على حد بيقول لي: معلش اتأخرت عليك.","review_focus":"ملاءمة الرد"}
+{"id":"EGY-29","language":"ar-EG","category":"تعليمات","prompt":"قولّي طريقة عمل شاي عادي في 4 خطوات.","review_focus":"الالتزام بأربع خطوات"}
+{"id":"EGY-30","language":"ar-EG","category":"تمييز","prompt":"هل معنى إن فيديو عليه مشاهدات كتير إنه صحيح؟ ليه؟","review_focus":"تفكير نقدي"}
