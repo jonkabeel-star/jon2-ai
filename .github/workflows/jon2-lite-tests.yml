@@ -31,4 +31,4 @@ jobs:
       - name: Compile Jon2 Lite source
         run: python -m compileall -q jon2_lite
       - name: Run Arabic brain and SQLite memory tests
-        run: python -m unittest tests.test_jon2_lite -v
+        run: python -m unittest discover -s tests -p 'test_jon2_lite.py' -v
