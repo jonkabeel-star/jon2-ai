@@ -9,6 +9,8 @@ import unicodedata
 from dataclasses import dataclass
 from typing import Callable, Optional, Sequence
 
+from .reasoning import reason
+
 
 @dataclass(frozen=True)
 class BrainReply:
@@ -163,6 +165,9 @@ def respond(
     rule_result = _rule_reply(text, style)
     if rule_result is not None:
         return rule_result
+    reasoning_result = reason(text, style, history=history, facts=facts)
+    if reasoning_result is not None:
+        return BrainReply(reasoning_result.answer, reasoning_result.intent, style)
     if model_adapter is not None:
         return BrainReply(generate_with_model(text, style, model_adapter), "model", style, True)
     fallback = _style_text(
