@@ -1,0 +1,51 @@
+{
+  "lab_name": "Jon2 Local Model Lab",
+  "mode": "inference_only_baseline",
+  "branch": "feat/jon2-local-model-lab",
+  "base_branch": "main",
+  "model": {
+    "repo_id": "Qwen/Qwen3-0.6B",
+    "revision": "c1899de289a04d12100db370d81485cdf75e47ca",
+    "license_declared": "apache-2.0",
+    "license_review_required": true,
+    "quantization": "none",
+    "fine_tuning": false,
+    "model_card_url": "https://huggingface.co/Qwen/Qwen3-0.6B",
+    "license_url": "https://huggingface.co/Qwen/Qwen3-0.6B/blob/c1899de289a04d12100db370d81485cdf75e47ca/LICENSE"
+  },
+  "runtime": {
+    "target": "temporary Google Colab GPU",
+    "transformers": true,
+    "public_server": false,
+    "http_endpoint": false,
+    "tunnel": false,
+    "external_inference_api": false,
+    "require_gpu_check": true
+  },
+  "gates": {
+    "allow_package_install": false,
+    "allow_model_download": false,
+    "allow_model_load": false,
+    "run_full_evaluation": false
+  },
+  "integrity": {
+    "algorithm": "SHA-256",
+    "hash_each_downloaded_file": true,
+    "write_runtime_manifest": true,
+    "expected_hashes_committed": false
+  },
+  "evaluation": {
+    "total_questions": 120,
+    "human_review_required": true,
+    "automatic_self_grading": false,
+    "training_data": false,
+    "holdout": true
+  },
+  "protected_boundaries": {
+    "main_unchanged": true,
+    "pr_187_unchanged": true,
+    "cloudflare_worker_unchanged": true,
+    "public_api_chat_remains_503": true,
+    "public_site_unconnected": true
+  }
+}
