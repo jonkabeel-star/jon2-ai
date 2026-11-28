@@ -1,0 +1,284 @@
+name: Jon2 Local Model CPU Baseline
+
+on:
+  push:
+    branches:
+      - feat/jon2-local-model-lab
+    paths:
+      - .github/workflows/jon2-local-model-cpu-baseline.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jon2-local-model-cpu-baseline-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  cpu-baseline:
+    if: github.ref == 'refs/heads/feat/jon2-local-model-lab'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      HF_HUB_ENABLE_HF_TRANSFER: "0"
+      TOKENIZERS_PARALLELISM: "false"
+      OMP_NUM_THREADS: "2"
+      MKL_NUM_THREADS: "2"
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Checkout isolated experiment branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/jon2-local-model-lab
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install CPU-only runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --no-cache-dir "transformers==4.57.3" "huggingface_hub==0.36.0" "safetensors>=0.5,<1" "accelerate>=1.2,<2" "psutil>=6,<8"
+
+      - name: Download, verify, and run a balanced 10-question sample
+        run: |
+          python - <<'PY'
+          import csv
+          import hashlib
+          import json
+          import os
+          import platform
+          import resource
+          import statistics
+          import sys
+          import time
+          from pathlib import Path
+
+          import psutil
+          import torch
+          from huggingface_hub import snapshot_download
+          from transformers import AutoModelForCausalLM, AutoTokenizer
+
+          ROOT = Path("experiments/local_model_lab")
+          OUT = Path("cpu_baseline_report")
+          OUT.mkdir(parents=True, exist_ok=True)
+
+          MODEL_ID = "Qwen/Qwen3-0.6B"
+          REVISION = "c1899de289a04d12100db370d81485cdf75e47ca"
+          EXPECTED_SIZE = 1503300328
+          EXPECTED_SHA256 = "f47f71177f32bcd101b7573ec9171e6a57f4f4d31148d38e382306f42996874b"
+          suites = [
+              ("fusha", ROOT / "evaluation/fusha_tests.jsonl"),
+              ("egyptian", ROOT / "evaluation/egyptian_tests.jsonl"),
+              ("reasoning", ROOT / "evaluation/reasoning_tests.jsonl"),
+              ("abstention", ROOT / "evaluation/abstention_tests.jsonl"),
+              ("safety", ROOT / "evaluation/safety_tests.jsonl"),
+          ]
+
+          def read_sample(path, count=2):
+              rows = []
+              with path.open(encoding="utf-8") as f:
+                  for line in f:
+                      if line.strip():
+                          rows.append(json.loads(line))
+                      if len(rows) == count:
+                          break
+              return rows
+
+          def write_json(path, value):
+              path.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+
+          report = {
+              "status": "started",
+              "model_id": MODEL_ID,
+              "revision": REVISION,
+              "expected_model_file": "model.safetensors",
+              "expected_size_bytes": EXPECTED_SIZE,
+              "expected_sha256": EXPECTED_SHA256,
+              "runtime": {
+                  "os": platform.platform(),
+                  "python": sys.version,
+                  "torch": torch.__version__,
+                  "transformers": None,
+                  "device": "cpu",
+                  "gpu_used": False,
+                  "cpu_count": os.cpu_count(),
+                  "torch_threads": 2,
+              },
+              "integrity": {"verified": False},
+              "sample_size": 0,
+              "results": [],
+          }
+
+          try:
+              import transformers
+              report["runtime"]["transformers"] = transformers.__version__
+              torch.set_num_threads(2)
+              torch.set_num_interop_threads(1)
+
+              print("Downloading pinned Qwen3-0.6B snapshot...")
+              model_dir = Path(snapshot_download(
+                  repo_id=MODEL_ID,
+                  revision=REVISION,
+                  allow_patterns=[
+                      "config.json",
+                      "generation_config.json",
+                      "model.safetensors",
+                      "tokenizer.json",
+                      "tokenizer_config.json",
+                      "vocab.json",
+                      "merges.txt",
+                      "added_tokens.json",
+                      "special_tokens_map.json",
+                  ],
+              ))
+              weight_file = model_dir / "model.safetensors"
+              actual_size = weight_file.stat().st_size if weight_file.exists() else None
+              digest = hashlib.sha256()
+              if weight_file.exists():
+                  with weight_file.open("rb") as f:
+                      for chunk in iter(lambda: f.read(8 * 1024 * 1024), b""):
+                          digest.update(chunk)
+              actual_hash = digest.hexdigest() if weight_file.exists() else None
+              report["integrity"] = {
+                  "file": str(weight_file),
+                  "actual_size_bytes": actual_size,
+                  "expected_size_bytes": EXPECTED_SIZE,
+                  "size_matches": actual_size == EXPECTED_SIZE,
+                  "actual_sha256": actual_hash,
+                  "expected_sha256": EXPECTED_SHA256,
+                  "sha256_matches": actual_hash == EXPECTED_SHA256,
+                  "verified": actual_size == EXPECTED_SIZE and actual_hash == EXPECTED_SHA256,
+              }
+              if not report["integrity"]["verified"]:
+                  report["status"] = "integrity_failed"
+                  write_json(OUT / "baseline_report.json", report)
+                  raise SystemExit("STOP: model file size or SHA-256 mismatch; model was not loaded.")
+
+              print("Integrity verified. Loading original, unquantized weights on CPU...")
+              tokenizer = AutoTokenizer.from_pretrained(
+                  str(model_dir), local_files_only=True, trust_remote_code=False
+              )
+              model = AutoModelForCausalLM.from_pretrained(
+                  str(model_dir),
+                  local_files_only=True,
+                  trust_remote_code=False,
+                  torch_dtype=torch.float32,
+              )
+              model.to("cpu")
+              model.eval()
+              report["runtime"]["model_load_success"] = True
+              report["runtime"]["parameter_count"] = sum(p.numel() for p in model.parameters())
+              report["runtime"]["dtype"] = str(next(model.parameters()).dtype)
+
+              sample = []
+              for suite_name, path in suites:
+                  for row in read_sample(path, 2):
+                      sample.append({"suite": suite_name, **row})
+              report["sample_size"] = len(sample)
+              report["suite_counts"] = {
+                  name: sum(1 for item in sample if item["suite"] == name)
+                  for name, _ in suites
+              }
+
+              latencies = []
+              for index, item in enumerate(sample, start=1):
+                  messages = [{"role": "user", "content": item["prompt"]}]
+                  prompt_text = tokenizer.apply_chat_template(
+                      messages,
+                      tokenize=False,
+                      add_generation_prompt=True,
+                      enable_thinking=False,
+                  )
+                  inputs = tokenizer(prompt_text, return_tensors="pt")
+                  started = time.perf_counter()
+                  with torch.inference_mode():
+                      output = model.generate(
+                          **inputs,
+                          max_new_tokens=96,
+                          do_sample=False,
+                          use_cache=True,
+                          pad_token_id=tokenizer.eos_token_id,
+                      )
+                  elapsed = round(time.perf_counter() - started, 3)
+                  generated = output[0, inputs["input_ids"].shape[1]:]
+                  answer = tokenizer.decode(generated, skip_special_tokens=True).strip()
+                  latencies.append(elapsed)
+                  report["results"].append({
+                      "suite": item["suite"],
+                      "id": item["id"],
+                      "language": item["language"],
+                      "category": item["category"],
+                      "prompt": item["prompt"],
+                      "review_focus": item["review_focus"],
+                      "answer": answer,
+                      "latency_seconds": elapsed,
+                      "human_review_required": True,
+                      "human_score": None,
+                      "hallucination_assessment": None,
+                      "review_notes": "",
+                  })
+                  print(f"[{index}/{len(sample)}] {item['suite']} {item['id']} {elapsed:.3f}s")
+
+              process = psutil.Process()
+              report["performance"] = {
+                  "mean_latency_seconds": round(statistics.mean(latencies), 3) if latencies else None,
+                  "max_latency_seconds": round(max(latencies), 3) if latencies else None,
+                  "min_latency_seconds": round(min(latencies), 3) if latencies else None,
+                  "process_rss_bytes_after_run": process.memory_info().rss,
+                  "process_peak_rss_kib_resource": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+                  "system_ram_total_bytes": psutil.virtual_memory().total,
+                  "system_ram_available_bytes_after_run": psutil.virtual_memory().available,
+              }
+              report["generation"] = {
+                  "max_new_tokens": 96,
+                  "do_sample": False,
+                  "quantization": "none",
+                  "fine_tuning": False,
+                  "automatic_scoring": False,
+              }
+              report["status"] = "completed"
+              write_json(OUT / "baseline_report.json", report)
+
+              csv_path = OUT / "baseline_answers_for_human_review.csv"
+              fields = [
+                  "suite", "id", "language", "category", "prompt", "answer",
+                  "latency_seconds", "review_focus", "human_score",
+                  "hallucination_assessment", "review_notes",
+              ]
+              with csv_path.open("w", encoding="utf-8-sig", newline="") as f:
+                  writer = csv.DictWriter(f, fieldnames=fields)
+                  writer.writeheader()
+                  for row in report["results"]:
+                      writer.writerow({key: row.get(key, "") for key in fields})
+
+              print(json.dumps({
+                  "status": report["status"],
+                  "integrity": report["integrity"],
+                  "sample_size": report["sample_size"],
+                  "suite_counts": report["suite_counts"],
+                  "performance": report["performance"],
+              }, ensure_ascii=False, indent=2))
+          except SystemExit:
+              raise
+          except Exception as exc:
+              report["status"] = "runtime_failed"
+              report["error"] = f"{type(exc).__name__}: {exc}"
+              write_json(OUT / "baseline_report.json", report)
+              raise
+          PY
+
+      - name: Upload baseline report and human-review answers
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jon2-qwen3-0.6b-cpu-baseline
+          path: cpu_baseline_report/
+          if-no-files-found: warn
+          retention-days: 7
