@@ -17,3 +17,12 @@ private-corpus-quarantine/
 /private-data/
 /ai_engine/private-data/
 /ai_engine/training_data/*.local.json
+
+# Jon2 Lite local runtime data and secrets
+*.db
+*.sqlite
+*.sqlite3
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.*.example
