@@ -1,4 +1,5 @@
 """Regression tests for Arabic style, contextual memory, fact lifecycle and session isolation."""
+import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
@@ -73,7 +74,8 @@ class ArabicBrainTests(unittest.TestCase):
 class LiteMemoryTests(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.memory = LiteMemory(Path(self.temp_dir.name) / "test.sqlite3")
+        self.db_path = Path(self.temp_dir.name) / "test.sqlite3"
+        self.memory = LiteMemory(self.db_path)
 
     def tearDown(self):
         self.temp_dir.cleanup()
@@ -87,13 +89,16 @@ class LiteMemoryTests(unittest.TestCase):
         self.assertIn("تعلم البرمجة", reply.text)
         self.assertEqual(self.memory.history("s2"), [])
 
-    def test_fact_update_and_forget(self):
-        self.memory.save_fact("المجال", "البرمجة")
-        self.memory.save_fact("المجال", "الذكاء الاصطناعي")
-        self.assertEqual(self.memory.facts()[0]["fact_value"], "الذكاء الاصطناعي")
-        self.assertTrue(self.memory.delete_fact("المجال"))
-        self.assertEqual(self.memory.facts(), [])
-        self.assertFalse(self.memory.delete_fact("المجال"))
+    def test_facts_are_session_scoped_and_can_be_updated_and_forgotten(self):
+        self.memory.save_fact("المجال", "البرمجة", "s1")
+        self.memory.save_fact("المجال", "الذكاء الاصطناعي", "s1")
+        self.memory.save_fact("المجال", "التصميم", "s2")
+        self.assertEqual(self.memory.facts("s1")[0]["fact_value"], "الذكاء الاصطناعي")
+        self.assertEqual(self.memory.facts("s2")[0]["fact_value"], "التصميم")
+        self.assertTrue(self.memory.delete_fact("المجال", "s1"))
+        self.assertEqual(self.memory.facts("s1"), [])
+        self.assertEqual(self.memory.facts("s2")[0]["fact_value"], "التصميم")
+        self.assertFalse(self.memory.delete_fact("المجال", "s1"))
 
     def test_session_clear_and_message_validation(self):
         self.memory.add_message("s1", "user", "رسالة")
@@ -101,6 +106,15 @@ class LiteMemoryTests(unittest.TestCase):
         self.assertEqual(self.memory.history("s1"), [])
         with self.assertRaises(ValueError):
             self.memory.add_message("s1", "system", "غير مسموح")
+
+    def test_legacy_global_facts_migrate_without_loss(self):
+        legacy_path = Path(self.temp_dir.name) / "legacy.sqlite3"
+        with sqlite3.connect(legacy_path) as db:
+            db.execute("CREATE TABLE facts (fact_key TEXT PRIMARY KEY, fact_value TEXT NOT NULL, updated_at TEXT NOT NULL)")
+            db.execute("INSERT INTO facts VALUES ('name', 'Jon2', '2026-01-01T00:00:00Z')")
+        migrated = LiteMemory(legacy_path)
+        self.assertEqual(migrated.facts("")[0]["fact_value"], "Jon2")
+        self.assertEqual(migrated.facts("s1"), [])
 
 
 if __name__ == "__main__":
