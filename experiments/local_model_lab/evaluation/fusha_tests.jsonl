@@ -1,0 +1,30 @@
+{"id":"FUS-01","language":"ar-MSA","category":"شرح","prompt":"اشرح الفرق بين الطقس والمناخ في فقرة قصيرة.","review_focus":"الدقة والوضوح"}
+{"id":"FUS-02","language":"ar-MSA","category":"تلخيص","prompt":"لخص أهمية القراءة في ثلاث نقاط.","review_focus":"الالتزام بعدد النقاط"}
+{"id":"FUS-03","language":"ar-MSA","category":"تعريف","prompt":"ما المقصود بالطاقة المتجددة؟","review_focus":"تعريف صحيح ومفهوم"}
+{"id":"FUS-04","language":"ar-MSA","category":"قواعد","prompt":"أعرب كلمة الطالب في الجملة: حضر الطالب مبكرًا.","review_focus":"صحة الإعراب"}
+{"id":"FUS-05","language":"ar-MSA","category":"إملاء","prompt":"صحح الجملة: هاذا الطالب مجتهد ولاكنه متأخر.","review_focus":"صحة التصحيح"}
+{"id":"FUS-06","language":"ar-MSA","category":"مقارنة","prompt":"قارن بين التعلم الذاتي والتعلم داخل الفصل.","review_focus":"عرض متوازن"}
+{"id":"FUS-07","language":"ar-MSA","category":"خطوات","prompt":"اذكر خطوات إعداد ميزانية شهرية بسيطة.","review_focus":"ترتيب قابل للتطبيق"}
+{"id":"FUS-08","language":"ar-MSA","category":"سبب ونتيجة","prompt":"كيف يؤثر النوم المنتظم في التركيز؟","review_focus":"عدم المبالغة الطبية"}
+{"id":"FUS-09","language":"ar-MSA","category":"إعادة صياغة","prompt":"أعد صياغة العبارة بلغة عربية واضحة: ينبغي علينا أن نقوم بإنجاز المهمة.","review_focus":"سلامة الصياغة"}
+{"id":"FUS-10","language":"ar-MSA","category":"ترجمة","prompt":"ترجم إلى العربية الفصحى: Knowledge grows when we share it.","review_focus":"دقة المعنى"}
+{"id":"FUS-11","language":"ar-MSA","category":"رسالة","prompt":"اكتب رسالة مهذبة تطلب فيها تأجيل موعد اجتماع يومًا واحدًا.","review_focus":"النبرة والوضوح"}
+{"id":"FUS-12","language":"ar-MSA","category":"قصة","prompt":"اكتب قصة قصيرة من أربعة أسطر عن طفل يتعلم الصبر.","review_focus":"تماسك القصة"}
+{"id":"FUS-13","language":"ar-MSA","category":"حساب","prompt":"إذا كان ثمن الكتاب 120 جنيهًا والخصم 15%، فما السعر بعد الخصم؟","review_focus":"صحة الحساب وإظهار الخطوات"}
+{"id":"FUS-14","language":"ar-MSA","category":"استنتاج","prompt":"كل الورود نباتات، وبعض النباتات تحتاج إلى ظل. هل يلزم أن كل الورود تحتاج إلى ظل؟","review_focus":"تمييز اللزوم المنطقي"}
+{"id":"FUS-15","language":"ar-MSA","category":"تنظيم","prompt":"رتب هذه المهام حسب الأولوية: موعد طبي، شراء الخبز، تسليم مشروع غدًا.","review_focus":"تفسير ترتيب معقول"}
+{"id":"FUS-16","language":"ar-MSA","category":"علوم","prompt":"لماذا تطفو قطعة الخشب غالبًا فوق الماء؟","review_focus":"شرح علمي مبسط"}
+{"id":"FUS-17","language":"ar-MSA","category":"جغرافيا","prompt":"ما الفرق بين خط الاستواء وخط جرينتش؟","review_focus":"عدم الخلط بينهما"}
+{"id":"FUS-18","language":"ar-MSA","category":"تاريخ","prompt":"ما المعلومات التي تحتاجها قبل التأكد من صحة رواية تاريخية؟","review_focus":"مصادر وتحفظ"}
+{"id":"FUS-19","language":"ar-MSA","category":"تعليم","prompt":"اقترح طريقة لمراجعة درس طويل خلال ساعة.","review_focus":"خطة واقعية"}
+{"id":"FUS-20","language":"ar-MSA","category":"تواصل","prompt":"كيف ترفض طلبًا بطريقة محترمة دون جرح صاحبه؟","review_focus":"احترام ووضوح"}
+{"id":"FUS-21","language":"ar-MSA","category":"بيانات","prompt":"حوّل الأرقام 4 و7 و9 إلى متوسط حسابي.","review_focus":"صحة العملية"}
+{"id":"FUS-22","language":"ar-MSA","category":"تخطيط","prompt":"ضع خطة من ثلاث خطوات للبدء في تعلم لغة جديدة.","review_focus":"ترتيب عملي"}
+{"id":"FUS-23","language":"ar-MSA","category":"تمييز","prompt":"ما الفرق بين الرأي والحقيقة؟ أعط مثالًا لكل منهما.","review_focus":"أمثلة مناسبة"}
+{"id":"FUS-24","language":"ar-MSA","category":"كتابة","prompt":"اكتب عنوانًا مناسبًا لمقال عن ترشيد استهلاك المياه.","review_focus":"ملاءمة العنوان"}
+{"id":"FUS-25","language":"ar-MSA","category":"تصحيح","prompt":"اكتشف الخطأ في العبارة: الشمس تدور حول الأرض.","review_focus":"تصحيح المعلومة"}
+{"id":"FUS-26","language":"ar-MSA","category":"احتمال","prompt":"هل يعني ارتباط ارتفاع مبيعات المثلجات بزيادة حالات الغرق أن الأولى تسبب الثانية؟","review_focus":"التمييز بين الارتباط والسببية"}
+{"id":"FUS-27","language":"ar-MSA","category":"شرح مبسط","prompt":"اشرح معنى كلمة الاستدامة لطالب في المرحلة الإعدادية.","review_focus":"مناسبة المستوى"}
+{"id":"FUS-28","language":"ar-MSA","category":"مقارنة","prompt":"قارن بين الادخار والاستثمار مع ذكر مخاطرة كل منهما.","review_focus":"توازن وعدم تقديم نصيحة شخصية"}
+{"id":"FUS-29","language":"ar-MSA","category":"استخراج","prompt":"في الجملة التالية حدد الفاعل: كتب المهندس التقرير بعناية.","review_focus":"الإجابة المحددة"}
+{"id":"FUS-30","language":"ar-MSA","category":"اتباع تعليمات","prompt":"أجب في جملة واحدة فقط: ما فائدة شرب الماء؟","review_focus":"الالتزام بالقيد"}
