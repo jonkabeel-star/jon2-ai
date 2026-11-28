@@ -162,12 +162,12 @@ def respond(
     memory_result = _memory_reply(_normalize(text), style, history, facts)
     if memory_result is not None:
         return memory_result
+    reasoning_result = reason(text, style, history=history, facts=facts)
+    if reasoning_result is not None and reasoning_result.intent != "uncertain":
+        return BrainReply(reasoning_result.answer, reasoning_result.intent, style)
     rule_result = _rule_reply(text, style)
     if rule_result is not None:
         return rule_result
-    reasoning_result = reason(text, style, history=history, facts=facts)
-    if reasoning_result is not None:
-        return BrainReply(reasoning_result.answer, reasoning_result.intent, style)
     if model_adapter is not None:
         return BrainReply(generate_with_model(text, style, model_adapter), "model", style, True)
     fallback = _style_text(
