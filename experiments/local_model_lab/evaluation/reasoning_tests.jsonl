@@ -1,0 +1,20 @@
+{"id":"REA-01","language":"ar","category":"multi-step","prompt":"معايا 180 جنيه. اشتريت كتاب بـ 65 وقلمًا بـ 15. كام يتبقى؟ وبعدها لو قسمت الباقي بالتساوي على يومين، نصيب كل يوم كام؟","review_focus":"الحساب المتسلسل"}
+{"id":"REA-02","language":"ar","category":"multi-step","prompt":"رتب المهام: تسليم واجب غدًا، شراء دواء اليوم، مشاهدة فيلم في نهاية الأسبوع. اشرح الأولوية.","review_focus":"تحديد الاستعجال"}
+{"id":"REA-03","language":"ar","category":"constraint","prompt":"اكتب ملخصًا من جملتين، ولا تستخدم أكثر من 30 كلمة.","review_focus":"تحقيق الشرطين"}
+{"id":"REA-04","language":"ar","category":"logic","prompt":"أحمد أطول من سامي، وسامي أطول من علي. من الأطول ومن الأقصر؟","review_focus":"استنتاج صحيح"}
+{"id":"REA-05","language":"ar","category":"contradiction","prompt":"قلت لك إن موعد الاجتماع الساعة 5، ثم قلت إنه الساعة 6 في اليوم نفسه. هل المعلومتان متوافقتان؟","review_focus":"كشف التعارض"}
+{"id":"REA-06","language":"ar","category":"conditional","prompt":"إذا أمطرت السماء فسأحمل مظلة. لم تمطر السماء. هل نستطيع الجزم أنني لم أحمل مظلة؟","review_focus":"عدم عكس الشرط"}
+{"id":"REA-07","language":"ar","category":"math","prompt":"ثلاثة صناديق في كل صندوق 8 كتب. أُضيفت 5 كتب. كم كتابًا أصبح لدينا؟","review_focus":"صحة الحساب"}
+{"id":"REA-08","language":"ar","category":"planning","prompt":"خطط لإنجاز تقرير خلال يومين، مع تخصيص وقت للمراجعة.","review_focus":"تسلسل واقعي"}
+{"id":"REA-09","language":"ar","category":"comparison","prompt":"اختر بين خيارين: الأول أسرع لكنه أغلى، والثاني أبطأ وأقل تكلفة. اذكر المعلومات الناقصة قبل التوصية.","review_focus":"طلب بيانات ناقصة"}
+{"id":"REA-10","language":"ar","category":"summary","prompt":"لخص: ارتفعت الحرارة صباحًا، ثم هبت رياح، وبعد الظهر هطلت أمطار خفيفة.","review_focus":"عدم إضافة أحداث"}
+{"id":"REA-11","language":"ar","category":"math","prompt":"قطار قطع 120 كيلومترًا في ساعتين بسرعة ثابتة. ما متوسط سرعته؟","review_focus":"وحدة صحيحة"}
+{"id":"REA-12","language":"ar","category":"logic","prompt":"بعض الطلاب رياضيون، وكل الرياضيين يتدربون. ماذا نستنتج عن بعض الطلاب؟","review_focus":"استنتاج محدود"}
+{"id":"REA-13","language":"ar","category":"constraints","prompt":"اقترح ثلاثة أسماء لمشروع تعليمي، كل اسم من كلمتين فقط.","review_focus":"الالتزام بالشكل"}
+{"id":"REA-14","language":"ar","category":"sequence","prompt":"أكمل النمط: 2، 4، 8، 16، ... واذكر القاعدة.","review_focus":"نمط واضح"}
+{"id":"REA-15","language":"ar","category":"data","prompt":"درجات طالب هي 70 و80 و90. احسب المتوسط ثم وضح هل يثبت ذلك أنه متفوق في كل المواد.","review_focus":"حساب وحدود الاستنتاج"}
+{"id":"REA-16","language":"ar","category":"reasoning","prompt":"إذا كان المتجر مغلقًا يوم الجمعة، ووصلت يوم الجمعة، هل يمكنني الشراء منه في ذلك اليوم؟","review_focus":"الاستنتاج من المعطيات"}
+{"id":"REA-17","language":"ar","category":"planning","prompt":"اقترح خطة قصيرة لتقسيم تنظيف غرفة إلى مهام صغيرة خلال 30 دقيقة.","review_focus":"توزيع الوقت"}
+{"id":"REA-18","language":"ar","category":"ambiguity","prompt":"قلت: قابلته بعد الظهر قبل الموعد. ما المعلومة التي تحتاجها لتحديد وقت اللقاء بدقة؟","review_focus":"تحديد الغموض"}
+{"id":"REA-19","language":"ar","category":"math","prompt":"سعر منتج 400 جنيه، زاد 10% ثم انخفض 10% من السعر الجديد. هل عاد إلى 400؟ احسب.","review_focus":"حساب النسب المتتابعة"}
+{"id":"REA-20","language":"ar","category":"multi-step","prompt":"اكتب بريدًا قصيرًا من 3 جمل يطلب توضيح موعد التسليم ويشكر المستلم.","review_focus":"عدد الجمل والهدف"}
