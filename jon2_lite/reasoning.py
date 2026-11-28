@@ -97,9 +97,9 @@ def reason(text: str, language_style: str, history: Sequence[dict] = (),
     query = normalize_arabic(text)
 
     # Arithmetic is accepted only when the entire extracted expression is safe.
-    candidate = re.sub(r"^(احسب|احسبلي|ناتج|كام|كم يساوي)\\s*", "", query)
+    candidate = re.sub(r"^(احسب|احسبلي|ناتج|كام|كم يساوي)\s*", "", query)
     candidate = candidate.rstrip(" ؟?")
-    if re.fullmatch(r"[0-9\\s+\\-*/()%]+", candidate) and re.search(r"[+*/%]", candidate):
+    if re.fullmatch(r"[0-9\s+\\-*/()%]+", candidate) and re.search(r"[+*/%]", candidate):
         try:
             value = _arithmetic(candidate)
         except (SyntaxError, ValueError, ZeroDivisionError):
@@ -140,7 +140,7 @@ def reason(text: str, language_style: str, history: Sequence[dict] = (),
         )
         lead = "يمكننا التعامل مع الهدف بهذه الخطوات:" if language_style == "msa" else "نقدر نمشي في الهدف ده بالخطوات دي:"
         return ReasoningResult("step_by_step_plan", 0.86, steps,
-            lead + "\\n" + "\\n".join(f"{i}. {step}" for i, step in enumerate(steps, 1)),
+            lead + "\n" + "\n".join(f"{i}. {step}" for i, step in enumerate(steps, 1)),
             bool(goal))
 
     # A vague comparison/decision is not answered without options or criteria.
