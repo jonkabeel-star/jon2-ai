@@ -22,6 +22,7 @@ class ChatInput(BaseModel):
 class FactInput(BaseModel):
     key: str = Field(min_length=1, max_length=120)
     value: str = Field(min_length=1, max_length=2000)
+    session_id: str = Field(default="", max_length=100)
 
 
 @app.get("/health")
@@ -37,9 +38,7 @@ def chat(payload: ChatInput) -> dict[str, object]:
         raise HTTPException(status_code=400, detail="invalid_session_id")
     memory.add_message(session_id, "user", payload.message)
     history = memory.history(session_id)
-    # Exclude the current prompt from the "previous messages" recall context.
-    prior_history = history[:-1]
-    reply = respond(payload.message, history=prior_history, facts=memory.facts())
+    reply = respond(payload.message, history=history[:-1], facts=memory.facts(session_id))
     memory.add_message(session_id, "assistant", reply.text)
     return {"session_id": session_id, "reply": reply.text, "intent": reply.intent,
             "language_style": reply.language_style, "model_used": reply.model_used}
@@ -56,17 +55,17 @@ def clear_history(session_id: str = Query(min_length=1, max_length=100)) -> dict
 
 
 @app.get("/lite/facts")
-def facts() -> dict[str, object]:
-    return {"facts": memory.facts()}
+def facts(session_id: str = Query(default="", max_length=100)) -> dict[str, object]:
+    return {"session_id": session_id, "facts": memory.facts(session_id)}
 
 
 @app.put("/lite/facts")
 def save_fact(payload: FactInput) -> dict[str, str]:
-    memory.save_fact(payload.key, payload.value)
-    return {"saved": payload.key}
+    memory.save_fact(payload.key, payload.value, payload.session_id)
+    return {"saved": payload.key, "session_id": payload.session_id}
 
 
 @app.delete("/lite/facts/{key}")
-def delete_fact(key: str) -> dict[str, object]:
-    deleted = memory.delete_fact(key)
-    return {"deleted": deleted, "key": key}
+def delete_fact(key: str, session_id: str = Query(default="", max_length=100)) -> dict[str, object]:
+    deleted = memory.delete_fact(key, session_id)
+    return {"deleted": deleted, "key": key, "session_id": session_id}
