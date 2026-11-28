@@ -36,7 +36,7 @@ def detect_style(text: str) -> str:
     markers = (
         "ازيك", "عامل ايه", "عامله ايه", "عايز", "عاوزه", "عاوز",
         "محتاج", "ليه", "ايه", "مش", "بقي", "دلوقتي", "ازاي",
-        "اعمل ايه", "فين", "كده", "احنا",
+        "اعمل ايه", "فين", "كده", "احنا", "يا صاحبي", "يا باشا", "تسلم",
     )
     return "egyptian" if any(marker in normalized for marker in markers) else "msa"
 
