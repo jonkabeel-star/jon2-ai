@@ -1,4 +1,4 @@
-"""Local SQLite conversation history and explicitly saved facts."""
+"""Local SQLite conversation history and session-scoped, explicitly saved facts."""
 from __future__ import annotations
 
 import os
@@ -47,12 +47,30 @@ class LiteMemory:
                     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
                 );
                 CREATE INDEX IF NOT EXISTS idx_messages_session_id_id ON messages(session_id, id);
-                CREATE TABLE IF NOT EXISTS facts (
-                    fact_key TEXT PRIMARY KEY,
-                    fact_value TEXT NOT NULL,
-                    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
-                );
             """)
+            columns = {row["name"] for row in db.execute("PRAGMA table_info(facts)")}
+            if columns and "session_id" not in columns:
+                db.execute("ALTER TABLE facts RENAME TO facts_legacy")
+                columns = set()
+            if not columns:
+                db.execute("""
+                    CREATE TABLE IF NOT EXISTS facts (
+                        session_id TEXT NOT NULL,
+                        fact_key TEXT NOT NULL,
+                        fact_value TEXT NOT NULL,
+                        updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+                        PRIMARY KEY(session_id, fact_key)
+                    )
+                """)
+            legacy_exists = db.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='facts_legacy'"
+            ).fetchone()
+            if legacy_exists:
+                db.execute("""
+                    INSERT OR IGNORE INTO facts(session_id, fact_key, fact_value, updated_at)
+                    SELECT '', fact_key, fact_value, updated_at FROM facts_legacy
+                """)
+                db.execute("DROP TABLE facts_legacy")
 
     def add_message(self, session_id: str, role: str, content: str) -> int:
         if not session_id.strip():
@@ -76,28 +94,33 @@ class LiteMemory:
             ).fetchall()
         return [dict(row) for row in reversed(rows)]
 
-    def save_fact(self, key: str, value: str) -> None:
+    def save_fact(self, key: str, value: str, session_id: str = "") -> None:
         key, value = key.strip(), value.strip()
         if not key or not value:
             raise ValueError("fact key and value must not be empty")
         with self._connect() as db:
             db.execute(
-                "INSERT INTO facts(fact_key, fact_value) VALUES (?, ?) "
-                "ON CONFLICT(fact_key) DO UPDATE SET fact_value=excluded.fact_value, "
+                "INSERT INTO facts(session_id, fact_key, fact_value) VALUES (?, ?, ?) "
+                "ON CONFLICT(session_id, fact_key) DO UPDATE SET fact_value=excluded.fact_value, "
                 "updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')",
-                (key, value),
+                (session_id, key, value),
             )
 
-    def facts(self) -> list[dict[str, str]]:
+    def facts(self, session_id: str = "") -> list[dict[str, str]]:
         with self._connect() as db:
             rows = db.execute(
-                "SELECT fact_key, fact_value, updated_at FROM facts ORDER BY fact_key"
+                "SELECT fact_key, fact_value, updated_at FROM facts "
+                "WHERE session_id = ? ORDER BY fact_key",
+                (session_id,),
             ).fetchall()
         return [dict(row) for row in rows]
 
-    def delete_fact(self, key: str) -> bool:
+    def delete_fact(self, key: str, session_id: str = "") -> bool:
         with self._connect() as db:
-            cursor = db.execute("DELETE FROM facts WHERE fact_key = ?", (key.strip(),))
+            cursor = db.execute(
+                "DELETE FROM facts WHERE session_id = ? AND fact_key = ?",
+                (session_id, key.strip()),
+            )
             return cursor.rowcount > 0
 
     def clear_session(self, session_id: str) -> int:
