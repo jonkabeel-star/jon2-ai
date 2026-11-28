@@ -71,6 +71,51 @@ class ArabicBrainTests(unittest.TestCase):
         self.assertIn("لا يوجد سجل", respond("ماذا تحدثنا عنه؟").text)
 
 
+
+    def test_reasoning_arithmetic_msa_and_egyptian_digits(self):
+        msa = respond("احسب 12 + 3 * 2")
+        egy = respond("كام ١٢ + ٣؟")
+        self.assertEqual(msa.intent, "arithmetic")
+        self.assertIn("18", msa.text)
+        self.assertEqual(egy.intent, "arithmetic")
+        self.assertIn("15", egy.text)
+
+    def test_reasoning_division_by_zero_abstains(self):
+        reply = respond("احسب 8 / 0")
+        self.assertNotEqual(reply.intent, "arithmetic")
+        self.assertFalse(reply.model_used)
+
+    def test_reasoning_builds_explicit_plan_in_msa(self):
+        reply = respond("كيف أتعلم البرمجة؟")
+        self.assertEqual(reply.intent, "step_by_step_plan")
+        self.assertIn("1.", reply.text)
+        self.assertIn("البرمجة", reply.text)
+        self.assertIn("5.", reply.text)
+
+    def test_reasoning_builds_plan_in_egyptian(self):
+        reply = respond("ازاي أبدأ أتعلم التصميم؟")
+        self.assertEqual(reply.intent, "step_by_step_plan")
+        self.assertIn("نقدر نمشي", reply.text)
+        self.assertIn("التصميم", reply.text)
+
+    def test_reasoning_uses_session_history_and_saved_facts(self):
+        history = [{"role": "user", "content": "عايز أتعلم البرمجة"}]
+        from_history = respond("ازاي أبدأ؟", history=history)
+        facts = [{"fact_key": "المجال", "fact_value": "تحليل البيانات"}]
+        from_fact = respond("كيف أبدأ؟", facts=facts)
+        self.assertEqual(from_history.intent, "step_by_step_plan")
+        self.assertIn("البرمجة", from_history.text)
+        self.assertEqual(from_fact.intent, "step_by_step_plan")
+        self.assertIn("تحليل البيانات", from_fact.text)
+
+    def test_reasoning_asks_for_missing_goal_or_comparison_options(self):
+        missing_goal = respond("كيف أبدأ؟")
+        missing_options = respond("أيهما أفضل؟")
+        self.assertEqual(missing_goal.intent, "clarification_needed")
+        self.assertEqual(missing_options.intent, "clarification_needed")
+        self.assertFalse(missing_goal.model_used)
+
+
 class LiteMemoryTests(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
