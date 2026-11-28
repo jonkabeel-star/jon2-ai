@@ -6,11 +6,15 @@ on:
     paths:
       - "jon2_lite/**"
       - "tests/test_jon2_lite.py"
+      - "tests/test_jon2_evaluation.py"
+      - "tests/test_jon2_adversarial.py"
       - ".github/workflows/jon2-lite-tests.yml"
   pull_request:
     paths:
       - "jon2_lite/**"
       - "tests/test_jon2_lite.py"
+      - "tests/test_jon2_evaluation.py"
+      - "tests/test_jon2_adversarial.py"
       - ".github/workflows/jon2-lite-tests.yml"
   workflow_dispatch:
 
@@ -30,5 +34,5 @@ jobs:
         run: python -m pip install --disable-pip-version-check fastapi httpx
       - name: Compile Jon2 Lite source
         run: python -m compileall -q jon2_lite
-      - name: Run Arabic brain, SQLite memory, and evaluation tests
+      - name: Run Arabic brain, SQLite memory, evaluation, and adversarial tests
         run: python -m unittest discover -s tests -p 'test_jon2_*.py' -v
