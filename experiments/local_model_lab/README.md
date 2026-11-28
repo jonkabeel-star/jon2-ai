@@ -53,7 +53,7 @@ This is an **inference-only test set**. If fine-tuning is ever proposed, create 
    - `ALLOW_MODEL_LOAD`
 4. Only after a separate explicit approval, enable the needed gate(s) in the notebook.
 5. Download only from the pinned model revision; compute SHA-256 for every downloaded file and write a manifest to the Colab runtime.
-6. Verify the manifest and local files before loading.
+6. Require `model.safetensors` to be exactly 1,503,300,328 bytes with SHA-256 `f47f71177f32bcd101b7573ec9171e6a57f4f4d31148d38e382306f42996874b` (the publisher-listed digest). A mismatch aborts before model loading.
 7. Run a small smoke test first. Full evaluation remains separately gated.
 8. Save results locally in the Colab session; do not upload generated outputs or model files to this repository.
 9. Stop the Colab runtime after review.
