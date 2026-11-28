@@ -40,7 +40,7 @@ class ArabicBrainTests(unittest.TestCase):
         self.assertIn("مدرّب", reply.text)
 
     def test_unsupported_questions_do_not_hallucinate(self):
-        for prompt in ("لماذا السماء زرقاء؟", "كيف أتعلم البرمجة؟", "فين أقرب مكتبة؟", "What is AI?"):
+        for prompt in ("لماذا السماء زرقاء؟", "كيف تعمل الثقوب السوداء؟", "فين أقرب مكتبة؟", "What is AI?"):
             reply = respond(prompt)
             self.assertIn(reply.intent, {"unsupported_question", "unsupported"})
             self.assertFalse(reply.model_used)
