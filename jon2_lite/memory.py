@@ -1,5 +1,4 @@
 """Local SQLite conversation history and explicitly saved facts."""
-
 from __future__ import annotations
 
 import os
@@ -39,8 +38,7 @@ class LiteMemory:
     def _initialize(self) -> None:
         with self._connect() as db:
             db.execute("PRAGMA journal_mode = WAL")
-            db.executescript(
-                """
+            db.executescript("""
                 CREATE TABLE IF NOT EXISTS messages (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     session_id TEXT NOT NULL,
@@ -48,17 +46,17 @@ class LiteMemory:
                     content TEXT NOT NULL,
                     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
                 );
-                CREATE INDEX IF NOT EXISTS idx_messages_session_id_id
-                    ON messages(session_id, id);
+                CREATE INDEX IF NOT EXISTS idx_messages_session_id_id ON messages(session_id, id);
                 CREATE TABLE IF NOT EXISTS facts (
                     fact_key TEXT PRIMARY KEY,
                     fact_value TEXT NOT NULL,
                     updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
                 );
-                """
-            )
+            """)
 
     def add_message(self, session_id: str, role: str, content: str) -> int:
+        if not session_id.strip():
+            raise ValueError("session_id must not be empty")
         if role not in {"user", "assistant"}:
             raise ValueError("role must be 'user' or 'assistant'")
         with self._connect() as db:
@@ -96,3 +94,13 @@ class LiteMemory:
                 "SELECT fact_key, fact_value, updated_at FROM facts ORDER BY fact_key"
             ).fetchall()
         return [dict(row) for row in rows]
+
+    def delete_fact(self, key: str) -> bool:
+        with self._connect() as db:
+            cursor = db.execute("DELETE FROM facts WHERE fact_key = ?", (key.strip(),))
+            return cursor.rowcount > 0
+
+    def clear_session(self, session_id: str) -> int:
+        with self._connect() as db:
+            cursor = db.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
+            return int(cursor.rowcount)
