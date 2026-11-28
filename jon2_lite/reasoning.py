@@ -99,7 +99,7 @@ def reason(text: str, language_style: str, history: Sequence[dict] = (),
     # Arithmetic is accepted only when the entire extracted expression is safe.
     candidate = re.sub(r"^(احسب|احسبلي|ناتج|كام|كم يساوي)\s*", "", query)
     candidate = candidate.rstrip(" ؟?")
-    if re.fullmatch(r"[0-9\s+\\-*/()%]+", candidate) and re.search(r"[+*/%]", candidate):
+    if re.fullmatch(r"[0-9\s+\-*/()%]+", candidate) and re.search(r"[+*/%]", candidate):
         try:
             value = _arithmetic(candidate)
         except (SyntaxError, ValueError, ZeroDivisionError):
